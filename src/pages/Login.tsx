@@ -32,7 +32,7 @@ export function Login() {
         .select('*')
         .eq('phone', cleanPhone)
         .eq('country', country)
-        .eq('password_hash', password) // In a real app, use proper hashing
+        .eq('password_hash', password)
         .single();
 
       if (error || !data) {
@@ -65,7 +65,6 @@ export function Login() {
       
       <div className="text-center mb-10 flex flex-col items-center">
         <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-[70px] mb-4 object-contain" referrerPolicy="no-referrer" />
-        <p className="text-gray-500">Investissez dans l'or noir.</p>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-4">

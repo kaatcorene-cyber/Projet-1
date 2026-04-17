@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -10,10 +10,27 @@ export function Withdraw() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [country, setCountry] = useState('Benin');
+  const [method, setMethod] = useState('MTN Mobile Money');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
+
+  const availableMethods = useMemo(() => {
+    switch (country) {
+      case 'Benin': return ['MTN Mobile Money', 'Moov Money', 'Celtiis'];
+      case 'Togo': return ['Togocel (T-Money)', 'Moov Money'];
+      case "Cote d'Ivoire": return ['Orange Money', 'MTN Mobile Money', 'Wave', 'Moov Money'];
+      default: return [];
+    }
+  }, [country]);
+
+  // Update method if it's not valid for the new country
+  React.useEffect(() => {
+    if (!availableMethods.includes(method)) {
+      setMethod(availableMethods[0] || '');
+    }
+  }, [country, availableMethods, method]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +73,7 @@ export function Withdraw() {
         user_id: user.id,
         type: 'withdrawal',
         amount: numAmount,
-        reference: `To: ${phone} (${country})`,
+        reference: `${method} - ${phone} (${country})`,
         status: 'pending'
       }]);
 
@@ -67,6 +84,7 @@ export function Withdraw() {
       setAmount('');
       setPhone('');
       setPassword('');
+      setMethod(availableMethods[0] || '');
     } catch (err) {
       setMessage({ type: 'error', text: 'Une erreur est survenue.' });
     } finally {
@@ -128,6 +146,20 @@ export function Withdraw() {
             <option value="Benin">Bénin</option>
             <option value="Togo">Togo</option>
             <option value="Cote d'Ivoire">Côte d'Ivoire</option>
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-gray-500 ml-1">Moyen de retrait</label>
+          <select
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all appearance-none"
+            required
+          >
+            {availableMethods.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
           </select>
         </div>
 

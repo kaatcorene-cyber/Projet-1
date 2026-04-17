@@ -14,6 +14,8 @@ export function Team() {
     totalBonus: 0
   });
 
+  const referralLink = `${window.location.origin}/register?ref=${user?.referral_code}`;
+
   useEffect(() => {
     if (user) {
       fetchTeamStats();
@@ -46,14 +48,14 @@ export function Team() {
 
   const copyCode = () => {
     if (user?.referral_code) {
-      navigator.clipboard.writeText(user.referral_code);
+      navigator.clipboard.writeText(referralLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
   return (
-    <div className="p-6 space-y-6 pt-20">
+    <div className="p-6 space-y-6 pt-20 pb-24">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Mon Équipe</h1>
@@ -65,14 +67,14 @@ export function Team() {
       <div className="bg-white border border-gray-100 rounded-3xl p-6 relative overflow-hidden shadow-sm">
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -mr-10 -mt-10"></div>
         
-        <p className="text-gray-500 text-sm font-medium mb-2 relative z-10">Votre code de parrainage</p>
+        <p className="text-gray-500 text-sm font-medium mb-2 relative z-10">Votre lien de parrainage unique</p>
         <div className="flex items-center gap-3 mb-6 relative z-10">
-          <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 font-mono text-lg tracking-wider">
-            {user?.referral_code}
+          <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-sm font-mono tracking-tight overflow-hidden text-ellipsis whitespace-nowrap">
+            {referralLink}
           </div>
           <button 
             onClick={copyCode}
-            className="w-12 h-12 bg-emerald-500 hover:bg-emerald-600 rounded-xl flex items-center justify-center text-white transition-colors shadow-sm"
+            className="w-12 h-12 shrink-0 bg-emerald-500 hover:bg-emerald-600 rounded-xl flex items-center justify-center text-white transition-colors shadow-sm cursor-pointer"
           >
             {copied ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
           </button>

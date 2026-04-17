@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase, checkDbSetup } from '../lib/supabase';
 
 export function Register() {
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -11,7 +12,7 @@ export function Register() {
     country: 'Benin',
     password: '',
     confirmPassword: '',
-    referralCode: ''
+    referralCode: searchParams.get('ref') || ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,7 @@ export function Register() {
     });
   }, [navigate]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -58,8 +59,8 @@ export function Register() {
         return;
       }
 
-      // Generate a simple referral code
-      const myReferralCode = formData.firstName.substring(0, 3).toUpperCase() + Math.floor(Math.random() * 10000);
+      // Generate a simple referral code if none generated yet
+      const myReferralCode = formData.firstName.substring(0, 3).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
 
       const { data, error: insertError } = await supabase
         .from('users')
@@ -160,7 +161,7 @@ export function Register() {
           <select
             name="country"
             value={formData.country}
-            onChange={(e: any) => handleChange(e)}
+            onChange={handleChange}
             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all appearance-none"
           >
             <option value="Benin">Bénin</option>

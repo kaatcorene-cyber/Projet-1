@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
-const PLANS = [
+const DEFAULT_PLANS = [
   { amount: 2500, daily: 375, total: 22500, image: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800' },
   { amount: 5000, daily: 750, total: 45000, image: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?auto=format&fit=crop&q=80&w=800' },
   { amount: 10000, daily: 1500, total: 90000, image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800' },
@@ -21,10 +21,26 @@ const PLANS = [
 
 export function Invest() {
   const { user, refreshUser } = useAuthStore();
+  const [plans, setPlans] = useState<any[]>(DEFAULT_PLANS);
   const [loading, setLoading] = useState<number | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
-  const handleInvest = async (plan: typeof PLANS[0], index: number) => {
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    const { data: dbPlansStr } = await supabase.from('settings').select('value').eq('key', 'investment_plans').single();
+    if (dbPlansStr && dbPlansStr.value) {
+      try {
+        setPlans(JSON.parse(dbPlansStr.value));
+      } catch (e) {
+        setPlans(DEFAULT_PLANS);
+      }
+    }
+  };
+
+  const handleInvest = async (plan: typeof DEFAULT_PLANS[0], index: number) => {
     if (!user) return;
     
     if (user.balance < plan.amount) {
@@ -104,7 +120,6 @@ export function Invest() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Investissements</h1>
-          <p className="text-gray-500 text-sm mt-1">Durée : 60 jours • Rendement : 15% / jour</p>
         </div>
         <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
       </header>
@@ -119,7 +134,7 @@ export function Invest() {
       )}
 
       <div className="space-y-4">
-        {PLANS.map((plan, idx) => (
+        {plans.map((plan, idx) => (
           <div key={idx} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
             <div className="h-32 w-full relative">
               <img src={plan.image} alt="Station" className="w-full h-full object-cover" referrerPolicy="no-referrer" />

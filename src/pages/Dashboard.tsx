@@ -2,21 +2,27 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { ArrowUpRight, ArrowDownRight, Wallet, Activity, Clock } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Wallet, Activity, MessageCircle, HeadphonesIcon, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 
 export function Dashboard() {
   const { user, refreshUser } = useAuthStore();
   const [activeInvestments, setActiveInvestments] = useState<any[]>([]);
-  const [transactions, setTransactions] = useState<any[]>([]);
   const [dailyGain, setDailyGain] = useState(0);
+  const [groupLink, setGroupLink] = useState('');
+  const [supportLink, setSupportLink] = useState('');
 
   useEffect(() => {
     refreshUser();
     fetchData();
   }, []);
+
+  const formatLink = (link: string, defaultLink: string) => {
+    if (!link) return defaultLink;
+    if (link.startsWith('@')) return `https://t.me/${link.substring(1)}`;
+    if (!link.startsWith('http')) return `https://${link}`;
+    return link;
+  };
 
   const fetchData = async () => {
     if (!user) return;
@@ -34,25 +40,38 @@ export function Dashboard() {
       setDailyGain(totalDaily);
     }
 
-    // Fetch recent transactions
-    const { data: txData } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(5);
-    
-    if (txData) {
-      setTransactions(txData);
+    const { data: groupData } = await supabase.from('settings').select('value').eq('key', 'group_link').single();
+    if (groupData && groupData.value) {
+      setGroupLink(formatLink(groupData.value, ''));
+    }
+
+    const { data: supportData, error } = await supabase.from('settings').select('value').eq('key', 'support_link').maybeSingle();
+    if (supportData && supportData.value) {
+      setSupportLink(formatLink(supportData.value, 'https://t.me/petrolimex_Agt'));
+    } else {
+      setSupportLink('https://t.me/petrolimex_Agt');
     }
   };
 
+  const getVipBadge = () => {
+    if (!user?.role || user.role === 'user' || user.role === 'admin') return null;
+    return (
+      <span className="ml-2 inline-flex items-center gap-1 bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+        <Crown className="w-3 h-3" />
+        {user.role}
+      </span>
+    );
+  };
+
   return (
-    <div className="p-6 space-y-6 pt-20">
+    <div className="p-6 space-y-6 pt-20 pb-24">
       <header className="flex justify-between items-center">
         <div>
           <p className="text-gray-500 text-sm">Bonjour,</p>
-          <h1 className="text-xl font-bold text-gray-900">{user?.first_name} {user?.last_name}</h1>
+          <h1 className="text-xl font-bold text-gray-900 flex items-center">
+            {user?.first_name} {user?.last_name}
+            {getVipBadge()}
+          </h1>
         </div>
         <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
       </header>
@@ -73,6 +92,33 @@ export function Dashboard() {
             Retrait
           </Link>
         </div>
+      </div>
+
+      {/* Links */}
+      <div className="grid grid-cols-2 gap-3">
+        {groupLink ? (
+          <a href={groupLink} target="_blank" rel="noopener noreferrer" className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 transition-colors">
+            <MessageCircle className="w-6 h-6 text-emerald-600" />
+            <span className="text-sm font-bold text-emerald-700">Rejoindre le groupe</span>
+          </a>
+        ) : (
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 opacity-50">
+            <MessageCircle className="w-6 h-6 text-gray-400" />
+            <span className="text-sm font-bold text-gray-500">Groupe indisponible</span>
+          </div>
+        )}
+
+        {supportLink ? (
+          <a href={supportLink} target="_blank" rel="noopener noreferrer" className="bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 transition-colors">
+            <HeadphonesIcon className="w-6 h-6 text-blue-600" />
+            <span className="text-sm font-bold text-blue-700">Service Client</span>
+          </a>
+        ) : (
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 opacity-50">
+            <HeadphonesIcon className="w-6 h-6 text-gray-400" />
+            <span className="text-sm font-bold text-gray-500">Service indisponible</span>
+          </div>
+        )}
       </div>
 
       {/* Stats */}
