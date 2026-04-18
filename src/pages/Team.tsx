@@ -85,13 +85,13 @@ export function Team() {
     
     try {
       // 1. Modern Clipboard API
-      if (navigator.clipboard) {
+      if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(referralLink);
         setCopyStatus('success');
         setTimeout(() => setCopyStatus('idle'), 3000);
         return;
       }
-      throw new Error("Clipboard API missing");
+      throw new Error("Clipboard API not available");
     } catch (err) {
       // 2. Fallback
       try {
@@ -108,9 +108,15 @@ export function Team() {
         const success = document.execCommand('copy');
         document.body.removeChild(textArea);
         
-        setCopyStatus(success ? 'success' : 'error');
+        if (success) {
+          setCopyStatus('success');
+        } else {
+          throw new Error("execCommand failed");
+        }
       } catch (fallbackErr) {
-        setCopyStatus('error');
+        // 3. ABSOLUTE FINAL FALLBACK: Native Prompt (100% reliable even in locked iframes)
+        window.prompt("Copiez votre lien de parrainage ci-dessous :", referralLink);
+        setCopyStatus('success'); // Assume success if they saw the prompt
       }
       setTimeout(() => setCopyStatus('idle'), 3000);
     }

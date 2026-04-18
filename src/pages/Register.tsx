@@ -12,7 +12,7 @@ export function Register() {
     country: 'Benin',
     password: '',
     confirmPassword: '',
-    referralCode: searchParams.get('ref') || ''
+    referralCode: (searchParams.get('ref') && searchParams.get('ref') !== 'undefined') ? searchParams.get('ref') : ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,7 +72,7 @@ export function Register() {
             country: formData.country,
             password_hash: formData.password, // In a real app, hash this!
             referral_code: myReferralCode,
-            referred_by: formData.referralCode || null,
+            referred_by: formData.referralCode ? formData.referralCode.trim().toUpperCase() : null,
             balance: 100 // Signup bonus
           }
         ])
