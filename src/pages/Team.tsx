@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
-import { Copy, CheckCircle2, Users, TrendingUp, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
+import { Copy, CheckCircle2, Users, TrendingUp, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -75,27 +75,28 @@ export function Team() {
     }
   };
 
-  const copyCode = () => {
-    if (user?.referral_code) {
-      navigator.clipboard.writeText(referralLink);
+  const copyCode = async () => {
+    if (!user?.referral_code) return;
+    
+    try {
+      await navigator.clipboard.writeText(referralLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    }
-  };
-  
-  const shareLink = async () => {
-    if (navigator.share) {
+    } catch (err) {
+      // Fallback for iframe restrictions
+      const textArea = document.createElement("textarea");
+      textArea.value = referralLink;
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
       try {
-        await navigator.share({
-          title: 'Rejoignez Petrolimex',
-          text: 'Inscrivez-vous sur Petrolimex avec mon lien de parrainage et commençons à gagner !',
-          url: referralLink,
-        });
-      } catch (err) {
-        console.error('Erreur lors du partage:', err);
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (fallbackErr) {
+        console.error('Fallback copy failed', fallbackErr);
       }
-    } else {
-      copyCode();
+      document.body.removeChild(textArea);
     }
   };
 
@@ -140,22 +141,32 @@ export function Team() {
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -mr-10 -mt-10"></div>
         
         <p className="text-gray-500 text-sm font-medium mb-2 relative z-10">Votre lien de parrainage unique</p>
-        <div className="flex items-center gap-2 mb-6 relative z-10">
-          <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-sm font-mono tracking-tight overflow-hidden text-ellipsis whitespace-nowrap">
-            {referralLink}
+        
+        <div className="flex flex-col gap-3 mb-6 relative z-10">
+          <div className="flex items-center gap-2">
+            <input 
+              readOnly
+              type="text"
+              value={referralLink}
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-sm font-mono tracking-tight focus:outline-none focus:border-emerald-500 transition-colors"
+            />
+            <button 
+              onClick={copyCode}
+              className="w-12 h-12 shrink-0 bg-gray-900 hover:bg-gray-800 rounded-xl flex items-center justify-center text-white transition-colors shadow-sm cursor-pointer"
+            >
+              {copied ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+            </button>
           </div>
-          <button 
-            onClick={copyCode}
-            className="w-12 h-12 shrink-0 bg-gray-900 hover:bg-gray-800 rounded-xl flex items-center justify-center text-white transition-colors shadow-sm cursor-pointer"
+          
+          <a 
+            href={`https://wa.me/?text=${encodeURIComponent("Inscrivez-vous sur Petrolimex avec mon lien de parrainage et commençons à gagner ! 🚀\n\n" + referralLink)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-colors shadow-sm"
           >
-            {copied ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
-          </button>
-          <button 
-            onClick={shareLink}
-            className="w-12 h-12 shrink-0 bg-emerald-500 hover:bg-emerald-600 rounded-xl flex items-center justify-center text-white transition-colors shadow-sm cursor-pointer"
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
+            <MessageCircle className="w-5 h-5" /> Partager sur WhatsApp
+          </a>
         </div>
 
         <div className="grid grid-cols-2 gap-4 relative z-10">
