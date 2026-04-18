@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
+import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { ArrowUpRight, ArrowDownRight, Wallet, Activity, MessageCircle, HeadphonesIcon, Crown, Loader2 } from 'lucide-react';
@@ -7,14 +8,28 @@ import { Link } from 'react-router-dom';
 
 export function Dashboard() {
   const { user, refreshUser } = useAuthStore();
-  const [activeInvestments, setActiveInvestments] = useState<any[]>([]);
+  const { settingsCache, setSettingsCache, investmentsCache, setInvestmentsCache } = useAppStore();
+  
+  const [activeInvestments, setActiveInvestments] = useState<any[]>(investmentsCache || []);
   const [dailyGain, setDailyGain] = useState(0);
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Only show loader if we have NO cached data
+  const [isLoading, setIsLoading] = useState(!settingsCache || !investmentsCache);
 
   useEffect(() => {
     refreshUser();
+    
+    // Apply cached data immediately if available
+    if (investmentsCache) {
+      const totalDaily = investmentsCache.reduce((acc, curr) => acc + Number(curr.daily_yield), 0);
+      setDailyGain(totalDaily);
+    }
+    if (settingsCache) {
+      applySettings(settingsCache);
+    }
+
     fetchData();
   }, []);
 
@@ -24,10 +39,23 @@ export function Dashboard() {
     if (!link.startsWith('http')) return `https://${link}`;
     return link;
   };
+  
+  const applySettings = (data: any[]) => {
+    const groupData = data.find(s => s.key === 'group_link');
+    const supportData = data.find(s => s.key === 'support_link');
+
+    if (groupData?.value) {
+      setGroupLink(formatLink(groupData.value, ''));
+    }
+    if (supportData?.value) {
+      setSupportLink(formatLink(supportData.value, 'https://t.me/petrolimex_Agt'));
+    } else {
+      setSupportLink('https://t.me/petrolimex_Agt');
+    }
+  };
 
   const fetchData = async () => {
     if (!user) return;
-    setIsLoading(true);
 
     try {
       const [invRes, settingsRes] = await Promise.all([
@@ -37,22 +65,14 @@ export function Dashboard() {
 
       if (invRes.data) {
         setActiveInvestments(invRes.data);
+        setInvestmentsCache(invRes.data);
         const totalDaily = invRes.data.reduce((acc, curr) => acc + Number(curr.daily_yield), 0);
         setDailyGain(totalDaily);
       }
 
       if (settingsRes.data) {
-        const groupData = settingsRes.data.find(s => s.key === 'group_link');
-        const supportData = settingsRes.data.find(s => s.key === 'support_link');
-
-        if (groupData?.value) {
-          setGroupLink(formatLink(groupData.value, ''));
-        }
-        if (supportData?.value) {
-          setSupportLink(formatLink(supportData.value, 'https://t.me/petrolimex_Agt'));
-        } else {
-          setSupportLink('https://t.me/petrolimex_Agt');
-        }
+        setSettingsCache(settingsRes.data);
+        applySettings(settingsRes.data);
       }
     } catch (err) {
       console.error(err);

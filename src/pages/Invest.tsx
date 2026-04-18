@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
+import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
@@ -11,28 +12,25 @@ const DEFAULT_PLANS = [
   { amount: 15000, daily: 2250, total: 135000, image: 'https://images.unsplash.com/photo-1605374668853-2d2d6d841b52?auto=format&fit=crop&q=80&w=800' },
   { amount: 20000, daily: 3000, total: 180000, image: 'https://images.unsplash.com/photo-1542396601-dca920ea2807?auto=format&fit=crop&q=80&w=800' },
   { amount: 30000, daily: 4500, total: 270000, image: 'https://images.unsplash.com/photo-1580901368919-7738efb0f87e?auto=format&fit=crop&q=80&w=800' },
-  { amount: 40000, daily: 6000, total: 360000, image: 'https://images.unsplash.com/photo-1613521140712-1ce809e6c646?auto=format&fit=crop&q=80&w=800' },
-  { amount: 50000, daily: 7500, total: 450000, image: 'https://images.unsplash.com/photo-1512402986470-8772a0c64998?auto=format&fit=crop&q=80&w=800' },
-  { amount: 75000, daily: 11250, total: 675000, image: 'https://images.unsplash.com/photo-1590496793907-471d09cb2c4b?auto=format&fit=crop&q=80&w=800' },
-  { amount: 100000, daily: 15000, total: 900000, image: 'https://images.unsplash.com/photo-1550005809-91ad75fb315f?auto=format&fit=crop&q=80&w=800' },
-  { amount: 150000, daily: 22500, total: 1350000, image: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80&w=800' },
-  { amount: 200000, daily: 30000, total: 1800000, image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=800' },
 ];
 
 export function Invest() {
   const { user, refreshUser } = useAuthStore();
+  const { settingsCache, setSettingsCache } = useAppStore();
   const [plans, setPlans] = useState<any[]>([]);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(!settingsCache);
   const [loading, setLoading] = useState<number | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
   useEffect(() => {
+    if (settingsCache) {
+      applyPlans(settingsCache);
+    }
     fetchPlans();
   }, []);
 
-  const fetchPlans = async () => {
-    setIsInitializing(true);
-    const { data: dbPlansStr } = await supabase.from('settings').select('value').eq('key', 'investment_plans').maybeSingle();
+  const applyPlans = (data: any[]) => {
+    const dbPlansStr = data.find(s => s.key === 'investment_plans');
     if (dbPlansStr && dbPlansStr.value) {
       try {
         setPlans(JSON.parse(dbPlansStr.value));
@@ -40,6 +38,16 @@ export function Invest() {
         setPlans(DEFAULT_PLANS);
       }
     } else {
+      setPlans(DEFAULT_PLANS);
+    }
+  };
+
+  const fetchPlans = async () => {
+    const { data: dbPlansStr } = await supabase.from('settings').select('*');
+    if (dbPlansStr) {
+      setSettingsCache(dbPlansStr);
+      applyPlans(dbPlansStr);
+    } else if (!settingsCache) {
       setPlans(DEFAULT_PLANS);
     }
     setIsInitializing(false);
