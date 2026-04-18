@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 const DEFAULT_PLANS = [
   { amount: 2500, daily: 375, total: 22500, image: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800' },
@@ -21,7 +21,8 @@ const DEFAULT_PLANS = [
 
 export function Invest() {
   const { user, refreshUser } = useAuthStore();
-  const [plans, setPlans] = useState<any[]>(DEFAULT_PLANS);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [loading, setLoading] = useState<number | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
@@ -30,14 +31,18 @@ export function Invest() {
   }, []);
 
   const fetchPlans = async () => {
-    const { data: dbPlansStr } = await supabase.from('settings').select('value').eq('key', 'investment_plans').single();
+    setIsInitializing(true);
+    const { data: dbPlansStr } = await supabase.from('settings').select('value').eq('key', 'investment_plans').maybeSingle();
     if (dbPlansStr && dbPlansStr.value) {
       try {
         setPlans(JSON.parse(dbPlansStr.value));
       } catch (e) {
         setPlans(DEFAULT_PLANS);
       }
+    } else {
+      setPlans(DEFAULT_PLANS);
     }
+    setIsInitializing(false);
   };
 
   const handleInvest = async (plan: typeof DEFAULT_PLANS[0], index: number) => {
@@ -116,7 +121,7 @@ export function Invest() {
   };
 
   return (
-    <div className="p-6 space-y-6 pt-20">
+    <div className="p-6 space-y-6 pt-20 pb-24">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Investissements</h1>
@@ -133,40 +138,46 @@ export function Invest() {
         </div>
       )}
 
-      <div className="space-y-4">
-        {plans.map((plan, idx) => (
-          <div key={idx} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
-            <div className="h-32 w-full relative">
-              <img src={plan.image} alt="Station" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
-              <div className="absolute bottom-4 left-4">
-                <p className="text-white font-bold text-2xl">{formatCurrency(plan.amount)}</p>
-              </div>
-            </div>
-            
-            <div className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-gray-500 text-xs font-medium mb-1">Gain Journalier</p>
-                  <p className="text-emerald-500 font-bold">{formatCurrency(plan.daily)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-xs font-medium mb-1">Revenu Total</p>
-                  <p className="text-gray-900 font-bold">{formatCurrency(plan.total)}</p>
+      {isInitializing ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+        </div>
+      ) : (
+        <div className="space-y-4 animate-slide-up">
+          {plans.map((plan, idx) => (
+            <div key={idx} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
+              <div className="h-32 w-full relative">
+                <img src={plan.image} alt="Station" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
+                <div className="absolute bottom-4 left-4">
+                  <p className="text-white font-bold text-2xl">{formatCurrency(plan.amount)}</p>
                 </div>
               </div>
               
-              <button
-                onClick={() => handleInvest(plan, idx)}
-                disabled={loading === idx || (user?.balance || 0) < plan.amount}
-                className="w-full py-3 rounded-xl font-medium transition-colors disabled:opacity-50 bg-emerald-500 hover:bg-emerald-600 text-white"
-              >
-                {loading === idx ? 'Traitement...' : 'Investir maintenant'}
-              </button>
+              <div className="p-5 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-gray-500 text-xs font-medium mb-1">Gain Journalier</p>
+                    <p className="text-emerald-500 font-bold">{formatCurrency(plan.daily)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs font-medium mb-1">Revenu Total</p>
+                    <p className="text-gray-900 font-bold">{formatCurrency(plan.total)}</p>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => handleInvest(plan, idx)}
+                  disabled={loading === idx || (user?.balance || 0) < plan.amount}
+                  className="w-full py-3 rounded-xl font-medium transition-colors disabled:opacity-50 bg-emerald-500 hover:bg-emerald-600 text-white flex justify-center items-center"
+                >
+                  {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Investir maintenant'}
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

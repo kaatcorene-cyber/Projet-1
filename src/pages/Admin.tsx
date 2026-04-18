@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -22,6 +22,7 @@ export function Admin() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('users');
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const [transactions, setTransactions] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
@@ -56,40 +57,44 @@ export function Admin() {
   }, [user, navigate]);
 
   const fetchData = async () => {
-    const { data: txs } = await supabase
-      .from('transactions')
-      .select('*, users(first_name, last_name, phone)')
-      .in('type', ['deposit', 'withdrawal'])
-      .order('created_at', { ascending: false });
-    
-    if (txs) setTransactions(txs);
+    setIsInitializing(true);
+    try {
+      const [txsRes, usersRes, settingsRes] = await Promise.all([
+        supabase.from('transactions').select('*, users(first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
+        supabase.from('users').select('*').order('created_at', { ascending: false }),
+        supabase.from('settings').select('*')
+      ]);
 
-    const { data: usersData } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-    if (usersData) setUsersList(usersData);
+      if (txsRes.data) setTransactions(txsRes.data);
+      if (usersRes.data) setUsersList(usersRes.data);
 
-    const { data: settingsData } = await supabase.from('settings').select('*');
-    if (settingsData) {
-      const link = settingsData.find(s => s.key === 'payment_link');
-      if (link) setPaymentLink(link.value);
-      
-      const grp = settingsData.find(s => s.key === 'group_link');
-      if (grp) setGroupLink(grp.value);
+      if (settingsRes.data) {
+        const link = settingsRes.data.find(s => s.key === 'payment_link');
+        if (link) setPaymentLink(link.value);
+        
+        const grp = settingsRes.data.find(s => s.key === 'group_link');
+        if (grp) setGroupLink(grp.value);
 
-      const sup = settingsData.find(s => s.key === 'support_link');
-      if (sup) setSupportLink(sup.value);
+        const sup = settingsRes.data.find(s => s.key === 'support_link');
+        if (sup) setSupportLink(sup.value);
 
-      const dbPlansStr = settingsData.find(s => s.key === 'investment_plans');
-      if (dbPlansStr && dbPlansStr.value) {
-        try {
-          setPlans(JSON.parse(dbPlansStr.value));
-        } catch (e) {
+        const dbPlansStr = settingsRes.data.find(s => s.key === 'investment_plans');
+        if (dbPlansStr && dbPlansStr.value) {
+          try {
+            setPlans(JSON.parse(dbPlansStr.value));
+          } catch (e) {
+            setPlans(DEFAULT_PLANS);
+          }
+        } else {
           setPlans(DEFAULT_PLANS);
         }
       } else {
         setPlans(DEFAULT_PLANS);
       }
-    } else {
-      setPlans(DEFAULT_PLANS);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsInitializing(false);
     }
   };
 
@@ -416,7 +421,11 @@ export function Admin() {
 
           <div className="space-y-3">
             <h3 className="text-gray-900 font-bold px-1">Plans actuels ({plans.length})</h3>
-            {plans.map((p, idx) => (
+            {isInitializing ? (
+               <div className="flex justify-center p-4">
+                  <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+               </div>
+            ) : plans.map((p, idx) => (
               <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
                 <div className="flex items-center gap-4">
                   <img src={p.image} className="w-12 h-12 rounded-xl object-cover bg-gray-100" alt="" referrerPolicy="no-referrer" />

@@ -25,25 +25,24 @@ export function Team() {
   const fetchTeamStats = async () => {
     if (!user) return;
 
-    // Level 1
-    const { data: l1 } = await supabase.from('users').select('id, referral_code').eq('referred_by', user.referral_code);
-    const l1Count = l1?.length || 0;
-    
-    // Total bonuses
-    const { data: bonuses } = await supabase
-      .from('transactions')
-      .select('amount')
-      .eq('user_id', user.id)
-      .eq('type', 'referral_bonus');
-      
-    const totalBonus = bonuses?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0;
+    try {
+      const [l1Res, bonusesRes] = await Promise.all([
+        supabase.from('users').select('id, referral_code').eq('referred_by', user.referral_code),
+        supabase.from('transactions').select('amount').eq('user_id', user.id).eq('type', 'referral_bonus')
+      ]);
 
-    setTeamStats({
-      level1: l1Count,
-      level2: 0, // Simplified for prototype
-      level3: 0, // Simplified for prototype
-      totalBonus
-    });
+      const l1Count = l1Res.data?.length || 0;
+      const totalBonus = bonusesRes.data?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0;
+
+      setTeamStats({
+        level1: l1Count,
+        level2: 0, // Simplified for prototype
+        level3: 0, // Simplified for prototype
+        totalBonus
+      });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const copyCode = () => {

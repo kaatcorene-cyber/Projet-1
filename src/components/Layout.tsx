@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { BottomNav } from './BottomNav';
@@ -8,12 +8,14 @@ import { supabase } from '../lib/supabase';
 export function Layout() {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const hasCheckedYields = useRef(false);
 
   useEffect(() => {
-    if (user) {
+    if (user?.id && !hasCheckedYields.current) {
+      hasCheckedYields.current = true;
       processDailyYields(user.id);
     }
-  }, [user]);
+  }, [user?.id]);
 
   const processDailyYields = async (userId: string) => {
     try {
