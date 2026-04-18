@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
-import { Copy, CheckCircle2, Users, TrendingUp, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
+import { Copy, CheckCircle2, Users, TrendingUp, ChevronDown, ChevronUp, MessageCircle, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -10,7 +10,7 @@ import { fr } from 'date-fns/locale';
 export function Team() {
   const { user } = useAuthStore();
   const { teamStatsCache, setTeamStatsCache } = useAppStore();
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [teamStats, setTeamStats] = useState({
     level1: teamStatsCache?.level1 || ([] as any[]),
     level2: teamStatsCache?.level2 || ([] as any[]),
@@ -21,7 +21,12 @@ export function Team() {
   const [expandedLevel, setExpandedLevel] = useState<number | null>(1);
   const [isLoading, setIsLoading] = useState(!teamStatsCache);
 
-  const referralLink = `${window.location.origin}/register?ref=${user?.referral_code}`;
+  // Auto-correct the domain for sharing so outside users don't hit the private AI Studio dev wall
+  let baseLink = window.location.origin;
+  if (baseLink.includes('ais-dev-')) {
+    baseLink = baseLink.replace('ais-dev-', 'ais-pre-');
+  }
+  const referralLink = `${baseLink}/register?ref=${user?.referral_code}`;
 
   useEffect(() => {
     if (user) {
@@ -79,24 +84,35 @@ export function Team() {
     if (!user?.referral_code) return;
     
     try {
-      await navigator.clipboard.writeText(referralLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      // Fallback for iframe restrictions
-      const textArea = document.createElement("textarea");
-      textArea.value = referralLink;
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      try {
-        document.execCommand('copy');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch (fallbackErr) {
-        console.error('Fallback copy failed', fallbackErr);
+      // 1. Modern Clipboard API
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(referralLink);
+        setCopyStatus('success');
+        setTimeout(() => setCopyStatus('idle'), 3000);
+        return;
       }
-      document.body.removeChild(textArea);
+      throw new Error("Clipboard API missing");
+    } catch (err) {
+      // 2. Fallback
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = referralLink;
+        textArea.style.position = 'fixed';
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        const success = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        setCopyStatus(success ? 'success' : 'error');
+      } catch (fallbackErr) {
+        setCopyStatus('error');
+      }
+      setTimeout(() => setCopyStatus('idle'), 3000);
     }
   };
 
@@ -140,33 +156,42 @@ export function Team() {
       <div className="bg-white border border-gray-100 rounded-3xl p-6 relative overflow-hidden shadow-sm">
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -mr-10 -mt-10"></div>
         
-        <p className="text-gray-500 text-sm font-medium mb-2 relative z-10">Votre lien de parrainage unique</p>
+        <p className="text-gray-500 text-sm font-medium mb-3 relative z-10">Votre lien de parrainage unique</p>
         
         <div className="flex flex-col gap-3 mb-6 relative z-10">
-          <div className="flex items-center gap-2">
+          <div className="w-full">
             <input 
               readOnly
               type="text"
               value={referralLink}
               onClick={(e) => (e.target as HTMLInputElement).select()}
-              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-sm font-mono tracking-tight focus:outline-none focus:border-emerald-500 transition-colors"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-gray-900 text-sm font-mono tracking-tight focus:outline-none focus:border-emerald-500 transition-colors mb-2 text-center"
             />
             <button 
               onClick={copyCode}
-              className="w-12 h-12 shrink-0 bg-gray-900 hover:bg-gray-800 rounded-xl flex items-center justify-center text-white transition-colors shadow-sm cursor-pointer"
+              className="w-full py-4 bg-gray-900 hover:bg-gray-800 rounded-xl flex items-center justify-center gap-2 text-white font-medium transition-colors shadow-sm cursor-pointer"
             >
-              {copied ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+              {copyStatus === 'success' ? (
+                <>
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" /> Lien copié !
+                </>
+              ) : (
+                <>
+                  <Copy className="w-5 h-5" /> Copier mon lien
+                </>
+              )}
             </button>
           </div>
           
-          <a 
-            href={`https://wa.me/?text=${encodeURIComponent("Inscrivez-vous sur Petrolimex avec mon lien de parrainage et commençons à gagner ! 🚀\n\n" + referralLink)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-colors shadow-sm"
-          >
-            <MessageCircle className="w-5 h-5" /> Partager sur WhatsApp
-          </a>
+          {/* Status message */}
+          {copyStatus === 'error' && (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+              <p className="text-amber-700 text-xs font-medium flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> 
+                <span>Cliquez sur le lien gris au-dessus, maintenez votre doigt appuyé, puis sélectionnez "Copier".</span>
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4 relative z-10">
