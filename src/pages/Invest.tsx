@@ -97,24 +97,37 @@ export function Invest() {
         status: 'completed'
       }]);
 
-      // 4. Handle Referrals (simplified for prototype)
+      // 4. Handle Referrals (3 Levels Cascade)
       if (user.referred_by) {
-        // Find referrer
-        const { data: referrer } = await supabase
-          .from('users')
-          .select('id, balance')
-          .eq('referral_code', user.referred_by)
-          .single();
+        // Level 1 (25%)
+        const { data: level1 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', user.referred_by).maybeSingle();
         
-        if (referrer) {
-          const bonus = plan.amount * 0.25; // 25% level 1
-          await supabase.from('users').update({ balance: referrer.balance + bonus }).eq('id', referrer.id);
-          await supabase.from('transactions').insert([{
-            user_id: referrer.id,
-            type: 'referral_bonus',
-            amount: bonus,
-            status: 'completed'
-          }]);
+        if (level1) {
+          const l1Bonus = plan.amount * 0.25;
+          await supabase.from('users').update({ balance: level1.balance + l1Bonus }).eq('id', level1.id);
+          await supabase.from('transactions').insert([{ user_id: level1.id, type: 'referral_bonus', amount: l1Bonus, status: 'completed' }]);
+
+          // Level 2 (3%)
+          if (level1.referred_by) {
+            const { data: level2 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', level1.referred_by).maybeSingle();
+            
+            if (level2) {
+              const l2Bonus = plan.amount * 0.03;
+              await supabase.from('users').update({ balance: level2.balance + l2Bonus }).eq('id', level2.id);
+              await supabase.from('transactions').insert([{ user_id: level2.id, type: 'referral_bonus', amount: l2Bonus, status: 'completed' }]);
+
+              // Level 3 (1%)
+              if (level2.referred_by) {
+                const { data: level3 } = await supabase.from('users').select('id, balance').eq('referral_code', level2.referred_by).maybeSingle();
+                
+                if (level3) {
+                  const l3Bonus = plan.amount * 0.01;
+                  await supabase.from('users').update({ balance: level3.balance + l3Bonus }).eq('id', level3.id);
+                  await supabase.from('transactions').insert([{ user_id: level3.id, type: 'referral_bonus', amount: l3Bonus, status: 'completed' }]);
+                }
+              }
+            }
+          }
         }
       }
 
