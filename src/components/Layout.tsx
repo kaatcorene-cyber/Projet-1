@@ -19,10 +19,11 @@ export function Layout() {
 
   const processDailyYields = async (userId: string) => {
     try {
-      const { data: investments } = await supabase.from('investments').eq('user_id', userId).eq('status', 'active');
+      const { data: investments } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
       if (!investments || investments.length === 0) return;
 
       const { data: gains } = await supabase.from('transactions')
+          .select('*')
           .eq('user_id', userId)
           .eq('type', 'daily_gain');
 

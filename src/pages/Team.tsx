@@ -26,7 +26,11 @@ export function Team() {
   if (baseLink.includes('ais-dev-')) {
     baseLink = baseLink.replace('ais-dev-', 'ais-pre-');
   }
-  const referralLink = `${baseLink}/register?ref=${user?.referral_code}`;
+  let pathName = window.location.pathname;
+  if (!pathName.endsWith('/')) {
+     pathName += '/';
+  }
+  const referralLink = `${baseLink}${pathName}#/register?ref=${user?.referral_code}`;
 
   useEffect(() => {
     if (user) {
