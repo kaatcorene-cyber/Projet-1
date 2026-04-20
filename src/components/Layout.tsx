@@ -31,9 +31,9 @@ export function Layout() {
       const newTransactions: any[] = [];
 
       for (const inv of investments) {
-          const createdAt = new Date(inv.created_at).getTime();
+          const startDate = new Date(inv.start_date || inv.created_at || Date.now()).getTime();
           const now = Date.now();
-          const daysElapsed = Math.floor((now - createdAt) / (24 * 60 * 60 * 1000));
+          const daysElapsed = Math.floor((now - startDate) / (24 * 60 * 60 * 1000));
 
           const paidCount = gains?.filter(g => g.reference === inv.id).length || 0;
           const missedDays = daysElapsed - paidCount;
@@ -75,8 +75,8 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 pb-16 font-sans">
-      <main className="max-w-md mx-auto min-h-screen bg-gray-50 relative shadow-2xl">
+    <div className="min-h-screen text-white pb-16 font-sans">
+      <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden">
         {/* Top Mini Header for Admin and Logout */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
           {user?.role === 'admin' && (

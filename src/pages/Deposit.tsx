@@ -48,10 +48,10 @@ export function Deposit() {
   return (
     <div className="p-6 space-y-6 pt-20">
       <header className="flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-900 shadow-sm hover:bg-gray-50 transition-colors">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors hover:bg-white/30">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Recharger le compte</h1>
+        <h1 className="text-2xl font-bold text-white">Recharger le compte</h1>
       </header>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -62,12 +62,12 @@ export function Deposit() {
         )}
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500 ml-1">Montant à recharger (FCFA)</label>
+          <label className="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Montant à recharger (FCFA)</label>
           <input
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-sm"
+            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-gray-900 focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
             placeholder="Ex: 5000"
             required
             min="100"
@@ -75,12 +75,12 @@ export function Deposit() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500 ml-1">Numéro de téléphone payeur</label>
+          <label className="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Numéro de téléphone payeur</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all shadow-sm"
+            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-gray-900 focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
             placeholder="Ex: 0123456789"
             required
           />
@@ -89,7 +89,7 @@ export function Deposit() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 rounded-xl mt-6 transition-colors disabled:opacity-50 shadow-sm"
+          className="w-full bg-gray-900 hover:bg-black text-white font-bold py-4 rounded-xl mt-6 transition-all duration-300 disabled:opacity-50 shadow-md active:scale-95"
         >
           {loading ? 'Chargement...' : 'Recharger'}
         </button>

@@ -145,9 +145,11 @@ export function Invest() {
     <div className="p-6 space-y-6 pt-20 pb-24">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Investissements</h1>
+          <h1 className="text-2xl font-bold text-white">Investissements</h1>
         </div>
-        <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
+        <div className="bg-white/20 p-1.5 rounded-xl backdrop-blur-md">
+          <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
+        </div>
       </header>
 
       {message && (
@@ -166,23 +168,23 @@ export function Invest() {
       ) : (
         <div className="space-y-4 animate-slide-up">
           {plans.map((plan, idx) => (
-            <div key={idx} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
-              <div className="h-32 w-full relative">
-                <img src={plan.image} alt="Station" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <div key={idx} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group">
+              <div className="h-32 w-full relative overflow-hidden">
+                <img src={plan.image} alt="Station" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
                 <div className="absolute bottom-4 left-4">
-                  <p className="text-white font-bold text-2xl">{formatCurrency(plan.amount)}</p>
+                  <p className="text-white font-bold text-2xl drop-shadow-md">{formatCurrency(plan.amount)}</p>
                 </div>
               </div>
               
               <div className="p-5 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-gray-500 text-xs font-medium mb-1">Gain Journalier</p>
+                    <p className="text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Gain Journalier</p>
                     <p className="text-emerald-500 font-bold">{formatCurrency(plan.daily)}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs font-medium mb-1">Revenu Total</p>
+                    <p className="text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Revenu Total</p>
                     <p className="text-gray-900 font-bold">{formatCurrency(plan.total)}</p>
                   </div>
                 </div>
@@ -190,7 +192,7 @@ export function Invest() {
                 <button
                   onClick={() => handleInvest(plan, idx)}
                   disabled={loading === idx || (user?.balance || 0) < plan.amount}
-                  className="w-full py-3 rounded-xl font-medium transition-colors disabled:opacity-50 bg-emerald-500 hover:bg-emerald-600 text-white flex justify-center items-center"
+                  className="w-full py-3 rounded-xl font-bold transition-all duration-300 disabled:opacity-50 bg-gray-900 hover:bg-black text-white flex justify-center items-center active:scale-95 shadow-md hover:shadow-lg disabled:hover:scale-100 disabled:active:scale-100"
                 >
                   {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Investir maintenant'}
                 </button>

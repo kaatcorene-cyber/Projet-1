@@ -2,8 +2,18 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply text-white;
+    background: linear-gradient(-45deg, #10b981, #0ea5e9, #0f172a, #059669);
+    background-size: 400% 400%;
+    animation: moveGradient 12s ease infinite;
+    background-attachment: fixed;
   }
+}
+
+@keyframes moveGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 @theme {

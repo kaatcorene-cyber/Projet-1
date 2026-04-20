@@ -33,22 +33,24 @@ export function History() {
     <div className="p-6 space-y-6 pt-20">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Historique</h1>
-          <p className="text-gray-500 text-sm mt-1">Toutes vos transactions</p>
+          <h1 className="text-2xl font-bold text-white">Historique</h1>
+          <p className="text-white/80 text-sm mt-1">Toutes vos transactions</p>
         </div>
-        <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
+        <div className="bg-white/20 p-1.5 rounded-xl backdrop-blur-md">
+          <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
+        </div>
       </header>
 
       <div className="space-y-3">
         {transactions.length === 0 ? (
-          <div className="text-center py-8 text-gray-400 text-sm bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="text-center py-10 text-gray-500 text-sm font-medium bg-white rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
             Aucune transaction
           </div>
         ) : (
           transactions.map((tx) => (
-            <div key={tx.id} className="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex items-center justify-between">
+            <div key={tx.id} className="bg-white border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl p-4 flex items-center justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 cursor-pointer group">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
                   tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
                     ? 'bg-emerald-50 text-emerald-500' 
                     : 'bg-red-50 text-red-500'

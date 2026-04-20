@@ -6,7 +6,7 @@ import { Droplet } from 'lucide-react';
 
 export function Login() {
   const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState('Benin');
+  const [country] = useState("Cote d'Ivoire");
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,13 +27,19 @@ export function Login() {
     const cleanPhone = phone.replace(/\s/g, ''); // Fix spaces in phone numbers
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('users')
         .select('*')
         .eq('phone', cleanPhone)
-        .eq('country', country)
-        .eq('password_hash', password)
-        .single();
+        .eq('password_hash', password);
+        
+      // If it's not the default admin phone, strictly enforce Côte d'Ivoire.
+      // This allows the admin account (which was originally registered as 'Benin') to log in gracefully.
+      if (cleanPhone !== '0000000000') {
+        query = query.eq('country', country);
+      }
+
+      const { data, error } = await query.single();
 
       if (error || !data) {
         console.error("Login error:", error);
@@ -59,73 +65,68 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col justify-center px-6 max-w-md mx-auto relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-full h-64 bg-emerald-50 rounded-b-[100px] blur-3xl -z-10"></div>
-      
-      <div className="text-center mb-10 flex flex-col items-center">
-        <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-[70px] mb-4 object-contain" referrerPolicy="no-referrer" />
+    <div className="min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto relative overflow-hidden text-white">
+      {/* Container matches animated dark theme */}
+      <div className="text-center mb-8 flex flex-col items-center">
+        <div className="bg-white p-4 rounded-3xl shadow-xl mb-6 relative">
+          <div className="absolute inset-0 bg-emerald-500 blur-xl rounded-full opacity-50"></div>
+          <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-[60px] object-contain relative z-10" referrerPolicy="no-referrer" />
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Bienvenue</h1>
+        <p className="text-white/80 text-sm">Connectez-vous à votre compte</p>
       </div>
 
-      <form onSubmit={handleLogin} className="space-y-4">
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm text-center">
-            {error}
+      <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl">
+        <form onSubmit={handleLogin} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-100 text-sm text-center">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-white/70 ml-1 uppercase tracking-wider">Téléphone</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 font-bold border-r border-white/20 pr-3">+225</span>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/^\+225/, ''))}
+                className="w-full bg-white/10 border border-white/20 rounded-xl pl-16 pr-4 py-3 text-white focus:outline-none focus:bg-white/20 focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-all placeholder:text-white/40 font-medium tracking-wide"
+                placeholder="0123456789"
+                required
+              />
+            </div>
           </div>
-        )}
-        
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500 ml-1">Pays</label>
-          <select
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all appearance-none"
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-white/70 ml-1 uppercase tracking-wider">Mot de passe</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:bg-white/20 focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-all placeholder:text-white/40 font-medium"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-white text-emerald-900 hover:bg-gray-100 font-bold py-4 rounded-xl mt-6 transition-all shadow-lg active:scale-95 disabled:opacity-50"
           >
-            <option value="Benin">Bénin</option>
-            <option value="Togo">Togo</option>
-            <option value="Cote d'Ivoire">Côte d'Ivoire</option>
-          </select>
-        </div>
+            {loading ? 'Connexion...' : 'Se connecter'}
+          </button>
+        </form>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500 ml-1">Numéro de téléphone</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-            placeholder="Ex: 0123456789"
-            required
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500 ml-1">Mot de passe</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
-            placeholder="••••••••"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 rounded-xl mt-6 transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Connexion...' : 'Se connecter'}
-        </button>
-      </form>
-
-      <p className="text-center text-gray-500 text-sm mt-8">
-        Pas encore de compte ?{' '}
-        <Link to="/register" className="text-emerald-600 hover:text-emerald-700 font-medium tracking-wide">
-          S'inscrire
-        </Link>
-      </p>
+        <p className="text-center text-white/70 text-sm mt-8">
+          Pas encore de compte ?{' '}
+          <Link to="/register" className="text-white hover:text-emerald-300 font-bold tracking-wide transition-colors">
+            S'inscrire
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

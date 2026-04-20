@@ -26,11 +26,7 @@ export function Team() {
   if (baseLink.includes('ais-dev-')) {
     baseLink = baseLink.replace('ais-dev-', 'ais-pre-');
   }
-  let pathName = window.location.pathname;
-  if (!pathName.endsWith('/')) {
-     pathName += '/';
-  }
-  const referralLink = `${baseLink}${pathName}#/register?ref=${user?.referral_code}`;
+  const referralLink = `${baseLink}/register?ref=${user?.referral_code}`;
 
   useEffect(() => {
     if (user) {
@@ -130,12 +126,12 @@ export function Team() {
 
   const renderMemberList = (members: any[]) => {
     if (members.length === 0) {
-      return <p className="text-sm text-gray-500 py-2 text-center bg-gray-50 rounded-xl mt-2">Aucun membre à ce niveau.</p>;
+      return <p className="text-sm text-gray-500 py-2 text-center bg-gray-50 rounded-xl mt-2 border border-gray-100">Aucun membre à ce niveau.</p>;
     }
     return (
       <div className="mt-3 space-y-2">
         {members.map(member => (
-          <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+          <div key={member.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-[0_2px_8px_rgb(0,0,0,0.02)] hover:shadow-md transition-shadow">
             <div>
               <p className="font-medium text-gray-900 text-sm">
                 {member.first_name} {member.last_name}
@@ -157,16 +153,18 @@ export function Team() {
     <div className="p-6 space-y-6 pt-20 pb-24 min-h-screen">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mon Équipe</h1>
-          <p className="text-gray-500 text-sm mt-1">Gagnez jusqu'à 29% de commissions</p>
+          <h1 className="text-2xl font-bold text-white">Mon Équipe</h1>
+          <p className="text-white/80 text-sm mt-1">Gagnez jusqu'à 29% de commissions</p>
         </div>
-        <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
+        <div className="bg-white/20 p-1.5 rounded-xl backdrop-blur-md">
+          <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
+        </div>
       </header>
 
-      <div className="bg-white border border-gray-100 rounded-3xl p-6 relative overflow-hidden shadow-sm">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -mr-10 -mt-10"></div>
+      <div className="bg-white border border-gray-100 rounded-3xl p-6 relative overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg transition-shadow duration-300">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
         
-        <p className="text-gray-500 text-sm font-medium mb-3 relative z-10">Votre lien de parrainage unique</p>
+        <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-3 relative z-10">Votre lien de parrainage unique</p>
         
         <div className="flex flex-col gap-3 mb-6 relative z-10">
           <div className="w-full">
@@ -205,31 +203,31 @@ export function Team() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 relative z-10">
-          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 transition-all duration-300 hover:bg-white hover:shadow-md cursor-default">
             <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center mb-2">
               <TrendingUp className="w-4 h-4 text-emerald-600" />
             </div>
-            <p className="text-gray-500 text-xs font-medium mb-1">Gains Parrainage</p>
+            <p className="text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Gains</p>
             <p className="text-lg font-bold text-emerald-600">{formatCurrency(teamStats.totalBonus)}</p>
           </div>
-          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 transition-all duration-300 hover:bg-white hover:shadow-md cursor-default">
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
               <Users className="w-4 h-4 text-blue-600" />
             </div>
-            <p className="text-gray-500 text-xs font-medium mb-1">Taille Équipe</p>
+            <p className="text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Membres</p>
             <p className="text-lg font-bold text-gray-900">{totalMembers}</p>
           </div>
         </div>
       </div>
 
       <div className="space-y-4 animate-slide-up">
-        <h3 className="text-lg font-bold text-gray-900">Membres de l'équipe</h3>
+        <h3 className="text-lg font-bold text-white mb-2">Membres de l'équipe</h3>
         
         {/* LEVEL 1 */}
-        <div className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden transition-all">
+        <div className="bg-white border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-md">
           <button 
             onClick={() => setExpandedLevel(expandedLevel === 1 ? null : 1)}
-            className="w-full p-4 flex items-center justify-between bg-white cursor-pointer"
+            className="w-full p-4 flex items-center justify-between bg-transparent cursor-pointer"
           >
             <div className="text-left">
               <div className="flex items-center gap-2">
@@ -251,10 +249,10 @@ export function Team() {
         </div>
 
         {/* LEVEL 2 */}
-        <div className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden transition-all">
+        <div className="bg-white border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-md">
           <button 
             onClick={() => setExpandedLevel(expandedLevel === 2 ? null : 2)}
-            className="w-full p-4 flex items-center justify-between bg-white cursor-pointer"
+            className="w-full p-4 flex items-center justify-between bg-transparent cursor-pointer"
           >
             <div className="text-left">
               <div className="flex items-center gap-2">
@@ -276,10 +274,10 @@ export function Team() {
         </div>
 
         {/* LEVEL 3 */}
-        <div className="bg-white border border-gray-100 shadow-sm rounded-2xl overflow-hidden transition-all">
+        <div className="bg-white border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-md">
           <button 
             onClick={() => setExpandedLevel(expandedLevel === 3 ? null : 3)}
-            className="w-full p-4 flex items-center justify-between bg-white cursor-pointer"
+            className="w-full p-4 flex items-center justify-between bg-transparent cursor-pointer"
           >
             <div className="text-left">
               <div className="flex items-center gap-2">
