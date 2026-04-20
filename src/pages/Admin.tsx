@@ -124,13 +124,73 @@ export function Admin() {
 
   // --- Transactions Handlers ---
   const handleTransaction = async (id: string, status: 'approved' | 'rejected', type: string, amount: number, userId: string) => {
+    setLoading(true);
     await supabase.from('transactions').update({ status }).eq('id', id);
 
     if (status === 'approved') {
       if (type === 'deposit') {
-        const { data: userData } = await supabase.from('users').select('balance').eq('id', userId).single();
+        const { data: userData } = await supabase.from('users').select('balance, referred_by').eq('id', userId).single();
         if (userData) {
           await supabase.from('users').update({ balance: userData.balance + amount }).eq('id', userId);
+
+          // Check if this is the user's FIRST approved deposit to attribute referral bonus
+          const { count } = await supabase
+            .from('transactions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('type', 'deposit')
+            .eq('status', 'approved');
+
+          if (count === 1 && userData.referred_by) {
+            // Level 1 logic (25%)
+            const { data: level1 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', userData.referred_by).maybeSingle();
+            
+            if (level1) {
+              const l1Bonus = amount * 0.25;
+              await supabase.from('users').update({ balance: level1.balance + l1Bonus }).eq('id', level1.id);
+              await supabase.from('transactions').insert([{
+                user_id: level1.id,
+                type: 'referral_bonus',
+                amount: l1Bonus,
+                status: 'completed',
+                reference: 'Bonus 1er dépôt L1 (25%)'
+              }]);
+
+              // Level 2 logic (2%)
+              if (level1.referred_by) {
+                const { data: level2 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', level1.referred_by).maybeSingle();
+                
+                if (level2) {
+                  const l2Bonus = amount * 0.02;
+                  await supabase.from('users').update({ balance: level2.balance + l2Bonus }).eq('id', level2.id);
+                  await supabase.from('transactions').insert([{
+                    user_id: level2.id,
+                    type: 'referral_bonus',
+                    amount: l2Bonus,
+                    status: 'completed',
+                    reference: 'Bonus 1er dépôt L2 (2%)'
+                  }]);
+
+                  // Level 3 logic (1%)
+                  if (level2.referred_by) {
+                    const { data: level3 } = await supabase.from('users').select('id, balance').eq('referral_code', level2.referred_by).maybeSingle();
+                    
+                    if (level3) {
+                      const l3Bonus = amount * 0.01;
+                      await supabase.from('users').update({ balance: level3.balance + l3Bonus }).eq('id', level3.id);
+                      await supabase.from('transactions').insert([{
+                        user_id: level3.id,
+                        type: 'referral_bonus',
+                        amount: l3Bonus,
+                        status: 'completed',
+                        reference: 'Bonus 1er dépôt L3 (1%)'
+                      }]);
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     } else if (status === 'rejected' && type === 'withdrawal') {
@@ -140,6 +200,7 @@ export function Admin() {
       }
     }
     fetchData();
+    setLoading(false);
   };
 
   // --- Plans Handlers ---

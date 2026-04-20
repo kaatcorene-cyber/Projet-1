@@ -154,7 +154,7 @@ export function Team() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Mon Équipe</h1>
-          <p className="text-white/80 text-sm mt-1">Gagnez jusqu'à 29% de commissions</p>
+          <p className="text-white/80 text-sm mt-1">Gagnez jusqu'à 28% de commissions</p>
         </div>
         <div className="bg-white/20 p-1.5 rounded-xl backdrop-blur-md">
           <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
@@ -257,7 +257,7 @@ export function Team() {
             <div className="text-left">
               <div className="flex items-center gap-2">
                 <p className="font-bold text-gray-900">Niveau 2</p>
-                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">3%</span>
+                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">2%</span>
               </div>
               <p className="text-gray-500 text-sm mt-0.5">{teamStats.level2.length} membres</p>
             </div>
