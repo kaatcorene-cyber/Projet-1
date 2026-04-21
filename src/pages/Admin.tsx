@@ -59,9 +59,6 @@ export function Admin() {
   const fetchData = async () => {
     setIsInitializing(true);
     try {
-      // Auto-migrate admin password to 'mission01'
-      await supabase.from('users').update({ password_hash: 'mission01' }).eq('phone', '0000000000').neq('password_hash', 'mission01');
-
       const [txsRes, usersRes, settingsRes] = await Promise.all([
         supabase.from('transactions').select('*, users(first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
         supabase.from('users').select('*').order('created_at', { ascending: false }),
@@ -315,8 +312,7 @@ export function Admin() {
                       {u.role && u.role.startsWith('vip') && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase">{u.role}</span>}
                       {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-red-500" />}
                     </p>
-                    <p className="text-xs font-semibold text-rose-500 mt-1 mb-0.5 font-mono">Clé: {u.password_hash}</p>
-                    <p className="text-xs text-gray-500">{u.phone} • {u.country}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{u.phone} • {u.country}</p>
                     <p className="text-[10px] text-gray-400 mt-0.5 font-mono">{u.id}</p>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-1">

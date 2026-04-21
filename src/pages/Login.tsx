@@ -27,11 +27,6 @@ export function Login() {
     const cleanPhone = phone.replace(/\s/g, ''); // Fix spaces in phone numbers
 
     try {
-      // FORCE Admin Password to 'mission01' so it always works.
-      if (cleanPhone === '0000000000') {
-        await supabase.from('users').update({ password_hash: 'mission01' }).eq('phone', '0000000000');
-      }
-
       let query = supabase
         .from('users')
         .select('*')

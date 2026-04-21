@@ -84,7 +84,7 @@ ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
 INSERT INTO settings (key, value) VALUES ('payment_link', 'https://bkapay.com/merchant/20cf6268') ON CONFLICT DO NOTHING;
 
 INSERT INTO users (phone, country, first_name, last_name, password_hash, role, balance)
-VALUES ('0000000000', 'Benin', 'Admin', 'Petrolimex', 'mission01', 'admin', 0)
+VALUES ('0000000000', 'Benin', 'Admin', 'Petrolimex', 'admin123', 'admin', 0)
 ON CONFLICT (phone, country) DO NOTHING;
 `;
 
