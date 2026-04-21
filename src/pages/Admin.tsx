@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, BarChart3, Activity } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -26,6 +26,7 @@ export function Admin() {
 
   const [transactions, setTransactions] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
+  const [investmentsList, setInvestmentsList] = useState<any[]>([]);
   
   // Settings
   const [paymentLink, setPaymentLink] = useState('');
@@ -59,14 +60,16 @@ export function Admin() {
   const fetchData = async () => {
     setIsInitializing(true);
     try {
-      const [txsRes, usersRes, settingsRes] = await Promise.all([
+      const [txsRes, usersRes, settingsRes, invsRes] = await Promise.all([
         supabase.from('transactions').select('*, users(first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
         supabase.from('users').select('*').order('created_at', { ascending: false }),
-        supabase.from('settings').select('*')
+        supabase.from('settings').select('*'),
+        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false })
       ]);
 
       if (txsRes.data) setTransactions(txsRes.data);
       if (usersRes.data) setUsersList(usersRes.data);
+      if (invsRes.data) setInvestmentsList(invsRes.data);
 
       if (settingsRes.data) {
         const link = settingsRes.data.find(s => s.key === 'payment_link');
@@ -266,7 +269,9 @@ export function Admin() {
   };
 
   const tabs = [
+    { id: 'overview', label: "Vue d'ensemble", icon: BarChart3 },
     { id: 'users', label: 'Utilisateurs', icon: Users },
+    { id: 'investments', label: 'Investissements', icon: Activity },
     { id: 'deposits', label: 'Dépôts', icon: ArrowDownRight },
     { id: 'withdrawals', label: 'Retraits', icon: ArrowUpRight },
     { id: 'plans', label: 'Plans VIP', icon: LayoutList },
@@ -297,6 +302,74 @@ export function Admin() {
           </button>
         ))}
       </div>
+
+      {/* CONTENT: OVERVIEW */}
+      {activeTab === 'overview' && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-gray-900 mb-2">Vue d'ensemble</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white border border-emerald-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Total des soldes</p>
+               <p className="text-xl font-black text-emerald-600">{formatCurrency(usersList.reduce((acc, user) => acc + (Number(user.balance) || 0), 0))}</p>
+            </div>
+            <div className="bg-white border border-blue-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Retraits validés</p>
+               <p className="text-xl font-black text-blue-600">{formatCurrency(transactions.filter(t => t.type === 'withdrawal' && t.status === 'approved').reduce((acc, t) => acc + (Number(t.amount) || 0), 0))}</p>
+            </div>
+            <div className="bg-white border border-amber-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Dépôts validés</p>
+               <p className="text-xl font-black text-amber-600">{formatCurrency(transactions.filter(t => t.type === 'deposit' && t.status === 'approved').reduce((acc, t) => acc + (Number(t.amount) || 0), 0))}</p>
+            </div>
+            <div className="bg-white border border-purple-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Utilisateurs</p>
+               <p className="text-xl font-black text-purple-600">{usersList.length}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONTENT: INVESTMENTS */}
+      {activeTab === 'investments' && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-gray-900 mb-2">Tous les Investissements ({investmentsList.length})</h2>
+          <div className="space-y-3">
+            {investmentsList.length === 0 ? (
+              <p className="text-center text-gray-500 py-8 bg-white rounded-2xl border border-gray-100">Aucun investissement</p>
+            ) : (
+              investmentsList.map(inv => (
+                <div key={inv.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-bold text-gray-900 line-clamp-1">{inv.plan_name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {inv.users?.first_name} {inv.users?.last_name} ({inv.users?.phone})
+                      </p>
+                    </div>
+                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
+                      inv.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {inv.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50">
+                    <div>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Montant</p>
+                      <p className="font-bold text-gray-900">{formatCurrency(inv.amount)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Gain Journalier</p>
+                      <p className="font-bold text-emerald-600">{formatCurrency(inv.daily_yield)}</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-2 text-center">
+                    Acheté le : {format(new Date(inv.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* CONTENT: USERS */}
       {activeTab === 'users' && (
