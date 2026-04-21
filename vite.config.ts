@@ -23,17 +23,17 @@ export default defineConfig(({mode}) => {
           display: 'standalone',
           icons: [
             {
-              src: 'https://i.imgur.com/P1juZ5e.png',
+              src: 'https://i.imgur.com/SSsQsub.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'https://i.imgur.com/P1juZ5e.png',
+              src: 'https://i.imgur.com/SSsQsub.png',
               sizes: '512x512',
               type: 'image/png'
             },
             {
-              src: 'https://i.imgur.com/P1juZ5e.png',
+              src: 'https://i.imgur.com/SSsQsub.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
