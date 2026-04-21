@@ -2,13 +2,15 @@ import { useEffect, useRef } from 'react';
 import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { BottomNav } from './BottomNav';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export function Layout() {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
   const hasCheckedYields = useRef(false);
+  const { isInstallable, installPWA } = usePWAInstall();
 
   useEffect(() => {
     if (user?.id && !hasCheckedYields.current) {
@@ -79,6 +81,15 @@ export function Layout() {
       <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden">
         {/* Top Mini Header for Admin and Logout */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
+          {isInstallable && (
+            <button 
+              onClick={installPWA}
+              className="w-10 h-10 bg-emerald-500 border border-emerald-400 rounded-full flex items-center justify-center text-white shadow-sm hover:bg-emerald-600 transition-colors animate-pulse"
+              title="Télécharger l'Application"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+          )}
           {user?.role === 'admin' && (
             <button 
               onClick={() => navigate('/admin')}
