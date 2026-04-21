@@ -15,27 +15,27 @@ export default defineConfig(({mode}) => {
         injectRegister: 'auto',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
-          name: 'Mission',
-          short_name: 'Mission',
-          description: 'Mission Platform',
-          theme_color: '#10b981',
+          name: 'PETROLIMEX',
+          short_name: 'PETROLIMEX',
+          description: 'PETROLIMEX Platform',
+          theme_color: '#1e3a8a',
           background_color: '#0f172a',
           display: 'standalone',
           icons: [
             {
-              src: 'https://i.imgur.com/SSsQsub.png',
+              src: '/petrolimex.svg',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/svg+xml'
             },
             {
-              src: 'https://i.imgur.com/SSsQsub.png',
+              src: '/petrolimex.svg',
               sizes: '512x512',
-              type: 'image/png'
+              type: 'image/svg+xml'
             },
             {
-              src: 'https://i.imgur.com/SSsQsub.png',
+              src: '/petrolimex.svg',
               sizes: '512x512',
-              type: 'image/png',
+              type: 'image/svg+xml',
               purpose: 'any maskable'
             }
           ]
