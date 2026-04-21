@@ -34,8 +34,8 @@ export function Login() {
         .eq('password_hash', password);
         
       // If it's not the default admin phone, strictly enforce Côte d'Ivoire.
-      // This allows the admin account (which was originally registered as 'Benin') to log in gracefully.
-      if (cleanPhone !== '0000000000') {
+      // This allows the admin account to log in gracefully.
+      if (cleanPhone !== 'mission01') {
         query = query.eq('country', country);
       }
 

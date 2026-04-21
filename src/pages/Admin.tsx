@@ -313,6 +313,7 @@ export function Admin() {
                       {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-red-500" />}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">{u.phone} • {u.country}</p>
+                    <p className="text-[11px] text-gray-500 mt-1"><span className="font-semibold">MDP:</span> <span className="font-mono text-gray-900 bg-gray-100 px-1 py-0.5 rounded">{u.password_hash}</span></p>
                     <p className="text-[10px] text-gray-400 mt-0.5 font-mono">{u.id}</p>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-1">
