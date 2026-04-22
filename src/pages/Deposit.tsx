@@ -23,6 +23,12 @@ export function Deposit() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    
+    if (Number(amount) < 2500) {
+      setError('Le montant minimum de dépôt est de 2500 FCFA.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -62,25 +68,25 @@ export function Deposit() {
         )}
 
         <div className="space-y-1">
-          <label className="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Montant à recharger (FCFA)</label>
+          <label className="text-xs font-bold uppercase tracking-wider text-white/80 ml-1">Montant à recharger (FCFA)</label>
           <input
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-gray-900 focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
+            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-4 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
             placeholder="Ex: 5000"
             required
-            min="100"
+            min="2500"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Numéro de téléphone payeur</label>
+          <label className="text-xs font-bold uppercase tracking-wider text-white/80 ml-1">Numéro de téléphone payeur</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-gray-900 focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
+            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-4 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
             placeholder="Ex: 0123456789"
             required
           />
@@ -89,7 +95,7 @@ export function Deposit() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gray-900 hover:bg-black text-white font-bold py-4 rounded-xl mt-6 transition-all duration-300 disabled:opacity-50 shadow-md active:scale-95"
+          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl mt-6 transition-all duration-300 disabled:opacity-50 shadow-md active:scale-95"
         >
           {loading ? 'Chargement...' : 'Recharger'}
         </button>
