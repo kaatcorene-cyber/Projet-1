@@ -362,7 +362,7 @@ export function Admin() {
                     </div>
                   </div>
                   <p className="text-[10px] text-gray-400 mt-2 text-center">
-                    Acheté le : {format(new Date(inv.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+                    Acheté le : {inv.start_date ? format(new Date(inv.start_date), 'dd MMM yyyy HH:mm', { locale: fr }) : 'Date inconnue'}
                   </p>
                 </div>
               ))
