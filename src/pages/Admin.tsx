@@ -64,7 +64,7 @@ export function Admin() {
         supabase.from('transactions').select('*, users(first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
         supabase.from('users').select('*').order('created_at', { ascending: false }),
         supabase.from('settings').select('*'),
-        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false })
+        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false })
       ]);
 
       if (txsRes.data) setTransactions(txsRes.data);
