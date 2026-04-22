@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 
 interface User {
@@ -21,22 +22,29 @@ interface AuthState {
   refreshUser: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  isAuthenticated: false,
-  setUser: (user) => set({ user, isAuthenticated: !!user }),
-  logout: () => set({ user: null, isAuthenticated: false }),
-  refreshUser: async () => {
-    const { user } = get();
-    if (!user) return;
-    const { data } = await supabase.from('users').select('*').eq('id', user.id).single();
-    if (data) {
-      if (!data.referral_code) {
-        const myReferralCode = (data.first_name?.substring(0, 3).toUpperCase() || 'USR') + Math.random().toString(36).substring(2, 6).toUpperCase();
-        await supabase.from('users').update({ referral_code: myReferralCode }).eq('id', user.id);
-        data.referral_code = myReferralCode;
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      isAuthenticated: false,
+      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      logout: () => set({ user: null, isAuthenticated: false }),
+      refreshUser: async () => {
+        const { user } = get();
+        if (!user) return;
+        const { data } = await supabase.from('users').select('*').eq('id', user.id).single();
+        if (data) {
+          if (!data.referral_code) {
+            const myReferralCode = (data.first_name?.substring(0, 3).toUpperCase() || 'USR') + Math.random().toString(36).substring(2, 6).toUpperCase();
+            await supabase.from('users').update({ referral_code: myReferralCode }).eq('id', user.id);
+            data.referral_code = myReferralCode;
+          }
+          set({ user: data });
+        }
       }
-      set({ user: data });
+    }),
+    {
+      name: 'petrolimex-auth'
     }
-  }
-}));
+  )
+);

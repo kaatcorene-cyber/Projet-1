@@ -24,8 +24,9 @@ export function Layout() {
       const { data: investments } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
       if (!investments || investments.length === 0) return;
 
+      // Optimize: Only fetch needed columns to reduce payload size drastically
       const { data: gains } = await supabase.from('transactions')
-          .select('*')
+          .select('reference')
           .eq('user_id', userId)
           .eq('type', 'daily_gain');
 
