@@ -53,7 +53,7 @@ export function Withdraw() {
       await supabase.from('users').update({ balance: newBalance }).eq('id', user.id);
 
       // Create withdrawal request
-      // Fee is 20%, so actual amount received is amount * 0.8
+      // Fee is 15%, so actual amount received is amount * 0.85
       const { error } = await supabase.from('transactions').insert([{
         user_id: user.id,
         type: 'withdrawal',
@@ -90,7 +90,7 @@ export function Withdraw() {
         <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Solde disponible</p>
         <h2 className="text-4xl font-bold text-gray-900 tracking-tight">{formatCurrency(user?.balance || 0)}</h2>
         <div className="mt-4 inline-block bg-amber-50 text-amber-600 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-100">
-          Frais de retrait : 20%
+          Frais de retrait : 15%
         </div>
       </div>
 

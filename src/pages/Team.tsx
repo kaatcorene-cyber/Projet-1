@@ -44,7 +44,7 @@ export function Team() {
       const totalBonus = bonusesRes?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0;
 
       // 2. Fetch Level 1
-      const { data: l1Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at').eq('referred_by', user.referral_code).order('created_at', { ascending: false });
+      const { data: l1Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at, investments(plan_amount)').eq('referred_by', user.referral_code).order('created_at', { ascending: false });
       const l1 = l1Data || [];
       const l1Codes = l1.map(u => u.referral_code).filter(Boolean);
 
@@ -52,7 +52,7 @@ export function Team() {
       let l2: any[] = [];
       let l2Codes: string[] = [];
       if (l1Codes.length > 0) {
-        const { data: l2Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at').in('referred_by', l1Codes).order('created_at', { ascending: false });
+        const { data: l2Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at, investments(plan_amount)').in('referred_by', l1Codes).order('created_at', { ascending: false });
         l2 = l2Data || [];
         l2Codes = l2.map(u => u.referral_code).filter(Boolean);
       }
@@ -60,7 +60,7 @@ export function Team() {
       // 4. Fetch Level 3
       let l3: any[] = [];
       if (l2Codes.length > 0) {
-        const { data: l3Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at').in('referred_by', l2Codes).order('created_at', { ascending: false });
+        const { data: l3Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at, investments(plan_amount)').in('referred_by', l2Codes).order('created_at', { ascending: false });
         l3 = l3Data || [];
       }
 
@@ -130,21 +130,36 @@ export function Team() {
     }
     return (
       <div className="mt-3 space-y-2">
-        {members.map(member => (
-          <div key={member.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-[0_2px_8px_rgb(0,0,0,0.02)] hover:shadow-md transition-shadow">
-            <div>
-              <p className="font-medium text-gray-900 text-sm">
-                {member.first_name} {member.last_name}
-              </p>
-              <p className="text-xs text-gray-500 mt-0.5">Inscrit le {format(new Date(member.created_at), 'dd MMM yyyy', { locale: fr })}</p>
+        {members.map(member => {
+          const totalInvested = member.investments?.reduce((sum: number, inv: any) => sum + (Number(inv.plan_amount) || 0), 0) || 0;
+          return (
+          <div key={member.id} className="flex flex-col gap-2 p-3 bg-white rounded-xl border border-gray-100 shadow-[0_2px_8px_rgb(0,0,0,0.02)] hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900 text-sm">
+                  {member.first_name} {member.last_name}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">Inscrit le {format(new Date(member.created_at), 'dd MMM yyyy', { locale: fr })}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-mono text-gray-800 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                  {member.phone}
+                </p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-xs font-mono text-gray-400 bg-white px-2 py-1 rounded border border-gray-200">
-                {member.phone.replace(/(\d{2})(\d{2})(\d{2})(\d{2})/, '$1**$3$4')}
-              </p>
-            </div>
+            {totalInvested > 0 ? (
+              <div className="flex items-center justify-between bg-emerald-50 rounded-lg p-2 border border-emerald-100/50">
+                 <span className="text-xs font-medium text-emerald-800">Investissement total:</span>
+                 <span className="text-sm font-bold text-emerald-600">{formatCurrency(totalInvested)}</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2">
+                 <span className="text-xs font-medium text-gray-500">Investissement:</span>
+                 <span className="text-xs font-semibold text-gray-400">Aucun</span>
+              </div>
+            )}
           </div>
-        ))}
+        )})}
       </div>
     );
   };
@@ -232,7 +247,7 @@ export function Team() {
             <div className="text-left">
               <div className="flex items-center gap-2">
                 <p className="font-bold text-gray-900">Niveau 1</p>
-                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">25%</span>
+                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">15%</span>
               </div>
               <p className="text-gray-500 text-sm mt-0.5">{teamStats.level1.length} membres</p>
             </div>
@@ -257,7 +272,7 @@ export function Team() {
             <div className="text-left">
               <div className="flex items-center gap-2">
                 <p className="font-bold text-gray-900">Niveau 2</p>
-                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">2%</span>
+                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">3%</span>
               </div>
               <p className="text-gray-500 text-sm mt-0.5">{teamStats.level2.length} membres</p>
             </div>
@@ -282,7 +297,7 @@ export function Team() {
             <div className="text-left">
               <div className="flex items-center gap-2">
                 <p className="font-bold text-gray-900">Niveau 3</p>
-                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">1%</span>
+                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">2%</span>
               </div>
               <p className="text-gray-500 text-sm mt-0.5">{teamStats.level3.length} membres</p>
             </div>

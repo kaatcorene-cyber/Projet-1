@@ -32,12 +32,22 @@ export function Layout() {
 
       let totalToAdd = 0;
       const newTransactions: any[] = [];
+      const completedInvestments: string[] = [];
 
       for (const inv of investments) {
           const startDate = new Date(inv.start_date || inv.created_at || Date.now()).getTime();
-          const now = Date.now();
-          const daysElapsed = Math.floor((now - startDate) / (24 * 60 * 60 * 1000));
+          let effectiveNow = Date.now();
+          let isExpired = false;
 
+          if (inv.end_date) {
+            const endTimestamp = new Date(inv.end_date).getTime();
+            if (Date.now() >= endTimestamp) {
+              effectiveNow = endTimestamp;
+              isExpired = true;
+            }
+          }
+
+          const daysElapsed = Math.floor((effectiveNow - startDate) / (24 * 60 * 60 * 1000));
           const paidCount = gains?.filter(g => g.reference === inv.id).length || 0;
           const missedDays = daysElapsed - paidCount;
 
@@ -53,6 +63,10 @@ export function Layout() {
                   });
               }
           }
+          
+          if (isExpired) {
+             completedInvestments.push(inv.id);
+          }
       }
 
       if (totalToAdd > 0 && newTransactions.length > 0) {
@@ -61,6 +75,12 @@ export function Layout() {
           const { data: userData } = await supabase.from('users').select('balance').eq('id', userId).single();
           if (userData) {
               await supabase.from('users').update({ balance: userData.balance + totalToAdd }).eq('id', userId);
+          }
+      }
+      
+      if (completedInvestments.length > 0) {
+          for (const id of completedInvestments) {
+              await supabase.from('investments').update({ status: 'completed' }).eq('id', id);
           }
       }
     } catch (e) {

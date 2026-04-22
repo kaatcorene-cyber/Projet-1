@@ -2,18 +2,18 @@ import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, BarChart3, Activity } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const DEFAULT_PLANS = [
-  { amount: 2500, daily: 375, total: 22500, image: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800' },
-  { amount: 5000, daily: 750, total: 45000, image: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?auto=format&fit=crop&q=80&w=800' },
-  { amount: 10000, daily: 1500, total: 90000, image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800' },
-  { amount: 15000, daily: 2250, total: 135000, image: 'https://images.unsplash.com/photo-1605374668853-2d2d6d841b52?auto=format&fit=crop&q=80&w=800' },
-  { amount: 20000, daily: 3000, total: 180000, image: 'https://images.unsplash.com/photo-1542396601-dca920ea2807?auto=format&fit=crop&q=80&w=800' },
-  { amount: 30000, daily: 4500, total: 270000, image: 'https://images.unsplash.com/photo-1580901368919-7738efb0f87e?auto=format&fit=crop&q=80&w=800' },
+  { category: 'basique', amount: 2500, daily: 450, total: 3600, image: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800' },
+  { category: 'basique', amount: 5000, daily: 900, total: 7200, image: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?auto=format&fit=crop&q=80&w=800' },
+  { category: 'basique', amount: 10000, daily: 1800, total: 14400, image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800' },
+  { category: 'premium', amount: 2500, daily: 125, total: 7500, image: 'https://images.unsplash.com/photo-1605374668853-2d2d6d841b52?auto=format&fit=crop&q=80&w=800' },
+  { category: 'premium', amount: 5000, daily: 250, total: 15000, image: 'https://images.unsplash.com/photo-1542396601-dca920ea2807?auto=format&fit=crop&q=80&w=800' },
+  { category: 'premium', amount: 10000, daily: 500, total: 30000, image: 'https://images.unsplash.com/photo-1580901368919-7738efb0f87e?auto=format&fit=crop&q=80&w=800' },
 ];
 
 const VIP_LEVELS = ['user', 'vip1', 'vip2', 'vip3', 'vip4', 'vip5'];
@@ -32,10 +32,11 @@ export function Admin() {
   const [paymentLink, setPaymentLink] = useState('');
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
-
+  
   const [plans, setPlans] = useState<any[]>([]);
   
   // States for Plans
+  const [newPlanCategory, setNewPlanCategory] = useState<'basique' | 'premium'>('basique');
   const [newPlanAmount, setNewPlanAmount] = useState('');
   const [newPlanDaily, setNewPlanDaily] = useState('');
   const [newPlanTotal, setNewPlanTotal] = useState('');
@@ -69,7 +70,37 @@ export function Admin() {
 
       if (txsRes.data) setTransactions(txsRes.data);
       if (usersRes.data) setUsersList(usersRes.data);
-      if (invsRes.data) setInvestmentsList(invsRes.data);
+
+      if (invsRes.data) {
+        // --- PATCH SILENCIEUX POUR CORRIGER LES DATES D'EXPIRATION DES ANCIENS PLANS ---
+        const toPatch = invsRes.data.filter(inv => {
+          const ratio = inv.plan_amount > 0 ? (inv.daily_yield / inv.plan_amount) : 0;
+          const isStandard = ratio > 0.1;
+          const durationDays = isStandard ? 8 : 60;
+          const startDate = new Date(inv.start_date || inv.created_at);
+          const expectedEndDateStr = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+          
+          if (!inv.end_date) return true;
+          return Math.abs(new Date(inv.end_date).getTime() - new Date(expectedEndDateStr).getTime()) > 60000; // Si plus de 1 minute de diff
+        });
+
+        if (toPatch.length > 0) {
+          console.log("Patching dates for", toPatch.length, "investments...");
+          for (const inv of toPatch) {
+            const ratio = inv.plan_amount > 0 ? (inv.daily_yield / inv.plan_amount) : 0;
+            const isStandard = ratio > 0.1;
+            const durationDays = isStandard ? 8 : 60;
+            const startDate = new Date(inv.start_date || inv.created_at);
+            const newEndDate = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+            
+            await supabase.from('investments').update({ end_date: newEndDate.toISOString() }).eq('id', inv.id);
+            inv.end_date = newEndDate.toISOString(); // update local cache instantly
+          }
+        }
+        // --- FIN DU PATCH ---
+        
+        setInvestmentsList(invsRes.data);
+      }
 
       if (settingsRes.data) {
         const link = settingsRes.data.find(s => s.key === 'payment_link');
@@ -80,11 +111,12 @@ export function Admin() {
 
         const sup = settingsRes.data.find(s => s.key === 'support_link');
         if (sup) setSupportLink(sup.value);
-
+        
         const dbPlansStr = settingsRes.data.find(s => s.key === 'investment_plans');
         if (dbPlansStr && dbPlansStr.value) {
           try {
-            setPlans(JSON.parse(dbPlansStr.value));
+            const parsed = JSON.parse(dbPlansStr.value);
+            setPlans(parsed.map((p: any) => ({ ...p, category: p.category || 'basique' })));
           } catch (e) {
             setPlans(DEFAULT_PLANS);
           }
@@ -145,48 +177,48 @@ export function Admin() {
             .eq('status', 'approved');
 
           if (count === 1 && userData.referred_by) {
-            // Level 1 logic (25%)
+            // Level 1 logic (15%)
             const { data: level1 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', userData.referred_by).maybeSingle();
             
             if (level1) {
-              const l1Bonus = amount * 0.25;
+              const l1Bonus = amount * 0.15;
               await supabase.from('users').update({ balance: level1.balance + l1Bonus }).eq('id', level1.id);
               await supabase.from('transactions').insert([{
                 user_id: level1.id,
                 type: 'referral_bonus',
                 amount: l1Bonus,
                 status: 'completed',
-                reference: 'Bonus 1er dépôt L1 (25%)'
+                reference: 'Bonus 1er dépôt L1 (15%)'
               }]);
 
-              // Level 2 logic (2%)
+              // Level 2 logic (3%)
               if (level1.referred_by) {
                 const { data: level2 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', level1.referred_by).maybeSingle();
                 
                 if (level2) {
-                  const l2Bonus = amount * 0.02;
+                  const l2Bonus = amount * 0.03;
                   await supabase.from('users').update({ balance: level2.balance + l2Bonus }).eq('id', level2.id);
                   await supabase.from('transactions').insert([{
                     user_id: level2.id,
                     type: 'referral_bonus',
                     amount: l2Bonus,
                     status: 'completed',
-                    reference: 'Bonus 1er dépôt L2 (2%)'
+                    reference: 'Bonus 1er dépôt L2 (3%)'
                   }]);
 
-                  // Level 3 logic (1%)
+                  // Level 3 logic (2%)
                   if (level2.referred_by) {
                     const { data: level3 } = await supabase.from('users').select('id, balance').eq('referral_code', level2.referred_by).maybeSingle();
                     
                     if (level3) {
-                      const l3Bonus = amount * 0.01;
+                      const l3Bonus = amount * 0.02;
                       await supabase.from('users').update({ balance: level3.balance + l3Bonus }).eq('id', level3.id);
                       await supabase.from('transactions').insert([{
                         user_id: level3.id,
                         type: 'referral_bonus',
                         amount: l3Bonus,
                         status: 'completed',
-                        reference: 'Bonus 1er dépôt L3 (1%)'
+                        reference: 'Bonus 1er dépôt L3 (2%)'
                       }]);
                     }
                   }
@@ -240,6 +272,7 @@ export function Admin() {
   const handleAddPlan = () => {
     if (!newPlanAmount || !newPlanDaily || !newPlanTotal || !newPlanImage) return;
     const newPlan = {
+      category: newPlanCategory,
       amount: Number(newPlanAmount),
       daily: Number(newPlanDaily),
       total: Number(newPlanTotal),
@@ -336,11 +369,16 @@ export function Admin() {
             {investmentsList.length === 0 ? (
               <p className="text-center text-gray-500 py-8 bg-white rounded-2xl border border-gray-100">Aucun investissement</p>
             ) : (
-              investmentsList.map(inv => (
-                <div key={inv.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-                  <div className="flex justify-between items-start mb-2">
+              investmentsList.map(inv => {
+                const ratio = inv.plan_amount > 0 ? (inv.daily_yield / inv.plan_amount) : 0;
+                const isPremium = Math.abs(ratio - 0.05) < 0.05;
+                
+                return (
+                <div key={inv.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${isPremium ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
+                  <div className="flex justify-between items-start mb-2 pl-2">
                     <div>
-                      <p className="font-bold text-gray-900 line-clamp-1">Pack VIP ({formatCurrency(inv.plan_amount || 0)})</p>
+                      <p className="font-bold text-gray-900 line-clamp-1">Pack {isPremium ? 'Premium' : 'Standard'} ({formatCurrency(inv.plan_amount || 0)})</p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {inv.users?.first_name} {inv.users?.last_name} ({inv.users?.phone})
                       </p>
@@ -351,21 +389,23 @@ export function Admin() {
                       {inv.status}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50">
+                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50 pl-2">
                     <div>
                       <p className="text-[10px] text-gray-400 uppercase tracking-wider">Prix du pack</p>
                       <p className="font-bold text-gray-900">{formatCurrency(inv.plan_amount || 0)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] text-gray-400 uppercase tracking-wider">Gain Journalier</p>
-                      <p className="font-bold text-emerald-600">{formatCurrency(inv.daily_yield)}</p>
+                      <p className={`font-bold ${isPremium ? 'text-emerald-600' : 'text-blue-600'}`}>{formatCurrency(inv.daily_yield)}</p>
                     </div>
                   </div>
                   <p className="text-[10px] text-gray-400 mt-2 text-center">
                     Acheté le : {inv.start_date ? format(new Date(inv.start_date), 'dd MMM yyyy HH:mm', { locale: fr }) : 'Date inconnue'}
+                    <br />
+                    Expire le : {inv.end_date ? format(new Date(inv.end_date), 'dd MMM yyyy HH:mm', { locale: fr }) : 'Non défini'}
                   </p>
                 </div>
-              ))
+              )})
             )}
           </div>
         </div>
@@ -405,7 +445,7 @@ export function Admin() {
 
                 {editingUserId === u.id ? (
                   <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                    <input type="number" className="flex-1 bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
+                    <input type="number" className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
                     <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
                     <button onClick={() => setEditingUserId(null)} className="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg text-sm transition-colors cursor-pointer">X</button>
                   </div>
@@ -516,42 +556,50 @@ export function Admin() {
       {activeTab === 'plans' && (
         <div className="space-y-6">
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Créer un Plan VIP</h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <input type="number" placeholder="Montant (ex: 5000)" value={newPlanAmount} onChange={e => setNewPlanAmount(e.target.value)} className="bg-gray-50 border border-gray-200 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
-                <input type="number" placeholder="Gain journalier" value={newPlanDaily} onChange={e => setNewPlanDaily(e.target.value)} className="bg-gray-50 border border-gray-200 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
-                <input type="number" placeholder="Revenu Total" value={newPlanTotal} onChange={e => setNewPlanTotal(e.target.value)} className="col-span-2 bg-gray-50 border border-gray-200 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
-              </div>
+             <h2 className="text-lg font-bold text-gray-900 mb-4">Créer un Plan VIP</h2>
+             <div className="space-y-4">
+               <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Catégorie du Plan</label>
+                  <div className="flex gap-2">
+                     <button onClick={() => setNewPlanCategory('basique')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${newPlanCategory === 'basique' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100'}`}>Standard (Basique)</button>
+                     <button onClick={() => setNewPlanCategory('premium')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${newPlanCategory === 'premium' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100'}`}>Premium</button>
+                  </div>
+               </div>
+               
+               <div className="grid grid-cols-2 gap-3">
+                 <input type="number" placeholder="Montant (ex: 5000)" value={newPlanAmount} onChange={e => setNewPlanAmount(e.target.value)} className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
+                 <input type="number" placeholder="Gain journalier" value={newPlanDaily} onChange={e => setNewPlanDaily(e.target.value)} className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
+                 <input type="number" placeholder="Revenu Total" value={newPlanTotal} onChange={e => setNewPlanTotal(e.target.value)} className="col-span-2 bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
+               </div>
 
-              {/* IMAGE UPLOAD */}
-              <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors">
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleImageUpload} 
-                  ref={fileInputRef}
-                  className="hidden" 
-                  id="plan-image"
-                />
-                <label htmlFor="plan-image" className="cursor-pointer flex flex-col items-center gap-2">
-                  {newPlanImage ? (
-                    <img src={newPlanImage} className="w-full h-32 object-cover rounded-lg shadow-sm" alt="Preview" />
-                  ) : (
-                    <>
-                      <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center">
-                        <Upload className="w-5 h-5" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-600">Ajouter une photo de la galerie</span>
-                    </>
-                  )}
-                </label>
-              </div>
+               {/* IMAGE UPLOAD */}
+               <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors">
+                 <input 
+                   type="file" 
+                   accept="image/*" 
+                   onChange={handleImageUpload} 
+                   ref={fileInputRef}
+                   className="hidden" 
+                   id="plan-image"
+                 />
+                 <label htmlFor="plan-image" className="cursor-pointer flex flex-col items-center gap-2">
+                   {newPlanImage ? (
+                     <img src={newPlanImage} className="w-full h-32 object-cover rounded-lg shadow-sm" alt="Preview" />
+                   ) : (
+                     <>
+                       <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center">
+                         <Upload className="w-5 h-5" />
+                       </div>
+                       <span className="text-sm font-medium text-gray-600">Ajouter une photo</span>
+                     </>
+                   )}
+                 </label>
+               </div>
 
-              <button onClick={handleAddPlan} disabled={loading || !newPlanImage} className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
-                <Plus className="w-5 h-5" /> Ajouter à la liste
-              </button>
-            </div>
+               <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                 <Plus className="w-5 h-5" /> Ajouter à la liste
+               </button>
+             </div>
           </div>
 
           <div className="space-y-3">
@@ -560,13 +608,20 @@ export function Admin() {
                <div className="flex justify-center p-4">
                   <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
                </div>
-            ) : plans.map((p, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-4">
-                  <img src={p.image} className="w-12 h-12 rounded-xl object-cover bg-gray-100" alt="" referrerPolicy="no-referrer" />
+            ) : plans.sort((a,b) => a.category.localeCompare(b.category) || a.amount - b.amount).map((p, idx) => (
+              <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
+                <div className={`absolute left-0 top-0 bottom-0 w-1 ${p.category === 'basique' ? 'bg-blue-500' : 'bg-emerald-500'}`}></div>
+                <div className="flex items-center gap-4 pl-2">
+                  <img src={p.image || 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800'} className="w-12 h-12 rounded-xl object-cover bg-gray-100" alt="" referrerPolicy="no-referrer" />
                   <div>
-                    <p className="font-bold text-gray-900">{formatCurrency(p.amount)}</p>
-                    <p className="text-xs text-emerald-600 font-medium bg-emerald-50 inline-block px-2 py-0.5 rounded mt-1">+{formatCurrency(p.daily)}/jour</p>
+                    <div className="flex items-center gap-2 mb-0.5">
+                       <span className={`text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-wider rounded ${p.category === 'basique' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>{p.category}</span>
+                       <p className="font-bold text-gray-900 text-sm leading-none">{formatCurrency(p.amount)}</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <p className="text-[11px] text-gray-500 mt-0.5">Gain/j: <span className="font-bold text-gray-700">{formatCurrency(p.daily)}</span></p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">Total: <span className="font-bold text-gray-700">{formatCurrency(p.total)}</span></p>
+                    </div>
                   </div>
                 </div>
                 <button onClick={() => handleRemovePlan(idx)} disabled={loading} className="p-2.5 text-red-500 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">

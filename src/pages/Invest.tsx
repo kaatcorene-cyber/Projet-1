@@ -6,17 +6,19 @@ import { formatCurrency } from '../lib/utils';
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 const DEFAULT_PLANS = [
-  { amount: 2500, daily: 375, total: 22500, image: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800' },
-  { amount: 5000, daily: 750, total: 45000, image: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?auto=format&fit=crop&q=80&w=800' },
-  { amount: 10000, daily: 1500, total: 90000, image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800' },
-  { amount: 15000, daily: 2250, total: 135000, image: 'https://images.unsplash.com/photo-1605374668853-2d2d6d841b52?auto=format&fit=crop&q=80&w=800' },
-  { amount: 20000, daily: 3000, total: 180000, image: 'https://images.unsplash.com/photo-1542396601-dca920ea2807?auto=format&fit=crop&q=80&w=800' },
-  { amount: 30000, daily: 4500, total: 270000, image: 'https://images.unsplash.com/photo-1580901368919-7738efb0f87e?auto=format&fit=crop&q=80&w=800' },
+  { category: 'basique', amount: 2500, daily: 450, total: 3600, image: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800' },
+  { category: 'basique', amount: 5000, daily: 900, total: 7200, image: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?auto=format&fit=crop&q=80&w=800' },
+  { category: 'basique', amount: 10000, daily: 1800, total: 14400, image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800' },
+  { category: 'premium', amount: 2500, daily: 125, total: 7500, image: 'https://images.unsplash.com/photo-1605374668853-2d2d6d841b52?auto=format&fit=crop&q=80&w=800' },
+  { category: 'premium', amount: 5000, daily: 250, total: 15000, image: 'https://images.unsplash.com/photo-1542396601-dca920ea2807?auto=format&fit=crop&q=80&w=800' },
+  { category: 'premium', amount: 10000, daily: 500, total: 30000, image: 'https://images.unsplash.com/photo-1580901368919-7738efb0f87e?auto=format&fit=crop&q=80&w=800' },
 ];
 
 export function Invest() {
   const { user, refreshUser } = useAuthStore();
   const { settingsCache, setSettingsCache } = useAppStore();
+  
+  const [activeCategory, setActiveCategory] = useState<'basique' | 'premium'>('basique');
   const [plans, setPlans] = useState<any[]>([]);
   const [isInitializing, setIsInitializing] = useState(!settingsCache);
   const [loading, setLoading] = useState<number | null>(null);
@@ -33,7 +35,13 @@ export function Invest() {
     const dbPlansStr = data.find(s => s.key === 'investment_plans');
     if (dbPlansStr && dbPlansStr.value) {
       try {
-        setPlans(JSON.parse(dbPlansStr.value));
+        const parsed = JSON.parse(dbPlansStr.value);
+        // Ensure backward compatibility by applying a default category to old plans
+        const migrated = parsed.map((p: any) => ({
+          ...p,
+          category: p.category || 'basique'
+        }));
+        setPlans(migrated);
       } catch (e) {
         setPlans(DEFAULT_PLANS);
       }
@@ -53,7 +61,9 @@ export function Invest() {
     setIsInitializing(false);
   };
 
-  const handleInvest = async (plan: typeof DEFAULT_PLANS[0], index: number) => {
+  const activePlans = plans.filter(p => p.category === activeCategory).sort((a, b) => a.amount - b.amount);
+
+  const handleInvest = async (plan: any, index: number) => {
     if (!user) return;
     
     if (user.balance < plan.amount) {
@@ -75,8 +85,9 @@ export function Invest() {
       if (updateError) throw updateError;
 
       // 2. Create investment
+      const durationDays = Math.round(plan.total / plan.daily) || 60; // fallback to 60 if unexpected daily=0
       const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 60);
+      endDate.setDate(endDate.getDate() + durationDays);
 
       const { error: invError } = await supabase
         .from('investments')
@@ -127,44 +138,84 @@ export function Invest() {
         </div>
       )}
 
+      {/* Tabs */}
+      <div className="flex bg-white/10 p-1 rounded-2xl mb-6 shadow-inner backdrop-blur-sm">
+         <button 
+           onClick={() => setActiveCategory('basique')} 
+           className={`flex-1 py-3.5 text-sm font-bold rounded-xl transition-all duration-300 ${
+             activeCategory === 'basique' 
+             ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' 
+             : 'text-white/70 hover:text-white'
+           }`}
+          >
+           Standard
+         </button>
+         <button 
+           onClick={() => setActiveCategory('premium')} 
+           className={`flex-1 py-3.5 text-sm font-bold rounded-xl transition-all duration-300 ${
+             activeCategory === 'premium' 
+             ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+             : 'text-white/70 hover:text-white'
+           }`}
+          >
+           Premium
+         </button>
+      </div>
+
       {isInitializing ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex flex-col items-center justify-center py-12 gap-3">
           <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
         </div>
       ) : (
-        <div className="space-y-4 animate-slide-up">
-          {plans.map((plan, idx) => (
-            <div key={idx} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group">
-              <div className="h-32 w-full relative overflow-hidden">
-                <img src={plan.image} alt="Station" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
-                <div className="absolute bottom-4 left-4">
-                  <p className="text-white font-bold text-2xl drop-shadow-md">{formatCurrency(plan.amount)}</p>
-                </div>
-              </div>
-              
-              <div className="p-5 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Gain Journalier</p>
-                    <p className="text-emerald-500 font-bold">{formatCurrency(plan.daily)}</p>
+        <div className="space-y-6 animate-slide-up">
+          {activePlans.length === 0 ? (
+            <div className="bg-white/10 rounded-3xl p-8 text-center backdrop-blur-sm">
+              <p className="text-white/70 font-medium">Aucun plan disponible dans cette catégorie.</p>
+            </div>
+          ) : (
+            activePlans.map((plan, idx) => (
+              <div key={idx} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group">
+                <div className="h-32 w-full relative overflow-hidden">
+                  <img src={plan.image || 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800'} alt="Plan" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                  <div className={`absolute inset-0 bg-gradient-to-t ${activeCategory === 'basique' ? 'from-blue-900/90' : 'from-emerald-900/90'} via-black/40 to-transparent`}></div>
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <p className="text-white/20 font-black text-6xl transform -rotate-12 select-none">
+                      {activeCategory === 'basique' ? 'STANDARD' : 'PREMIUM'}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Revenu Total</p>
-                    <p className="text-gray-900 font-bold">{formatCurrency(plan.total)}</p>
+                  <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl border border-white/30 shadow-sm">
+                    <p className="text-white font-bold text-xs">
+                      {plan.category === 'basique' ? '8 jours' : '60 jours'}
+                    </p>
+                  </div>
+                  <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                    <p className="text-white font-black text-3xl drop-shadow-md">{formatCurrency(plan.amount)}</p>
                   </div>
                 </div>
                 
-                <button
-                  onClick={() => handleInvest(plan, idx)}
-                  disabled={loading === idx || (user?.balance || 0) < plan.amount}
-                  className="w-full py-3 rounded-xl font-bold transition-all duration-300 disabled:opacity-50 bg-gray-900 hover:bg-black text-white flex justify-center items-center active:scale-95 shadow-md hover:shadow-lg disabled:hover:scale-100 disabled:active:scale-100"
-                >
-                  {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Investir maintenant'}
-                </button>
+                <div className="p-5 space-y-5">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                      <p className="text-gray-500 text-[10px] font-bold mb-1 uppercase tracking-wider">Gain Journalier</p>
+                      <p className={`font-bold text-xl leading-none ${activeCategory === 'basique' ? 'text-blue-600' : 'text-emerald-600'}`}>{formatCurrency(plan.daily)}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-2xl p-3 border border-gray-100">
+                      <p className="text-gray-500 text-[10px] font-bold mb-1 uppercase tracking-wider">Revenu Total</p>
+                      <p className="text-gray-900 font-bold text-xl leading-none">{formatCurrency(plan.total)}</p>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleInvest(plan, idx)}
+                    disabled={loading === idx || (user?.balance || 0) < plan.amount}
+                    className={`w-full py-3.5 rounded-xl font-bold transition-all duration-300 disabled:opacity-50 text-white flex justify-center items-center active:scale-95 shadow-md hover:shadow-lg disabled:hover:scale-100 disabled:active:scale-100 bg-gradient-to-r ${activeCategory === 'basique' ? 'from-blue-500 to-blue-600' : 'from-emerald-500 to-emerald-600'}`}
+                  >
+                    {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Investir ce montant'}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       )}
     </div>
