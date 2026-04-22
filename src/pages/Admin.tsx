@@ -340,7 +340,7 @@ export function Admin() {
                 <div key={inv.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <p className="font-bold text-gray-900 line-clamp-1">{inv.plan_name}</p>
+                      <p className="font-bold text-gray-900 line-clamp-1">Pack VIP ({formatCurrency(inv.plan_amount || 0)})</p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {inv.users?.first_name} {inv.users?.last_name} ({inv.users?.phone})
                       </p>
@@ -353,8 +353,8 @@ export function Admin() {
                   </div>
                   <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50">
                     <div>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Montant</p>
-                      <p className="font-bold text-gray-900">{formatCurrency(inv.amount)}</p>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Prix du pack</p>
+                      <p className="font-bold text-gray-900">{formatCurrency(inv.plan_amount || 0)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] text-gray-400 uppercase tracking-wider">Gain Journalier</p>
