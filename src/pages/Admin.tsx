@@ -561,15 +561,47 @@ export function Admin() {
                <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Catégorie du Plan</label>
                   <div className="flex gap-2">
-                     <button onClick={() => setNewPlanCategory('basique')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${newPlanCategory === 'basique' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100'}`}>Standard (Basique)</button>
-                     <button onClick={() => setNewPlanCategory('premium')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${newPlanCategory === 'premium' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100'}`}>Premium</button>
+                     <button onClick={() => {
+                        setNewPlanCategory('basique');
+                        if (Number(newPlanAmount) > 0) {
+                           const daily = Math.round(Number(newPlanAmount) * 0.18);
+                           setNewPlanDaily(daily.toString());
+                           setNewPlanTotal((daily * 8).toString());
+                        }
+                     }} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${newPlanCategory === 'basique' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100'}`}>Standard (Basique)</button>
+                     <button onClick={() => {
+                        setNewPlanCategory('premium');
+                        if (Number(newPlanAmount) > 0) {
+                           const daily = Math.round(Number(newPlanAmount) * 0.05);
+                           setNewPlanDaily(daily.toString());
+                           setNewPlanTotal((daily * 60).toString());
+                        }
+                     }} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${newPlanCategory === 'premium' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100'}`}>Premium</button>
                   </div>
                </div>
                
                <div className="grid grid-cols-2 gap-3">
-                 <input type="number" placeholder="Montant (ex: 5000)" value={newPlanAmount} onChange={e => setNewPlanAmount(e.target.value)} className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
-                 <input type="number" placeholder="Gain journalier" value={newPlanDaily} onChange={e => setNewPlanDaily(e.target.value)} className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
-                 <input type="number" placeholder="Revenu Total" value={newPlanTotal} onChange={e => setNewPlanTotal(e.target.value)} className="col-span-2 bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
+                 <input 
+                   type="number" 
+                   placeholder="Montant (ex: 5000)" 
+                   value={newPlanAmount} 
+                   onChange={e => {
+                     const amt = Number(e.target.value);
+                     setNewPlanAmount(e.target.value);
+                     if (amt > 0) {
+                        const daily = newPlanCategory === 'basique' ? Math.round(amt * 0.18) : Math.round(amt * 0.05);
+                        const total = newPlanCategory === 'basique' ? daily * 8 : daily * 60;
+                        setNewPlanDaily(daily.toString());
+                        setNewPlanTotal(total.toString());
+                     } else {
+                        setNewPlanDaily('');
+                        setNewPlanTotal('');
+                     }
+                   }} 
+                   className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                 />
+                 <input type="number" placeholder="Gain journalier" value={newPlanDaily} readOnly className="bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none cursor-not-allowed opacity-80" />
+                 <input type="number" placeholder="Revenu Total" value={newPlanTotal} readOnly className="col-span-2 bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none cursor-not-allowed opacity-80" />
                </div>
 
                {/* IMAGE UPLOAD */}
