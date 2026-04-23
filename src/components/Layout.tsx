@@ -93,6 +93,7 @@ export function Layout() {
   }
 
   const handleLogout = () => {
+    sessionStorage.removeItem('telegramModalShown');
     logout();
     navigate('/login');
   };
