@@ -93,7 +93,7 @@ export function Layout() {
   }
 
   const handleLogout = () => {
-    sessionStorage.removeItem('telegramModalShown');
+    sessionStorage.removeItem('whatsappModalShown');
     logout();
     navigate('/login');
   };

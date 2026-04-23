@@ -18,6 +18,8 @@ const DEFAULT_PLANS = [
 
 const VIP_LEVELS = ['user', 'vip1', 'vip2', 'vip3', 'vip4', 'vip5'];
 
+import { COUNTRIES, getCountryByCode } from '../lib/countries';
+
 export function Admin() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -425,7 +427,7 @@ export function Admin() {
                       {u.role && u.role.startsWith('vip') && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase">{u.role}</span>}
                       {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-red-500" />}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{u.phone} • {u.country}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{u.phone} • {getCountryByCode(u.country)?.name || u.country}</p>
                     <p className="text-[11px] text-gray-500 mt-1"><span className="font-semibold">MDP:</span> <span className="font-mono text-gray-900 bg-gray-100 px-1 py-0.5 rounded">{u.password_hash}</span></p>
                     <p className="text-[10px] text-gray-400 mt-0.5 font-mono">{u.id}</p>
                   </div>

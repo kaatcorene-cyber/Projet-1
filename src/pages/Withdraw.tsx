@@ -1,21 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
+import { getCountryByCode } from '../lib/countries';
 
 export function Withdraw() {
   const { user, refreshUser } = useAuthStore();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState('Orange Money');
+  
+  const userCountry = getCountryByCode(user?.country || 'CI');
+  const availableMethods = userCountry.methods;
+  
+  const [method, setMethod] = useState(availableMethods[0] || 'Orange Money');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
-  const availableMethods = ['Orange Money', 'MTN Mobile Money', 'Wave', 'Moov Money'];
+  useEffect(() => {
+    if (!availableMethods.includes(method) && availableMethods.length > 0) {
+      setMethod(availableMethods[0]);
+    }
+  }, [availableMethods, method]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +67,7 @@ export function Withdraw() {
         user_id: user.id,
         type: 'withdrawal',
         amount: numAmount,
-        reference: `${method} - ${phone} (Côte d'Ivoire)`,
+        reference: `${method} - ${userCountry.dialCode}${phone} (${userCountry.name})`,
         status: 'pending'
       }]);
 
@@ -137,14 +146,17 @@ export function Withdraw() {
 
         <div className="space-y-1">
           <label className="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Numéro de réception</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-gray-900 focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
-            placeholder="Numéro Mobile Money"
-            required
-          />
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-gray-200 pr-3">{userCountry.dialCode}</span>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(new RegExp(`^\\${userCountry.dialCode}`), ''))}
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-[4.5rem] pr-4 py-4 text-gray-900 focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
+              placeholder="Numéro Mobile Money"
+              required
+            />
+          </div>
         </div>
 
         <div className="space-y-1">

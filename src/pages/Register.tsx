@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase, checkDbSetup } from '../lib/supabase';
+import { COUNTRIES, Country } from '../lib/countries';
 
 export function Register() {
   const [searchParams] = useSearchParams();
@@ -9,15 +10,17 @@ export function Register() {
     firstName: '',
     lastName: '',
     phone: '',
-    country: "Cote d'Ivoire",
+    countryCode: 'CI',
     password: '',
     confirmPassword: '',
-    referralCode: (searchParams.get('ref') && searchParams.get('ref') !== 'undefined') ? searchParams.get('ref') : ''
+    referralCode: (searchParams.get('ref') && searchParams.get('ref') !== 'undefined') ? searchParams.get('ref')?.trim() : ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { setUser } = useAuthStore();
   const navigate = useNavigate();
+
+  const selectedCountry = COUNTRIES.find(c => c.code === formData.countryCode) || COUNTRIES[5];
 
   useEffect(() => {
     checkDbSetup().then(setup => {
@@ -46,7 +49,7 @@ export function Register() {
         .from('users')
         .select('id')
         .eq('phone', cleanPhone)
-        .eq('country', formData.country)
+        .eq('country', selectedCountry.code) // Store code to be precise
         .maybeSingle();
 
       if (existError) {
@@ -69,7 +72,7 @@ export function Register() {
             first_name: formData.firstName,
             last_name: formData.lastName,
             phone: cleanPhone,
-            country: formData.country,
+            country: selectedCountry.code,
             password_hash: formData.password, // In a real app, hash this!
             referral_code: myReferralCode,
             referred_by: formData.referralCode ? formData.referralCode.trim().toUpperCase() : null,
@@ -159,18 +162,31 @@ export function Register() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-white/70 ml-1 uppercase tracking-wider">Téléphone</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 font-bold border-r border-white/20 pr-3">+225</span>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/^\+225/, '') })}
-                className="w-full bg-white/10 border border-white/20 rounded-xl pl-16 pr-4 py-3 text-white focus:outline-none focus:bg-white/20 focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-all placeholder:text-white/40 font-medium tracking-wide"
-                placeholder="0123456789"
-                required
-              />
+            <label className="text-xs font-bold text-white/70 ml-1 uppercase tracking-wider">Pays & Téléphone</label>
+            <div className="flex gap-2">
+              <select
+                name="countryCode"
+                value={formData.countryCode}
+                onChange={handleChange}
+                className="bg-white/10 border border-white/20 rounded-xl px-2 py-3 text-white focus:outline-none focus:bg-white/20 focus:border-white/50 w-28 font-medium appearance-none"
+                style={{ WebkitAppearance: 'none' }}
+              >
+                {COUNTRIES.map(c => (
+                  <option key={c.code} value={c.code} className="text-gray-900">{c.flag} {c.code}</option>
+                ))}
+              </select>
+              <div className="relative flex-1">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 font-bold border-r border-white/20 pr-3">{selectedCountry.dialCode}</span>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(new RegExp(`^\\${selectedCountry.dialCode}`), '') })}
+                  className="w-full bg-white/10 border border-white/20 rounded-xl pl-[4.5rem] pr-4 py-3 text-white focus:outline-none focus:bg-white/20 focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-all placeholder:text-white/40 font-medium tracking-wide"
+                  placeholder="0123456789"
+                  required
+                />
+              </div>
             </div>
           </div>
 
