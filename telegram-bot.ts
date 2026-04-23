@@ -9,6 +9,8 @@ const bot = new TelegramBot(token, { polling: true });
 const userWarnings = new Map<number, number>();
 const ALLOWED_LINK = "petrolimex-ci.site/register";
 
+let lastWelcomeMessageId: number | null = null; // Store the ID of the last welcome message
+
 console.log("🤖 Petrolimex Bot démarré avec succès ! En attente de messages...");
 
 bot.on('message', async (msg) => {
@@ -75,6 +77,55 @@ bot.on('message', async (msg) => {
         } catch (error: any) {
           console.error("Erreur de sanction :", error.message);
         }
+      }
+    }
+  }
+
+  // --- WELCOME MESSAGE LOGIC ---
+  if (msg.new_chat_members && msg.new_chat_members.length > 0) {
+    for (const newMember of msg.new_chat_members) {
+      if (newMember.is_bot) continue; // Ignore other bots
+      
+      const memberName = newMember.first_name || newMember.username || "nouveau membre";
+      
+      const welcomeText = `Bienvenue sur la plateforme <b>PETROLIMEX</b>, <a href="tg://user?id=${newMember.id}">${memberName}</a> ! 🛢️
+
+Cher client fidèle,
+Nous sommes ravis de vous compter parmi nos membres. 🙌
+
+💼 <u><b>Nos Offres</b></u> :
+• 🎁 <b>Bonus d’inscription :</b> 100 F CFA
+• 💰 <b>Dépôt minimum :</b> 2 500 F CFA
+• 💸 <b>Retrait minimum :</b> 1 000 F CFA
+• ⏰ <b>Disponibilité :</b> Tous les jours de 09h00 à 17h00 GMT
+• ⚠️ <b>Frais de retrait :</b> 15%
+• 🌍 <b>Pays éligibles :</b> 🇨🇮 Côte d'Ivoire
+
+📊 <u><b>Nos plans d’investissement</b></u> :
+• 🔹 <b>Plan Standard :</b> Gagnez <tg-spoiler>18%</tg-spoiler> de votre investissement <u>chaque jour</u> pendant <b>8 jours</b>.
+• 🔸 <b>Plan Premium :</b> Gagnez <tg-spoiler>5%</tg-spoiler> de votre investissement <u>chaque jour</u> pendant <b>60 jours</b>.
+
+👥 <u><b>Système de parrainage</b></u> :
+• 🥇 <b>Niveau 1 :</b> 15%
+• 🥈 <b>Niveau 2 :</b> 3%
+• 🥉 <b>Niveau 3 :</b> 2%
+
+🚀 <i><b>PETROLIMEX</b>, votre partenaire de confiance</i>`;
+
+      try {
+        // Delete previous welcome message if it exists
+        if (lastWelcomeMessageId) {
+          await bot.deleteMessage(chatId, lastWelcomeMessageId).catch(() => {});
+        }
+        
+        // Delete the system "User joined the group" message (Optional but cleaner)
+        await bot.deleteMessage(chatId, msg.message_id).catch(() => {});
+
+        // Send the new welcome message
+        const welcomeMsg = await bot.sendMessage(chatId, welcomeText, { parse_mode: 'HTML', disable_web_page_preview: true });
+        lastWelcomeMessageId = welcomeMsg.message_id; // Store to delete next time
+      } catch (error: any) {
+        console.error("Erreur d'envoi du message de bienvenue :", error.message);
       }
     }
   }
