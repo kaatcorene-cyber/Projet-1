@@ -7,7 +7,7 @@ import { ArrowUpRight, ArrowDownRight, Wallet, Activity, MessageCircle, Headphon
 import { Link } from 'react-router-dom';
 
 function CountdownTimer({ activeInvestments, onTickZero }: { activeInvestments: any[], onTickZero: () => void }) {
-  const [timeLeft, setTimeLeft] = useState<{h: number, m: number, s: number, percent: number} | null>(null);
+  const [timeLeft, setTimeLeft] = useState<{h: number, m: number, s: number} | null>(null);
 
   useEffect(() => {
     if (!activeInvestments.length) return;
@@ -32,14 +32,10 @@ function CountdownTimer({ activeInvestments, onTickZero }: { activeInvestments: 
       if (diff <= 0) {
         onTickZero(); // Trigger refresh if countdown hits 0
       } else {
-        const totalMs = 24 * 60 * 60 * 1000;
-        const progressPercent = ((totalMs - diff) / totalMs) * 100;
-
         setTimeLeft({
           h: Math.floor((diff / (1000 * 60 * 60)) % 24),
           m: Math.floor((diff / 1000 / 60) % 60),
-          s: Math.floor((diff / 1000) % 60),
-          percent: progressPercent
+          s: Math.floor((diff / 1000) % 60)
         });
       }
     };
@@ -51,60 +47,25 @@ function CountdownTimer({ activeInvestments, onTickZero }: { activeInvestments: 
 
   if (!timeLeft) return null;
 
-  const radius = 24;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (timeLeft.percent / 100) * circumference;
-
   return (
-    <div className="bg-[#1a1c23] rounded-3xl p-5 shadow-2xl relative overflow-hidden flex items-center gap-5 border border-gray-800">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+    <div className="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 relative overflow-hidden flex items-center justify-between group hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-full blur-2xl -mr-6 -mt-6"></div>
       
-      <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
-        <svg className="w-16 h-16 transform -rotate-90 drop-shadow-xl" viewBox="0 0 64 64">
-          <circle 
-            className="text-gray-800" 
-            strokeWidth="4" 
-            stroke="currentColor" 
-            fill="transparent" 
-            r={radius} 
-            cx="32" 
-            cy="32" 
-          />
-          <circle 
-            className="text-amber-500 transition-all duration-1000 ease-linear" 
-            strokeWidth="4" 
-            strokeDasharray={circumference} 
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round" 
-            stroke="currentColor" 
-            fill="transparent" 
-            r={radius} 
-            cx="32" 
-            cy="32" 
-            filter="drop-shadow(0 0 2px rgba(245,158,11,0.5))"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Zap className="w-5 h-5 text-amber-500 animate-pulse" />
+      <div className="flex items-center gap-3 relative z-10">
+        <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
+          <Timer className="w-5 h-5 animate-pulse" />
         </div>
-      </div>
-
-      <div className="flex-1">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Prochain Versement</p>
-          <div className="flex gap-1.5 items-center">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
-            <span className="text-[10px] text-amber-500 font-bold uppercase tracking-wider">Actif</span>
+        <div>
+          <p className="text-gray-500 text-xs font-medium">Prochain versement dans</p>
+          <div className="font-mono text-xl font-bold text-gray-900 tracking-tight">
+            {String(timeLeft.h).padStart(2, '0')}:
+            {String(timeLeft.m).padStart(2, '0')}:
+            {String(timeLeft.s).padStart(2, '0')}
           </div>
         </div>
-        
-        <div className="font-mono text-2xl font-black text-white tracking-widest flex items-baseline" style={{ fontVariantNumeric: 'tabular-nums' }}>
-          <span>{String(timeLeft.h).padStart(2, '0')}</span>
-          <span className="text-gray-600 mx-1 mb-1 animate-pulse">:</span>
-          <span>{String(timeLeft.m).padStart(2, '0')}</span>
-          <span className="text-gray-600 mx-1 mb-1 animate-pulse">:</span>
-          <span className="text-amber-500">{String(timeLeft.s).padStart(2, '0')}</span>
-        </div>
+      </div>
+      <div className="relative z-10">
+        <Zap className="w-6 h-6 text-yellow-400" />
       </div>
     </div>
   );
@@ -118,7 +79,6 @@ export function Dashboard() {
   const [dailyGain, setDailyGain] = useState(0);
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
-  const [showTelegramModal, setShowTelegramModal] = useState(false);
   
   // Only show loader if we have NO cached data
   const [isLoading, setIsLoading] = useState(!settingsCache || !investmentsCache);
@@ -126,11 +86,6 @@ export function Dashboard() {
   useEffect(() => {
     refreshUser();
     
-    if (!sessionStorage.getItem('telegramModalShown')) {
-      setShowTelegramModal(true);
-      sessionStorage.setItem('telegramModalShown', 'true');
-    }
-
     // Apply cached data immediately if available
     if (investmentsCache) {
       const totalDaily = investmentsCache.reduce((acc, curr) => acc + Number(curr.daily_yield), 0);
@@ -141,14 +96,6 @@ export function Dashboard() {
     }
 
     fetchData();
-
-    // Setup polling for real-time like updates
-    const intervalId = setInterval(() => {
-      refreshUser();
-      fetchData();
-    }, 5000);
-
-    return () => clearInterval(intervalId);
   }, []);
 
   const formatLink = (link: string, defaultLink: string) => {
@@ -211,49 +158,6 @@ export function Dashboard() {
 
   return (
     <div className="p-6 space-y-6 pt-20 pb-24 min-h-screen">
-      {/* WHATSAPP MODAL */}
-      {showTelegramModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden animate-slide-up relative flex flex-col">
-            <button 
-              onClick={() => setShowTelegramModal(false)}
-              className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full flex items-center justify-center transition-colors z-10"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 1L1 13M1 1l12 12"/></svg>
-            </button>
-            
-            <div className="bg-[#25D366] p-8 flex flex-col items-center justify-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-              
-              <div className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md mb-6 relative z-10 shadow-sm border border-white/20">
-                <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
-              </div>
-
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg relative z-10">
-                <MessageCircle className="w-10 h-10 text-[#25D366] fill-current" />
-              </div>
-            </div>
-            
-            <div className="p-8 text-center space-y-4">
-              <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Bienvenue 🎉</h2>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Rejoignez notre groupe WhatsApp pour rester informé et ne rien manquer :
-              </p>
-              
-              <a 
-                href="https://chat.whatsapp.com/DgxHOEGyN5H07j6rlvOlEf?mode=gi_t" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                onClick={() => setShowTelegramModal(false)}
-                className="mt-6 w-full bg-[#25D366] hover:bg-[#128C7E] text-white font-bold py-4 rounded-2xl flex justify-center items-center gap-2 transition-transform hover:-translate-y-0.5"
-              >
-                Rejoindre le groupe 👉
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
       <header className="flex justify-between items-center">
         <div>
           <p className="text-white/80 text-sm">Bonjour,</p>
@@ -287,6 +191,12 @@ export function Dashboard() {
         </div>
       </div>
 
+      {activeInvestments.length > 0 && (
+        <CountdownTimer 
+          activeInvestments={activeInvestments} 
+          onTickZero={() => window.location.reload()} 
+        />
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
@@ -346,13 +256,6 @@ export function Dashboard() {
               <p className="text-lg font-bold text-gray-900">{activeInvestments.length}</p>
             </div>
           </div>
-
-          {activeInvestments.length > 0 && (
-            <CountdownTimer 
-              activeInvestments={activeInvestments} 
-              onTickZero={() => window.location.reload()} 
-            />
-          )}
         </div>
       )}
       

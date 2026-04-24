@@ -29,14 +29,6 @@ export function Invest() {
       applyPlans(settingsCache);
     }
     fetchPlans();
-
-    // Polling to keep user balance updated
-    const intervalId = setInterval(() => {
-      refreshUser();
-      fetchPlans();
-    }, 5000);
-
-    return () => clearInterval(intervalId);
   }, []);
 
   const applyPlans = (data: any[]) => {
@@ -186,6 +178,11 @@ export function Invest() {
                 <div className="h-32 w-full relative overflow-hidden">
                   <img src={plan.image || 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800'} alt="Plan" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                   <div className={`absolute inset-0 bg-gradient-to-t ${activeCategory === 'basique' ? 'from-blue-900/90' : 'from-emerald-900/90'} via-black/40 to-transparent`}></div>
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <p className="text-white/20 font-black text-6xl transform -rotate-12 select-none">
+                      {activeCategory === 'basique' ? 'STANDARD' : 'PREMIUM'}
+                    </p>
+                  </div>
                   <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl border border-white/30 shadow-sm">
                     <p className="text-white font-bold text-xs">
                       {plan.category === 'basique' ? '8 jours' : '60 jours'}

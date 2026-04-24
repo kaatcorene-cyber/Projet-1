@@ -12,13 +12,6 @@ export function History() {
 
   useEffect(() => {
     fetchData();
-
-    // Polling for real-time history updates
-    const intervalId = setInterval(() => {
-      fetchData();
-    }, 5000);
-
-    return () => clearInterval(intervalId);
   }, [user]);
 
   const fetchData = async () => {
