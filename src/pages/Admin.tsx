@@ -32,6 +32,11 @@ export function Admin() {
   const [paymentLink, setPaymentLink] = useState('');
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
+
+  // Deposit networks state
+  const [waveInfo, setWaveInfo] = useState({ number: '', name: '' });
+  const [mtnInfo, setMtnInfo] = useState({ number: '', name: '' });
+  const [moovInfo, setMoovInfo] = useState({ number: '', name: '' });
   
   const [plans, setPlans] = useState<any[]>([]);
   
@@ -111,6 +116,15 @@ export function Admin() {
 
         const sup = settingsRes.data.find(s => s.key === 'support_link');
         if (sup) setSupportLink(sup.value);
+        
+        const wv = settingsRes.data.find(s => s.key === 'deposit_wave');
+        if (wv && wv.value) { try { setWaveInfo(JSON.parse(wv.value)); } catch(e){} }
+        
+        const mt = settingsRes.data.find(s => s.key === 'deposit_mtn');
+        if (mt && mt.value) { try { setMtnInfo(JSON.parse(mt.value)); } catch(e){} }
+        
+        const mv = settingsRes.data.find(s => s.key === 'deposit_moov');
+        if (mv && mv.value) { try { setMoovInfo(JSON.parse(mv.value)); } catch(e){} }
         
         const dbPlansStr = settingsRes.data.find(s => s.key === 'investment_plans');
         if (dbPlansStr && dbPlansStr.value) {
@@ -295,7 +309,10 @@ export function Admin() {
     await supabase.from('settings').upsert([
       { key: 'payment_link', value: paymentLink },
       { key: 'group_link', value: groupLink },
-      { key: 'support_link', value: supportLink }
+      { key: 'support_link', value: supportLink },
+      { key: 'deposit_wave', value: JSON.stringify(waveInfo) },
+      { key: 'deposit_mtn', value: JSON.stringify(mtnInfo) },
+      { key: 'deposit_moov', value: JSON.stringify(moovInfo) }
     ]);
     setLoading(false);
     alert('Paramètres enregistrés !');
@@ -673,17 +690,6 @@ export function Admin() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Lien de paiement pour dépôts</label>
-                <input
-                  type="text"
-                  value={paymentLink}
-                  onChange={(e) => setPaymentLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div>
                 <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Lien du Groupe (ex: Telegram/WhatsApp)</label>
                 <input
                   type="url"
@@ -703,6 +709,36 @@ export function Admin() {
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
                   placeholder="https://t.me/support..."
                 />
+              </div>
+
+              <div className="pt-4 border-t border-gray-100">
+                <h3 className="font-bold text-gray-900 mb-4">Numéros de Dépôt (Mobile Money)</h3>
+                
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <h4 className="font-bold text-blue-800 text-sm mb-3">Wave</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" placeholder="Numéro Wave" value={waveInfo.number} onChange={e => setWaveInfo({...waveInfo, number: e.target.value})} className="bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 w-full" />
+                      <input type="text" placeholder="Nom du compte" value={waveInfo.name} onChange={e => setWaveInfo({...waveInfo, name: e.target.value})} className="bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 w-full" />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                    <h4 className="font-bold text-yellow-800 text-sm mb-3">MTN Money</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" placeholder="Numéro MTN" value={mtnInfo.number} onChange={e => setMtnInfo({...mtnInfo, number: e.target.value})} className="bg-white border border-yellow-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-yellow-500 w-full" />
+                      <input type="text" placeholder="Nom du compte" value={mtnInfo.name} onChange={e => setMtnInfo({...mtnInfo, name: e.target.value})} className="bg-white border border-yellow-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-yellow-500 w-full" />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
+                    <h4 className="font-bold text-orange-800 text-sm mb-3">Moov Money</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <input type="text" placeholder="Numéro Moov" value={moovInfo.number} onChange={e => setMoovInfo({...moovInfo, number: e.target.value})} className="bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-orange-500 w-full" />
+                      <input type="text" placeholder="Nom du compte" value={moovInfo.name} onChange={e => setMoovInfo({...moovInfo, name: e.target.value})} className="bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-orange-500 w-full" />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <button 
