@@ -174,6 +174,13 @@ export function Admin() {
     setLoading(false);
   };
 
+  const handleRemoveInvestment = async (id: string) => {
+    setLoading(true);
+    await supabase.from('investments').delete().eq('id', id);
+    fetchData();
+    setLoading(false);
+  };
+
   // --- Transactions Handlers ---
   const handleTransaction = async (id: string, status: 'approved' | 'rejected', type: string, amount: number, userId: string) => {
     setLoading(true);
@@ -444,11 +451,16 @@ export function Admin() {
                         {inv.users?.first_name} {inv.users?.last_name} ({inv.users?.phone})
                       </p>
                     </div>
-                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
-                      inv.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {inv.status}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
+                        inv.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {inv.status}
+                      </span>
+                      <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title="Supprimer l'investissement">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50 pl-2">
                     <div>

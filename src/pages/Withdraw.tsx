@@ -116,7 +116,7 @@ export function Withdraw() {
           />
           {amount && Number(amount) >= 1000 && (
             <p className="text-xs font-medium text-emerald-600 ml-1 mt-1.5">
-              Vous recevrez : <span className="font-bold">{formatCurrency(Number(amount) * 0.8)}</span>
+              Vous recevrez : <span className="font-bold">{formatCurrency(Number(amount) * 0.85)}</span>
             </p>
           )}
         </div>
