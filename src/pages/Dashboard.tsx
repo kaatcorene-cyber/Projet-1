@@ -79,7 +79,7 @@ export function Dashboard() {
   const [dailyGain, setDailyGain] = useState(0);
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
-  const [showWhatsappModal, setShowWhatsappModal] = useState(false);
+  const [showTelegramModal, setShowTelegramModal] = useState(false);
   
   // Only show loader if we have NO cached data
   const [isLoading, setIsLoading] = useState(!settingsCache || !investmentsCache);
@@ -87,9 +87,9 @@ export function Dashboard() {
   useEffect(() => {
     refreshUser();
     
-    if (!sessionStorage.getItem('whatsappModalShown')) {
-      setShowWhatsappModal(true);
-      sessionStorage.setItem('whatsappModalShown', 'true');
+    if (!sessionStorage.getItem('telegramModalShown')) {
+      setShowTelegramModal(true);
+      sessionStorage.setItem('telegramModalShown', 'true');
     }
 
     // Apply cached data immediately if available
@@ -164,18 +164,18 @@ export function Dashboard() {
 
   return (
     <div className="p-6 space-y-6 pt-20 pb-24 min-h-screen">
-      {/* WHATSAPP MODAL */}
-      {showWhatsappModal && (
+      {/* TELEGRAM MODAL */}
+      {showTelegramModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden animate-slide-up relative flex flex-col">
             <button 
-              onClick={() => setShowWhatsappModal(false)}
+              onClick={() => setShowTelegramModal(false)}
               className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full flex items-center justify-center transition-colors z-10"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 1L1 13M1 1l12 12"/></svg>
             </button>
             
-            <div className="bg-[#25D366] p-8 flex flex-col items-center justify-center relative overflow-hidden">
+            <div className="bg-blue-500 p-8 flex flex-col items-center justify-center relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
               
               <div className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md mb-6 relative z-10 shadow-sm border border-white/20">
@@ -183,24 +183,24 @@ export function Dashboard() {
               </div>
 
               <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg relative z-10">
-                <MessageCircle className="w-10 h-10 text-[#25D366] fill-current" />
+                <MessageCircle className="w-10 h-10 text-blue-500 fill-current" />
               </div>
             </div>
             
             <div className="p-8 text-center space-y-4">
               <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Bienvenue 🎉</h2>
               <p className="text-gray-600 text-sm leading-relaxed">
-                Rejoignez notre groupe WhatsApp pour rester informé et ne rien manquer :
+                Rejoignez notre groupe Telegram pour rester informé et ne rien manquer :
               </p>
               
               <a 
-                href="https://chat.whatsapp.com/DgxHOEGyN5H07j6rlvOlEf?mode=gi_t" 
+                href="https://t.me/+gg93HKbMMgQ1MDg0" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                onClick={() => setShowWhatsappModal(false)}
-                className="mt-6 w-full bg-[#25D366] hover:bg-green-600 text-white font-bold py-4 rounded-2xl flex justify-center items-center gap-2 transition-transform hover:-translate-y-0.5 shadow-md hover:shadow-lg"
+                onClick={() => setShowTelegramModal(false)}
+                className="mt-6 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-2xl flex justify-center items-center gap-2 transition-transform hover:-translate-y-0.5"
               >
-                Rejoindre le groupe 👉
+                Rejoindre le canal 👉
               </a>
             </div>
           </div>

@@ -4,8 +4,6 @@ import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
-import { getCountryByCode } from '../lib/countries';
-
 export function Deposit() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -14,8 +12,6 @@ export function Deposit() {
   const [loading, setLoading] = useState(false);
   const [paymentLink, setPaymentLink] = useState('https://bkapay.com/merchant/20cf6268');
   const [error, setError] = useState('');
-
-  const userCountry = getCountryByCode(user?.country || 'CI');
 
   useEffect(() => {
     // Fetch payment link from settings
@@ -41,7 +37,7 @@ export function Deposit() {
         user_id: user.id,
         type: 'deposit',
         amount: Number(amount),
-        reference: `Depot - ${userCountry.dialCode}${phone}`,
+        reference: `Depot - ${phone}`,
         status: 'pending'
       }]);
 
@@ -86,17 +82,14 @@ export function Deposit() {
 
         <div className="space-y-1">
           <label className="text-xs font-bold uppercase tracking-wider text-white/80 ml-1">Numéro de téléphone payeur</label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-gray-200 pr-3">{userCountry.dialCode}</span>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(new RegExp(`^\\${userCountry.dialCode}`), ''))}
-              className="w-full bg-white border border-gray-200 rounded-xl pl-[4.5rem] pr-4 py-4 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
-              placeholder="Ex: 0123456789"
-              required
-            />
-          </div>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-4 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
+            placeholder="Ex: 0123456789"
+            required
+          />
         </div>
 
         <button
