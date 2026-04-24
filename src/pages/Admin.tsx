@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -32,21 +32,23 @@ export function Admin() {
   const [paymentLink, setPaymentLink] = useState('');
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
-  
+
   const [plans, setPlans] = useState<any[]>([]);
   
   // States for Plans
-  const [newPlanCategory, setNewPlanCategory] = useState<'basique' | 'premium'>('basique');
   const [newPlanAmount, setNewPlanAmount] = useState('');
   const [newPlanDaily, setNewPlanDaily] = useState('');
   const [newPlanTotal, setNewPlanTotal] = useState('');
   const [newPlanImage, setNewPlanImage] = useState('');
+  const [editingPlanIndex, setEditingPlanIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // States for Users
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editBalance, setEditBalance] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [loading, setLoading] = useState(false);
 
@@ -56,10 +58,17 @@ export function Admin() {
       return;
     }
     fetchData();
+
+    // Polling for live admin updates
+    const intervalId = setInterval(() => {
+      fetchData(false); // pass a flag to possibly NOT trigger loading state
+    }, 5000);
+
+    return () => clearInterval(intervalId);
   }, [user, navigate]);
 
-  const fetchData = async () => {
-    setIsInitializing(true);
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) setIsInitializing(true);
     try {
       const [txsRes, usersRes, settingsRes, invsRes] = await Promise.all([
         supabase.from('transactions').select('*, users(first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
@@ -157,8 +166,20 @@ export function Admin() {
     setLoading(false);
   };
 
+  const handleRemoveInvestment = async (id: string) => {
+    if (!window.confirm('Voulez-vous vraiment supprimer cet investissement ?')) return;
+    setLoading(true);
+    await supabase.from('investments').delete().eq('id', id);
+    fetchData();
+    setLoading(false);
+  };
+
   // --- Transactions Handlers ---
   const handleTransaction = async (id: string, status: 'approved' | 'rejected', type: string, amount: number, userId: string) => {
+    const actionText = status === 'approved' ? 'approuver' : 'rejeter';
+    const typeText = type === 'deposit' ? 'ce dépôt' : 'ce retrait';
+    if (!window.confirm(`Voulez-vous vraiment ${actionText} ${typeText} ?`)) return;
+
     setLoading(true);
     await supabase.from('transactions').update({ status }).eq('id', id);
 
@@ -272,15 +293,43 @@ export function Admin() {
   const handleAddPlan = () => {
     if (!newPlanAmount || !newPlanDaily || !newPlanTotal || !newPlanImage) return;
     const newPlan = {
-      category: newPlanCategory,
+      category: 'unique',
       amount: Number(newPlanAmount),
       daily: Number(newPlanDaily),
       total: Number(newPlanTotal),
       image: newPlanImage
     };
-    const updatedPlans = [...plans, newPlan].sort((a, b) => a.amount - b.amount);
+    
+    let updatedPlans;
+    if (editingPlanIndex !== null) {
+      updatedPlans = [...plans];
+      updatedPlans[editingPlanIndex] = newPlan;
+    } else {
+      updatedPlans = [...plans, newPlan];
+    }
+    
+    updatedPlans.sort((a, b) => a.amount - b.amount);
     handleSavePlans(updatedPlans);
+    
     setNewPlanAmount(''); setNewPlanDaily(''); setNewPlanTotal(''); setNewPlanImage('');
+    setEditingPlanIndex(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleEditPlan = (index: number) => {
+    const plan = plans[index];
+    setNewPlanAmount(plan.amount.toString());
+    setNewPlanDaily(plan.daily.toString());
+    setNewPlanTotal(plan.total.toString());
+    setNewPlanImage(plan.image);
+    setEditingPlanIndex(index);
+    // Scroll to form smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEditPlan = () => {
+    setNewPlanAmount(''); setNewPlanDaily(''); setNewPlanTotal(''); setNewPlanImage('');
+    setEditingPlanIndex(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -325,7 +374,7 @@ export function Admin() {
         {tabs.map(t => (
           <button
             key={t.id}
-            onClick={() => setActiveTab(t.id)}
+            onClick={() => { setActiveTab(t.id); setSearchTerm(''); }}
             className={`px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium whitespace-nowrap transition-colors ${
               activeTab === t.id ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
@@ -335,6 +384,18 @@ export function Admin() {
           </button>
         ))}
       </div>
+
+      {['users', 'deposits', 'withdrawals'].includes(activeTab) && (
+        <div className="bg-white px-4 py-3 border border-gray-200 rounded-xl shadow-sm mb-4">
+          <input
+            type="text"
+            placeholder="Rechercher par nom ou numéro..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-transparent outline-none text-sm text-gray-900 placeholder-gray-400"
+          />
+        </div>
+      )}
 
       {/* CONTENT: OVERVIEW */}
       {activeTab === 'overview' && (
@@ -383,11 +444,16 @@ export function Admin() {
                         {inv.users?.first_name} {inv.users?.last_name} ({inv.users?.phone})
                       </p>
                     </div>
-                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
-                      inv.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {inv.status}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
+                        inv.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {inv.status}
+                      </span>
+                      <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title="Supprimer l'investissement">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50 pl-2">
                     <div>
@@ -416,7 +482,7 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-gray-900 mb-2">Gestion des Utilisateurs ({usersList.length})</h2>
           <div className="space-y-3">
-            {usersList.map(u => (
+            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
               <div key={u.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative">
                 <div className="flex justify-between items-start mb-3">
                   <div>
@@ -477,8 +543,8 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-gray-900 mb-2">Demandes de Dépôts</h2>
           <div className="space-y-3">
-            {transactions.filter(t => t.type === 'deposit').length === 0 && <p className="text-sm text-gray-500 text-center py-4">Aucun dépôt.</p>}
-            {transactions.filter(t => t.type === 'deposit').map(tx => (
+            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-gray-500 text-center py-4">Aucun dépôt.</p>}
+            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
               <div key={tx.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -517,8 +583,8 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-gray-900 mb-2">Demandes de Retraits</h2>
           <div className="space-y-3">
-            {transactions.filter(t => t.type === 'withdrawal').length === 0 && <p className="text-sm text-gray-500 text-center py-4">Aucun retrait.</p>}
-            {transactions.filter(t => t.type === 'withdrawal').map(tx => (
+            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-gray-500 text-center py-4">Aucun retrait.</p>}
+            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
               <div key={tx.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -558,18 +624,28 @@ export function Admin() {
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
              <h2 className="text-lg font-bold text-gray-900 mb-4">Créer un Plan VIP</h2>
              <div className="space-y-4">
-               <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 ml-1">Catégorie du Plan</label>
-                  <div className="flex gap-2">
-                     <button onClick={() => setNewPlanCategory('basique')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${newPlanCategory === 'basique' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100'}`}>Standard (Basique)</button>
-                     <button onClick={() => setNewPlanCategory('premium')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${newPlanCategory === 'premium' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-gray-50 text-gray-500 border border-transparent hover:bg-gray-100'}`}>Premium</button>
-                  </div>
-               </div>
-               
-               <div className="grid grid-cols-2 gap-3">
-                 <input type="number" placeholder="Montant (ex: 5000)" value={newPlanAmount} onChange={e => setNewPlanAmount(e.target.value)} className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
-                 <input type="number" placeholder="Gain journalier" value={newPlanDaily} onChange={e => setNewPlanDaily(e.target.value)} className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
-                 <input type="number" placeholder="Revenu Total" value={newPlanTotal} onChange={e => setNewPlanTotal(e.target.value)} className="col-span-2 bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" />
+               <div className="grid grid-cols-2 gap-3 mt-4">
+                 <input 
+                   type="number" 
+                   placeholder="Montant (ex: 5000)" 
+                   value={newPlanAmount} 
+                   onChange={e => {
+                     const amt = Number(e.target.value);
+                     setNewPlanAmount(e.target.value);
+                     if (amt > 0) {
+                        const daily = Math.round(amt * 0.18);
+                        const total = daily * 60;
+                        setNewPlanDaily(daily.toString());
+                        setNewPlanTotal(total.toString());
+                     } else {
+                        setNewPlanDaily('');
+                        setNewPlanTotal('');
+                     }
+                   }} 
+                   className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                 />
+                 <input type="number" placeholder="Gain journalier" value={newPlanDaily} readOnly className="bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none cursor-not-allowed opacity-80" />
+                 <input type="number" placeholder="Revenu Total" value={newPlanTotal} readOnly className="col-span-2 bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none cursor-not-allowed opacity-80" />
                </div>
 
                {/* IMAGE UPLOAD */}
@@ -596,9 +672,20 @@ export function Admin() {
                  </label>
                </div>
 
-               <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
-                 <Plus className="w-5 h-5" /> Ajouter à la liste
-               </button>
+               {editingPlanIndex !== null ? (
+                 <div className="flex gap-2">
+                   <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                     <Save className="w-5 h-5" /> Sauvegarder
+                   </button>
+                   <button onClick={handleCancelEditPlan} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                     Annuler
+                   </button>
+                 </div>
+               ) : (
+                 <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                   <Plus className="w-5 h-5" /> Ajouter à la liste
+                 </button>
+               )}
              </div>
           </div>
 
@@ -608,14 +695,13 @@ export function Admin() {
                <div className="flex justify-center p-4">
                   <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
                </div>
-            ) : plans.sort((a,b) => a.category.localeCompare(b.category) || a.amount - b.amount).map((p, idx) => (
+            ) : plans.map((p, idx) => (
               <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-                <div className={`absolute left-0 top-0 bottom-0 w-1 ${p.category === 'basique' ? 'bg-blue-500' : 'bg-emerald-500'}`}></div>
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
                 <div className="flex items-center gap-4 pl-2">
                   <img src={p.image || 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800'} className="w-12 h-12 rounded-xl object-cover bg-gray-100" alt="" referrerPolicy="no-referrer" />
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
-                       <span className={`text-[9px] font-bold px-1.5 py-0.5 uppercase tracking-wider rounded ${p.category === 'basique' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>{p.category}</span>
                        <p className="font-bold text-gray-900 text-sm leading-none">{formatCurrency(p.amount)}</p>
                     </div>
                     <div className="flex gap-2">
@@ -624,9 +710,14 @@ export function Admin() {
                     </div>
                   </div>
                 </div>
-                <button onClick={() => handleRemovePlan(idx)} disabled={loading} className="p-2.5 text-red-500 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => handleEditPlan(idx)} disabled={loading} className="p-2.5 text-blue-500 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-100 transition-colors cursor-pointer">
+                    <Edit className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => handleRemovePlan(idx)} disabled={loading} className="p-2.5 text-red-500 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -640,17 +731,6 @@ export function Admin() {
             <h2 className="text-lg font-bold text-gray-900 mb-4">Configuration globale</h2>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Lien de paiement pour dépôts</label>
-                <input
-                  type="text"
-                  value={paymentLink}
-                  onChange={(e) => setPaymentLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
-                  placeholder="https://..."
-                />
-              </div>
-
               <div>
                 <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Lien du Groupe (ex: Telegram/WhatsApp)</label>
                 <input

@@ -1,0 +1,25 @@
+Ce dossier contient tout le code nécessaire pour faire fonctionner votre Bot Telegram de modération 24h/24.
+
+Le système web dans lequel nous nous trouvons (Google AI Studio) ferme automatiquement les conteneurs lorsqu'ils ne sont pas visibles sur un écran. Pour que votre bot gère des horaires (17h/09h) il doit toujours être allumé (hébergé) 24h/24 sur un "vrai" petit serveur.
+
+# COMMENT ACTIVER LE BOT ?
+
+Vous devez l'héberger gratuitement sur un site adapté (comme Render, Railway, ou Replit). Voici comment faire sur "Replit" (très recommandé pour les débutants) :
+
+1. Allez sur https://replit.com/ et créez un compte gratuit.
+2. Créez un nouveau "Repl" en sélectionnant le langage "Node.js".
+3. Copiez le contenu de `bot.js` et collez-le dans le `index.js` de Replit.
+4. Dans le menu de gauche sous "Tools" -> "Secrets", vous devez créer deux variables :
+   - TELEGRAM_BOT_TOKEN : (le token que BotFather vous a donné).
+   - GROUP_CHAT_ID : l'ID chiffré de votre groupe (ex: -1005822365).
+5. Cliquez sur "Run" en haut en vert.
+
+# CONDITIONS OBLIGATOIRES SUR TELEGRAM
+
+1. Votre bot DOIT être "Administrateur" dans le groupe Telegram.
+2. Il DOIT avoir spécifiquement ces droits d'administration d'activés :
+   - Supprimer des messages (Delete messages)
+   - Restreindre des membres (Ban users)
+   - Modifier les infos du groupe (pour gérer la fermeture à 17h)
+
+Si vous le laissez tourner sur un service d'hébergement, la fermeture s'effectuera tous les jours à 17h, il censurera TOUS les liens sauf le vôtre, et bannira le suspect à la troisième infraction !
