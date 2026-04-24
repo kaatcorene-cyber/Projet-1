@@ -165,51 +165,63 @@ export function Deposit() {
           </button>
         </form>
       ) : (
-        <div className="bg-white rounded-3xl p-6 shadow-xl space-y-6 animate-fade-in text-gray-900">
-          <div className="text-center space-y-2">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-8 h-8" />
+        <div className="fixed inset-0 z-50 bg-white overflow-y-auto animate-fade-in flex flex-col">
+          <header className="bg-emerald-500 p-6 pt-12 pb-8 rounded-b-[2.5rem] shadow-md flex flex-col items-center justify-center relative">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-black text-2xl tracking-tighter text-white">PETROLIMEX pay</span>
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Demande enregistrée</h2>
-            <p className="text-sm text-gray-500">
-              Veuillez transférer exactement {formatCurrency(Number(amount))} sur le compte ci-dessous pour finaliser votre dépôt via {network.toUpperCase()}.
-            </p>
-          </div>
+            <p className="text-emerald-100 text-sm font-medium">Paiement sécurisé</p>
+          </header>
 
-          <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 space-y-4">
-            <div>
-              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Numéro ({network.toUpperCase()})</p>
-              <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-gray-200">
-                <span className="font-mono text-lg font-bold text-gray-900">{selectedNetworkInfo?.number || 'Non configuré'}</span>
-                <button onClick={() => copyToClipboard(selectedNetworkInfo?.number || '')} className="text-emerald-600 hover:bg-emerald-50 p-2 rounded-lg transition-colors">
-                  <Copy className="w-5 h-5" />
-                </button>
+          <div className="flex-1 p-6 space-y-6 max-w-md mx-auto w-full -mt-4">
+            <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100 space-y-6 text-gray-900 relative z-10">
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Demande enregistrée</h2>
+                <p className="text-sm text-gray-500">
+                  Veuillez transférer exactement {formatCurrency(Number(amount))} sur le compte ci-dessous pour finaliser votre dépôt via {network.toUpperCase()}.
+                </p>
               </div>
-            </div>
-            
-            <div>
-              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Nom sur le compte</p>
-              <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-gray-200">
-                <span className="font-bold text-gray-900">{selectedNetworkInfo?.name || 'Non configuré'}</span>
-                <button onClick={() => copyToClipboard(selectedNetworkInfo?.name || '')} className="text-emerald-600 hover:bg-emerald-50 p-2 rounded-lg transition-colors">
-                  <Copy className="w-5 h-5" />
-                </button>
+
+              <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 space-y-4">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Numéro ({network.toUpperCase()})</p>
+                  <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-gray-200">
+                    <span className="font-mono text-lg font-bold text-gray-900">{selectedNetworkInfo?.number || 'Non configuré'}</span>
+                    <button type="button" onClick={() => copyToClipboard(selectedNetworkInfo?.number || '')} className="text-emerald-600 hover:bg-emerald-50 p-2 rounded-lg transition-colors cursor-pointer">
+                      <Copy className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Nom sur le compte</p>
+                  <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-gray-200">
+                    <span className="font-bold text-gray-900 md:truncate max-w-[200px]">{selectedNetworkInfo?.name || 'Non configuré'}</span>
+                    <button type="button" onClick={() => copyToClipboard(selectedNetworkInfo?.name || '')} className="text-emerald-600 hover:bg-emerald-50 p-2 rounded-lg transition-colors cursor-pointer">
+                      <Copy className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+                <p className="text-sm text-amber-800 font-medium text-center">
+                  ⚠️ Votre compte sera rechargé automatiquement après vérification du transfert par nos agents.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => navigate('/history')}
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl transition-all duration-300 shadow-md active:scale-95 cursor-pointer"
+              >
+                J'ai effectué le dépôt
+              </button>
             </div>
           </div>
-
-          <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
-            <p className="text-sm text-amber-800 font-medium text-center">
-              ⚠️ Votre compte sera rechargé automatiquement après vérification du transfert par nos agents.
-            </p>
-          </div>
-
-          <button
-            onClick={() => navigate('/history')}
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl transition-all duration-300 shadow-md active:scale-95"
-          >
-            J'ai effectué le dépôt
-          </button>
         </div>
       )}
     </div>
