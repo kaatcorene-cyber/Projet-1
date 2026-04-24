@@ -9,7 +9,6 @@ export function Deposit() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
-  const [phone, setPhone] = useState(user?.phone || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
@@ -43,7 +42,7 @@ export function Deposit() {
         user_id: user.id,
         type: 'deposit',
         amount: Number(amount),
-        reference: `Depot en ligne - ${phone}`,
+        reference: `Depot en ligne`,
         status: 'pending'
       }]);
 
@@ -82,18 +81,6 @@ export function Deposit() {
               {error}
             </div>
           )}
-
-          <div className="space-y-1">
-            <label className="text-xs font-bold uppercase tracking-wider text-white/80 ml-1">Numéro de téléphone</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-4 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
-              placeholder="Votre numéro (ex: 0123456789)"
-              required
-            />
-          </div>
 
           <div className="space-y-1">
             <label className="text-xs font-bold uppercase tracking-wider text-white/80 ml-1">Montant à recharger (FCFA)</label>
