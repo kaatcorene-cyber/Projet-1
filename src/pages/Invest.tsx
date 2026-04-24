@@ -29,6 +29,14 @@ export function Invest() {
       applyPlans(settingsCache);
     }
     fetchPlans();
+
+    // Polling to keep user balance updated
+    const intervalId = setInterval(() => {
+      refreshUser();
+      fetchPlans();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const applyPlans = (data: any[]) => {

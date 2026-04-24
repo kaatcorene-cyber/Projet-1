@@ -64,10 +64,17 @@ export function Admin() {
       return;
     }
     fetchData();
+
+    // Polling for live admin updates
+    const intervalId = setInterval(() => {
+      fetchData(false); // pass a flag to possibly NOT trigger loading state
+    }, 5000);
+
+    return () => clearInterval(intervalId);
   }, [user, navigate]);
 
-  const fetchData = async () => {
-    setIsInitializing(true);
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) setIsInitializing(true);
     try {
       const [txsRes, usersRes, settingsRes, invsRes] = await Promise.all([
         supabase.from('transactions').select('*, users(first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
@@ -175,6 +182,7 @@ export function Admin() {
   };
 
   const handleRemoveInvestment = async (id: string) => {
+    if (!window.confirm('Voulez-vous vraiment supprimer cet investissement ?')) return;
     setLoading(true);
     await supabase.from('investments').delete().eq('id', id);
     fetchData();
@@ -183,6 +191,10 @@ export function Admin() {
 
   // --- Transactions Handlers ---
   const handleTransaction = async (id: string, status: 'approved' | 'rejected', type: string, amount: number, userId: string) => {
+    const actionText = status === 'approved' ? 'approuver' : 'rejeter';
+    const typeText = type === 'deposit' ? 'ce dépôt' : 'ce retrait';
+    if (!window.confirm(`Voulez-vous vraiment ${actionText} ${typeText} ?`)) return;
+
     setLoading(true);
     await supabase.from('transactions').update({ status }).eq('id', id);
 

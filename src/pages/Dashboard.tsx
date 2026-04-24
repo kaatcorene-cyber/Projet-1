@@ -141,6 +141,14 @@ export function Dashboard() {
     }
 
     fetchData();
+
+    // Setup polling for real-time like updates
+    const intervalId = setInterval(() => {
+      refreshUser();
+      fetchData();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const formatLink = (link: string, defaultLink: string) => {
