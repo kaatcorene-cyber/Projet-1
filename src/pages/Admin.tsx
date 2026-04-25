@@ -345,7 +345,7 @@ export function Admin() {
       { key: 'payment_link', value: paymentLink },
       { key: 'group_link', value: groupLink },
       { key: 'support_link', value: supportLink }
-    ]);
+    ], { onConflict: 'key' });
     setLoading(false);
     alert('Paramètres enregistrés !');
   };

@@ -92,7 +92,7 @@ export function Invest() {
       if (updateError) throw updateError;
 
       // 2. Create investment
-      const durationDays = Math.round(plan.total / plan.daily) || 60; // fallback to 60 if unexpected daily=0
+      const durationDays = 60;
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + durationDays);
 
