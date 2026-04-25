@@ -732,6 +732,17 @@ export function Admin() {
             
             <div className="space-y-4">
               <div>
+                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Lien de Paiement</label>
+                <input
+                  type="url"
+                  value={paymentLink}
+                  onChange={(e) => setPaymentLink(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Lien du Groupe (ex: Telegram/WhatsApp)</label>
                 <input
                   type="url"

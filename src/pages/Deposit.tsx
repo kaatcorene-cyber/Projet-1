@@ -9,7 +9,7 @@ export function Deposit() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
-  const [phone, setPhone] = useState(user?.phone || '');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
