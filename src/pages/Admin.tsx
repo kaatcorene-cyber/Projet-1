@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
+import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit } from 'lucide-react';
@@ -341,13 +342,20 @@ export function Admin() {
   // --- Settings Handlers ---
   const handleUpdateSettings = async () => {
     setLoading(true);
-    await supabase.from('settings').upsert([
+    const { error } = await supabase.from('settings').upsert([
       { key: 'payment_link', value: paymentLink },
       { key: 'group_link', value: groupLink },
       { key: 'support_link', value: supportLink }
     ], { onConflict: 'key' });
     setLoading(false);
-    alert('Paramètres enregistrés !');
+    
+    if (error) {
+      alert('Erreur lors de l\'enregistrement : ' + error.message);
+    } else {
+      // Clear or update the cache immediately so it reflects in Dashboard
+      useAppStore.getState().setSettingsCache(null as any);
+      alert('Paramètres enregistrés !');
+    }
   };
 
   const tabs = [

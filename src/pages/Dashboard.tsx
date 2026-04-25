@@ -241,7 +241,7 @@ export function Dashboard() {
               </p>
               
               <a 
-                href="https://chat.whatsapp.com/DgxHOEGyN5H07j6rlvOlEf?mode=gi_t" 
+                href={groupLink || "https://chat.whatsapp.com/G9dIxaXoFy38yKQvLkqao2?mode=gi_t"} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 onClick={() => setShowTelegramModal(false)}
