@@ -148,9 +148,9 @@ export function Team() {
               </div>
             </div>
             {totalInvested > 0 ? (
-              <div className="flex items-center justify-between bg-emerald-50 rounded-lg p-2 border border-emerald-100/50">
-                 <span className="text-xs font-medium text-emerald-800">Investissement total:</span>
-                 <span className="text-sm font-bold text-emerald-600">{formatCurrency(totalInvested)}</span>
+              <div className="flex items-center justify-between bg-red-50 rounded-lg p-2 border border-red-100/50">
+                 <span className="text-xs font-medium text-red-900">Investissement total:</span>
+                 <span className="text-sm font-bold text-red-700">{formatCurrency(totalInvested)}</span>
               </div>
             ) : (
               <div className="flex items-center justify-between bg-gray-50 rounded-lg p-2">
@@ -165,91 +165,73 @@ export function Team() {
   };
 
   return (
-    <div className="p-6 space-y-6 pt-20 pb-24 min-h-screen">
-      <header className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 p-5 pt-16 pb-24 font-sans">
+      <header className="flex justify-between items-end pb-2 border-b border-gray-200 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Mon Équipe</h1>
-          <p className="text-white/80 text-sm mt-1">Gagnez jusqu'à 28% de commissions</p>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Mon Équipe</h1>
+          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-1">Gagnez jusqu'à 22%</p>
         </div>
-        <div className="bg-white/20 p-1.5 rounded-xl backdrop-blur-md">
-          <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
-        </div>
+        <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-6 object-contain" referrerPolicy="no-referrer" />
       </header>
 
-      <div className="bg-white border border-gray-100 rounded-3xl p-6 relative overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-lg transition-shadow duration-300">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-        
-        <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-3 relative z-10">Votre lien de parrainage unique</p>
-        
-        <div className="flex flex-col gap-3 mb-6 relative z-10">
-          <div className="w-full">
-            <input 
-              readOnly
-              type="text"
-              value={referralLink}
-              onClick={(e) => (e.target as HTMLInputElement).select()}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-gray-900 text-sm font-mono tracking-tight focus:outline-none focus:border-emerald-500 transition-colors mb-2 text-center"
-            />
-            <button 
-              onClick={copyCode}
-              className="w-full py-4 bg-gray-900 hover:bg-gray-800 rounded-xl flex items-center justify-center gap-2 text-white font-medium transition-colors shadow-sm cursor-pointer"
-            >
-              {copyStatus === 'success' ? (
-                <>
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" /> Lien copié !
-                </>
-              ) : (
-                <>
-                  <Copy className="w-5 h-5" /> Copier mon lien
-                </>
-              )}
-            </button>
-          </div>
-          
-          {/* Status message */}
-          {copyStatus === 'error' && (
-            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
-              <p className="text-amber-700 text-xs font-medium flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> 
-                <span>Cliquez sur le lien gris au-dessus, maintenez votre doigt appuyé, puis sélectionnez "Copier".</span>
-              </p>
-            </div>
-          )}
+      <div className="bg-white border text-center border-gray-200 rounded-2xl p-6 shadow-sm mb-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-red-600"></div>
+        <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2 z-10 relative">Gains d'équipe</p>
+        <h2 className="text-4xl font-black text-gray-900 tracking-tighter mb-4 z-10 relative">{formatCurrency(teamStats.totalBonus)}</h2>
+        <div className="inline-flex items-center justify-center px-4 py-1.5 bg-gray-50 text-gray-700 rounded-full text-xs font-bold border border-gray-200 mb-6 z-10 relative gap-2">
+          <Users className="w-4 h-4 text-gray-400" />
+          {totalMembers} Membres au total
         </div>
 
-        <div className="grid grid-cols-2 gap-4 relative z-10">
-          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 transition-all duration-300 hover:bg-white hover:shadow-md cursor-default">
-            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center mb-2">
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
-            </div>
-            <p className="text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Gains</p>
-            <p className="text-lg font-bold text-emerald-600">{formatCurrency(teamStats.totalBonus)}</p>
-          </div>
-          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 transition-all duration-300 hover:bg-white hover:shadow-md cursor-default">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mb-2">
-              <Users className="w-4 h-4 text-blue-600" />
-            </div>
-            <p className="text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Membres</p>
-            <p className="text-lg font-bold text-gray-900">{totalMembers}</p>
-          </div>
+        <div className="flex flex-col gap-3 relative z-10">
+          <input 
+            readOnly
+            type="text"
+            value={referralLink}
+            onClick={(e) => (e.target as HTMLInputElement).select()}
+            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-xs font-mono tracking-tight focus:outline-none focus:border-red-500 transition-colors text-center"
+          />
+          <button 
+            onClick={copyCode}
+            className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-xl flex items-center justify-center gap-2 text-white font-semibold transition-colors shadow-sm cursor-pointer"
+          >
+            {copyStatus === 'success' ? (
+              <>
+                <CheckCircle2 className="w-5 h-5 text-red-200" /> Lien copié !
+              </>
+            ) : (
+              <>
+                <Copy className="w-5 h-5" /> Copier mon lien
+              </>
+            )}
+          </button>
         </div>
+
+        {copyStatus === 'error' && (
+          <div className="mt-3 bg-amber-50 border border-amber-100 rounded-xl p-3 text-left">
+            <p className="text-amber-700 text-[10px] font-medium flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> 
+              <span>Cliquez sur le lien, maintenez appuyé, puis "Copier".</span>
+            </p>
+          </div>
+        )}
       </div>
 
-      <div className="space-y-4 animate-slide-up">
-        <h3 className="text-lg font-bold text-white mb-2">Membres de l'équipe</h3>
+      <div className="space-y-4 animate-fade-in">
+        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider px-1">Détails par niveau</h3>
         
         {/* LEVEL 1 */}
-        <div className="bg-white border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-md">
+        <div className="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden transition-all duration-300">
           <button 
             onClick={() => setExpandedLevel(expandedLevel === 1 ? null : 1)}
             className="w-full p-4 flex items-center justify-between bg-transparent cursor-pointer"
           >
-            <div className="text-left">
-              <div className="flex items-center gap-2">
-                <p className="font-bold text-gray-900">Niveau 1</p>
-                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">15%</span>
+            <div className="text-left flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center text-red-600 font-black">1</div>
+              <div>
+                <p className="font-bold text-gray-900">Niveau 1 <span className="text-xs font-semibold text-red-500 ml-1">(20%)</span></p>
+                <p className="text-gray-500 text-xs mt-0.5">{teamStats.level1.length} membres</p>
               </div>
-              <p className="text-gray-500 text-sm mt-0.5">{teamStats.level1.length} membres</p>
             </div>
             <div className="text-gray-400">
               {expandedLevel === 1 ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -257,24 +239,24 @@ export function Team() {
           </button>
           
           {expandedLevel === 1 && (
-            <div className="px-4 pb-4 border-t border-gray-50">
-              {isLoading ? <p className="text-sm text-gray-400 text-center py-4">Chargement...</p> : renderMemberList(teamStats.level1)}
+            <div className="px-4 pb-4 border-t border-gray-100 bg-gray-50/50">
+              {isLoading ? <p className="text-xs text-gray-400 text-center py-4 font-medium uppercase tracking-wider">Chargement...</p> : renderMemberList(teamStats.level1)}
             </div>
           )}
         </div>
 
         {/* LEVEL 2 */}
-        <div className="bg-white border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-md">
+        <div className="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden transition-all duration-300">
           <button 
             onClick={() => setExpandedLevel(expandedLevel === 2 ? null : 2)}
             className="w-full p-4 flex items-center justify-between bg-transparent cursor-pointer"
           >
-            <div className="text-left">
-              <div className="flex items-center gap-2">
-                <p className="font-bold text-gray-900">Niveau 2</p>
-                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">3%</span>
+            <div className="text-left flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 font-black">2</div>
+              <div>
+                <p className="font-bold text-gray-900">Niveau 2 <span className="text-xs font-semibold text-red-500 ml-1">(1%)</span></p>
+                <p className="text-gray-500 text-xs mt-0.5">{teamStats.level2.length} membres</p>
               </div>
-              <p className="text-gray-500 text-sm mt-0.5">{teamStats.level2.length} membres</p>
             </div>
             <div className="text-gray-400">
               {expandedLevel === 2 ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -282,24 +264,24 @@ export function Team() {
           </button>
           
           {expandedLevel === 2 && (
-            <div className="px-4 pb-4 border-t border-gray-50">
-               {isLoading ? <p className="text-sm text-gray-400 text-center py-4">Chargement...</p> : renderMemberList(teamStats.level2)}
+            <div className="px-4 pb-4 border-t border-gray-100 bg-gray-50/50">
+               {isLoading ? <p className="text-xs text-gray-400 text-center py-4 font-medium uppercase tracking-wider">Chargement...</p> : renderMemberList(teamStats.level2)}
             </div>
           )}
         </div>
 
         {/* LEVEL 3 */}
-        <div className="bg-white border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-md">
+        <div className="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden transition-all duration-300">
           <button 
             onClick={() => setExpandedLevel(expandedLevel === 3 ? null : 3)}
             className="w-full p-4 flex items-center justify-between bg-transparent cursor-pointer"
           >
-            <div className="text-left">
-              <div className="flex items-center gap-2">
-                <p className="font-bold text-gray-900">Niveau 3</p>
-                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-0.5 rounded-full">2%</span>
+            <div className="text-left flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 font-black">3</div>
+              <div>
+                <p className="font-bold text-gray-900">Niveau 3 <span className="text-xs font-semibold text-red-500 ml-1">(1%)</span></p>
+                <p className="text-gray-500 text-xs mt-0.5">{teamStats.level3.length} membres</p>
               </div>
-              <p className="text-gray-500 text-sm mt-0.5">{teamStats.level3.length} membres</p>
             </div>
             <div className="text-gray-400">
               {expandedLevel === 3 ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -307,8 +289,8 @@ export function Team() {
           </button>
           
           {expandedLevel === 3 && (
-            <div className="px-4 pb-4 border-t border-gray-50">
-               {isLoading ? <p className="text-sm text-gray-400 text-center py-4">Chargement...</p> : renderMemberList(teamStats.level3)}
+            <div className="px-4 pb-4 border-t border-gray-100 bg-gray-50/50">
+               {isLoading ? <p className="text-xs text-gray-400 text-center py-4 font-medium uppercase tracking-wider">Chargement...</p> : renderMemberList(teamStats.level3)}
             </div>
           )}
         </div>

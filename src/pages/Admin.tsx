@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit } from 'lucide-react';
+import { ChevronLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -38,6 +38,8 @@ export function Admin() {
   
   // States for Plans
   const [newPlanAmount, setNewPlanAmount] = useState('');
+  const [newPlanPercent, setNewPlanPercent] = useState('18');
+  const [newPlanDuration, setNewPlanDuration] = useState('60');
   const [newPlanDaily, setNewPlanDaily] = useState('');
   const [newPlanTotal, setNewPlanTotal] = useState('');
   const [newPlanImage, setNewPlanImage] = useState('');
@@ -52,6 +54,9 @@ export function Admin() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [loading, setLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, message: string, onConfirm: () => void} | null>(null);
+  const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
+
 
   useEffect(() => {
     if (user?.role !== 'admin') {
@@ -82,33 +87,6 @@ export function Admin() {
       if (usersRes.data) setUsersList(usersRes.data);
 
       if (invsRes.data) {
-        // --- PATCH SILENCIEUX POUR CORRIGER LES DATES D'EXPIRATION DES ANCIENS PLANS ---
-        const toPatch = invsRes.data.filter(inv => {
-          const ratio = inv.plan_amount > 0 ? (inv.daily_yield / inv.plan_amount) : 0;
-          const isStandard = ratio > 0.1;
-          const durationDays = isStandard ? 8 : 60;
-          const startDate = new Date(inv.start_date || inv.created_at);
-          const expectedEndDateStr = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
-          
-          if (!inv.end_date) return true;
-          return Math.abs(new Date(inv.end_date).getTime() - new Date(expectedEndDateStr).getTime()) > 60000; // Si plus de 1 minute de diff
-        });
-
-        if (toPatch.length > 0) {
-          console.log("Patching dates for", toPatch.length, "investments...");
-          for (const inv of toPatch) {
-            const ratio = inv.plan_amount > 0 ? (inv.daily_yield / inv.plan_amount) : 0;
-            const isStandard = ratio > 0.1;
-            const durationDays = isStandard ? 8 : 60;
-            const startDate = new Date(inv.start_date || inv.created_at);
-            const newEndDate = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
-            
-            await supabase.from('investments').update({ end_date: newEndDate.toISOString() }).eq('id', inv.id);
-            inv.end_date = newEndDate.toISOString(); // update local cache instantly
-          }
-        }
-        // --- FIN DU PATCH ---
-        
         setInvestmentsList(invsRes.data);
       }
 
@@ -145,11 +123,24 @@ export function Admin() {
 
   // --- Users Handlers ---
   const handleUpdateBalance = async (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      message: `Voulez-vous vraiment modifier ce solde ?`,
+      onConfirm: async () => {
+        try {
+      
     setLoading(true);
     await supabase.from('users').update({ balance: Number(editBalance) }).eq('id', id);
     setEditingUserId(null);
     fetchData();
     setLoading(false);
+  
+    } catch(err: any) {
+      setMessage({ type: 'error', text: "Erreur: " + err.message });
+      setLoading(false);
+    }
+      }
+    });
   };
 
   const handleRoleChange = async (id: string, newRole: string) => {
@@ -158,6 +149,12 @@ export function Admin() {
   };
 
   const handleDeleteUser = async (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      message: `Voulez-vous vraiment supprimer cet utilisateur ?`,
+      onConfirm: async () => {
+        try {
+      
     setLoading(true);
     await supabase.from('transactions').delete().eq('user_id', id);
     await supabase.from('investments').delete().eq('user_id', id);
@@ -165,21 +162,42 @@ export function Admin() {
     setConfirmDeleteId(null);
     fetchData();
     setLoading(false);
+  
+    } catch(err: any) {
+      setMessage({ type: 'error', text: "Erreur: " + err.message });
+      setLoading(false);
+    }
+      }
+    });
   };
 
   const handleRemoveInvestment = async (id: string) => {
-    if (!window.confirm('Voulez-vous vraiment supprimer cet investissement ?')) return;
+    setConfirmModal({
+      isOpen: true,
+      message: 'Voulez-vous vraiment supprimer cet investissement ?',
+      onConfirm: async () => {
+
+    // removed confirm
     setLoading(true);
     await supabase.from('investments').delete().eq('id', id);
     fetchData();
     setLoading(false);
+      }
+    });
   };
 
   // --- Transactions Handlers ---
   const handleTransaction = async (id: string, status: 'approved' | 'rejected', type: string, amount: number, userId: string) => {
     const actionText = status === 'approved' ? 'approuver' : 'rejeter';
     const typeText = type === 'deposit' ? 'ce dépôt' : 'ce retrait';
-    if (!window.confirm(`Voulez-vous vraiment ${actionText} ${typeText} ?`)) return;
+    
+    setConfirmModal({
+      isOpen: true,
+      message: `Voulez-vous vraiment ${actionText} ${typeText} ?`,
+      onConfirm: async () => {
+        try {
+    const actionText = status === 'approved' ? 'approuver' : 'rejeter';
+    
 
     setLoading(true);
     await supabase.from('transactions').update({ status }).eq('id', id);
@@ -199,48 +217,48 @@ export function Admin() {
             .eq('status', 'approved');
 
           if (count === 1 && userData.referred_by) {
-            // Level 1 logic (15%)
+            // Level 1 logic (20%)
             const { data: level1 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', userData.referred_by).maybeSingle();
             
             if (level1) {
-              const l1Bonus = amount * 0.15;
+              const l1Bonus = amount * 0.20;
               await supabase.from('users').update({ balance: level1.balance + l1Bonus }).eq('id', level1.id);
               await supabase.from('transactions').insert([{
                 user_id: level1.id,
                 type: 'referral_bonus',
                 amount: l1Bonus,
                 status: 'completed',
-                reference: 'Bonus 1er dépôt L1 (15%)'
+                reference: 'Bonus 1er dépôt L1 (20%)'
               }]);
 
-              // Level 2 logic (3%)
+              // Level 2 logic (2%)
               if (level1.referred_by) {
                 const { data: level2 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', level1.referred_by).maybeSingle();
                 
                 if (level2) {
-                  const l2Bonus = amount * 0.03;
+                  const l2Bonus = amount * 0.02;
                   await supabase.from('users').update({ balance: level2.balance + l2Bonus }).eq('id', level2.id);
                   await supabase.from('transactions').insert([{
                     user_id: level2.id,
                     type: 'referral_bonus',
                     amount: l2Bonus,
                     status: 'completed',
-                    reference: 'Bonus 1er dépôt L2 (3%)'
+                    reference: 'Bonus 1er dépôt L2 (2%)'
                   }]);
 
-                  // Level 3 logic (2%)
+                  // Level 3 logic (1%)
                   if (level2.referred_by) {
                     const { data: level3 } = await supabase.from('users').select('id, balance').eq('referral_code', level2.referred_by).maybeSingle();
                     
                     if (level3) {
-                      const l3Bonus = amount * 0.02;
+                      const l3Bonus = amount * 0.01;
                       await supabase.from('users').update({ balance: level3.balance + l3Bonus }).eq('id', level3.id);
                       await supabase.from('transactions').insert([{
                         user_id: level3.id,
                         type: 'referral_bonus',
                         amount: l3Bonus,
                         status: 'completed',
-                        reference: 'Bonus 1er dépôt L3 (2%)'
+                        reference: 'Bonus 1er dépôt L3 (1%)'
                       }]);
                     }
                   }
@@ -258,14 +276,32 @@ export function Admin() {
     }
     fetchData();
     setLoading(false);
+    } catch(err: any) {
+      console.error(err);
+      setMessage({ type: 'error', text: "Erreur: " + err.message });
+      setLoading(false);
+    }
+      }
+    });
   };
 
   // --- Plans Handlers ---
   const handleSavePlans = async (updatedPlans: any[]) => {
-    setLoading(true);
-    await supabase.from('settings').upsert({ key: 'investment_plans', value: JSON.stringify(updatedPlans) });
-    setPlans(updatedPlans);
-    setLoading(false);
+    setConfirmModal({
+      isOpen: true,
+      message: "Voulez-vous vraiment enregistrer ces plans ?",
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          await supabase.from('settings').upsert({ key: 'investment_plans', value: JSON.stringify(updatedPlans) });
+          setPlans(updatedPlans);
+        } catch(err: any) {
+          setMessage({ type: 'error', text: "Erreur: " + err.message });
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
   };
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -296,6 +332,8 @@ export function Admin() {
     const newPlan = {
       category: 'unique',
       amount: Number(newPlanAmount),
+      percent: Number(newPlanPercent),
+      duration: Number(newPlanDuration),
       daily: Number(newPlanDaily),
       total: Number(newPlanTotal),
       image: newPlanImage
@@ -313,6 +351,7 @@ export function Admin() {
     handleSavePlans(updatedPlans);
     
     setNewPlanAmount(''); setNewPlanDaily(''); setNewPlanTotal(''); setNewPlanImage('');
+    setNewPlanPercent('18'); setNewPlanDuration('60');
     setEditingPlanIndex(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -320,6 +359,8 @@ export function Admin() {
   const handleEditPlan = (index: number) => {
     const plan = plans[index];
     setNewPlanAmount(plan.amount.toString());
+    setNewPlanPercent((plan.percent || 18).toString());
+    setNewPlanDuration((plan.duration || 60).toString());
     setNewPlanDaily(plan.daily.toString());
     setNewPlanTotal(plan.total.toString());
     setNewPlanImage(plan.image);
@@ -330,13 +371,20 @@ export function Admin() {
 
   const handleCancelEditPlan = () => {
     setNewPlanAmount(''); setNewPlanDaily(''); setNewPlanTotal(''); setNewPlanImage('');
+    setNewPlanPercent('18'); setNewPlanDuration('60');
     setEditingPlanIndex(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleRemovePlan = (index: number) => {
-    const updatedPlans = plans.filter((_, i) => i !== index);
-    handleSavePlans(updatedPlans);
+    setConfirmModal({
+      isOpen: true,
+      message: "Voulez-vous vraiment supprimer ce plan ?",
+      onConfirm: async () => {
+        const updatedPlans = plans.filter((_, i) => i !== index);
+        handleSavePlans(updatedPlans);
+      }
+    });
   };
 
   // --- Settings Handlers ---
@@ -350,11 +398,11 @@ export function Admin() {
     setLoading(false);
     
     if (error) {
-      alert('Erreur lors de l\'enregistrement : ' + error.message);
+      setMessage({ type: 'error', text: 'Erreur lors de l\'enregistrement : ' + error.message });
     } else {
       // Clear or update the cache immediately so it reflects in Dashboard
       useAppStore.getState().setSettingsCache(null as any);
-      alert('Paramètres enregistrés !');
+      setMessage({ type: 'success', text: 'Paramètres enregistrés !' });
     }
   };
 
@@ -372,10 +420,44 @@ export function Admin() {
     <div className="p-6 space-y-6 pb-24 pt-20 max-w-lg mx-auto">
       <header className="flex items-center gap-4">
         <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-900 shadow-sm hover:bg-gray-50 transition-colors shrink-0">
-          <ArrowLeft className="w-5 h-5" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
         <h1 className="text-2xl font-bold text-gray-900 truncate">Administration</h1>
       </header>
+
+      {confirmModal && confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Confirmation</h3>
+            <p className="text-gray-600 mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setConfirmModal(null)}
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl font-bold transition-colors"
+                disabled={loading}
+              >
+                Annuler
+              </button>
+              <button 
+                onClick={() => {
+                  setConfirmModal({...confirmModal, isOpen: false});
+                  confirmModal.onConfirm();
+                }}
+                className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-red-200"
+                disabled={loading}
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {message && (
+        <div className={`p-4 rounded-xl text-sm font-medium ${message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
+          {message.text}
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <div className="flex overflow-x-auto gap-2 pb-2 mb-2 scrollbar-hide">
@@ -384,7 +466,7 @@ export function Admin() {
             key={t.id}
             onClick={() => { setActiveTab(t.id); setSearchTerm(''); }}
             className={`px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium whitespace-nowrap transition-colors ${
-              activeTab === t.id ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+              activeTab === t.id ? 'bg-red-500 text-white shadow-md shadow-red-500/20' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
             <t.icon className="w-4 h-4" />
@@ -410,21 +492,21 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-gray-900 mb-2">Vue d'ensemble</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white border border-emerald-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="bg-white border border-red-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Total des soldes</p>
-               <p className="text-xl font-black text-emerald-600">{formatCurrency(usersList.reduce((acc, user) => acc + (Number(user.balance) || 0), 0))}</p>
+               <p className="text-xl font-black text-red-700">{formatCurrency(0)}</p>
             </div>
-            <div className="bg-white border border-blue-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="bg-white border border-red-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Retraits validés</p>
-               <p className="text-xl font-black text-blue-600">{formatCurrency(transactions.filter(t => t.type === 'withdrawal' && t.status === 'approved').reduce((acc, t) => acc + (Number(t.amount) || 0), 0))}</p>
+               <p className="text-xl font-black text-red-700">{formatCurrency(0)}</p>
             </div>
             <div className="bg-white border border-amber-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Dépôts validés</p>
-               <p className="text-xl font-black text-amber-600">{formatCurrency(transactions.filter(t => t.type === 'deposit' && t.status === 'approved').reduce((acc, t) => acc + (Number(t.amount) || 0), 0))}</p>
+               <p className="text-xl font-black text-amber-600">{formatCurrency(0)}</p>
             </div>
             <div className="bg-white border border-purple-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Utilisateurs</p>
-               <p className="text-xl font-black text-purple-600">{usersList.length}</p>
+               <p className="text-xl font-black text-purple-600">0</p>
             </div>
           </div>
         </div>
@@ -444,7 +526,7 @@ export function Admin() {
                 
                 return (
                 <div key={inv.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${isPremium ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${isPremium ? 'bg-red-500' : 'bg-red-500'}`}></div>
                   <div className="flex justify-between items-start mb-2 pl-2">
                     <div>
                       <p className="font-bold text-gray-900 line-clamp-1">Pack {isPremium ? 'Premium' : 'Standard'} ({formatCurrency(inv.plan_amount || 0)})</p>
@@ -454,7 +536,7 @@ export function Admin() {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
-                        inv.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                        inv.status === 'active' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-500'
                       }`}>
                         {inv.status}
                       </span>
@@ -470,7 +552,7 @@ export function Admin() {
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] text-gray-400 uppercase tracking-wider">Gain Journalier</p>
-                      <p className={`font-bold ${isPremium ? 'text-emerald-600' : 'text-blue-600'}`}>{formatCurrency(inv.daily_yield)}</p>
+                      <p className={`font-bold ${isPremium ? 'text-red-700' : 'text-red-700'}`}>{formatCurrency(inv.daily_yield)}</p>
                     </div>
                   </div>
                   <p className="text-[10px] text-gray-400 mt-2 text-center">
@@ -504,7 +586,7 @@ export function Admin() {
                     <p className="text-[10px] text-gray-400 mt-0.5 font-mono">{u.id}</p>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                    <p className="font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
+                    <p className="font-bold text-red-700 bg-red-50 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
                     {u.role !== 'admin' && (
                        <select 
                          value={u.role || 'user'} 
@@ -519,8 +601,8 @@ export function Admin() {
 
                 {editingUserId === u.id ? (
                   <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                    <input type="number" className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
-                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
+                    <input type="number" className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-red-500 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
+                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-red-500 hover:bg-red-700 text-white font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
                     <button onClick={() => setEditingUserId(null)} className="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg text-sm transition-colors cursor-pointer">X</button>
                   </div>
                 ) : confirmDeleteId === u.id ? (
@@ -563,7 +645,7 @@ export function Admin() {
                   </div>
                   <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
                     tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                    tx.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                    tx.status === 'approved' ? 'bg-red-50 text-red-700 border border-red-100' :
                     'bg-red-50 text-red-600 border border-red-100'
                   }`}>
                     {tx.status}
@@ -572,7 +654,7 @@ export function Admin() {
                 
                 {tx.status === 'pending' && (
                   <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-50 hover:bg-red-100 text-red-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <CheckCircle className="w-4 h-4" /> Approuver
                     </button>
                     <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
@@ -603,7 +685,7 @@ export function Admin() {
                   </div>
                   <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
                     tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                    tx.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                    tx.status === 'approved' ? 'bg-red-50 text-red-700 border border-red-100' :
                     'bg-red-50 text-red-600 border border-red-100'
                   }`}>
                     {tx.status}
@@ -612,7 +694,7 @@ export function Admin() {
                 
                 {tx.status === 'pending' && (
                   <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-50 hover:bg-red-100 text-red-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <CheckCircle className="w-4 h-4" /> Approuver
                     </button>
                     <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
@@ -641,8 +723,8 @@ export function Admin() {
                      const amt = Number(e.target.value);
                      setNewPlanAmount(e.target.value);
                      if (amt > 0) {
-                        const daily = Math.round(amt * 0.18);
-                        const total = daily * 60;
+                        const daily = Math.round(amt * (Number(newPlanPercent) / 100));
+                        const total = daily * Number(newPlanDuration);
                         setNewPlanDaily(daily.toString());
                         setNewPlanTotal(total.toString());
                      } else {
@@ -650,10 +732,54 @@ export function Admin() {
                         setNewPlanTotal('');
                      }
                    }} 
-                   className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                   className="col-span-2 bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
                  />
-                 <input type="number" placeholder="Gain journalier" value={newPlanDaily} readOnly className="bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none cursor-not-allowed opacity-80" />
-                 <input type="number" placeholder="Revenu Total" value={newPlanTotal} readOnly className="col-span-2 bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none cursor-not-allowed opacity-80" />
+                 <div className="flex flex-col gap-1">
+                   <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Gain %</label>
+                   <input 
+                     type="number" 
+                     placeholder="%" 
+                     value={newPlanPercent} 
+                     onChange={e => {
+                       const pct = Number(e.target.value);
+                       setNewPlanPercent(e.target.value);
+                       if (Number(newPlanAmount) > 0) {
+                          const daily = Math.round(Number(newPlanAmount) * (pct / 100));
+                          const total = daily * Number(newPlanDuration);
+                          setNewPlanDaily(daily.toString());
+                          setNewPlanTotal(total.toString());
+                       }
+                     }} 
+                     className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
+                   />
+                 </div>
+                 <div className="flex flex-col gap-1">
+                   <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Durée (jours)</label>
+                   <input 
+                     type="number" 
+                     placeholder="Jours" 
+                     value={newPlanDuration} 
+                     onChange={e => {
+                       const dur = Number(e.target.value);
+                       setNewPlanDuration(e.target.value);
+                       if (Number(newPlanAmount) > 0) {
+                          const daily = Math.round(Number(newPlanAmount) * (Number(newPlanPercent) / 100));
+                          const total = daily * dur;
+                          setNewPlanDaily(daily.toString());
+                          setNewPlanTotal(total.toString());
+                       }
+                     }} 
+                     className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
+                   />
+                 </div>
+                 <div className="flex flex-col gap-1">
+                   <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Gain/Jour (FCFA)</label>
+                   <input type="number" placeholder="Gain journalier" value={newPlanDaily} readOnly className="bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none cursor-not-allowed opacity-80" />
+                 </div>
+                 <div className="flex flex-col gap-1">
+                   <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Total (FCFA)</label>
+                   <input type="number" placeholder="Revenu Total" value={newPlanTotal} readOnly className="bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none cursor-not-allowed opacity-80" />
+                 </div>
                </div>
 
                {/* IMAGE UPLOAD */}
@@ -671,7 +797,7 @@ export function Admin() {
                      <img src={newPlanImage} className="w-full h-32 object-cover rounded-lg shadow-sm" alt="Preview" />
                    ) : (
                      <>
-                       <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center">
+                       <div className="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center">
                          <Upload className="w-5 h-5" />
                        </div>
                        <span className="text-sm font-medium text-gray-600">Ajouter une photo</span>
@@ -682,7 +808,7 @@ export function Admin() {
 
                {editingPlanIndex !== null ? (
                  <div className="flex gap-2">
-                   <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                   <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-red-500 hover:bg-red-700 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
                      <Save className="w-5 h-5" /> Sauvegarder
                    </button>
                    <button onClick={handleCancelEditPlan} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
@@ -690,7 +816,7 @@ export function Admin() {
                    </button>
                  </div>
                ) : (
-                 <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                 <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-red-500 hover:bg-red-700 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
                    <Plus className="w-5 h-5" /> Ajouter à la liste
                  </button>
                )}
@@ -701,11 +827,11 @@ export function Admin() {
             <h3 className="text-gray-900 font-bold px-1">Plans actuels ({plans.length})</h3>
             {isInitializing ? (
                <div className="flex justify-center p-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+                  <Loader2 className="w-6 h-6 animate-spin text-red-500" />
                </div>
             ) : plans.map((p, idx) => (
               <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
                 <div className="flex items-center gap-4 pl-2">
                   <img src={p.image || 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800'} className="w-12 h-12 rounded-xl object-cover bg-gray-100" alt="" referrerPolicy="no-referrer" />
                   <div>
@@ -719,7 +845,7 @@ export function Admin() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => handleEditPlan(idx)} disabled={loading} className="p-2.5 text-blue-500 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-100 transition-colors cursor-pointer">
+                  <button onClick={() => handleEditPlan(idx)} disabled={loading} className="p-2.5 text-red-500 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">
                     <Edit className="w-5 h-5" />
                   </button>
                   <button onClick={() => handleRemovePlan(idx)} disabled={loading} className="p-2.5 text-red-500 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">
@@ -745,7 +871,7 @@ export function Admin() {
                   type="url"
                   value={paymentLink}
                   onChange={(e) => setPaymentLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm"
                   placeholder="https://..."
                 />
               </div>
@@ -756,7 +882,7 @@ export function Admin() {
                   type="url"
                   value={groupLink}
                   onChange={(e) => setGroupLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm"
                   placeholder="https://t.me/..."
                 />
               </div>
@@ -767,7 +893,7 @@ export function Admin() {
                   type="url"
                   value={supportLink}
                   onChange={(e) => setSupportLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm"
                   placeholder="https://t.me/support..."
                 />
               </div>
@@ -775,7 +901,7 @@ export function Admin() {
               <button 
                 onClick={handleUpdateSettings}
                 disabled={loading}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl font-medium transition-colors shadow-sm cursor-pointer mt-4"
+                className="w-full bg-red-500 hover:bg-red-700 text-white py-3 rounded-xl font-medium transition-colors shadow-sm cursor-pointer mt-4"
               >
                 Sauvegarder les paramètres
               </button>

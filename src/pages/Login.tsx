@@ -65,34 +65,34 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto relative overflow-hidden text-white">
+    <div className="min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto relative overflow-hidden text-gray-900">
       {/* Container matches animated dark theme */}
       <div className="text-center mb-8 flex flex-col items-center">
         <div className="bg-white p-4 rounded-3xl shadow-xl mb-6 relative">
-          <div className="absolute inset-0 bg-emerald-500 blur-xl rounded-full opacity-50"></div>
-          <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-[60px] object-contain relative z-10" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-red-100 blur-3xl rounded-full opacity-50"></div>
+          <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-[60px] object-contain relative z-10" referrerPolicy="no-referrer" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">Bienvenue</h1>
-        <p className="text-white/80 text-sm">Connectez-vous à votre compte</p>
+        <p className="text-gray-500 text-sm">Connectez-vous à votre compte</p>
       </div>
 
-      <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl">
+      <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-2xl">
         <form onSubmit={handleLogin} className="space-y-4">
           {error && (
-            <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-100 text-sm text-center">
+            <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm text-center">
               {error}
             </div>
           )}
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-white/70 ml-1 uppercase tracking-wider">Téléphone</label>
+            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 font-bold border-r border-white/20 pr-3">+225</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-white/20 pr-3">+225</span>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/^\+225/, ''))}
-                className="w-full bg-white/10 border border-white/20 rounded-xl pl-16 pr-4 py-3 text-white focus:outline-none focus:bg-white/20 focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-all placeholder:text-white/40 font-medium tracking-wide"
+                className="w-full bg-white border border-gray-200 shadow-sm rounded-xl pl-16 pr-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all placeholder:text-gray-400 font-medium tracking-wide"
                 placeholder="0123456789"
                 required
               />
@@ -100,12 +100,12 @@ export function Login() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-white/70 ml-1 uppercase tracking-wider">Mot de passe</label>
+            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Mot de passe</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:bg-white/20 focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-all placeholder:text-white/40 font-medium"
+              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all placeholder:text-gray-400 font-medium"
               placeholder="••••••••"
               required
             />
@@ -114,15 +114,15 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-white text-emerald-900 hover:bg-gray-100 font-bold py-4 rounded-xl mt-6 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+            className="w-full bg-white text-red-950 hover:bg-gray-100 font-bold py-4 rounded-xl mt-6 transition-all shadow-lg active:scale-95 disabled:opacity-50"
           >
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
 
-        <p className="text-center text-white/70 text-sm mt-8">
+        <p className="text-center text-gray-500 text-sm mt-8">
           Pas encore de compte ?{' '}
-          <Link to="/register" className="text-white hover:text-emerald-300 font-bold tracking-wide transition-colors">
+          <Link to="/register" className="text-red-700 hover:text-red-800 font-bold tracking-wide transition-colors">
             S'inscrire
           </Link>
         </p>

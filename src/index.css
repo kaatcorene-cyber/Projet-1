@@ -2,8 +2,8 @@
 
 @layer base {
   body {
-    @apply text-white;
-    background: linear-gradient(-45deg, #10b981, #0ea5e9, #0f172a, #059669);
+    @apply text-slate-900;
+    background: #ffffff;
     background-size: 400% 400%;
     animation: moveGradient 12s ease infinite;
     background-attachment: fixed;
@@ -17,18 +17,7 @@
 }
 
 @theme {
-  /* Adapting the platform theme to the Petrolimex logo colors (Orange) */
-  --color-emerald-50: var(--color-orange-50);
-  --color-emerald-100: var(--color-orange-100);
-  --color-emerald-200: var(--color-orange-200);
-  --color-emerald-300: var(--color-orange-300);
-  --color-emerald-400: var(--color-orange-400);
-  --color-emerald-500: var(--color-orange-500);
-  --color-emerald-600: var(--color-orange-600);
-  --color-emerald-700: var(--color-orange-700);
-  --color-emerald-800: var(--color-orange-800);
-  --color-emerald-900: var(--color-orange-900);
-  --color-emerald-950: var(--color-orange-950);
+  /* Theme settings for QUALCOMM (Red/White) */
   --animate-fade-in: fade-in 0.3s ease-out forwards;
   --animate-slide-up: slide-up 0.4s ease-out forwards;
 }

@@ -92,7 +92,7 @@ export function Invest() {
       if (updateError) throw updateError;
 
       // 2. Create investment
-      const durationDays = 60;
+      const durationDays = plan.duration || 60;
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + durationDays);
 
@@ -126,19 +126,18 @@ export function Invest() {
   };
 
   return (
-    <div className="p-6 space-y-6 pt-20 pb-24">
-      <header className="flex items-center justify-between">
+    <div className="p-5 space-y-6 pt-16 pb-24 min-h-screen bg-gray-50">
+      <header className="flex justify-between items-end pb-2 border-b border-gray-200">
         <div>
-          <h1 className="text-2xl font-bold text-white">Investissements</h1>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Investissements</h1>
+          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-1">Développez votre capital</p>
         </div>
-        <div className="bg-white/20 p-1.5 rounded-xl backdrop-blur-md">
-          <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
-        </div>
+        <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-6 object-contain" referrerPolicy="no-referrer" />
       </header>
 
       {message && (
         <div className={`p-4 rounded-xl flex items-center gap-3 ${
-          message.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
+          message.type === 'success' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'
         }`}>
           {message.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           <p className="text-sm font-medium">{message.text}</p>
@@ -147,48 +146,51 @@ export function Invest() {
 
       {isInitializing ? (
         <div className="flex flex-col items-center justify-center py-12 gap-3">
-          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+          <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
         </div>
       ) : (
-        <div className="space-y-6 animate-slide-up">
+        <div className="space-y-4 animate-fade-in">
           {activePlans.length === 0 ? (
-            <div className="bg-white/10 rounded-3xl p-8 text-center backdrop-blur-sm">
-              <p className="text-white/70 font-medium">Aucun plan disponible dans cette catégorie.</p>
+            <div className="bg-white rounded-3xl p-8 text-center shadow-sm border border-gray-100">
+              <p className="text-gray-500 font-medium">Aucun plan disponible dans cette catégorie.</p>
             </div>
           ) : (
             activePlans.map((plan, idx) => (
-              <div key={idx} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group">
-                <div className="h-32 w-full relative overflow-hidden">
-                  <img src={plan.image || 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800'} alt="Plan" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-black/40 to-transparent"></div>
-                  <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl border border-white/30 shadow-sm">
-                    <p className="text-white font-bold text-xs">
-                      60 jours
-                    </p>
+              <div key={idx} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow relative">
+                <div className="absolute top-0 left-0 h-full w-1.5 bg-red-600"></div>
+                <div className="p-4 flex gap-4 items-center">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-gray-100">
+                    <img src={plan.image || 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800'} alt="Plan" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
-                  <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                    <p className="text-white font-black text-3xl drop-shadow-md">{formatCurrency(plan.amount)}</p>
+                  
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="text-xl font-bold text-gray-900 tracking-tight">{formatCurrency(plan.amount)}</p>
+                      <span className="text-[10px] font-bold text-red-600 bg-red-50 rounded-full px-2 py-0.5 border border-red-100">
+                        {plan.duration || 60} Jours
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between text-sm mt-3">
+                      <div>
+                        <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Gain/Jour</p>
+                        <p className="font-semibold text-red-600">{formatCurrency(plan.daily)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider">Total</p>
+                        <p className="font-semibold text-gray-900">{formatCurrency(plan.total)}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="p-5 space-y-5">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 rounded-2xl p-3 border border-gray-100">
-                      <p className="text-gray-500 text-[10px] font-bold mb-1 uppercase tracking-wider">Gain Journalier</p>
-                      <p className="font-bold text-xl leading-none text-emerald-600">{formatCurrency(plan.daily)}</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-2xl p-3 border border-gray-100">
-                      <p className="text-gray-500 text-[10px] font-bold mb-1 uppercase tracking-wider">Revenu Total</p>
-                      <p className="text-gray-900 font-bold text-xl leading-none">{formatCurrency(plan.total)}</p>
-                    </div>
-                  </div>
-                  
+                <div className="px-4 pb-4">
                   <button
                     onClick={() => handleInvest(plan, idx)}
                     disabled={loading === idx || (user?.balance || 0) < plan.amount}
-                    className="w-full py-3.5 rounded-xl font-bold transition-all duration-300 disabled:opacity-50 text-white flex justify-center items-center active:scale-95 shadow-md hover:shadow-lg disabled:hover:scale-100 disabled:active:scale-100 bg-gradient-to-r from-emerald-500 to-emerald-600"
+                    className="w-full py-2.5 rounded-lg font-semibold transition-colors disabled:opacity-50 text-white flex justify-center items-center bg-red-600 hover:bg-red-700"
                   >
-                    {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Investir ce montant'}
+                    {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Investir'}
                   </button>
                 </div>
               </div>

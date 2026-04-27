@@ -37,66 +37,65 @@ export function History() {
   };
 
   return (
-    <div className="p-6 space-y-6 pt-20">
-      <header className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 p-5 pt-16 pb-24 font-sans">
+      <header className="flex justify-between items-end pb-2 border-b border-gray-200 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Historique</h1>
-          <p className="text-white/80 text-sm mt-1">Toutes vos transactions</p>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Historique</h1>
+          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-1">Vos transactions</p>
         </div>
-        <div className="bg-white/20 p-1.5 rounded-xl backdrop-blur-md">
-          <img src="https://i.imgur.com/3UdOmrc.png" alt="Petrolimex" className="h-8 object-contain" referrerPolicy="no-referrer" />
-        </div>
+        <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-6 object-contain" referrerPolicy="no-referrer" />
       </header>
 
-      <div className="space-y-3">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {transactions.length === 0 ? (
-          <div className="text-center py-10 text-gray-500 text-sm font-medium bg-white rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
+          <div className="text-center py-10 text-gray-400 text-sm font-semibold">
             Aucune transaction
           </div>
         ) : (
-          transactions.map((tx) => (
-            <div key={tx.id} className="bg-white border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl p-4 flex items-center justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 cursor-pointer group">
-              <div className="flex items-center gap-3">
-                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
-                  tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
-                    ? 'bg-emerald-50 text-emerald-500' 
-                    : 'bg-red-50 text-red-500'
-                }`}>
-                  {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+          <div className="divide-y divide-gray-100">
+            {transactions.map((tx) => (
+              <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                    tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
+                      ? 'bg-green-50 text-green-600' 
+                      : 'bg-red-50 text-red-600'
+                  }`}>
+                    {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 leading-tight">
+                      {tx.type === 'deposit' && 'Dépôt'}
+                      {tx.type === 'withdrawal' && 'Retrait'}
+                      {tx.type === 'investment' && 'Investissement'}
+                      {tx.type === 'daily_gain' && 'Gain journalier'}
+                      {tx.type === 'signup_bonus' && 'Bonus inscript.'}
+                      {tx.type === 'referral_bonus' && 'Bonus parrain.'}
+                    </h3>
+                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mt-0.5">
+                      {format(new Date(tx.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900 text-sm">
-                    {tx.type === 'deposit' && 'Dépôt'}
-                    {tx.type === 'withdrawal' && 'Retrait'}
-                    {tx.type === 'investment' && 'Investissement'}
-                    {tx.type === 'daily_gain' && 'Gain journalier'}
-                    {tx.type === 'signup_bonus' && 'Bonus inscription'}
-                    {tx.type === 'referral_bonus' && 'Bonus parrainage'}
+                <div className="text-right">
+                  <p className={`font-black tracking-tight ${
+                    tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
+                      ? 'text-green-600' 
+                      : 'text-gray-900'
+                  }`}>
+                    {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </p>
-                  <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                    <Clock className="w-3 h-3" />
-                    {format(new Date(tx.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+                  <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
+                    tx.status === 'completed' || tx.status === 'approved' ? 'text-green-600' :
+                    tx.status === 'pending' ? 'text-amber-500' : 'text-red-500'
+                  }`}>
+                    {tx.status === 'completed' || tx.status === 'approved' ? 'Complété' :
+                     tx.status === 'pending' ? 'En attente' : 'Rejeté'}
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className={`font-bold ${
-                  tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
-                    ? 'text-emerald-500' 
-                    : 'text-gray-900'
-                }`}>
-                  {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? '+' : '-'}{formatCurrency(tx.amount)}
-                </p>
-                <p className={`text-[10px] font-medium uppercase mt-1 ${
-                  tx.status === 'completed' || tx.status === 'approved' ? 'text-emerald-500' :
-                  tx.status === 'pending' ? 'text-amber-500' : 'text-red-500'
-                }`}>
-                  {tx.status === 'completed' || tx.status === 'approved' ? 'Complété' :
-                   tx.status === 'pending' ? 'En attente' : 'Rejeté'}
-                </p>
-              </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>
