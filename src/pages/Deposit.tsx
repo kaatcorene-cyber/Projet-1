@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Info, CheckCircle2, Phone, ArrowRight, Wallet } from 'lucide-react';
+import { ChevronLeft, Info, CheckCircle2, Phone, ArrowRight, Wallet, Copy } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 
 export function Deposit() {
@@ -10,18 +10,23 @@ export function Deposit() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState(user?.country || "Cote d'Ivoire");
+  const country = user?.country || "Cote d'Ivoire";
   const [method, setMethod] = useState<'moov' | 'wave'>('moov');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText("0574738155");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   
   const [step, setStep] = useState<1 | 2>(1);
   const [ussdCode, setUssdCode] = useState('');
 
   useEffect(() => {
     if (country === 'Togo') {
-      setMethod('moov');
-    } else {
       setMethod('moov');
     }
   }, [country]);
@@ -54,10 +59,12 @@ export function Deposit() {
         if (country === 'Togo') ussd = '*155*1*2*1*3*2250140814162#';
         else if (country === "Cote d'Ivoire") ussd = '*155*1*1*0140814162#';
         else if (country === 'Burkina Faso') ussd = '*555*1*2*1*1*2250140814162#';
-        setUssdCode(ussd);
+        
+        window.location.href = `tel:${ussd.replace('#', '%23')}`;
+        setTimeout(() => navigate('/history'), 500);
+      } else {
+        setStep(2);
       }
-      
-      setStep(2);
 
     } catch (err) {
       console.error(err);
@@ -87,23 +94,6 @@ export function Deposit() {
            
            <div className="w-full h-px bg-gray-100 mb-6"></div>
 
-           {method === 'moov' && (
-              <div className="mb-8 text-left">
-                <p className="text-sm font-bold text-gray-900 mb-3 text-center uppercase tracking-wider">Action Requise</p>
-                <p className="text-sm text-gray-500 mb-4 text-center">Cliquez sur le bouton ci-dessous pour lancer le paiement sur votre téléphone :</p>
-                
-                <a href={`tel:${ussdCode.replace('#', '%23')}`} className="flex items-center justify-center gap-2 w-full py-4 bg-[#FF7900] hover:bg-[#FF7900]/90 text-white font-bold rounded-xl mb-4 transition-all shadow-md shadow-orange-200 active:scale-95">
-                  <Phone className="w-5 h-5" />
-                  Lancer le code USSD
-                </a>
-                
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
-                  <p className="text-xs text-gray-500 mb-1 font-bold uppercase tracking-wider">Ou tapez manuellement :</p>
-                  <p className="font-mono font-black text-gray-900 text-lg tracking-wider">{ussdCode}</p>
-                </div>
-              </div>
-           )}
-
            {method === 'wave' && (
               <div className="mb-8 text-left bg-[#F1F6FF] border border-[#D5E4FF] p-5 rounded-xl">
                  <p className="font-black text-[#1C3FB7] mb-4 uppercase tracking-wider text-sm flex items-center gap-2">
@@ -119,14 +109,21 @@ export function Deposit() {
                      <span>Transférez exact. <strong className="text-gray-900">{formatCurrency(Number(amount))}</strong> au :</span>
                    </p>
                    
-                   <div className="ml-7 my-3 bg-white p-4 rounded-xl border border-[#D5E4FF] shadow-sm">
+                   <div className="ml-7 my-3 bg-white p-4 rounded-xl border border-[#D5E4FF] shadow-sm relative group">
                       <p className="text-2xl font-black text-gray-900 tracking-widest mb-1 text-center">05 74 73 81 55</p>
                       <p className="text-center text-gray-500 text-xs font-bold uppercase tracking-wider">Nom : Qualcomm Entreprise</p>
+                      <button 
+                        onClick={handleCopy}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+                        title="Copier le numéro"
+                      >
+                        {copied ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+                      </button>
                    </div>
                    
                    {country === 'Burkina Faso' && (
                      <p className="text-red-700 font-bold bg-red-50 p-3 rounded-lg border border-red-100 text-center mt-2">
-                       Attention: Transfert vers la Côte d'Ivoire !
+                       Attention: Transfert depuis le Burkina vers un compte Wave CI !
                      </p>
                    )}
                  </div>
@@ -159,20 +156,6 @@ export function Deposit() {
 
           <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
              
-             <div className="px-4 py-3 border-b border-gray-100">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Pays d'opération</label>
-              <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-black text-gray-900 mt-1 appearance-none outline-none"
-                required
-              >
-                <option value="Cote d'Ivoire">Côte d'Ivoire</option>
-                <option value="Togo">Togo</option>
-                <option value="Burkina Faso">Burkina Faso</option>
-              </select>
-            </div>
-            
              <div className="px-4 py-3 border-b border-gray-100">
               <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Moyen de paiement</label>
               <select

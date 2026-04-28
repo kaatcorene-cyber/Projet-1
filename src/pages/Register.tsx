@@ -167,9 +167,9 @@ export function Register() {
               className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium appearance-none"
               required
             >
-              <option value="Cote d'Ivoire">Côte d'Ivoire (+225)</option>
-              <option value="Togo">Togo (+228)</option>
-              <option value="Burkina Faso">Burkina Faso (+226)</option>
+              <option value="Cote d'Ivoire">Côte d'Ivoire</option>
+              <option value="Togo">Togo</option>
+              <option value="Burkina Faso">Burkina Faso</option>
             </select>
           </div>
 

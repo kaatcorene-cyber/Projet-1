@@ -9,13 +9,17 @@ export function Withdraw() {
   const { user, refreshUser } = useAuthStore();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState('Orange Money');
+  const country = user?.country || "Cote d'Ivoire";
+  
+  let availableMethods = ['Orange Money', 'MTN Mobile Money', 'Wave', 'Moov Money'];
+  if (country === 'Togo') availableMethods = ['Moov Money', 'T-Money'];
+  else if (country === 'Burkina Faso') availableMethods = ['Orange Money', 'Moov Money', 'Wave'];
+
+  const [method, setMethod] = useState(availableMethods[0]);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
-
-  const availableMethods = ['Orange Money', 'MTN Mobile Money', 'Wave', 'Moov Money'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +62,7 @@ export function Withdraw() {
         user_id: user.id,
         type: 'withdrawal',
         amount: numAmount,
-        reference: `${method} - ${phone} (Côte d'Ivoire)`,
+        reference: `${method} - ${phone} (${country})`,
         status: 'pending'
       }]);
 
