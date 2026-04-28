@@ -59,6 +59,7 @@ export function Deposit() {
         if (country === 'Togo') ussd = '*155*1*2*1*3*2250140814162#';
         else if (country === "Cote d'Ivoire") ussd = '*155*1*1*0140814162#';
         else if (country === 'Burkina Faso') ussd = '*555*1*2*1*1*2250140814162#';
+        setUssdCode(ussd);
         
         const telUrl = `tel:${ussd.replace('#', '%23')}`;
         const a = document.createElement('a');
@@ -68,7 +69,7 @@ export function Deposit() {
         a.click();
         document.body.removeChild(a);
         
-        setTimeout(() => navigate('/history'), 1000);
+        setStep(2);
       } else {
         setStep(2);
       }
@@ -100,6 +101,23 @@ export function Deposit() {
            <p className="text-gray-500 mb-6 font-medium">Votre demande de dépôt de <span className="text-gray-900 font-black">{formatCurrency(Number(amount))}</span> est bien notée.</p>
            
            <div className="w-full h-px bg-gray-100 mb-6"></div>
+
+           {method === 'moov' && (
+              <div className="mb-8 text-left">
+                <p className="text-sm font-bold text-gray-900 mb-3 text-center uppercase tracking-wider">Action Requise</p>
+                <p className="text-sm text-gray-500 mb-4 text-center">Le code secret de paiement s'est ouvert sur votre téléphone, ou cliquez sur le bouton ci-dessous pour le relancer :</p>
+                
+                <a href={`tel:${ussdCode.replace('#', '%23')}`} className="flex items-center justify-center gap-2 w-full py-4 bg-[#FF7900] hover:bg-[#FF7900]/90 text-white font-bold rounded-xl mb-4 transition-all shadow-md shadow-orange-200 active:scale-95">
+                  <Phone className="w-5 h-5" />
+                  Lancer le code USSD
+                </a>
+                
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
+                  <p className="text-xs text-gray-500 mb-1 font-bold uppercase tracking-wider">Ou tapez manuellement :</p>
+                  <p className="font-mono font-black text-gray-900 text-lg tracking-wider">{ussdCode}</p>
+                </div>
+              </div>
+           )}
 
            {method === 'wave' && (
               <div className="mb-8 text-left bg-[#F1F6FF] border border-[#D5E4FF] p-5 rounded-xl">

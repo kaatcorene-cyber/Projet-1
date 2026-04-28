@@ -164,9 +164,9 @@ export function Dashboard() {
       setGroupLink(formatLink(groupData.value, ''));
     }
     if (supportData?.value) {
-      setSupportLink(formatLink(supportData.value, 'https://t.me/petrolimex_Agt'));
+      setSupportLink(formatLink(supportData.value, 'https://t.me/qualcomm_agt'));
     } else {
-      setSupportLink('https://t.me/petrolimex_Agt');
+      setSupportLink('https://t.me/qualcomm_agt');
     }
   };
 

@@ -20,9 +20,9 @@ export default defineConfig(({mode}) => {
         },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
-          name: 'PETROLIMEX',
-          short_name: 'PETROLIMEX',
-          description: 'PETROLIMEX Platform',
+          name: 'Qualcomm',
+          short_name: 'Qualcomm',
+          description: 'Qualcomm Platform',
           theme_color: '#1e3a8a',
           background_color: '#0f172a',
           display: 'standalone',
