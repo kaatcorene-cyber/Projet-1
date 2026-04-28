@@ -159,9 +159,26 @@ export function Register() {
           </div>
 
           <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Pays</label>
+            <select
+              name="country"
+              value={formData.country}
+              onChange={handleChange}
+              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium appearance-none"
+              required
+            >
+              <option value="Cote d'Ivoire">Côte d'Ivoire (+225)</option>
+              <option value="Togo">Togo (+228)</option>
+              <option value="Burkina Faso">Burkina Faso (+226)</option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-white/20 pr-3">+225</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-gray-200 pr-3">
+                {formData.country === "Cote d'Ivoire" ? '+225' : formData.country === 'Togo' ? '+228' : '+226'}
+              </span>
               <input
                 type="tel"
                 name="phone"

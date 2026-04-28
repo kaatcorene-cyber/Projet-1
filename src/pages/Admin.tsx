@@ -49,7 +49,7 @@ export function Admin() {
   // States for Users
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editBalance, setEditBalance] = useState('');
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  
   
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -159,7 +159,6 @@ export function Admin() {
     await supabase.from('transactions').delete().eq('user_id', id);
     await supabase.from('investments').delete().eq('user_id', id);
     await supabase.from('users').delete().eq('id', id);
-    setConfirmDeleteId(null);
     fetchData();
     setLoading(false);
   
@@ -605,18 +604,14 @@ export function Admin() {
                     <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-red-500 hover:bg-red-700 text-white font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
                     <button onClick={() => setEditingUserId(null)} className="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg text-sm transition-colors cursor-pointer">X</button>
                   </div>
-                ) : confirmDeleteId === u.id ? (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100 text-xs font-medium">
-                    <button onClick={() => handleDeleteUser(u.id)} disabled={loading} className="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 cursor-pointer transition-colors">Oui, Supprimer</button>
-                    <button onClick={() => setConfirmDeleteId(null)} disabled={loading} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-2 cursor-pointer transition-colors">Annuler</button>
-                  </div>
+                
                 ) : (
                   <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
                     <button onClick={() => {setEditingUserId(u.id); setEditBalance(String(u.balance));}} className="flex-1 py-2 bg-gray-50 text-gray-600 rounded-xl flex items-center justify-center text-xs font-medium hover:bg-gray-100 transition-colors border border-gray-100 cursor-pointer">
                       <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Solde
                     </button>
                     {u.role !== 'admin' && (
-                      <button onClick={() => setConfirmDeleteId(u.id)} className="p-2 bg-red-50 text-red-500 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">
+                      <button onClick={() => handleDeleteUser(u.id)} className="p-2 bg-red-50 text-red-500 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}

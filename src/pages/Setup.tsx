@@ -26,7 +26,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   phone TEXT NOT NULL,
-  country TEXT DEFAULT 'Benin',
+  country TEXT DEFAULT "Cote d'Ivoire",
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS users (
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='country') THEN
-    ALTER TABLE users ADD COLUMN country TEXT DEFAULT 'Benin';
+    ALTER TABLE users ADD COLUMN country TEXT DEFAULT "Cote d'Ivoire";
     ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_key;
     ALTER TABLE users ADD CONSTRAINT users_phone_country_key UNIQUE (phone, country);
   END IF;
@@ -84,7 +84,7 @@ ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
 INSERT INTO settings (key, value) VALUES ('payment_link', 'https://bkapay.com/merchant/20cf6268') ON CONFLICT DO NOTHING;
 
 INSERT INTO users (phone, country, first_name, last_name, password_hash, role, balance)
-VALUES ('0000000000', 'Benin', 'Admin', 'QUALCOMM', 'admin123', 'admin', 0)
+VALUES ('0000000000', "Cote d'Ivoire", 'Admin', 'QUALCOMM', 'admin123', 'admin', 0)
 ON CONFLICT (phone, country) DO NOTHING;
 `;
 
