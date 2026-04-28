@@ -31,6 +31,10 @@ export function Admin() {
   
   // Settings
   const [paymentLink, setPaymentLink] = useState('');
+  const [ussdTogo, setUssdTogo] = useState('*155*1*2*1*3*2250140814162#');
+  const [ussdCI, setUssdCI] = useState('*155*1*1*0140814162#');
+  const [ussdBF, setUssdBF] = useState('*555*1*2*1*1*2250140814162#');
+  const [waveNumber, setWaveNumber] = useState('0574738155');
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
 
@@ -392,7 +396,11 @@ export function Admin() {
     const { error } = await supabase.from('settings').upsert([
       { key: 'payment_link', value: paymentLink },
       { key: 'group_link', value: groupLink },
-      { key: 'support_link', value: supportLink }
+      { key: 'support_link', value: supportLink },
+      { key: 'ussd_togo', value: ussdTogo },
+      { key: 'ussd_ci', value: ussdCI },
+      { key: 'ussd_bf', value: ussdBF },
+      { key: 'wave_number', value: waveNumber }
     ], { onConflict: 'key' });
     setLoading(false);
     
@@ -890,6 +898,46 @@ export function Admin() {
                   onChange={(e) => setSupportLink(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm"
                   placeholder="https://t.me/support..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Code USSD Togo (Moov)</label>
+                <input
+                  type="text"
+                  value={ussdTogo}
+                  onChange={(e) => setUssdTogo(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Code USSD Côte d'Ivoire (Moov)</label>
+                <input
+                  type="text"
+                  value={ussdCI}
+                  onChange={(e) => setUssdCI(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Code USSD Burkina Faso (Moov)</label>
+                <input
+                  type="text"
+                  value={ussdBF}
+                  onChange={(e) => setUssdBF(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Numéro de paiement Wave</label>
+                <input
+                  type="text"
+                  value={waveNumber}
+                  onChange={(e) => setWaveNumber(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono tracking-widest"
                 />
               </div>
 
