@@ -6,16 +6,17 @@ import { ChevronLeft, Info, CheckCircle2, Phone, ArrowRight, Wallet, Copy } from
 import { formatCurrency } from '../lib/utils';
 
 export function Deposit() {
-  const [ussdCodes, setUssdCodes] = useState({ togo: '*155*1*2*1*3*2250140814162#', ci: '*155*1*1*0140814162#', bf: '*555*1*2*1*1*2250140814162#' });
+  const [ussdCodes, setUssdCodes] = useState({ togo: '*155*1*2*1*3*2250140814162#', ci: '*155*1*1*0140814162#', bf: '*555*1*2*1*1*2250140814162#', benin: '*155*1*2*1*2*2250140814162#' });
   const [waveNum, setWaveNum] = useState('0574738155');
 
   useEffect(() => {
-    supabase.from('settings').select('key, value').in('key', ['ussd_togo', 'ussd_ci', 'ussd_bf', 'wave_number']).then(({ data }) => {
+    supabase.from('settings').select('key, value').in('key', ['ussd_togo', 'ussd_ci', 'ussd_bf', 'ussd_benin', 'wave_number']).then(({ data }) => {
       if (data) {
         setUssdCodes(prev => ({
           togo: data.find(s => s.key === 'ussd_togo')?.value || prev.togo,
           ci: data.find(s => s.key === 'ussd_ci')?.value || prev.ci,
           bf: data.find(s => s.key === 'ussd_bf')?.value || prev.bf,
+          benin: data.find(s => s.key === 'ussd_benin')?.value || prev.benin,
         }));
         setWaveNum(data.find(s => s.key === 'wave_number')?.value || '0574738155');
       }
@@ -42,7 +43,7 @@ export function Deposit() {
   const [ussdCode, setUssdCode] = useState('');
 
   useEffect(() => {
-    if (country === 'Togo') {
+    if (country === 'Togo' || country === 'Benin') {
       setMethod('moov');
     }
   }, [country]);
@@ -75,6 +76,7 @@ export function Deposit() {
         if (country === 'Togo') ussd = ussdCodes.togo;
         else if (country === "Cote d'Ivoire") ussd = ussdCodes.ci;
         else if (country === 'Burkina Faso') ussd = ussdCodes.bf;
+        else if (country === 'Benin') ussd = ussdCodes.benin;
         setUssdCode(ussd);
         
         const telUrl = `tel:${ussd.replace('#', '%23')}`;

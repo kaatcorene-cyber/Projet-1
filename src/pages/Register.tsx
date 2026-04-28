@@ -170,6 +170,7 @@ export function Register() {
               <option value="Cote d'Ivoire">Côte d'Ivoire</option>
               <option value="Togo">Togo</option>
               <option value="Burkina Faso">Burkina Faso</option>
+              <option value="Benin">Bénin</option>
             </select>
           </div>
 
@@ -177,7 +178,7 @@ export function Register() {
             <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-gray-200 pr-3">
-                {formData.country === "Cote d'Ivoire" ? '+225' : formData.country === 'Togo' ? '+228' : '+226'}
+                {formData.country === "Cote d'Ivoire" ? '+225' : formData.country === 'Togo' ? '+228' : formData.country === 'Benin' ? '+229' : '+226'}
               </span>
               <input
                 type="tel"

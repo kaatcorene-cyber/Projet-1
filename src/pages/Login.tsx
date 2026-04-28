@@ -95,6 +95,7 @@ export function Login() {
               <option value="Cote d'Ivoire">Côte d'Ivoire</option>
               <option value="Togo">Togo</option>
               <option value="Burkina Faso">Burkina Faso</option>
+              <option value="Benin">Bénin</option>
             </select>
           </div>
 
@@ -102,7 +103,7 @@ export function Login() {
             <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-gray-200 pr-3">
-                {country === "Cote d'Ivoire" ? '+225' : country === 'Togo' ? '+228' : '+226'}
+                {country === "Cote d'Ivoire" ? '+225' : country === 'Togo' ? '+228' : country === 'Benin' ? '+229' : '+226'}
               </span>
               <input
                 type="tel"
