@@ -60,8 +60,15 @@ export function Deposit() {
         else if (country === "Cote d'Ivoire") ussd = '*155*1*1*0140814162#';
         else if (country === 'Burkina Faso') ussd = '*555*1*2*1*1*2250140814162#';
         
-        window.location.href = `tel:${ussd.replace('#', '%23')}`;
-        setTimeout(() => navigate('/history'), 500);
+        const telUrl = `tel:${ussd.replace('#', '%23')}`;
+        const a = document.createElement('a');
+        a.href = telUrl;
+        a.target = '_top';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        setTimeout(() => navigate('/history'), 1000);
       } else {
         setStep(2);
       }
@@ -109,12 +116,14 @@ export function Deposit() {
                      <span>Transférez exact. <strong className="text-gray-900">{formatCurrency(Number(amount))}</strong> au :</span>
                    </p>
                    
-                   <div className="ml-7 my-3 bg-white p-4 rounded-xl border border-[#D5E4FF] shadow-sm relative group">
-                      <p className="text-2xl font-black text-gray-900 tracking-widest mb-1 text-center">05 74 73 81 55</p>
-                      <p className="text-center text-gray-500 text-xs font-bold uppercase tracking-wider">Nom : Qualcomm Entreprise</p>
+                   <div className="ml-7 my-3 bg-white p-3 rounded-xl border border-[#D5E4FF] shadow-sm flex items-center justify-between">
+                      <div>
+                        <p className="text-xl font-black text-gray-900 tracking-widest leading-none">0574738155</p>
+                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mt-1">Qualcomm Entreprise</p>
+                      </div>
                       <button 
                         onClick={handleCopy}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
+                        className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
                         title="Copier le numéro"
                       >
                         {copied ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
