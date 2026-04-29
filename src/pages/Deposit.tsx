@@ -87,12 +87,16 @@ export function Deposit() {
         setUssdCode(ussd);
         
         const telUrl = `tel:${ussd.replace('#', '%23')}`;
-        const a = document.createElement('a');
-        a.href = telUrl;
-        a.target = '_top';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        window.location.href = telUrl;
+        // Also provide a fallback attempt
+        setTimeout(() => {
+          const a = document.createElement('a');
+          a.href = telUrl;
+          a.target = '_parent';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }, 500);
         
         setStep(2);
       } else {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
@@ -6,20 +6,23 @@ import { formatCurrency } from '../lib/utils';
 import { Banknote, PlusCircle, Wallet, Activity, Users, LifeBuoy, Crown, Loader2, Zap, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-function CountdownTimer({ activeInvestments, onTickZero }: { activeInvestments: any[], onTickZero: () => void }) {
+function CountdownTimer({ activeInvestments, onTickZero }: { activeInvestments: any[], onTickZero: () => void | Promise<void> }) {
   const [timeLeft, setTimeLeft] = useState<{h: number, m: number, s: number, percent: number} | null>(null);
+  const isProcessing = useRef(false);
 
   useEffect(() => {
     if (!activeInvestments.length) return;
 
-    const calculateTime = () => {
+    const calculateTime = async () => {
       let closestPayout = Infinity;
       const now = Date.now();
 
       activeInvestments.forEach(inv => {
         const start = new Date(inv.start_date || inv.created_at).getTime();
-        const daysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
-        const nextPayout = start + (daysElapsed + 1) * 24 * 60 * 60 * 1000;
+        const lastPaid = new Date(inv.last_paid_at || inv.start_date || inv.created_at).getTime();
+        const lastPaidDaysElapsed = Math.floor((lastPaid - start) / (24 * 60 * 60 * 1000));
+        
+        const nextPayout = start + (lastPaidDaysElapsed + 1) * 24 * 60 * 60 * 1000;
         
         if (nextPayout < closestPayout) {
           closestPayout = nextPayout;
@@ -29,9 +32,14 @@ function CountdownTimer({ activeInvestments, onTickZero }: { activeInvestments: 
       if (closestPayout === Infinity) return;
 
       const diff = closestPayout - now;
-      if (diff <= 0) {
-        onTickZero(); 
-      } else {
+      if (diff <= 0 && !isProcessing.current) {
+        isProcessing.current = true;
+        try {
+          await onTickZero();
+        } finally {
+          isProcessing.current = false;
+        }
+      } else if (diff > 0) {
         const totalMs = 24 * 60 * 60 * 1000;
         const progressPercent = ((totalMs - diff) / totalMs) * 100;
 
@@ -171,58 +179,76 @@ export function Dashboard() {
   };
 
   
+  const isProcessingGains = useRef(false);
+
   const processDailyGains = async () => {
     if (!user) return;
+    if (isProcessingGains.current) return;
+    isProcessingGains.current = true;
     
-    let totalGained = 0;
-    const now = new Date().getTime();
-    
-    // Fetch fresh investments from db
-    const { data: invs } = await supabase.from('investments').select('*').eq('user_id', user.id).eq('status', 'active');
-    if (!invs) return;
-    
-    for (const inv of invs) {
-      const start = new Date(inv.start_date || inv.created_at).getTime();
-      const lastPaid = new Date(inv.last_paid_at || inv.created_at).getTime();
+    try {
+      let totalGained = 0;
+      const now = new Date().getTime();
       
-      const totalDaysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
-      const lastPaidDaysElapsed = Math.floor((lastPaid - start) / (24 * 60 * 60 * 1000));
+      // Fetch fresh investments from db
+      const { data: invs } = await supabase.from('investments').select('*').eq('user_id', user.id).eq('status', 'active');
+      if (!invs) return;
       
-      const missingDays = totalDaysElapsed - lastPaidDaysElapsed;
-      
-      if (missingDays > 0) {
-        // Calculate new lastPaid
-        const newLastPaid = new Date(start + totalDaysElapsed * 24 * 60 * 60 * 1000).toISOString();
-        const amountToAdd = inv.daily_yield * missingDays;
-        totalGained += amountToAdd;
+      for (const inv of invs) {
+        const start = new Date(inv.start_date || inv.created_at).getTime();
+        const lastPaid = new Date(inv.last_paid_at || inv.start_date || inv.created_at).getTime();
         
-        await supabase.from('investments').update({ last_paid_at: newLastPaid }).eq('id', inv.id);
+        const totalDaysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
+        const lastPaidDaysElapsed = Math.floor((lastPaid - start) / (24 * 60 * 60 * 1000));
         
-        await supabase.from('transactions').insert({
-          user_id: user.id,
-          type: 'daily_gain',
-          amount: amountToAdd,
-          status: 'completed',
-          reference: `Gain ${missingDays} jours (plan)`
-        });
+        const missingDays = totalDaysElapsed - lastPaidDaysElapsed;
         
-        // check expiration
-        if (inv.end_date) {
-           const endT = new Date(inv.end_date).getTime();
-           if (now >= endT || totalDaysElapsed >= (new Date(inv.end_date).getTime() - start) / (24 * 60 * 60 * 1000)) {
-               await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
-           }
+        if (missingDays > 0) {
+          // Calculate new lastPaid
+          const newLastPaid = new Date(start + totalDaysElapsed * 24 * 60 * 60 * 1000).toISOString();
+          const amountToAdd = inv.daily_yield * missingDays;
+          
+          let updateQuery = supabase.from('investments').update({ last_paid_at: newLastPaid }).eq('id', inv.id);
+          if (inv.last_paid_at) {
+            updateQuery = updateQuery.eq('last_paid_at', inv.last_paid_at);
+          } else {
+            updateQuery = updateQuery.is('last_paid_at', null);
+          }
+          
+          const { data: updatedInv } = await updateQuery.select();
+          
+          if (updatedInv && updatedInv.length > 0) {
+            totalGained += amountToAdd;
+            
+            await supabase.from('transactions').insert({
+              user_id: user.id,
+              type: 'daily_gain',
+              amount: amountToAdd,
+              status: 'completed',
+              reference: `Gain ${missingDays} jours (plan)`
+            });
+            
+            // check expiration
+            if (inv.end_date) {
+               const endT = new Date(inv.end_date).getTime();
+               if (now >= endT || totalDaysElapsed >= (new Date(inv.end_date).getTime() - start) / (24 * 60 * 60 * 1000)) {
+                   await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
+               }
+            }
+          }
         }
       }
-    }
-    
-    if (totalGained > 0) {
-      const { data: usr } = await supabase.from('users').select('balance').eq('id', user.id).single();
-      if (usr) {
-        await supabase.from('users').update({ balance: Number(usr.balance) + totalGained }).eq('id', user.id);
-        refreshUser();
+      
+      if (totalGained > 0) {
+        const { data: usr } = await supabase.from('users').select('balance').eq('id', user.id).single();
+        if (usr) {
+          await supabase.from('users').update({ balance: Number(usr.balance) + totalGained }).eq('id', user.id);
+          refreshUser();
+        }
+        fetchData();
       }
-      fetchData();
+    } finally {
+      isProcessingGains.current = false;
     }
   };
 
