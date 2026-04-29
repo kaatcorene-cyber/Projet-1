@@ -50,7 +50,7 @@ export function Deposit() {
     }
   }, [country]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     
@@ -62,42 +62,40 @@ export function Deposit() {
     setLoading(true);
     setError('');
 
-    let ussd = '';
-    let telUrl = '';
-    
-    if (method === 'moov' || method === 'mtn') {
-      if (method === 'moov') {
-        if (country === 'Togo') ussd = ussdCodes.togo;
-        else if (country === "Cote d'Ivoire") ussd = ussdCodes.ci;
-        else if (country === 'Burkina Faso') ussd = ussdCodes.bf;
-        else if (country === 'Benin') ussd = ussdCodes.benin;
-      } else if (method === 'mtn') {
-        if (country === "Cote d'Ivoire") ussd = ussdCodes.mtn_ci;
-        else if (country === 'Benin') ussd = ussdCodes.mtn_benin;
-      }
-      setUssdCode(ussd);
-      telUrl = `tel:${ussd.replace('#', '%23')}`;
-      
-      // Fire synchronously to prevent Safari/Chrome blocking unauthorized automatic calls
-      window.location.href = telUrl;
-    }
+    try {
+      const { error: txError } = await supabase.from('transactions').insert([{
+        user_id: user.id,
+        type: 'deposit',
+        amount: Number(amount),
+        reference: `${method.toUpperCase()} - ${phone}`,
+        status: 'pending'
+      }]);
 
-    // Async creation in background
-    supabase.from('transactions').insert([{
-      user_id: user.id,
-      type: 'deposit',
-      amount: Number(amount),
-      reference: `${method.toUpperCase()} - ${phone}`,
-      status: 'pending'
-    }]).then(({ error: txError }) => {
-      setLoading(false);
-      if (txError) {
-        console.error(txError);
-        setError('Une erreur est survenue lors de la création du dépôt.');
+      if (txError) throw txError;
+      
+      if (method === 'moov' || method === 'mtn') {
+        let ussd = '';
+        if (method === 'moov') {
+          if (country === 'Togo') ussd = ussdCodes.togo;
+          else if (country === "Cote d'Ivoire") ussd = ussdCodes.ci;
+          else if (country === 'Burkina Faso') ussd = ussdCodes.bf;
+          else if (country === 'Benin') ussd = ussdCodes.benin;
+        } else if (method === 'mtn') {
+          if (country === "Cote d'Ivoire") ussd = ussdCodes.mtn_ci;
+          else if (country === 'Benin') ussd = ussdCodes.mtn_benin;
+        }
+        setUssdCode(ussd);
+        setStep(2);
       } else {
         setStep(2);
       }
-    });
+
+    } catch (err) {
+      console.error(err);
+      setError('Une erreur est survenue lors de la création du dépôt.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
