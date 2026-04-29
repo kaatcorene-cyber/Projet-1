@@ -23,8 +23,15 @@ function CountdownTimer({ activeInvestments, onTickZero }: { activeInvestments: 
       let shouldTick = false;
 
       activeInvestments.forEach(inv => {
-        const start = new Date(inv.start_date || inv.created_at).getTime();
-        const lastPaid = new Date(inv.last_paid_at || inv.created_at).getTime();
+        const startDateRaw = inv.start_date || inv.created_at;
+        const lastPaidRaw = inv.last_paid_at || inv.created_at;
+        
+        let start = new Date(startDateRaw).getTime();
+        let lastPaid = new Date(lastPaidRaw).getTime();
+        
+        if (isNaN(start)) start = now;
+        if (isNaN(lastPaid)) lastPaid = start;
+
         const totalDaysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
         const lastPaidDaysElapsed = Math.floor((lastPaid - start) / (24 * 60 * 60 * 1000));
         
@@ -202,9 +209,17 @@ export function Dashboard() {
         return;
       }
       
+      let hasChanges = false;
       for (const inv of invs) {
-        const start = new Date(inv.start_date || inv.created_at).getTime();
-        const lastPaid = new Date(inv.last_paid_at || inv.created_at).getTime();
+        const startDateRaw = inv.start_date || inv.created_at;
+        const lastPaidRaw = inv.last_paid_at || inv.created_at;
+        
+        let start = new Date(startDateRaw).getTime();
+        let lastPaid = new Date(lastPaidRaw).getTime();
+        
+        // Fallback to now if dates are completely invalid
+        if (isNaN(start)) start = now;
+        if (isNaN(lastPaid)) lastPaid = start;
         
         const totalDaysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
         const lastPaidDaysElapsed = Math.floor((lastPaid - start) / (24 * 60 * 60 * 1000));
@@ -212,6 +227,7 @@ export function Dashboard() {
         const missingDays = totalDaysElapsed - lastPaidDaysElapsed;
         
         if (missingDays > 0) {
+          hasChanges = true;
           // Calculate new lastPaid
           const newLastPaid = new Date(start + totalDaysElapsed * 24 * 60 * 60 * 1000).toISOString();
           const amountToAdd = inv.daily_yield * missingDays;
@@ -226,14 +242,15 @@ export function Dashboard() {
             status: 'completed',
             reference: `Gain ${missingDays} jours (plan)`
           });
-          
-          // check expiration
-          if (inv.end_date) {
-             const endT = new Date(inv.end_date).getTime();
-             if (now >= endT || totalDaysElapsed >= (new Date(inv.end_date).getTime() - start) / (24 * 60 * 60 * 1000)) {
-                 await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
-             }
-          }
+        }
+        
+        // check expiration independently from missingDays to handle 0 yield plans or late expiration
+        if (inv.end_date) {
+           const endT = new Date(inv.end_date).getTime();
+           if (now >= endT || totalDaysElapsed >= (new Date(inv.end_date).getTime() - start) / (24 * 60 * 60 * 1000)) {
+               hasChanges = true;
+               await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
+           }
         }
       }
       
@@ -243,8 +260,13 @@ export function Dashboard() {
           await supabase.from('users').update({ balance: Number(usr.balance) + totalGained }).eq('id', user.id);
           refreshUser();
         }
+      }
+      
+      if (hasChanges) {
         await fetchData(); // fetch updated data
       }
+    } catch (err) {
+      console.error(err);
     } finally {
       isProcessingGains.current = false; // release lock
     }
