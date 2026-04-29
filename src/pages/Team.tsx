@@ -254,7 +254,7 @@ export function Team() {
             <div className="text-left flex items-center gap-3">
               <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 font-black">2</div>
               <div>
-                <p className="font-bold text-gray-900">Niveau 2 <span className="text-xs font-semibold text-red-500 ml-1">(2%)</span></p>
+                <p className="font-bold text-gray-900">Niveau 2 <span className="text-xs font-semibold text-red-500 ml-1">(1%)</span></p>
                 <p className="text-gray-500 text-xs mt-0.5">{teamStats.level2.length} membres</p>
               </div>
             </div>
