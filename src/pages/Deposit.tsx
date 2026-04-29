@@ -136,11 +136,6 @@ export function Deposit() {
                   <Phone className="w-5 h-5" />
                   Lancer le code USSD
                 </a>
-                
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
-                  <p className="text-xs text-gray-500 mb-1 font-bold uppercase tracking-wider">Ou tapez manuellement :</p>
-                  <p className="font-mono font-black text-gray-900 text-lg tracking-wider">{ussdCode}</p>
-                </div>
               </div>
            )}
 
