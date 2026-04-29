@@ -35,6 +35,8 @@ export function Admin() {
   const [ussdCI, setUssdCI] = useState('*155*1*1*0140814162#');
   const [ussdBF, setUssdBF] = useState('*555*1*2*1*1*2250140814162#');
   const [ussdBenin, setUssdBenin] = useState('*155*1*2*1*2*2250140814162#');
+  const [ussdMtnCI, setUssdMtnCI] = useState('*133*1*1*0595918513#');
+  const [ussdMtnBenin, setUssdMtnBenin] = useState('*880*1*3*1*1*0595918513#');
   const [waveNumber, setWaveNumber] = useState('0574738155');
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
@@ -108,12 +110,17 @@ export function Admin() {
         const ub = settingsRes.data.find(s => s.key === 'ussd_bf');
         const unen = settingsRes.data.find(s => s.key === 'ussd_benin');
         const wn = settingsRes.data.find(s => s.key === 'wave_number');
+        const u_mtn_ci = settingsRes.data.find(s => s.key === 'ussd_mtn_ci');
+        const u_mtn_benin = settingsRes.data.find(s => s.key === 'ussd_mtn_benin');
+
         if (sup) setSupportLink(sup.value);
         if (ut) setUssdTogo(ut.value);
         if (uc) setUssdCI(uc.value);
         if (ub) setUssdBF(ub.value);
         if (unen) setUssdBenin(unen.value);
         if (wn) setWaveNumber(wn.value);
+        if (u_mtn_ci) setUssdMtnCI(u_mtn_ci.value);
+        if (u_mtn_benin) setUssdMtnBenin(u_mtn_benin.value);
         
         const dbPlansStr = settingsRes.data.find(s => s.key === 'investment_plans');
         if (dbPlansStr && dbPlansStr.value) {
@@ -412,6 +419,8 @@ export function Admin() {
       { key: 'ussd_ci', value: ussdCI },
       { key: 'ussd_bf', value: ussdBF },
       { key: 'ussd_benin', value: ussdBenin },
+      { key: 'ussd_mtn_ci', value: ussdMtnCI },
+      { key: 'ussd_mtn_benin', value: ussdMtnBenin },
       { key: 'wave_number', value: waveNumber }
     ], { onConflict: 'key' });
     setLoading(false);
@@ -949,6 +958,26 @@ export function Admin() {
                   type="text"
                   value={ussdBenin}
                   onChange={(e) => setUssdBenin(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Code USSD Côte d'Ivoire (MTN)</label>
+                <input
+                  type="text"
+                  value={ussdMtnCI}
+                  onChange={(e) => setUssdMtnCI(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Code USSD Bénin (MTN)</label>
+                <input
+                  type="text"
+                  value={ussdMtnBenin}
+                  onChange={(e) => setUssdMtnBenin(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
                 />
               </div>

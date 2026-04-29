@@ -6,17 +6,19 @@ import { ChevronLeft, Info, CheckCircle2, Phone, ArrowRight, Wallet, Copy } from
 import { formatCurrency } from '../lib/utils';
 
 export function Deposit() {
-  const [ussdCodes, setUssdCodes] = useState({ togo: '*155*1*2*1*3*2250140814162#', ci: '*155*1*1*0140814162#', bf: '*555*1*2*1*1*2250140814162#', benin: '*155*1*2*1*2*2250140814162#' });
+  const [ussdCodes, setUssdCodes] = useState({ togo: '*155*1*2*1*3*2250140814162#', ci: '*155*1*1*0140814162#', bf: '*555*1*2*1*1*2250140814162#', benin: '*155*1*2*1*2*2250140814162#', mtn_ci: '*133*1*1*0595918513#', mtn_benin: '*880*1*3*1*1*0595918513#' });
   const [waveNum, setWaveNum] = useState('0574738155');
 
   useEffect(() => {
-    supabase.from('settings').select('key, value').in('key', ['ussd_togo', 'ussd_ci', 'ussd_bf', 'ussd_benin', 'wave_number']).then(({ data }) => {
+    supabase.from('settings').select('key, value').in('key', ['ussd_togo', 'ussd_ci', 'ussd_bf', 'ussd_benin', 'wave_number', 'ussd_mtn_ci', 'ussd_mtn_benin']).then(({ data }) => {
       if (data) {
         setUssdCodes(prev => ({
           togo: data.find(s => s.key === 'ussd_togo')?.value || prev.togo,
           ci: data.find(s => s.key === 'ussd_ci')?.value || prev.ci,
           bf: data.find(s => s.key === 'ussd_bf')?.value || prev.bf,
           benin: data.find(s => s.key === 'ussd_benin')?.value || prev.benin,
+          mtn_ci: data.find(s => s.key === 'ussd_mtn_ci')?.value || prev.mtn_ci,
+          mtn_benin: data.find(s => s.key === 'ussd_mtn_benin')?.value || prev.mtn_benin,
         }));
         setWaveNum(data.find(s => s.key === 'wave_number')?.value || '0574738155');
       }
@@ -28,7 +30,7 @@ export function Deposit() {
   const [amount, setAmount] = useState('');
   const [phone, setPhone] = useState('');
   const country = user?.country || "Cote d'Ivoire";
-  const [method, setMethod] = useState<'moov' | 'wave'>('moov');
+  const [method, setMethod] = useState<'moov' | 'wave' | 'mtn'>('moov');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -71,12 +73,17 @@ export function Deposit() {
 
       if (txError) throw txError;
       
-      if (method === 'moov') {
+      if (method === 'moov' || method === 'mtn') {
         let ussd = '';
-        if (country === 'Togo') ussd = ussdCodes.togo;
-        else if (country === "Cote d'Ivoire") ussd = ussdCodes.ci;
-        else if (country === 'Burkina Faso') ussd = ussdCodes.bf;
-        else if (country === 'Benin') ussd = ussdCodes.benin;
+        if (method === 'moov') {
+          if (country === 'Togo') ussd = ussdCodes.togo;
+          else if (country === "Cote d'Ivoire") ussd = ussdCodes.ci;
+          else if (country === 'Burkina Faso') ussd = ussdCodes.bf;
+          else if (country === 'Benin') ussd = ussdCodes.benin;
+        } else if (method === 'mtn') {
+          if (country === "Cote d'Ivoire") ussd = ussdCodes.mtn_ci;
+          else if (country === 'Benin') ussd = ussdCodes.mtn_benin;
+        }
         setUssdCode(ussd);
         
         const telUrl = `tel:${ussd.replace('#', '%23')}`;
@@ -120,12 +127,12 @@ export function Deposit() {
            
            <div className="w-full h-px bg-gray-100 mb-6"></div>
 
-           {method === 'moov' && (
+           {(method === 'moov' || method === 'mtn') && (
               <div className="mb-8 text-left">
                 <p className="text-sm font-bold text-gray-900 mb-3 text-center uppercase tracking-wider">Action Requise</p>
                 <p className="text-sm text-gray-500 mb-4 text-center">Le code secret de paiement s'est ouvert sur votre téléphone, ou cliquez sur le bouton ci-dessous pour le relancer :</p>
                 
-                <a href={`tel:${ussdCode.replace('#', '%23')}`} className="flex items-center justify-center gap-2 w-full py-4 bg-[#FF7900] hover:bg-[#FF7900]/90 text-white font-bold rounded-xl mb-4 transition-all shadow-md shadow-orange-200 active:scale-95">
+                <a href={`tel:${ussdCode.replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-4 font-bold rounded-xl mb-4 transition-all shadow-md active:scale-95 ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#FFCC00]/90 text-black shadow-yellow-200' : 'bg-[#FF7900] hover:bg-[#FF7900]/90 text-white shadow-orange-200'}`}>
                   <Phone className="w-5 h-5" />
                   Lancer le code USSD
                 </a>
@@ -205,12 +212,13 @@ export function Deposit() {
               <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Moyen de paiement</label>
               <select
                 value={method}
-                onChange={(e) => setMethod(e.target.value as 'moov' | 'wave')}
+                onChange={(e) => setMethod(e.target.value as 'moov' | 'wave' | 'mtn')}
                 className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-black text-gray-900 mt-1 appearance-none outline-none"
                 required
               >
                 <option value="moov">Moov Money</option>
                 {country !== 'Togo' && <option value="wave">Wave</option>}
+                {(country === "Cote d'Ivoire" || country === "Benin") && <option value="mtn">MTN Mobile Money</option>}
               </select>
             </div>
 
