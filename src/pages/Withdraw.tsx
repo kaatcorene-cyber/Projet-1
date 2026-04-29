@@ -32,7 +32,7 @@ export function Withdraw() {
       return setMessage({ type: 'error', text: 'Le minimum de retrait est de 1 000 FCFA.' });
     }
 
-    if (user.balance < numAmount) {
+    if (Number(user.balance) < numAmount) {
       return setMessage({ type: 'error', text: 'Solde insuffisant.' });
     }
 

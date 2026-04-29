@@ -169,7 +169,7 @@ export function Team() {
       <header className="flex justify-between items-end pb-2 border-b border-gray-200 mb-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Mon Équipe</h1>
-          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-1">Gagnez jusqu'à 22%</p>
+          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-1">Gagnez jusqu'à 23%</p>
         </div>
         <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-6 object-contain" referrerPolicy="no-referrer" />
       </header>
@@ -254,7 +254,7 @@ export function Team() {
             <div className="text-left flex items-center gap-3">
               <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-gray-600 font-black">2</div>
               <div>
-                <p className="font-bold text-gray-900">Niveau 2 <span className="text-xs font-semibold text-red-500 ml-1">(1%)</span></p>
+                <p className="font-bold text-gray-900">Niveau 2 <span className="text-xs font-semibold text-red-500 ml-1">(2%)</span></p>
                 <p className="text-gray-500 text-xs mt-0.5">{teamStats.level2.length} membres</p>
               </div>
             </div>

@@ -163,12 +163,13 @@ export function Dashboard() {
     // Setup polling for real-time like updates
     const intervalId = setInterval(() => {
       refreshUser();
-      if (user) processDailyGains();
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) processDailyGains();
       fetchData();
     }, 15000);
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [user?.id]);
 
   const formatLink = (link: string, defaultLink: string) => {
     if (!link) return defaultLink;
@@ -195,7 +196,8 @@ export function Dashboard() {
   const isProcessingGains = useRef(false);
   
   const processDailyGains = async () => {
-    if (!user || isProcessingGains.current) return;
+    const currentUser = useAuthStore.getState().user;
+    if (!currentUser || isProcessingGains.current) return;
     isProcessingGains.current = true;
     
     try {
@@ -203,7 +205,7 @@ export function Dashboard() {
       const now = new Date().getTime();
       
       // Fetch fresh investments from db
-      const { data: invs } = await supabase.from('investments').select('*').eq('user_id', user.id).eq('status', 'active');
+      const { data: invs } = await supabase.from('investments').select('*').eq('user_id', currentUser.id).eq('status', 'active');
       if (!invs) {
         isProcessingGains.current = false;
         return;
@@ -236,7 +238,7 @@ export function Dashboard() {
           await supabase.from('investments').update({ last_paid_at: newLastPaid }).eq('id', inv.id);
           
           await supabase.from('transactions').insert({
-            user_id: user.id,
+            user_id: currentUser.id,
             type: 'daily_gain',
             amount: amountToAdd,
             status: 'completed',
@@ -255,9 +257,9 @@ export function Dashboard() {
       }
       
       if (totalGained > 0) {
-        const { data: usr } = await supabase.from('users').select('balance').eq('id', user.id).single();
+        const { data: usr } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
         if (usr) {
-          await supabase.from('users').update({ balance: Number(usr.balance) + totalGained }).eq('id', user.id);
+          await supabase.from('users').update({ balance: Number(usr.balance) + totalGained }).eq('id', currentUser.id);
           refreshUser();
         }
       }
@@ -274,11 +276,15 @@ export function Dashboard() {
 
 
   const fetchData = async () => {
-    if (!user) return;
+    const currentUser = useAuthStore.getState().user;
+    if (!currentUser) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const [invRes, settingsRes] = await Promise.all([
-        supabase.from('investments').select('*').eq('user_id', user.id).eq('status', 'active'),
+        supabase.from('investments').select('*').eq('user_id', currentUser.id).eq('status', 'active'),
         supabase.from('settings').select('*')
       ]);
 
@@ -343,7 +349,7 @@ export function Dashboard() {
                     Capital Total
                   </p>
                   <h2 className="text-4xl font-black tracking-tighter text-white">
-                    {formatCurrency(user?.balance || 0)}
+                    {formatCurrency(Number(user?.balance) || 0)}
                   </h2>
                </div>
            </div>

@@ -73,7 +73,7 @@ export function Invest() {
   const handleInvest = async (plan: any, index: number) => {
     if (!user) return;
     
-    if (user.balance < plan.amount) {
+    if (Number(user.balance) < plan.amount) {
       setMessage({ type: 'error', text: 'Solde insuffisant. Veuillez recharger votre compte.' });
       return;
     }
@@ -83,7 +83,7 @@ export function Invest() {
 
     try {
       // 1. Deduct balance
-      const newBalance = user.balance - plan.amount;
+      const newBalance = Number(user.balance) - plan.amount;
       const { error: updateError } = await supabase
         .from('users')
         .update({ balance: newBalance })
