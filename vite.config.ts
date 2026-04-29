@@ -28,19 +28,19 @@ export default defineConfig(({mode}) => {
           display: 'standalone',
           icons: [
             {
-              src: '/qualcomm.svg',
+              src: 'https://i.imgur.com/awFyFRj.png',
               sizes: '192x192',
-              type: 'image/svg+xml'
+              type: 'image/png'
             },
             {
-              src: '/qualcomm.svg',
+              src: 'https://i.imgur.com/awFyFRj.png',
               sizes: '512x512',
-              type: 'image/svg+xml'
+              type: 'image/png'
             },
             {
-              src: '/qualcomm.svg',
+              src: 'https://i.imgur.com/awFyFRj.png',
               sizes: '512x512',
-              type: 'image/svg+xml',
+              type: 'image/png',
               purpose: 'any maskable'
             }
           ]
