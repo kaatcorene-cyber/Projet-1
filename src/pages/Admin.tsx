@@ -95,7 +95,7 @@ export function Admin() {
         setInvestmentsList(invsRes.data);
       }
 
-      if (settingsRes.data) {
+      if (settingsRes.data && showLoading) {
         const link = settingsRes.data.find(s => s.key === 'payment_link');
         if (link) setPaymentLink(link.value);
         
@@ -126,7 +126,7 @@ export function Admin() {
         } else {
           setPlans(DEFAULT_PLANS);
         }
-      } else {
+      } else if (showLoading) {
         setPlans(DEFAULT_PLANS);
       }
     } catch (e) {
