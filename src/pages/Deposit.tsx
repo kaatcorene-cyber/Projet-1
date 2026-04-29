@@ -85,19 +85,6 @@ export function Deposit() {
           else if (country === 'Benin') ussd = ussdCodes.mtn_benin;
         }
         setUssdCode(ussd);
-        
-        const telUrl = `tel:${ussd.replace('#', '%23')}`;
-        window.location.href = telUrl;
-        // Also provide a fallback attempt
-        setTimeout(() => {
-          const a = document.createElement('a');
-          a.href = telUrl;
-          a.target = '_parent';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        }, 500);
-        
         setStep(2);
       } else {
         setStep(2);
@@ -134,7 +121,7 @@ export function Deposit() {
            {(method === 'moov' || method === 'mtn') && (
               <div className="mb-8 text-left">
                 <p className="text-sm font-bold text-gray-900 mb-3 text-center uppercase tracking-wider">Action Requise</p>
-                <p className="text-sm text-gray-500 mb-4 text-center">Le code secret de paiement s'est ouvert sur votre téléphone, ou cliquez sur le bouton ci-dessous pour le relancer :</p>
+                <p className="text-sm text-gray-500 mb-4 text-center">Veuillez cliquer sur le bouton ci-dessous pour composer le code USSD et valider votre paiement :</p>
                 
                 <a href={`tel:${ussdCode.replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-4 font-bold rounded-xl mb-4 transition-all shadow-md active:scale-95 ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#FFCC00]/90 text-black shadow-yellow-200' : 'bg-[#FF7900] hover:bg-[#FF7900]/90 text-white shadow-orange-200'}`}>
                   <Phone className="w-5 h-5" />
