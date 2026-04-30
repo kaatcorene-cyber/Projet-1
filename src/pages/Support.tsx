@@ -54,19 +54,19 @@ export function Support() {
       let responseText: React.ReactNode = '';
 
       if (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement') || lower.includes('payer')) {
-        responseText = "Pour les problèmes de dépôt ou de recharge, assurez-vous d'avoir bien transféré l'argent vers le numéro indiqué via votre réseau (Orange, MTN, Wave, Moov). Généralement, les recharges prennent 5 à 15 minutes à être validées. Si cela fait plus de 15 minutes, veuillez soumettre votre preuve de paiement à notre agent sur WhatsApp pour une validation manuelle.";
+        responseText = "Je comprends que vous ayez une question concernant un dépôt. Après avoir initié votre recharge sur l'application, assurez-vous d'avoir bien complété le transfert vers le numéro indiqué via votre opérateur (Orange, MTN, Wave, ou Moov). En règle générale, les dépôts sont validés automatiquement en 5 à 15 minutes. Si ce délai est dépassé, n'hésitez pas à envoyer votre reçu de paiement à notre équipe sur WhatsApp pour une validation immédiate.";
       } else if (lower.includes('retrait')) {
-        responseText = "Les retraits peuvent prendre jusqu'à 24h ouvrées. Assurez-vous d'avoir renseigné le bon numéro de Mobile Money. Si votre retrait a été rejeté, cela signifie probablement que le numéro est incorrect ou n'est pas à votre nom. Le montant a été retourné sur votre solde. Si le retrait est en attente depuis plus de 24h, veuillez contacter le service client.";
+        responseText = "Concernant les retraits, le traitement s'effectue généralement sous 24 heures. Si votre retrait a été rejeté, cela signifie souvent que le numéro Mobile Money entré comporte une erreur ou n'est pas à votre nom. Ne vous inquiétez pas, vos fonds ont été restitués sur votre solde ! Si toutefois votre retrait est en attente depuis plus de 24 heures, notre service client sur WhatsApp se fera un plaisir d'accélérer le processus.";
       } else if (lower.includes('parrain') || lower.includes('invit') || lower.includes('équipe') || lower.includes('equipe') || lower.includes('affili')) {
-        responseText = "Pour parrainer un ami, rendez-vous dans l'onglet 'Équipe' au milieu du menu en bas. Vous y trouverez votre lien d'invitation. Partagez-le avec vos amis pour gagner des commissions chaque fois qu'ils investissent !";
+        responseText = "C'est une excellente initiative de vouloir parrainer ! Pour inviter vos proches, rendez-vous simplement dans la rubrique 'Équipe' au bas de votre écran. Vous y trouverez votre lien d'invitation personnel. En le partageant, vous recevrez automatiquement de généreuses commissions chaque fois que vos filleuls investiront.";
       } else if (lower.includes('investir') || lower.includes('plan') || lower.includes('vip')) {
-        responseText = "Pour investir : 1. Rechargez votre compte. 2. Cliquez sur l'onglet 'Investir' en bas. 3. Choisissez un plan et cliquez sur 'Investir'. Vous pourrez ensuite récupérer vos gains sous forme de retraits chaque jour.";
+        responseText = "Investir avec QUALCOMM est très simple ! Voici les étapes : commencez par recharger votre compte, puis accédez à l'onglet 'Investir' situé en bas de l'écran. Il vous suffit ensuite de choisir le plan qui correspond le mieux à vos attentes et de le valider. Par la suite, vos bénéfices seront générés quotidiennement.";
       } else if (lower.includes('bonjour') || lower.includes('salut') || lower.includes('coucou')) {
-        responseText = "Bonjour ! Comment puis-je vous aider aujourd'hui ?";
+        responseText = "Bonjour ! Je suis ravi de vous assister. Comment puis-je vous aider aujourd'hui ?";
       } else {
         responseText = (
           <span>
-            Désolé, veuillez contacter notre service client sur WhatsApp pour une meilleure prise en charge : <a href={supportLink || 'https://wa.me/2250574738155'} target="_blank" rel="noopener noreferrer" className="text-red-500 font-bold underline whitespace-nowrap">Cliquez ici pour discuter</a>
+            Je suis navré, je ne suis pas certain de bien comprendre votre demande. Pour vous offrir la meilleure assistance possible, je vous invite à échanger directement avec notre équipe d'assistance sur WhatsApp : <a href={supportLink || 'https://wa.me/2250574738155'} target="_blank" rel="noopener noreferrer" className="text-red-500 font-bold underline whitespace-nowrap">Cliquez ici pour discuter</a>
           </span>
         );
       }
