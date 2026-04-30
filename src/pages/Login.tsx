@@ -53,6 +53,7 @@ export function Login() {
           ? `Erreur technique Base de données: ${error.message}` 
           : 'Numéro, pays ou mot de passe incorrect.');
       } else {
+        sessionStorage.removeItem('welcome_shown');
         setUser(data);
         navigate('/dashboard');
       }

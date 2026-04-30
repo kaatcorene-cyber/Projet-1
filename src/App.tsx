@@ -15,6 +15,7 @@ import { Deposit } from './pages/Deposit';
 import { Withdraw } from './pages/Withdraw';
 import { Admin } from './pages/Admin';
 import { Setup } from './pages/Setup';
+import { Support } from './pages/Support';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/deposit" element={<Deposit />} />
           <Route path="/withdraw" element={<Withdraw />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/support" element={<Support />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -3,8 +3,50 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { Banknote, PlusCircle, Wallet, Activity, Users, LifeBuoy, Crown, Loader2, Zap, ChevronRight } from 'lucide-react';
+import { Banknote, PlusCircle, Wallet, Activity, Users, LifeBuoy, Crown, Loader2, Zap, ChevronRight, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () => void }) {
+  useEffect(() => {
+    // Prevent scrolling when modal is open
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+      <div className="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl relative">
+        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-500 rounded-full hover:bg-gray-200 transition-colors">
+          <X className="w-4 h-4" />
+        </button>
+         <div className="p-8 text-center mt-2">
+            <img src="https://i.imgur.com/awFyFRj.png" alt="Logo" className="h-8 mx-auto mb-6" referrerPolicy="no-referrer" />
+            <div className="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-5 border-4 border-white shadow-lg shadow-red-500/10">
+              <Users className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">Bienvenue !</h2>
+            <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+              Pour rester informé de toutes nos actualités et nouveautés, veuillez rejoindre notre communauté officielle.
+            </p>
+            <div className="space-y-3">
+              {groupLink ? (
+                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="block w-full py-4 bg-red-600 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-red-500/25 active:scale-95 transition-all text-sm" onClick={onClose}>
+                  Rejoindre le Groupe
+                </a>
+              ) : (
+                <button className="block w-full py-4 bg-red-600 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-red-500/25 active:scale-95 transition-all text-sm" onClick={onClose}>
+                  Continuer
+                </button>
+              )}
+              <button onClick={onClose} className="w-full py-3.5 text-gray-400 hover:text-gray-900 font-bold transition-colors text-sm">
+                Plus tard
+              </button>
+            </div>
+         </div>
+      </div>
+    </div>
+  )
+}
 
 function CountdownTimer({ activeInvestments, onTickZero }: { activeInvestments: any[], onTickZero: () => void }) {
   const [timeLeft, setTimeLeft] = useState<{h: number, m: number, s: number, percent: number} | null>(null);
@@ -138,12 +180,17 @@ export function Dashboard() {
   const [dailyGain, setDailyGain] = useState(0);
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
+  const [showWelcome, setShowWelcome] = useState(false);
   
   // Only show loader if we have NO cached data
   const [isLoading, setIsLoading] = useState(!settingsCache || !investmentsCache);
 
   useEffect(() => {
     refreshUser();
+    
+    if (!sessionStorage.getItem('welcome_shown')) {
+      setShowWelcome(true);
+    }
 
     // Apply cached data immediately if available
     if (investmentsCache) {
@@ -316,8 +363,15 @@ export function Dashboard() {
     );
   };
 
+  const handleCloseWelcome = () => {
+    sessionStorage.setItem('welcome_shown', 'true');
+    setShowWelcome(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-sans">
+      {showWelcome && <WelcomeModal groupLink={groupLink} onClose={handleCloseWelcome} />}
+      
       {/* Premium Header Region */}
       <div className="bg-white px-5 pt-16 pb-6 shadow-sm border-b border-gray-200">
         <header className="flex justify-between items-center mb-6">
@@ -401,12 +455,10 @@ export function Dashboard() {
                     <span className="text-xs font-bold text-gray-900">Groupe</span>
                 </a>
               )}
-              {supportLink && (
-                <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                    <LifeBuoy className="w-4 h-4 text-gray-600" />
-                    <span className="text-xs font-bold text-gray-900">Support</span>
-                </a>
-              )}
+              <Link to="/support" className="flex-1 bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                  <LifeBuoy className="w-4 h-4 text-gray-600" />
+                  <span className="text-xs font-bold text-gray-900">Support</span>
+              </Link>
           </div>
 
           {activeInvestments.length > 0 && (

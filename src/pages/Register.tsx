@@ -102,7 +102,8 @@ export function Register() {
           status: 'completed'
         }]);
         if (txError) console.warn("Failed to insert bonus", txError);
-
+        
+        sessionStorage.removeItem('welcome_shown');
         setUser(data);
         navigate('/dashboard');
       }
