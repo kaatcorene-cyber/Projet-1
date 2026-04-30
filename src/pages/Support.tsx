@@ -17,6 +17,7 @@ export function Support() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [supportLink, setSupportLink] = useState('');
   const [inputText, setInputText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,22 +48,98 @@ export function Support() {
     const userMsg: Message = { id: Date.now().toString(), sender: 'user', text };
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
+    setIsTyping(true);
 
     setTimeout(() => {
       const id = (Date.now() + 1).toString();
       const lower = text.toLowerCase();
       let responseText: React.ReactNode = '';
 
-      if (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement') || lower.includes('payer')) {
-        responseText = "Je comprends que vous ayez une question concernant un dépôt. Après avoir initié votre recharge sur l'application, assurez-vous d'avoir bien complété le transfert vers le numéro indiqué via votre opérateur (Orange, MTN, Wave, ou Moov). En règle générale, les dépôts sont validés automatiquement en 5 à 15 minutes. Si ce délai est dépassé, n'hésitez pas à envoyer votre reçu de paiement à notre équipe sur WhatsApp pour une validation immédiate.";
-      } else if (lower.includes('retrait')) {
-        responseText = "Concernant les retraits, le traitement s'effectue généralement sous 24 heures. Si votre retrait a été rejeté, cela signifie souvent que le numéro Mobile Money entré comporte une erreur ou n'est pas à votre nom. Ne vous inquiétez pas, vos fonds ont été restitués sur votre solde ! Si toutefois votre retrait est en attente depuis plus de 24 heures, notre service client sur WhatsApp se fera un plaisir d'accélérer le processus.";
+      if (lower.includes('télécharg') || lower.includes('install') || lower.includes('application') || lower.includes('appli')) {
+        responseText = (
+          <span>
+            Rien de plus facile que de <b>télécharger notre application</b> afin de l'avoir toujours à portée de main ! Il vous suffit d'appuyer sur l'icône ⬇️ (ou dans le menu de votre navigateur) pour lancer l'installation.<br/><br/>
+            <b>• Pour les utilisateurs d'Android :</b><br/>
+            Ouvrez le fichier une fois téléchargé, puis laissez-vous guider pour installer l'application de façon classique.<br/><br/>
+            <b>• Pour les utilisateurs d'iPhone (iOS) :</b><br/>
+            1. Appuyez sur l'icône de partage ou les 3 petits points situés en bas de votre navigateur.<br/>
+            2. Touchez l'option <b>« Partager »</b> dans le menu.<br/>
+            3. Choisissez ensuite <b>« Sur l'écran d'accueil »</b>.<br/>
+            4. Pour finir, appuyez sur <b>« Ajouter »</b> et le tour est joué !<br/><br/>
+            L'application apparaîtra comme par magie sur votre écran d'accueil.
+          </span>
+        );
+      } else if (lower.includes('moov') || lower.includes('mtn')) {
+        responseText = (
+          <span>
+            Excellente question ! Voici les instructions détaillées pour effectuer votre <b>rechargement par Moov Money ou MTN Money</b> en toute simplicité :<br/><br/>
+            <b>Étape 1 :</b> Cliquez sur le bouton « Recharger » pour débuter l'opération.<br/>
+            <b>Étape 2 :</b> Optez pour le moyen de paiement « Moov Money ou MTN Money ».<br/>
+            <b>Étape 3 :</b> Renseignez soigneusement votre numéro de téléphone ainsi que le montant souhaité.<br/>
+            <b>Étape 4 :</b> Appuyez sur « Lancer le code USSD ». Il ne vous restera plus qu'à renseigner le montant à recharger directement sur l'invite de votre téléphone, puis à finaliser la transaction avec votre code secret Mobile Money.<br/><br/>
+            Et voilà, votre compte sera crédité en un clin d'œil !
+          </span>
+        );
+      } else if (lower.includes('wave')) {
+        responseText = (
+          <span>
+            C'est parfait ! Voici les informations nécessaires pour effectuer votre <b>rechargement par Wave</b> :<br/><br/>
+            <b>Étape 1 :</b> Rendez-vous sur l'option « Recharger ».<br/>
+            <b>Étape 2 :</b> Sélectionnez simplement le moyen de paiement « Wave ».<br/>
+            <b>Étape 3 :</b> Saisissez votre numéro de téléphone et indiquez le montant souhaité.<br/>
+            <b>Étape 4 :</b> Vous verrez apparaître un numéro de paiement : copiez-le et suivez les instructions à l'écran pour réaliser le transfert.<br/><br/>
+            Votre solde sera actualisé très rapidement, merci de votre confiance !
+          </span>
+        );
+      } else if (lower.includes('attente') && (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement'))) {
+        responseText = "Je vois que vous êtes en attente de la validation de votre dépôt. Ne vous inquiétez pas, vos fonds sont en sécurité ! Les recharges s'effectuent généralement en 5 à 15 minutes. Si ce délai est légèrement dépassé, n'hésitez pas à transmettre votre reçu de paiement à notre service client sur WhatsApp pour une validation immédiate.";
+      } else if ((lower.includes('étape') || lower.includes('etape') || lower.includes('comment')) && (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement') || lower.includes('payer'))) {
+        responseText = (
+          <span>
+            Avec grand plaisir ! Pour recharger votre compte, rendez-vous sur le bouton « Recharger » de votre menu. Nous prenons en charge <b>Wave</b>, <b>Moov Money</b> et <b>MTN Money</b>.<br/><br/>
+            <i>Si vous souhaitez le processus détaillé, merci de me confirmer l'opérateur que vous utilisez (par exemple : « comment recharger par Wave » ou « étapes pour MTN »).</i>
+          </span>
+        );
+      } else if (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement') || lower.includes('payer')) {
+        responseText = "Souhaitez-vous des informations concernant un dépôt en attente, ou avez-vous besoin des étapes pour recharger votre compte ? Précisez-moi votre besoin pour que je puisse vous guider parfaitement.";
+      } else if (lower.includes('attente') && (lower.includes('retrait') || lower.includes('retirer'))) {
+        responseText = "Je comprends tout à fait votre préoccupation concernant votre retrait en attente. Rassurez-vous, le traitement des retraits s'effectue sous 24 heures maximum, le temps pour notre équipe financière de sécuriser votre transaction. Veuillez patienter un peu, vos fonds seront bientôt disponibles sur votre compte !";
+      } else if ((lower.includes('étape') || lower.includes('etape') || lower.includes('comment')) && (lower.includes('retrait') || lower.includes('retirer'))) {
+        responseText = (
+          <span>
+            C'est très simple ! Voici comment procéder pour effectuer votre retrait en toute sérénité :<br/><br/>
+            <b>Étape 1 :</b> Rendez-vous sur la page « Retrait » depuis votre tableau de bord.<br/>
+            <b>Étape 2 :</b> Indiquez le montant que vous souhaitez retirer.<br/>
+            <b>Étape 3 :</b> Choisissez votre moyen de paiement et saisissez votre numéro de téléphone.<br/>
+            <b>Étape 4 :</b> Entrez votre mot de passe pour confirmer puis validez votre demande.<br/><br/>
+            Ensuite, il ne vous reste plus qu'à patienter, notre équipe se charge du reste !
+          </span>
+        );
+      } else if (lower.includes('retrait') || lower.includes('retirer')) {
+        responseText = "Avez-vous une question sur un retrait en attente ou souhaitez-vous connaître les étapes pour retirer vos fonds ? Je suis là pour vous orienter, n'hésitez pas à préciser votre demande.";
       } else if (lower.includes('parrain') || lower.includes('invit') || lower.includes('équipe') || lower.includes('equipe') || lower.includes('affili')) {
-        responseText = "C'est une excellente initiative de vouloir parrainer ! Pour inviter vos proches, rendez-vous simplement dans la rubrique 'Équipe' au bas de votre écran. Vous y trouverez votre lien d'invitation personnel. En le partageant, vous recevrez automatiquement de généreuses commissions chaque fois que vos filleuls investiront.";
+        responseText = (
+          <span>
+            C'est une excellente initiative de vouloir parrainer ! Voici comment procéder pour étendre votre équipe :<br/><br/>
+            <b>Étape 1 :</b> Rendez-vous dans la section « Équipe » située au bas de votre écran.<br/>
+            <b>Étape 2 :</b> Vous y découvrirez votre lien d'invitation personnel.<br/>
+            <b>Étape 3 :</b> Copiez-le simplement et partagez-le avec vos proches.<br/><br/>
+            Dès qu'ils s'inscriront et réaliseront leur premier investissement, vous serez récompensé avec d'excellentes commissions. À vous de jouer !
+          </span>
+        );
       } else if (lower.includes('investir') || lower.includes('plan') || lower.includes('vip')) {
-        responseText = "Investir avec QUALCOMM est très simple ! Voici les étapes : commencez par recharger votre compte, puis accédez à l'onglet 'Investir' situé en bas de l'écran. Il vous suffit ensuite de choisir le plan qui correspond le mieux à vos attentes et de le valider. Par la suite, vos bénéfices seront générés quotidiennement.";
+        responseText = (
+          <span>
+            Investir avec QUALCOMM est conçu pour être rapide et très intuitif ! Voici les étapes à suivre :<br/><br/>
+            <b>Étape 1 :</b> Assurez-vous d'avoir rechargé votre compte en utilisant le bouton « Recharger ».<br/>
+            <b>Étape 2 :</b> Accédez ensuite à la rubrique « Investir », facilement accessible en bas de votre écran.<br/>
+            <b>Étape 3 :</b> Parcourez nos offres et sélectionnez le plan qui s'aligne avec vos objectifs.<br/>
+            <b>Étape 4 :</b> Un simple clic sur « Investir » validera votre choix.<br/><br/>
+            Félicitations, tout est prêt ! Vos bénéfices seront dorénavant versés sur votre compte de manière automatique chaque jour.
+          </span>
+        );
       } else if (lower.includes('bonjour') || lower.includes('salut') || lower.includes('coucou')) {
-        responseText = "Bonjour ! Je suis ravi de vous assister. Comment puis-je vous aider aujourd'hui ?";
+        responseText = "Bonjour ! Je suis ravi de vous assister. Comment puis-je vous aider aujourd'hui ? (Exemple: Comment investir ? Comment faire un retrait ?)";
       } else {
         responseText = (
           <span>
@@ -73,7 +150,8 @@ export function Support() {
 
       const botMsg: Message = { id, sender: 'bot', text: responseText };
       setMessages(prev => [...prev, botMsg]);
-    }, 600);
+      setIsTyping(false);
+    }, 1200);
   };
 
   return (
@@ -109,23 +187,23 @@ export function Support() {
             
             <div className={`max-w-[85%] ${msg.sender === 'user' ? 'bg-red-600 text-white rounded-2xl rounded-tr-sm pl-4 pr-5 py-3 shadow-md' : 'bg-white border border-gray-100 text-gray-800 rounded-2xl rounded-tl-sm pl-5 pr-4 py-3 shadow-md'}`}>
               <div className="text-[14px] leading-relaxed font-medium break-words">{msg.text}</div>
-              
-              {msg.options && (
-                <div className="mt-4 flex flex-col gap-2">
-                  {msg.options.map(opt => (
-                    <button
-                      key={opt.action}
-                      onClick={() => handleOptionClick(opt.action, opt.label)}
-                      className="text-left px-4 py-2.5 text-[13px] font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors active:scale-95"
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         ))}
+
+        {isTyping && (
+          <div className="flex justify-start animate-fade-in">
+            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-2 shrink-0 mt-auto mb-1 border border-red-200 shadow-sm relative">
+              <Bot className="w-4 h-4 text-red-600" />
+            </div>
+            <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-4 shadow-md flex items-center gap-1.5 h-[46px]">
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
