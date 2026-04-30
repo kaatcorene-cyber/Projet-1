@@ -7,18 +7,30 @@ import { supabase } from '../lib/supabase';
 type Message = {
   id: string;
   sender: 'bot' | 'user';
-  text: React.ReactNode;
+  text: string;
   options?: { label: string; action: string }[];
 };
 
 export function Support() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem('support_chat_history');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [];
+  });
   const [supportLink, setSupportLink] = useState('');
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('support_chat_history', JSON.stringify(messages));
+  }, [messages]);
 
   useEffect(() => {
     // Fetch support link
@@ -27,14 +39,16 @@ export function Support() {
     });
 
     // Initial greeting
-    setMessages([
-      {
-        id: '1',
-        sender: 'bot',
-        text: `Bonjour ${user?.first_name || ''} ! Je suis l'assistant QUALCOMM. Comment puis-je vous aider aujourd'hui ?`
-      }
-    ]);
-  }, [user?.first_name]);
+    if (messages.length === 0) {
+      setMessages([
+        {
+          id: '1',
+          sender: 'bot',
+          text: `Bonjour ${user?.first_name || ''} ! Je suis l'assistant QUALCOMM. Comment puis-je vous aider aujourd'hui ?`
+        }
+      ]);
+    }
+  }, [user?.first_name, messages.length]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -56,7 +70,7 @@ export function Support() {
       let responseText: React.ReactNode = '';
 
       if (lower.includes('télécharg') || lower.includes('install') || lower.includes('application') || lower.includes('appli')) {
-        responseText = (
+        responseText = `
           <span>
             Rien de plus facile que de <b>télécharger notre application</b> afin de l'avoir toujours à portée de main ! Il vous suffit d'appuyer sur l'icône ⬇️ (ou dans le menu de votre navigateur) pour lancer l'installation.<br/><br/>
             <b>• Pour les utilisateurs d'Android :</b><br/>
@@ -68,9 +82,9 @@ export function Support() {
             4. Pour finir, appuyez sur <b>« Ajouter »</b> et le tour est joué !<br/><br/>
             L'application apparaîtra comme par magie sur votre écran d'accueil.
           </span>
-        );
+        `;
       } else if (lower.includes('moov') || lower.includes('mtn')) {
-        responseText = (
+        responseText = `
           <span>
             Excellente question ! Voici les instructions détaillées pour effectuer votre <b>rechargement par Moov Money ou MTN Money</b> en toute simplicité :<br/><br/>
             <b>Étape 1 :</b> Cliquez sur le bouton « Recharger » pour débuter l'opération.<br/>
@@ -79,9 +93,9 @@ export function Support() {
             <b>Étape 4 :</b> Appuyez sur « Lancer le code USSD ». Il ne vous restera plus qu'à renseigner le montant à recharger directement sur l'invite de votre téléphone, puis à finaliser la transaction avec votre code secret Mobile Money.<br/><br/>
             Et voilà, votre compte sera crédité en un clin d'œil !
           </span>
-        );
+        `;
       } else if (lower.includes('wave')) {
-        responseText = (
+        responseText = `
           <span>
             C'est parfait ! Voici les informations nécessaires pour effectuer votre <b>rechargement par Wave</b> :<br/><br/>
             <b>Étape 1 :</b> Rendez-vous sur l'option « Recharger ».<br/>
@@ -90,22 +104,22 @@ export function Support() {
             <b>Étape 4 :</b> Vous verrez apparaître un numéro de paiement : copiez-le et suivez les instructions à l'écran pour réaliser le transfert.<br/><br/>
             Votre solde sera actualisé très rapidement, merci de votre confiance !
           </span>
-        );
+        `;
       } else if (lower.includes('attente') && (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement'))) {
         responseText = "Je vois que vous êtes en attente de la validation de votre dépôt. Ne vous inquiétez pas, vos fonds sont en sécurité ! Les recharges s'effectuent généralement en 5 à 15 minutes. Si ce délai est légèrement dépassé, n'hésitez pas à transmettre votre reçu de paiement à notre service client sur WhatsApp pour une validation immédiate.";
       } else if ((lower.includes('étape') || lower.includes('etape') || lower.includes('comment')) && (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement') || lower.includes('payer'))) {
-        responseText = (
+        responseText = `
           <span>
             Avec grand plaisir ! Pour recharger votre compte, rendez-vous sur le bouton « Recharger » de votre menu. Nous prenons en charge <b>Wave</b>, <b>Moov Money</b> et <b>MTN Money</b>.<br/><br/>
             <i>Si vous souhaitez le processus détaillé, merci de me confirmer l'opérateur que vous utilisez (par exemple : « comment recharger par Wave » ou « étapes pour MTN »).</i>
           </span>
-        );
+        `;
       } else if (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement') || lower.includes('payer')) {
         responseText = "Souhaitez-vous des informations concernant un dépôt en attente, ou avez-vous besoin des étapes pour recharger votre compte ? Précisez-moi votre besoin pour que je puisse vous guider parfaitement.";
       } else if (lower.includes('attente') && (lower.includes('retrait') || lower.includes('retirer'))) {
         responseText = "Je comprends tout à fait votre préoccupation concernant votre retrait en attente. Rassurez-vous, le traitement des retraits s'effectue sous 24 heures maximum, le temps pour notre équipe financière de sécuriser votre transaction. Veuillez patienter un peu, vos fonds seront bientôt disponibles sur votre compte !";
       } else if ((lower.includes('étape') || lower.includes('etape') || lower.includes('comment')) && (lower.includes('retrait') || lower.includes('retirer'))) {
-        responseText = (
+        responseText = `
           <span>
             C'est très simple ! Voici comment procéder pour effectuer votre retrait en toute sérénité :<br/><br/>
             <b>Étape 1 :</b> Rendez-vous sur la page « Retrait » depuis votre tableau de bord.<br/>
@@ -114,11 +128,11 @@ export function Support() {
             <b>Étape 4 :</b> Entrez votre mot de passe pour confirmer puis validez votre demande.<br/><br/>
             Ensuite, il ne vous reste plus qu'à patienter, notre équipe se charge du reste !
           </span>
-        );
+        `;
       } else if (lower.includes('retrait') || lower.includes('retirer')) {
         responseText = "Avez-vous une question sur un retrait en attente ou souhaitez-vous connaître les étapes pour retirer vos fonds ? Je suis là pour vous orienter, n'hésitez pas à préciser votre demande.";
       } else if (lower.includes('parrain') || lower.includes('invit') || lower.includes('équipe') || lower.includes('equipe') || lower.includes('affili')) {
-        responseText = (
+        responseText = `
           <span>
             C'est une excellente initiative de vouloir parrainer ! Voici comment procéder pour étendre votre équipe :<br/><br/>
             <b>Étape 1 :</b> Rendez-vous dans la section « Équipe » située au bas de votre écran.<br/>
@@ -126,9 +140,9 @@ export function Support() {
             <b>Étape 3 :</b> Copiez-le simplement et partagez-le avec vos proches.<br/><br/>
             Dès qu'ils s'inscriront et réaliseront leur premier investissement, vous serez récompensé avec d'excellentes commissions. À vous de jouer !
           </span>
-        );
+        `;
       } else if (lower.includes('investir') || lower.includes('plan') || lower.includes('vip')) {
-        responseText = (
+        responseText = `
           <span>
             Investir avec QUALCOMM est conçu pour être rapide et très intuitif ! Voici les étapes à suivre :<br/><br/>
             <b>Étape 1 :</b> Assurez-vous d'avoir rechargé votre compte en utilisant le bouton « Recharger ».<br/>
@@ -137,19 +151,19 @@ export function Support() {
             <b>Étape 4 :</b> Un simple clic sur « Investir » validera votre choix.<br/><br/>
             Félicitations, tout est prêt ! Vos bénéfices seront dorénavant versés sur votre compte de manière automatique chaque jour.
           </span>
-        );
+        `;
       } else if (lower.includes('bonjour') || lower.includes('salut') || lower.includes('coucou')) {
         responseText = "Bonjour ! Je suis ravi de vous assister. Comment puis-je vous aider aujourd'hui ? (Exemple: Comment investir ? Comment faire un retrait ?)";
       } else {
         const finalLink = supportLink ? (supportLink.startsWith('http') ? supportLink : `https://${supportLink}`) : 'https://wa.me/2250574738155';
-        responseText = (
+        responseText = `
           <span>
-            Je suis navré, je ne suis pas certain de bien comprendre votre demande. Pour vous offrir la meilleure assistance possible, je vous invite à échanger directement avec notre équipe d'assistance sur WhatsApp : <a href={finalLink} target="_blank" rel="noopener noreferrer" className="text-red-500 font-bold underline whitespace-nowrap">Cliquez ici pour discuter</a>
+            Je suis navré, je ne suis pas certain de bien comprendre votre demande. Pour vous offrir la meilleure assistance possible, je vous invite à échanger directement avec notre équipe d'assistance sur WhatsApp : <a href="${finalLink}" target="_blank" rel="noopener noreferrer" className="text-red-500 font-bold underline whitespace-nowrap">Cliquez ici pour discuter</a>
           </span>
-        );
+        `;
       }
 
-      const botMsg: Message = { id, sender: 'bot', text: responseText };
+      const botMsg: Message = { id, sender: 'bot', text: responseText as string };
       setMessages(prev => [...prev, botMsg]);
       setIsTyping(false);
     }, 1200);
@@ -162,7 +176,7 @@ export function Support() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-lg font-black text-gray-900 tracking-tight">Service Client</h1>
+          <h1 className="text-lg font-black text-gray-900 tracking-tight">Support Qualcomm</h1>
           <p className="text-xs text-green-500 font-bold flex items-center gap-1">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -181,21 +195,25 @@ export function Support() {
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.sender === 'bot' && (
-              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-2 shrink-0 mt-auto mb-1 border border-red-200 shadow-sm relative">
-                <Bot className="w-4 h-4 text-red-600" />
+              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2 shrink-0 mt-auto mb-1 border border-gray-100 shadow-sm relative overflow-hidden">
+                <img src="https://i.imgur.com/awFyFRj.png" alt="QA" className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
               </div>
             )}
             
             <div className={`max-w-[85%] ${msg.sender === 'user' ? 'bg-red-600 text-white rounded-2xl rounded-tr-sm pl-4 pr-5 py-3 shadow-md' : 'bg-white border border-gray-100 text-gray-800 rounded-2xl rounded-tl-sm pl-5 pr-4 py-3 shadow-md'}`}>
-              <div className="text-[14px] leading-relaxed font-medium break-words">{msg.text}</div>
+              {msg.sender === 'user' ? (
+                <div className="text-[14px] leading-relaxed font-medium break-words">{msg.text}</div>
+              ) : (
+                <div className="text-[14px] leading-relaxed font-medium break-words" dangerouslySetInnerHTML={{ __html: msg.text }} />
+              )}
             </div>
           </div>
         ))}
 
         {isTyping && (
           <div className="flex justify-start animate-fade-in">
-            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-2 shrink-0 mt-auto mb-1 border border-red-200 shadow-sm relative">
-              <Bot className="w-4 h-4 text-red-600" />
+            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2 shrink-0 mt-auto mb-1 border border-gray-100 shadow-sm relative overflow-hidden">
+              <img src="https://i.imgur.com/awFyFRj.png" alt="QA" className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-4 shadow-md flex items-center gap-1.5 h-[46px]">
               <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
