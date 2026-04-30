@@ -30,13 +30,7 @@ export function Support() {
       {
         id: '1',
         sender: 'bot',
-        text: `Bonjour ${user?.first_name || ''} ! Je suis l'assistant virtuel QUALCOMM. Comment puis-je vous aider aujourd'hui ?`,
-        options: [
-          { label: 'Problème de Dépôt', action: 'depot' },
-          { label: 'Problème de Retrait', action: 'retrait' },
-          { label: 'Comment investir ?', action: 'investir' },
-          { label: 'Autre question', action: 'autre' },
-        ]
+        text: `Bonjour ${user?.first_name || ''} ! Je suis l'assistant QUALCOMM. Comment puis-je vous aider aujourd'hui ?`
       }
     ]);
   }, [user?.first_name]);
@@ -45,136 +39,39 @@ export function Support() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const addBotResponse = (id: string, action: string) => {
-    let botMsg: Message;
-
-    if (action === 'depot') {
-      botMsg = {
-        id,
-        sender: 'bot',
-        text: "Pour les problèmes de dépôt, assurez-vous d'avoir bien copié le numéro de paiement et la bonne référence. Avez-vous déjà effectué le transfert de l'argent vers le numéro indiqué via votre réseau monétique ?",
-        options: [
-          { label: 'Oui, transfert effectué', action: 'depot_oui' },
-          { label: 'Non, comment faire ?', action: 'depot_non' }
-        ]
-      };
-    } else if (action === 'depot_oui') {
-      botMsg = {
-        id,
-        sender: 'bot',
-        text: "Généralement, les recharges prennent 5 à 15 minutes à être validées par le système. Si cela fait plus de 15 minutes, veuillez soumettre votre preuve de paiement (capture d'écran) à notre agent sur WhatsApp pour une validation manuelle.",
-        options: [
-          { label: 'Contacter sur WhatsApp', action: 'whatsapp' },
-          { label: 'Retour au menu', action: 'menu' }
-        ]
-      };
-    } else if (action === 'depot_non') {
-      botMsg = {
-        id,
-        sender: 'bot',
-        text: "Allez dans l'onglet 'Recharger', entrez le montant, cliquez sur Recharger, puis vous verrez un numéro. Copiez ce numéro. Ouvrez l'application de votre opérateur (Orange/MTN/Wave/Moov), et transférez l'argent vers ce numéro.",
-        options: [
-          { label: 'Retour au menu', action: 'menu' }
-        ]
-      };
-    } else if (action === 'retrait') {
-      botMsg = {
-        id,
-        sender: 'bot',
-        text: "Les retraits peuvent prendre jusqu'à 24h ouvrées. Assurez-vous d'avoir renseigné le bon numéro de Mobile Money. Votre retrait est-il toujours 'En attente' ?",
-        options: [
-          { label: 'Oui, toujours en attente', action: 'retrait_attente' },
-          { label: 'Statut Rejeté', action: 'retrait_rejete' },
-          { label: 'Retour au menu', action: 'menu' }
-        ]
-      };
-    } else if (action === 'retrait_attente') {
-      botMsg = {
-        id,
-        sender: 'bot',
-        text: "Veuillez patienter quelques heures. Le système traite les demandes par ordre d'arrivée. Si cela dépasse 24h, contactez le service client avec votre nom complet et numéro de compte.",
-        options: [
-          { label: 'Contacter sur WhatsApp', action: 'whatsapp' },
-          { label: 'Retour au menu', action: 'menu' }
-        ]
-      };
-    } else if (action === 'retrait_rejete') {
-      botMsg = {
-        id,
-        sender: 'bot',
-        text: "Si votre retrait a été rejeté, c'est probablement parce que le numéro mobile money est incorrect, en panne chez l'opérateur, ou n'est pas à votre nom. Le montant a été retourné dans votre solde. Veuillez corriger le numéro via les paramètres.",
-        options: [
-          { label: 'Retour au menu', action: 'menu' }
-        ]
-      };
-    } else if (action === 'investir') {
-      botMsg = {
-        id,
-        sender: 'bot',
-        text: "Pour investir : 1. Rechargez votre compte. 2. Cliquez sur l'onglet 'Investir' en bas. 3. Choisissez un plan et cliquez sur 'Investir'. Les gains seront versés tous les 24h automatiquement.",
-        options: [
-          { label: 'Retour au menu', action: 'menu' }
-        ]
-      };
-    } else if (action === 'menu') {
-      botMsg = {
-        id,
-        sender: 'bot',
-        text: "Que puis-je faire d'autre pour vous ?",
-        options: [
-          { label: 'Problème de Dépôt', action: 'depot' },
-          { label: 'Problème de Retrait', action: 'retrait' },
-          { label: 'Comment investir ?', action: 'investir' },
-          { label: 'Autre question', action: 'autre' },
-        ]
-      };
-    } else if (action === 'autre' || action === 'whatsapp') {
-       if (supportLink) {
-         window.open(supportLink, '_blank');
-         botMsg = {
-           id, sender: 'bot', text: "Ouverture de WhatsApp..."
-         };
-       } else {
-         botMsg = {
-           id, sender: 'bot', text: "Ouverture de WhatsApp..."
-         };
-         window.open('https://wa.me/2250574738155', '_blank'); // default fallback
-       }
-    } else {
-       botMsg = { id, sender: 'bot', text: "Je n'ai pas compris." };
-    }
-
-    setMessages(prev => [...prev, botMsg]);
-  };
-
-  const handleOptionClick = (action: string, label: string) => {
-    const userMsg: Message = { id: Date.now().toString(), sender: 'user', text: label };
-    setMessages(prev => [...prev, userMsg]);
-
-    setTimeout(() => {
-      addBotResponse((Date.now() + 1).toString(), action);
-    }, 600);
-  };
-
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    const text = inputText.trim();
+    if (!text) return;
 
-    const userMsg: Message = { id: Date.now().toString(), sender: 'user', text: inputText };
+    const userMsg: Message = { id: Date.now().toString(), sender: 'user', text };
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
 
     setTimeout(() => {
       const id = (Date.now() + 1).toString();
-      const botMsg: Message = {
-        id,
-        sender: 'bot',
-        text: (
+      const lower = text.toLowerCase();
+      let responseText: React.ReactNode = '';
+
+      if (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement') || lower.includes('payer')) {
+        responseText = "Pour les problèmes de dépôt ou de recharge, assurez-vous d'avoir bien transféré l'argent vers le numéro indiqué via votre réseau (Orange, MTN, Wave, Moov). Généralement, les recharges prennent 5 à 15 minutes à être validées. Si cela fait plus de 15 minutes, veuillez soumettre votre preuve de paiement à notre agent sur WhatsApp pour une validation manuelle.";
+      } else if (lower.includes('retrait')) {
+        responseText = "Les retraits peuvent prendre jusqu'à 24h ouvrées. Assurez-vous d'avoir renseigné le bon numéro de Mobile Money. Si votre retrait a été rejeté, cela signifie probablement que le numéro est incorrect ou n'est pas à votre nom. Le montant a été retourné sur votre solde. Si le retrait est en attente depuis plus de 24h, veuillez contacter le service client.";
+      } else if (lower.includes('parrain') || lower.includes('invit') || lower.includes('équipe') || lower.includes('equipe') || lower.includes('affili')) {
+        responseText = "Pour parrainer un ami, rendez-vous dans l'onglet 'Équipe' au milieu du menu en bas. Vous y trouverez votre lien d'invitation. Partagez-le avec vos amis pour gagner des commissions chaque fois qu'ils investissent !";
+      } else if (lower.includes('investir') || lower.includes('plan') || lower.includes('vip')) {
+        responseText = "Pour investir : 1. Rechargez votre compte. 2. Cliquez sur l'onglet 'Investir' en bas. 3. Choisissez un plan et cliquez sur 'Investir'. Vous pourrez ensuite récupérer vos gains sous forme de retraits chaque jour.";
+      } else if (lower.includes('bonjour') || lower.includes('salut') || lower.includes('coucou')) {
+        responseText = "Bonjour ! Comment puis-je vous aider aujourd'hui ?";
+      } else {
+        responseText = (
           <span>
-            Désolé, je ne connais pas la réponse à cette question. Veuillez contacter notre service client sur WhatsApp en cliquant sur ce lien : <a href="https://wa.me/2250574738155" target="_blank" rel="noopener noreferrer" className="text-red-500 font-bold underline">wa.me/2250574738155</a>
+            Désolé, veuillez contacter notre service client sur WhatsApp pour une meilleure prise en charge : <a href={supportLink || 'https://wa.me/2250574738155'} target="_blank" rel="noopener noreferrer" className="text-red-500 font-bold underline whitespace-nowrap">Cliquez ici pour discuter</a>
           </span>
-        )
-      };
+        );
+      }
+
+      const botMsg: Message = { id, sender: 'bot', text: responseText };
       setMessages(prev => [...prev, botMsg]);
     }, 600);
   };
