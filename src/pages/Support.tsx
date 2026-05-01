@@ -1,14 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Send, ImagePlus, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
+import { analyzeReceipt } from '../lib/gemini';
 
 type Message = {
   id: string;
   sender: 'bot' | 'user';
   text: string;
+  imageUrl?: string;
   options?: { label: string; action: string }[];
+};
+
+type VerifState = {
+  step: 'none' | 'ask_name' | 'ask_amount' | 'ask_number' | 'ask_receipt' | 'verifying';
+  name: string;
+  amount: string;
+  number: string;
 };
 
 export function Support() {
@@ -26,11 +35,20 @@ export function Support() {
   const [supportLink, setSupportLink] = useState('');
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [verifState, setVerifState] = useState<VerifState>(() => {
+    const saved = localStorage.getItem('support_verif_state');
+    return saved ? JSON.parse(saved) : { step: 'none', name: '', amount: '', number: '' };
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     localStorage.setItem('support_chat_history', JSON.stringify(messages));
   }, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem('support_verif_state', JSON.stringify(verifState));
+  }, [verifState]);
 
   useEffect(() => {
     // Fetch support link
@@ -69,7 +87,24 @@ export function Support() {
       const lower = text.toLowerCase();
       let responseText: React.ReactNode = '';
 
-      if (lower.includes('télécharg') || lower.includes('install') || lower.includes('application') || lower.includes('appli')) {
+      const isDepositProblem = /non crédité|non credite|pas reçu|pas recu|non reçu|non recu|pas encore recu|pas encore reçu|toujours pas recu|toujours pas reçu/i.test(lower) || 
+        ((lower.includes('depot') || lower.includes('dépôt') || lower.includes('recharge') || lower.includes('rechargement') || lower.includes('transfert')) && (lower.includes('pas') || lower.includes('non') || lower.includes('rien')));
+
+      if (verifState.step === 'ask_name') {
+        setVerifState(v => ({ ...v, step: 'ask_amount', name: text }));
+        responseText = `Merci ${text}. Quel est le montant exact de votre transfert ?`;
+      } else if (verifState.step === 'ask_amount') {
+        setVerifState(v => ({ ...v, step: 'ask_number', amount: text }));
+        responseText = `Veuillez m'indiquer le numéro de téléphone utilisé pour faire ce dépôt.`;
+      } else if (verifState.step === 'ask_number') {
+        setVerifState(v => ({ ...v, step: 'ask_receipt', number: text }));
+        responseText = `Veuillez m'envoyer une capture d'écran de votre reçu de transfert pour que je puisse lancer la vérification. Utilisez l'icône d'image à côté du bouton d'envoi.`;
+      } else if (verifState.step === 'ask_receipt') {
+        responseText = `J'attends toujours une capture d'écran. Veuillez utiliser l'icône d'ajout d'image (🖼️) pour joindre la preuve de votre transfert.`;
+      } else if (isDepositProblem) {
+        setVerifState({ step: 'ask_name', name: '', amount: '', number: '' });
+        responseText = `Je suis navré d'apprendre que votre dépôt n'a pas été crédité. Ne vous inquiétez pas, notre système intelligent peut le vérifier immédiatement. Pour commencer, quel est votre nom complet ?`;
+      } else if (lower.includes('télécharg') || lower.includes('install') || lower.includes('application') || lower.includes('appli')) {
         responseText = `
           <span>
             Rien de plus facile que de <b>télécharger notre application</b> afin de l'avoir toujours à portée de main ! Il vous suffit d'appuyer sur l'icône ⬇️ (ou dans le menu de votre navigateur) pour lancer l'installation.<br/><br/>
@@ -169,6 +204,114 @@ export function Support() {
     }, 1200);
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (verifState.step !== 'ask_receipt') {
+      // Allow upload anyway but don't do verification if they aren't in this step
+      const botMsg: Message = { 
+        id: Date.now().toString(), 
+        sender: 'bot', 
+        text: "Pour vérifier un dépôt non crédité, veuillez d'abord m'écrire « mon dépôt n'est pas crédité »." 
+      };
+      setMessages(prev => [...prev, botMsg]);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64String = (event.target?.result as string);
+      
+      const userMsg: Message = { 
+        id: Date.now().toString(), 
+        sender: 'user', 
+        text: 'Capture d\'écran envoyée',
+        imageUrl: base64String
+      };
+      
+      setMessages(prev => [...prev, userMsg]);
+      setIsTyping(true);
+      setVerifState(v => ({ ...v, step: 'verifying' }));
+
+      try {
+        const base64Data = base64String.split(',')[1];
+        const result = await analyzeReceipt(base64Data, file.type);
+        
+        let isValid = false;
+        
+        const loweredRecipient = result.recipient.toLowerCase();
+        if (!result.is_falsified) {
+          if (loweredRecipient.includes('0140814162') || loweredRecipient.includes('0595918513') || loweredRecipient.includes('qualcomm entreprise')) {
+            isValid = true;
+          }
+        }
+
+        const numericAmount = Number(verifState.amount.replace(/[^0-9]/g, ''));
+        if (result.amount !== numericAmount) {
+           isValid = false; // Mismatch in amount declared vs found
+        }
+
+        const finalStatus = isValid ? 'valid' : 'rejected';
+        
+        // Save to database
+        if (user) {
+           await supabase.from('deposit_verifications').insert({
+             user_id: user.id,
+             full_name: verifState.name,
+             amount: numericAmount || result.amount,
+             sender_number: verifState.number,
+             receipt_url: 'uploaded_via_chat', // Normally we would upload to storage, keeping placeholder
+             status: finalStatus,
+             ai_analysis: JSON.stringify(result)
+           });
+           
+           if (isValid) {
+             const amt = numericAmount || result.amount;
+             
+             // Refresh user current balance
+             const { data: userData } = await supabase.from('users').select('balance').eq('id', user.id).single();
+             if (userData) {
+                const newBalance = Number(userData.balance || 0) + amt;
+                
+                await supabase.from('users').update({ balance: newBalance }).eq('id', user.id);
+                
+                // Add an approved transaction
+                await supabase.from('transactions').insert({
+                  user_id: user.id,
+                  type: 'deposit',
+                  amount: amt,
+                  status: 'approved',
+                  reference: `IA_VERIF_${Date.now()}`
+                });
+             }
+           }
+        }
+
+        const botMsg: Message = { 
+          id: (Date.now() + 1).toString(), 
+          sender: 'bot', 
+          text: isValid 
+            ? `Bonne nouvelle ${verifState.name} ! J'ai bien vérifié la capture d'écran, le dépôt est **VALIDE**. Votre compte a été mis à jour dans nos registres.`
+            : `Désolé ${verifState.name}, après vérification attentive de l'image, le dépôt a été **REJETÉ**. Motif: ${result.reasoning}. Assurez-vous d'avoir transféré au bon numéro.`
+        };
+        
+        setMessages(prev => [...prev, botMsg]);
+        setVerifState({ step: 'none', name: '', amount: '' });
+
+      } catch (err) {
+        setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: 'Une erreur est survenue lors de l\'analyse de l\'image. Veuillez réessayer.' }]);
+        setVerifState(v => ({ ...v, step: 'ask_receipt' }));
+      } finally {
+        setIsTyping(false);
+      }
+    };
+    reader.readAsDataURL(file);
+    
+    // reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <header className="bg-white px-5 pt-14 pb-4 shadow-sm border-b border-gray-200 sticky top-0 z-10 flex items-center gap-3">
@@ -201,6 +344,9 @@ export function Support() {
             )}
             
             <div className={`max-w-[85%] ${msg.sender === 'user' ? 'bg-red-600 text-white rounded-2xl rounded-tr-sm pl-4 pr-5 py-3 shadow-md' : 'bg-white border border-gray-100 text-gray-800 rounded-2xl rounded-tl-sm pl-5 pr-4 py-3 shadow-md'}`}>
+              {msg.imageUrl && (
+                <img src={msg.imageUrl} alt="preuve" className="w-full max-w-[200px] rounded-lg mb-2 object-cover" />
+              )}
               {msg.sender === 'user' ? (
                 <div className="text-[14px] leading-relaxed font-medium break-words">{msg.text}</div>
               ) : (
@@ -226,8 +372,22 @@ export function Support() {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="bg-white border-t border-gray-200 p-4 sticky bottom-0 z-10 pb-8">
-        <form onSubmit={handleSendMessage} className="flex gap-2">
+      <div className="bg-white border-t border-gray-200 p-4 sticky bottom-0 z-10 pb-8 cursor-pointer">
+        <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
+          <input 
+            type="file" 
+            accept="image/*" 
+            className="hidden" 
+            ref={fileInputRef} 
+            onChange={handleImageUpload} 
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-12 h-12 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors shrink-0"
+          >
+            <ImagePlus className="w-5 h-5" />
+          </button>
           <input
             type="text"
             value={inputText}

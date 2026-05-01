@@ -77,9 +77,23 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS deposit_verifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  full_name TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  sender_number TEXT,
+  receipt_url TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  ai_analysis TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 ALTER TABLE investments DISABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE deposit_verifications DISABLE ROW LEVEL SECURITY;
+ALTER TABLE deposit_verifications ADD COLUMN IF NOT EXISTS sender_number TEXT;
 
 INSERT INTO settings (key, value) VALUES ('payment_link', 'https://bkapay.com/merchant/20cf6268') ON CONFLICT DO NOTHING;
 

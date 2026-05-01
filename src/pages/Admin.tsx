@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit } from 'lucide-react';
+import { ChevronLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit, Bot, Search } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -28,6 +28,7 @@ export function Admin() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [investmentsList, setInvestmentsList] = useState<any[]>([]);
+  const [verifsList, setVerifsList] = useState<any[]>([]);
   
   // Settings
   const [paymentLink, setPaymentLink] = useState('');
@@ -83,15 +84,17 @@ export function Admin() {
   const fetchData = async (showLoading = true) => {
     if (showLoading) setIsInitializing(true);
     try {
-      const [txsRes, usersRes, settingsRes, invsRes] = await Promise.all([
+      const [txsRes, usersRes, settingsRes, invsRes, verifsRes] = await Promise.all([
         supabase.from('transactions').select('*, users(first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
         supabase.from('users').select('*').order('created_at', { ascending: false }),
         supabase.from('settings').select('*'),
-        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false })
+        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false }),
+        supabase.from('deposit_verifications').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false })
       ]);
 
       if (txsRes.data) setTransactions(txsRes.data);
       if (usersRes.data) setUsersList(usersRes.data);
+      if (verifsRes.data) setVerifsList(verifsRes.data);
 
       if (invsRes.data) {
         setInvestmentsList(invsRes.data);
@@ -437,6 +440,7 @@ export function Admin() {
   const tabs = [
     { id: 'overview', label: "Vue d'ensemble", icon: BarChart3 },
     { id: 'users', label: 'Utilisateurs', icon: Users },
+    { id: 'ai_verifs', label: 'Vérifs IA', icon: Bot },
     { id: 'investments', label: 'Investissements', icon: Activity },
     { id: 'deposits', label: 'Dépôts', icon: ArrowDownRight },
     { id: 'withdrawals', label: 'Retraits', icon: ArrowUpRight },
@@ -590,6 +594,70 @@ export function Admin() {
                   </p>
                 </div>
               )})
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* CONTENT: AI VERIFICATIONS */}
+      {activeTab === 'ai_verifs' && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-gray-900 mb-2">Vérifications IA des Dépôts</h2>
+          <div className="space-y-4">
+            {verifsList.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-6">Aucune vérification effectuée.</p>
+            ) : (
+              verifsList.map(v => (
+                <div key={v.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-bold text-gray-900">{v.users?.first_name} {v.users?.last_name} ({v.full_name})</p>
+                      <p className="text-xs text-gray-500">{v.users?.phone}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${v.status === 'valid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {v.status === 'valid' ? 'Valide' : 'Rejeté'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-sm font-semibold flex flex-col gap-1 border-t border-b border-gray-50 py-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Nom déclaré :</span>
+                      <span className="text-gray-900">{v.full_name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Montant déclaré :</span>
+                      <span className="text-gray-900">{formatCurrency(v.amount)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Numéro d'envoi :</span>
+                      <span className="text-gray-900">{v.sender_number || 'Non renseigné'}</span>
+                    </div>
+                  </div>
+                  
+                  {v.ai_analysis && (
+                    <div className="text-xs bg-gray-50 p-3 rounded-lg flex flex-col gap-1.5 border border-gray-100">
+                      <p className="font-bold text-gray-700 mb-1 flex items-center gap-1"><Bot className="w-3.5 h-3.5"/> Analyse de l'Intelligence Artificielle :</p>
+                      {(() => {
+                        try {
+                          const ai = typeof v.ai_analysis === 'string' ? JSON.parse(v.ai_analysis) : v.ai_analysis;
+                          return (
+                            <>
+                              <p><span className="text-gray-500">Montant détecté :</span> {ai.amount}</p>
+                              <p><span className="text-gray-500">Destinataire :</span> {ai.recipient}</p>
+                              <p><span className="text-gray-500">Falsification :</span> {ai.is_falsified ? <span className="text-red-600 font-bold">OUI (Fraude potentielle)</span> : <span className="text-green-600 font-bold">NON (Document intègre)</span>}</p>
+                              <p className="mt-1 text-gray-600 italic">"{ai.reasoning}"</p>
+                            </>
+                          );
+                        } catch(e) {
+                          return <p>Données ignorées.</p>;
+                        }
+                      })()}
+                    </div>
+                  )}
+                  <p className="text-[10px] text-gray-400 mt-1">Date: {format(new Date(v.created_at), 'dd MMM yyyy HH:mm:ss', { locale: fr })}</p>
+                </div>
+              ))
             )}
           </div>
         </div>
