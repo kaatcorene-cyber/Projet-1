@@ -3,7 +3,6 @@ import { ArrowLeft, Send, ImagePlus, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
-import { analyzeReceipt } from '../lib/gemini';
 
 type Message = {
   id: string;
@@ -245,6 +244,7 @@ export function Support() {
 
       try {
         const base64Data = base64String.split(',')[1];
+        const { analyzeReceipt } = await import('../lib/gemini');
         const result = await analyzeReceipt(base64Data, file.type);
         
         let isValid = false;
@@ -306,10 +306,11 @@ export function Support() {
         };
         
         setMessages(prev => [...prev, botMsg]);
-        setVerifState({ step: 'none', name: '', amount: '' });
+        setVerifState({ step: 'none', name: '', amount: '', number: '' });
 
-      } catch (err) {
-        setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: 'Une erreur est survenue lors de l\'analyse de l\'image. Veuillez réessayer.' }]);
+      } catch (err: any) {
+        console.error("Analysis error:", err);
+        setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: `Une erreur est survenue lors de l\'analyse de l\'image: ${err.message || String(err)}. Veuillez réessayer.` }]);
         setVerifState(v => ({ ...v, step: 'ask_receipt' }));
       } finally {
         setIsTyping(false);
