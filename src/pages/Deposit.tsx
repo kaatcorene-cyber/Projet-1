@@ -85,13 +85,26 @@ export function Deposit() {
           else if (country === 'Benin') ussd = ussdCodes.mtn_benin;
         }
 
+        let finalUssd = ussd;
+        if (country === "Cote d'Ivoire") {
+           if (finalUssd.includes('#')) {
+              finalUssd = finalUssd.replace('#', `*${amount}#`);
+           } else {
+              finalUssd = `${finalUssd}*${amount}#`;
+           }
+        }
+
         // We store the full configured USSD so we can extract the number later
-        setUssdCode(ussd);
+        setUssdCode(finalUssd);
         
         let baseUssd = ussd;
-        const match = ussd.match(/(.*)\*(\d{8,15})#?$/);
-        if (match) {
-            baseUssd = match[1] + '#';
+        if (country !== "Cote d'Ivoire") {
+          const match = ussd.match(/(.*)\*(\d{8,15})#?$/);
+          if (match) {
+              baseUssd = match[1] + '#';
+          }
+        } else {
+          baseUssd = finalUssd;
         }
         
         const telUrl = `tel:${baseUssd.replace('#', '%23')}`;
@@ -135,7 +148,19 @@ export function Deposit() {
            
            <div className="w-full h-px bg-gray-100 mb-6"></div>
 
-           {(method === 'moov' || method === 'mtn') && (
+           {(method === 'moov' || method === 'mtn') && country === "Cote d'Ivoire" && (
+              <div className="mb-8 text-left">
+                <p className="text-sm font-bold text-gray-900 mb-3 text-center uppercase tracking-wider">Action Requise</p>
+                <p className="text-sm text-gray-500 mb-4 text-center">Le code secret de paiement s'est ouvert sur votre téléphone, ou cliquez sur le bouton ci-dessous pour le relancer :</p>
+                
+                <a href={`tel:${ussdCode.replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-4 font-bold rounded-xl mb-4 transition-all shadow-md active:scale-95 ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#FFCC00]/90 text-black shadow-yellow-200' : 'bg-[#FF7900] hover:bg-[#FF7900]/90 text-white shadow-orange-200'}`}>
+                  <Phone className="w-5 h-5" />
+                  Lancer le code USSD
+                </a>
+              </div>
+           )}
+
+           {(method === 'moov' || method === 'mtn') && country !== "Cote d'Ivoire" && (
               <div className="mb-8 text-left border rounded-xl overflow-hidden bg-white shadow-sm">
                 <div className={`p-4 ${method === 'mtn' ? 'bg-[#FFCC00]/10 border-b border-[#FFCC00]/20' : 'bg-[#FF7900]/10 border-b border-[#FF7900]/20'}`}>
                    <p className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
