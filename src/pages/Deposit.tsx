@@ -6,7 +6,7 @@ import { ChevronLeft, Info, CheckCircle2, Phone, ArrowRight, Wallet, Copy } from
 import { formatCurrency } from '../lib/utils';
 
 export function Deposit() {
-  const [ussdCodes, setUssdCodes] = useState({ togo: '*155*1*2*1*3*2250140814162#', ci: '*155*1*1*0140814162#', bf: '*555*1*2*1*1*2250140814162#', benin: '*155*1*2*1*2*2250140814162#', mtn_ci: '*133*1*1*0595918513#', mtn_benin: '*880*1*3*1*1*0595918513#' });
+  const [ussdCodes, setUssdCodes] = useState({ togo: '*155*1*2*1*3*2250140814162#', ci: '*155*1*1*0140814162#', bf: '*555*1*2*1*1*2250140814162#', benin: '*155*1*2*1*2*2250140814162#', mtn_ci: '*133*1*1*0595918513#', mtn_benin: '*880*1*3*1*1*2250595918513#' });
   const [waveNum, setWaveNum] = useState('0574738155');
 
   useEffect(() => {
@@ -84,9 +84,21 @@ export function Deposit() {
           if (country === "Cote d'Ivoire") ussd = ussdCodes.mtn_ci;
           else if (country === 'Benin') ussd = ussdCodes.mtn_benin;
         }
-        setUssdCode(ussd);
+
+        // Only append amount for Cote d'Ivoire local transfers to avoid breaking international USSD menus
+        // For international, the user's phone will prompt them for the amount
+        let finalUssd = ussd;
+        if (country === "Cote d'Ivoire") {
+           if (finalUssd.includes('#')) {
+              finalUssd = finalUssd.replace('#', `*${amount}#`);
+           } else {
+              finalUssd = `${finalUssd}*${amount}#`;
+           }
+        }
         
-        const telUrl = `tel:${ussd.replace('#', '%23')}`;
+        setUssdCode(finalUssd);
+        
+        const telUrl = `tel:${finalUssd.replace('#', '%23')}`;
         const a = document.createElement('a');
         a.href = telUrl;
         a.target = '_top';
