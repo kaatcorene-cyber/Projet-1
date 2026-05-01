@@ -1,8 +1,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiClient: GoogleGenAI | null = null;
+
+function getAiClient() {
+  if (!aiClient) {
+    aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  }
+  return aiClient;
+}
 
 export async function analyzeReceipt(base64Image: string, mimeType: string) {
+  const ai = getAiClient();
   const response = await ai.models.generateContent({
     model: "gemini-3.1-pro-preview",
     contents: [

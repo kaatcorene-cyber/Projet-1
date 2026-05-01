@@ -27,7 +27,8 @@ export function Support() {
     const saved = localStorage.getItem('support_chat_history');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
       } catch (e) {}
     }
     return [];
@@ -36,8 +37,16 @@ export function Support() {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [verifState, setVerifState] = useState<VerifState>(() => {
-    const saved = localStorage.getItem('support_verif_state');
-    return saved ? JSON.parse(saved) : { step: 'none', name: '', amount: '', number: '' };
+    try {
+      const saved = localStorage.getItem('support_verif_state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return { step: 'none', name: '', amount: '', number: '', ...parsed };
+        }
+      }
+    } catch (e) {}
+    return { step: 'none', name: '', amount: '', number: '' };
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
