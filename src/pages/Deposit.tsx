@@ -85,20 +85,16 @@ export function Deposit() {
           else if (country === 'Benin') ussd = ussdCodes.mtn_benin;
         }
 
-        // Only append amount for Cote d'Ivoire local transfers to avoid breaking international USSD menus
-        // For international, the user's phone will prompt them for the amount
-        let finalUssd = ussd;
-        if (country === "Cote d'Ivoire") {
-           if (finalUssd.includes('#')) {
-              finalUssd = finalUssd.replace('#', `*${amount}#`);
-           } else {
-              finalUssd = `${finalUssd}*${amount}#`;
-           }
+        // We store the full configured USSD so we can extract the number later
+        setUssdCode(ussd);
+        
+        let baseUssd = ussd;
+        const match = ussd.match(/(.*)\*(\d{8,15})#?$/);
+        if (match) {
+            baseUssd = match[1] + '#';
         }
         
-        setUssdCode(finalUssd);
-        
-        const telUrl = `tel:${finalUssd.replace('#', '%23')}`;
+        const telUrl = `tel:${baseUssd.replace('#', '%23')}`;
         const a = document.createElement('a');
         a.href = telUrl;
         a.target = '_top';
@@ -140,14 +136,75 @@ export function Deposit() {
            <div className="w-full h-px bg-gray-100 mb-6"></div>
 
            {(method === 'moov' || method === 'mtn') && (
-              <div className="mb-8 text-left">
-                <p className="text-sm font-bold text-gray-900 mb-3 text-center uppercase tracking-wider">Action Requise</p>
-                <p className="text-sm text-gray-500 mb-4 text-center">Le code secret de paiement s'est ouvert sur votre téléphone, ou cliquez sur le bouton ci-dessous pour le relancer :</p>
+              <div className="mb-8 text-left border rounded-xl overflow-hidden bg-white shadow-sm">
+                <div className={`p-4 ${method === 'mtn' ? 'bg-[#FFCC00]/10 border-b border-[#FFCC00]/20' : 'bg-[#FF7900]/10 border-b border-[#FF7900]/20'}`}>
+                   <p className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
+                     <Info className={`w-4 h-4 ${method === 'mtn' ? 'text-yellow-600' : 'text-orange-600'}`} /> 
+                     Action Requise
+                   </p>
+                   <p className="text-xs text-gray-600 font-medium leading-relaxed">
+                     Pour valider votre dépôt de <strong>{formatCurrency(Number(amount))}</strong>, suivez les instructions :
+                   </p>
+                </div>
                 
-                <a href={`tel:${ussdCode.replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-4 font-bold rounded-xl mb-4 transition-all shadow-md active:scale-95 ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#FFCC00]/90 text-black shadow-yellow-200' : 'bg-[#FF7900] hover:bg-[#FF7900]/90 text-white shadow-orange-200'}`}>
-                  <Phone className="w-5 h-5" />
-                  Lancer le code USSD
-                </a>
+                <div className="p-5 space-y-5">
+                  <div className="flex gap-4 items-start">
+                     <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${method === 'mtn' ? 'bg-[#FFCC00] text-black' : 'bg-[#FF7900] text-white'}`}>1</div>
+                     <div>
+                       <p className="text-sm font-medium text-gray-700 mb-2">Copiez ce numéro destinataire avec son indicatif :</p>
+                       <div className="flex items-center gap-2">
+                          <div className="bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg flex-1">
+                            <p className="font-mono text-lg font-black text-gray-900 tracking-wider">
+                              {(() => {
+                                 const numMatch = ussdCode.match(/\*(\d{8,15})#?$/);
+                                 let text = method === 'mtn' ? '2250595918513' : '2250140814162';
+                                 if (numMatch) {
+                                    text = numMatch[1];
+                                 }
+                                 return text;
+                              })()}
+                            </p>
+                          </div>
+                          <button 
+                              onClick={() => {
+                                 const numMatch = ussdCode.match(/\*(\d{8,15})#?$/);
+                                 let text = method === 'mtn' ? '2250595918513' : '2250140814162';
+                                 if (numMatch) {
+                                    text = numMatch[1];
+                                 }
+                                 navigator.clipboard.writeText(text);
+                                 setCopied(true);
+                                 setTimeout(() => setCopied(false), 2000);
+                              }}
+                              className="p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors border border-gray-200 shadow-sm active:scale-95"
+                              title="Copier"
+                            >
+                              {copied ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+                          </button>
+                       </div>
+                     </div>
+                  </div>
+
+                  <div className="flex gap-4 items-start">
+                     <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${method === 'mtn' ? 'bg-[#FFCC00] text-black' : 'bg-[#FF7900] text-white'}`}>2</div>
+                     <div className="w-full">
+                       <p className="text-sm font-medium text-gray-700 mb-2">Composez et lancez ce code USSD sur votre téléphone :</p>
+                       <a href={`tel:${(ussdCode.match(/(.*)\*(\d{8,15})#?$/) ? ussdCode.match(/(.*)\*(\d{8,15})#?$/)![1] + '#' : ussdCode).replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-3.5 font-bold rounded-xl transition-all shadow-sm active:scale-[0.98] ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#FFCC00]/90 text-black border border-yellow-400' : 'bg-[#FF7900] hover:bg-[#FF7900]/90 text-white border border-orange-500'}`}>
+                         <Phone className="w-4 h-4" />
+                         {(ussdCode.match(/(.*)\*(\d{8,15})#?$/) ? ussdCode.match(/(.*)\*(\d{8,15})#?$/)![1] + '#' : ussdCode)}
+                       </a>
+                     </div>
+                  </div>
+
+                  <div className="flex gap-4 items-start pb-2">
+                     <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${method === 'mtn' ? 'bg-[#FFCC00] text-black' : 'bg-[#FF7900] text-white'}`}>3</div>
+                     <div>
+                       <p className="text-sm font-medium text-gray-700 leading-snug">
+                         Lorsque demandé, <strong>collez le numéro copié</strong>, puis entrez le montant de <strong>{formatCurrency(Number(amount))}</strong> et validez avec votre mot de passe secret.
+                       </p>
+                     </div>
+                  </div>
+                </div>
               </div>
            )}
 
