@@ -1,5 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import cron from 'node-cron';
+import { createClient } from '@supabase/supabase-js';
 
 const token = '8624832383:AAHhIgbdrbxl5wXl0ntUwM2jjXhTOZ015r0';
 let activeGroupId: string | null = null; // Will auto-detect
@@ -131,7 +132,93 @@ Nous sommes ravis de vous compter parmi nos membres. 🙌
   }
 });
 
-// --- CRON JOBS ---
+// --- DAILY GAINS BACKGROUND JOB ---
+// This runs every minute
+
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://ooekuyetmfgmpmwxtkpf.supabase.co';
+const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vZWt1eWV0bWZnbXBtd3h0a3BmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjA4MTA5OSwiZXhwIjoyMDkxNjU3MDk5fQ.yQAGVNueCiTZ57_wY8ArZs5H5OAo465AbtpUeGdrLhI';
+const supabase = createClient(SUPABASE_URL.replace('.supabase.com', '.supabase.co'), SUPABASE_KEY);
+
+cron.schedule('* * * * *', async () => {
+  try {
+    const now = new Date().getTime();
+    
+    // Fetch all active investments
+    const { data: invs, error } = await supabase.from('investments').select('*').eq('status', 'active');
+    
+    if (error) {
+      console.error("Cron Error fetching investments:", error);
+      return;
+    }
+    
+    if (!invs || invs.length === 0) return;
+    
+    for (const inv of invs) {
+      const start = new Date(inv.start_date || inv.created_at).getTime();
+      const lastPaid = new Date(inv.last_paid_at || inv.created_at).getTime();
+      
+      const totalDaysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
+      const lastPaidDaysElapsed = Math.floor((lastPaid - start) / (24 * 60 * 60 * 1000));
+      const missingDays = totalDaysElapsed - lastPaidDaysElapsed;
+      
+      if (missingDays > 0) {
+        // Evaluate completion based on expected end
+        let endT = inv.end_date ? new Date(inv.end_date).getTime() : null;
+        let totalExpectedDays = endT ? Math.round((endT - start) / (24 * 60 * 60 * 1000)) : Infinity;
+        
+        let daysToAdd = missingDays;
+        
+        // Prevent paying beyond the plan's end date
+        if (lastPaidDaysElapsed + daysToAdd > totalExpectedDays) {
+           daysToAdd = totalExpectedDays - lastPaidDaysElapsed;
+        }
+        
+        if (daysToAdd > 0) {
+          // Calculate exact schedule to avoid skipping days
+          let newLastPaidTime = lastPaid + daysToAdd * 24 * 60 * 60 * 1000;
+          if (newLastPaidTime > now) newLastPaidTime = now;
+          const newLastPaid = new Date(newLastPaidTime).toISOString();
+          
+          const amountToAdd = Number(inv.daily_yield) * daysToAdd;
+
+          // 1. Update investment last_paid_at
+          await supabase.from('investments').update({ last_paid_at: newLastPaid }).eq('id', inv.id);
+          
+          // 2. Insert transaction
+          await supabase.from('transactions').insert({
+            user_id: inv.user_id,
+            type: 'daily_gain',
+            amount: amountToAdd,
+            status: 'completed',
+            reference: `Gain du plan (x${daysToAdd}) (Auto)`
+          });
+          
+          // 3. Update user balance
+          const { data: usr } = await supabase.from('users').select('balance').eq('id', inv.user_id).single();
+          if (usr) {
+            await supabase.from('users').update({ balance: Number(usr.balance) + amountToAdd }).eq('id', inv.user_id);
+          }
+          console.log(`✅ [CRON] Credited ${amountToAdd} FCFA to user ${inv.user_id} for ${daysToAdd} days.`);
+        }
+      }
+      
+      // Check expiration
+      if (inv.end_date) {
+        const endT = new Date(inv.end_date).getTime();
+        const totalExpectedDays = Math.round((endT - start) / (24 * 60 * 60 * 1000));
+        const currentLastPaid = Math.floor((new Date(inv.last_paid_at || inv.created_at).getTime() - start) / (24 * 60 * 60 * 1000)) + missingDays; // approximation
+        
+        if (currentLastPaid >= totalExpectedDays || now >= endT) {
+          await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
+          console.log(`✅ [CRON] Marked investment ${inv.id} as completed.`);
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error("Cron Error processing gains:", err.message);
+  }
+});
+
 
 // Close group at 17:00 GMT
 cron.schedule('0 17 * * *', async () => {

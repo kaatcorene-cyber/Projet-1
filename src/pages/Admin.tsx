@@ -572,9 +572,11 @@ export function Admin() {
                       }`}>
                         {inv.status}
                       </span>
-                      <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title="Supprimer l'investissement">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title="Supprimer l'investissement">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50 pl-2">

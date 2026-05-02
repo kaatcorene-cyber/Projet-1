@@ -26,6 +26,18 @@ export function Withdraw() {
     e.preventDefault();
     if (!user) return;
     
+    // Check time constraints (GMT)
+    const nowLocal = new Date();
+    const gmtDay = nowLocal.getUTCDay();   // 0 = Sunday
+    const gmtHour = nowLocal.getUTCHours(); // 0 - 23
+    
+    if (gmtDay === 0) {
+      return setMessage({ type: 'error', text: 'Les retraits ne sont pas disponibles le dimanche.' });
+    }
+    if (gmtHour < 9 || gmtHour >= 17) {
+      return setMessage({ type: 'error', text: 'Les retraits sont disponibles de 9h à 17h GMT.' });
+    }
+    
     const numAmount = Number(amount);
     
     if (numAmount < 1000) {

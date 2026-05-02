@@ -202,7 +202,7 @@ export function Dashboard() {
     }
 
     if (user) {
-      processDailyGains().then(() => fetchData());
+      fetchData();
     } else {
       fetchData();
     }
@@ -210,8 +210,6 @@ export function Dashboard() {
     // Setup polling for real-time like updates
     const intervalId = setInterval(() => {
       refreshUser();
-      const currentUser = useAuthStore.getState().user;
-      if (currentUser) processDailyGains();
       fetchData();
     }, 15000);
 
@@ -240,88 +238,6 @@ export function Dashboard() {
   };
 
   
-  const isProcessingGains = useRef(false);
-  
-  const processDailyGains = async () => {
-    const currentUser = useAuthStore.getState().user;
-    if (!currentUser || isProcessingGains.current) return;
-    isProcessingGains.current = true;
-    
-    try {
-      let hasGlobalChanges = false;
-      const now = new Date().getTime();
-      
-      const { data: invs } = await supabase.from('investments').select('*').eq('user_id', currentUser.id).eq('status', 'active');
-      if (!invs) return;
-      
-      for (const inv of invs) {
-        try {
-          const start = new Date(inv.start_date || inv.created_at).getTime();
-          const lastPaid = new Date(inv.last_paid_at || inv.created_at).getTime();
-          
-          const totalDaysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
-          const lastPaidDaysElapsed = Math.floor((lastPaid - start) / (24 * 60 * 60 * 1000));
-          const missingDays = totalDaysElapsed - lastPaidDaysElapsed;
-          
-          if (missingDays > 0) {
-            hasGlobalChanges = true;
-            
-            // Calc exact schedule to avoid skipping days
-            let newLastPaidTime = lastPaid + missingDays * 24 * 60 * 60 * 1000;
-            if (newLastPaidTime > now) newLastPaidTime = now; // Safety fallback
-            
-            const newLastPaid = new Date(newLastPaidTime).toISOString();
-            const amountToAdd = Number(inv.daily_yield) * missingDays;
-            
-            // 1. Update investment last_paid_at
-            await supabase.from('investments').update({ last_paid_at: newLastPaid }).eq('id', inv.id);
-            
-            // 2. Insert transaction
-            await supabase.from('transactions').insert({
-              user_id: currentUser.id,
-              type: 'daily_gain',
-              amount: amountToAdd,
-              status: 'completed',
-              reference: `Gain du plan (x${missingDays})`
-            });
-            
-            // 3. Directly update user balance loop by loop to prevent race conditions
-            const { data: usr } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
-            if (usr) {
-              await supabase.from('users').update({ balance: Number(usr.balance) + amountToAdd }).eq('id', currentUser.id);
-            }
-          }
-          
-          // Check expiration using expected total days to prevent early completion
-          if (inv.end_date) {
-             const endT = new Date(inv.end_date).getTime();
-             const totalExpectedDays = Math.round((endT - start) / (24 * 60 * 60 * 1000));
-             
-             // Evaluate completion based on new last paid
-             const currentLastPaid = missingDays > 0 ? lastPaidDaysElapsed + missingDays : lastPaidDaysElapsed;
-             
-             if (currentLastPaid >= totalExpectedDays) {
-                 hasGlobalChanges = true;
-                 await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
-             }
-          }
-        } catch (innerErr) {
-          console.error("Error with inv:", inv.id, innerErr);
-        }
-      }
-      
-      if (hasGlobalChanges) {
-        await refreshUser();
-        fetchData();
-      }
-    } catch (err) {
-      console.error('Gain process error', err);
-    } finally {
-      isProcessingGains.current = false;
-    }
-  };
-
-
   const fetchData = async () => {
     const currentUser = useAuthStore.getState().user;
     if (!currentUser) {
@@ -464,7 +380,7 @@ export function Dashboard() {
           {activeInvestments.length > 0 && (
             <CountdownTimer 
               activeInvestments={activeInvestments} 
-              onTickZero={() => processDailyGains()} 
+              onTickZero={() => { fetchData(); refreshUser(); }} 
             />
           )}
         </div>
