@@ -251,35 +251,28 @@ export function Dashboard() {
       let totalGained = 0;
       const now = new Date().getTime();
       
-      // Fetch fresh investments from db
       const { data: invs } = await supabase.from('investments').select('*').eq('user_id', currentUser.id).eq('status', 'active');
-      if (!invs) {
-        isProcessingGains.current = false;
-        return;
-      }
+      if (!invs) return;
       
       let hasChanges = false;
       for (const inv of invs) {
-        const startDateRaw = inv.start_date || inv.created_at;
-        const lastPaidRaw = inv.last_paid_at || inv.created_at;
-        
-        let start = new Date(startDateRaw).getTime();
-        let lastPaid = new Date(lastPaidRaw).getTime();
-        
-        // Fallback to now if dates are completely invalid
-        if (isNaN(start)) start = now;
-        if (isNaN(lastPaid)) lastPaid = start;
+        const start = new Date(inv.start_date || inv.created_at).getTime();
+        const lastPaid = new Date(inv.last_paid_at || inv.created_at).getTime();
         
         const totalDaysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
         const lastPaidDaysElapsed = Math.floor((lastPaid - start) / (24 * 60 * 60 * 1000));
-        
         const missingDays = totalDaysElapsed - lastPaidDaysElapsed;
         
         if (missingDays > 0) {
           hasChanges = true;
-          // Calculate new lastPaid
-          const newLastPaid = new Date(start + totalDaysElapsed * 24 * 60 * 60 * 1000).toISOString();
-          const amountToAdd = inv.daily_yield * missingDays;
+          // IMPORTANT: Update by exactly the missing days to keep the schedule tight.
+          let newLastPaidTime = lastPaid + missingDays * 24 * 60 * 60 * 1000;
+          
+          // Safety: don't let lastPaid get ahead of now
+          if (newLastPaidTime > now) newLastPaidTime = now;
+          
+          const newLastPaid = new Date(newLastPaidTime).toISOString();
+          const amountToAdd = Number(inv.daily_yield) * missingDays;
           totalGained += amountToAdd;
           
           await supabase.from('investments').update({ last_paid_at: newLastPaid }).eq('id', inv.id);
@@ -293,10 +286,9 @@ export function Dashboard() {
           });
         }
         
-        // check expiration independently from missingDays to handle 0 yield plans or late expiration
         if (inv.end_date) {
            const endT = new Date(inv.end_date).getTime();
-           if (now >= endT || totalDaysElapsed >= (new Date(inv.end_date).getTime() - start) / (24 * 60 * 60 * 1000)) {
+           if (now >= endT || totalDaysElapsed >= (endT - start) / (24 * 60 * 60 * 1000)) {
                hasChanges = true;
                await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
            }
@@ -312,12 +304,12 @@ export function Dashboard() {
       }
       
       if (hasChanges) {
-        await fetchData(); // fetch updated data
+        fetchData();
       }
     } catch (err) {
       console.error(err);
     } finally {
-      isProcessingGains.current = false; // release lock
+      isProcessingGains.current = false;
     }
   };
 
