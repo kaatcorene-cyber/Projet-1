@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Sun } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -13,7 +13,6 @@ export function History() {
   useEffect(() => {
     fetchData();
 
-    // Polling for real-time history updates
     const intervalId = setInterval(() => {
       fetchData();
     }, 5000);
@@ -24,7 +23,6 @@ export function History() {
   const fetchData = async () => {
     if (!user) return;
     
-    // Fetch all transactions
     const { data: txData } = await supabase
       .from('transactions')
       .select('*')
@@ -37,60 +35,67 @@ export function History() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-5 pt-16 pb-24 font-sans">
-      <header className="flex justify-between items-end pb-2 border-b border-gray-200 mb-6">
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-5 pt-16 pb-24 font-sans relative overflow-hidden">
+      {/* Background FX */}
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
+
+      <header className="flex justify-between items-end pb-6 border-b border-white/5 relative z-10">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Historique</h1>
-          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-1">Vos transactions</p>
+          <h1 className="text-3xl font-black text-white tracking-tight">Historique</h1>
+          <p className="text-amber-500 text-[10px] font-bold uppercase tracking-widest mt-1">Flux d'Énergie</p>
         </div>
-        <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-6 object-contain" referrerPolicy="no-referrer" />
+        <div className="flex items-center gap-1.5 mb-1">
+           <Sun className="w-8 h-8 text-amber-500" />
+           <span className="font-black text-white tracking-tighter text-lg whitespace-nowrap">SOLEIL<span className="text-amber-500">-POWER</span></span>
+        </div>
       </header>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="relative z-10 mt-6 bg-[#111] rounded-[2rem] shadow-2xl border border-white/5 overflow-hidden">
         {transactions.length === 0 ? (
-          <div className="text-center py-10 text-gray-400 text-sm font-semibold">
-            Aucune transaction
+          <div className="text-center py-12 text-gray-500 text-sm font-bold tracking-wider uppercase">
+            Aucun transit détecté
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-white/5">
             {transactions.map((tx) => (
-              <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+              <div key={tx.id} className="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-inner border ${
                     tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
-                      ? 'bg-green-50 text-green-600' 
-                      : 'bg-red-50 text-red-600'
+                      ? 'bg-green-500/10 text-green-400 border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]' 
+                      : 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
                   }`}>
-                    {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                    {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? <ArrowDownRight className="w-6 h-6" /> : <ArrowUpRight className="w-6 h-6" />}
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 leading-tight">
-                      {tx.type === 'deposit' && 'Dépôt'}
-                      {tx.type === 'withdrawal' && 'Retrait'}
-                      {tx.type === 'investment' && 'Investissement'}
-                      {tx.type === 'daily_gain' && 'Gain journalier'}
-                      {tx.type === 'signup_bonus' && 'Bonus inscript.'}
-                      {tx.type === 'referral_bonus' && 'Bonus parrain.'}
+                    <h3 className="font-bold text-white leading-tight">
+                      {tx.type === 'deposit' && 'Injection Capital'}
+                      {tx.type === 'withdrawal' && 'Extraction Gain'}
+                      {tx.type === 'investment' && 'Acquisition Générateur'}
+                      {tx.type === 'daily_gain' && 'Rendement Panneau'}
+                      {tx.type === 'signup_bonus' && 'Prime Bienvenue'}
+                      {tx.type === 'referral_bonus' && 'Prime Parrainage'}
                     </h3>
-                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mt-0.5">
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1 text-shadow-sm">
                       {format(new Date(tx.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`font-black tracking-tight ${
+                  <p className={`text-lg font-black tracking-tighter drop-shadow-md ${
                     tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
-                      ? 'text-green-600' 
-                      : 'text-gray-900'
+                      ? 'text-green-400' 
+                      : 'text-white'
                   }`}>
                     {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </p>
-                  <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
-                    tx.status === 'completed' || tx.status === 'approved' ? 'text-green-600' :
+                  <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${
+                    tx.status === 'completed' || tx.status === 'approved' ? 'text-green-500' :
                     tx.status === 'pending' ? 'text-amber-500' : 'text-red-500'
                   }`}>
-                    {tx.status === 'completed' || tx.status === 'approved' ? 'Complété' :
-                     tx.status === 'pending' ? 'En attente' : 'Rejeté'}
+                    {tx.status === 'completed' || tx.status === 'approved' ? 'Validé' :
+                     tx.status === 'pending' ? 'Traitement' : 'Rejeté'}
                   </p>
                 </div>
               </div>

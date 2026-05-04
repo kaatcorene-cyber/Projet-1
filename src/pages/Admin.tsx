@@ -9,12 +9,12 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const DEFAULT_PLANS = [
-  { category: 'basique', amount: 2500, daily: 450, total: 3600, image: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800' },
-  { category: 'basique', amount: 5000, daily: 900, total: 7200, image: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?auto=format&fit=crop&q=80&w=800' },
-  { category: 'basique', amount: 10000, daily: 1800, total: 14400, image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800' },
-  { category: 'premium', amount: 2500, daily: 125, total: 7500, image: 'https://images.unsplash.com/photo-1605374668853-2d2d6d841b52?auto=format&fit=crop&q=80&w=800' },
-  { category: 'premium', amount: 5000, daily: 250, total: 15000, image: 'https://images.unsplash.com/photo-1542396601-dca920ea2807?auto=format&fit=crop&q=80&w=800' },
-  { category: 'premium', amount: 10000, daily: 500, total: 30000, image: 'https://images.unsplash.com/photo-1580901368919-7738efb0f87e?auto=format&fit=crop&q=80&w=800' },
+  { category: 'basique', amount: 2500, daily: 450, total: 3600, image: 'https://i.imgur.com/TPu2aYa.jpeg' },
+  { category: 'basique', amount: 5000, daily: 900, total: 7200, image: 'https://i.imgur.com/13CtIKN.jpeg' },
+  { category: 'basique', amount: 10000, daily: 1800, total: 14400, image: 'https://i.imgur.com/gK4vxdm.jpeg' },
+  { category: 'premium', amount: 2500, daily: 125, total: 7500, image: 'https://i.imgur.com/tDxIhSt.jpeg' },
+  { category: 'premium', amount: 5000, daily: 250, total: 15000, image: 'https://i.imgur.com/TH31utuh.jpg' },
+  { category: 'premium', amount: 10000, daily: 500, total: 30000, image: 'https://i.imgur.com/EmiQxnA.jpeg' },
 ];
 
 const VIP_LEVELS = ['user', 'vip1', 'vip2', 'vip3', 'vip4', 'vip5'];
@@ -32,12 +32,8 @@ export function Admin() {
   
   // Settings
   const [paymentLink, setPaymentLink] = useState('');
-  const [ussdTogo, setUssdTogo] = useState('*155*1*2*1*3*2250140814162#');
   const [ussdCI, setUssdCI] = useState('*155*1*1*0140814162#');
-  const [ussdBF, setUssdBF] = useState('*555*1*2*1*1*2250140814162#');
-  const [ussdBenin, setUssdBenin] = useState('*155*1*2*1*2*2250140814162#');
   const [ussdMtnCI, setUssdMtnCI] = useState('*133*1*1*0595918513#');
-  const [ussdMtnBenin, setUssdMtnBenin] = useState('*880*1*3*1*1*0595918513#');
   const [waveNumber, setWaveNumber] = useState('0574738155');
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
@@ -108,22 +104,14 @@ export function Admin() {
         if (grp) setGroupLink(grp.value);
 
         const sup = settingsRes.data.find(s => s.key === 'support_link');
-        const ut = settingsRes.data.find(s => s.key === 'ussd_togo');
         const uc = settingsRes.data.find(s => s.key === 'ussd_ci');
-        const ub = settingsRes.data.find(s => s.key === 'ussd_bf');
-        const unen = settingsRes.data.find(s => s.key === 'ussd_benin');
         const wn = settingsRes.data.find(s => s.key === 'wave_number');
         const u_mtn_ci = settingsRes.data.find(s => s.key === 'ussd_mtn_ci');
-        const u_mtn_benin = settingsRes.data.find(s => s.key === 'ussd_mtn_benin');
 
         if (sup) setSupportLink(sup.value);
-        if (ut) setUssdTogo(ut.value);
         if (uc) setUssdCI(uc.value);
-        if (ub) setUssdBF(ub.value);
-        if (unen) setUssdBenin(unen.value);
         if (wn) setWaveNumber(wn.value);
         if (u_mtn_ci) setUssdMtnCI(u_mtn_ci.value);
-        if (u_mtn_benin) setUssdMtnBenin(u_mtn_benin.value);
         
         const dbPlansStr = settingsRes.data.find(s => s.key === 'investment_plans');
         if (dbPlansStr && dbPlansStr.value) {
@@ -418,12 +406,8 @@ export function Admin() {
       { key: 'payment_link', value: paymentLink },
       { key: 'group_link', value: groupLink },
       { key: 'support_link', value: supportLink },
-      { key: 'ussd_togo', value: ussdTogo },
       { key: 'ussd_ci', value: ussdCI },
-      { key: 'ussd_bf', value: ussdBF },
-      { key: 'ussd_benin', value: ussdBenin },
       { key: 'ussd_mtn_ci', value: ussdMtnCI },
-      { key: 'ussd_mtn_benin', value: ussdMtnBenin },
       { key: 'wave_number', value: waveNumber }
     ], { onConflict: 'key' });
     setLoading(false);
@@ -475,7 +459,7 @@ export function Admin() {
                   setConfirmModal({...confirmModal, isOpen: false});
                   confirmModal.onConfirm();
                 }}
-                className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-red-200"
+                className="flex-1 py-3 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-amber-200"
                 disabled={loading}
               >
                 Confirmer
@@ -486,7 +470,7 @@ export function Admin() {
       )}
       
       {message && (
-        <div className={`p-4 rounded-xl text-sm font-medium ${message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
+        <div className={`p-4 rounded-xl text-sm font-medium ${message.type === 'error' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
           {message.text}
         </div>
       )}
@@ -498,7 +482,7 @@ export function Admin() {
             key={t.id}
             onClick={() => { setActiveTab(t.id); setSearchTerm(''); }}
             className={`px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium whitespace-nowrap transition-colors ${
-              activeTab === t.id ? 'bg-red-500 text-white shadow-md shadow-red-500/20' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+              activeTab === t.id ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
             <t.icon className="w-4 h-4" />
@@ -524,13 +508,13 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-gray-900 mb-2">Vue d'ensemble</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white border border-red-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="bg-white border border-amber-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Total des soldes</p>
-               <p className="text-xl font-black text-red-700">{formatCurrency(0)}</p>
+               <p className="text-xl font-black text-amber-700">{formatCurrency(0)}</p>
             </div>
-            <div className="bg-white border border-red-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="bg-white border border-amber-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Retraits validés</p>
-               <p className="text-xl font-black text-red-700">{formatCurrency(0)}</p>
+               <p className="text-xl font-black text-amber-700">{formatCurrency(0)}</p>
             </div>
             <div className="bg-white border border-amber-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Dépôts validés</p>
@@ -558,7 +542,7 @@ export function Admin() {
                 
                 return (
                 <div key={inv.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${isPremium ? 'bg-red-500' : 'bg-red-500'}`}></div>
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${isPremium ? 'bg-amber-500' : 'bg-amber-500'}`}></div>
                   <div className="flex justify-between items-start mb-2 pl-2">
                     <div>
                       <p className="font-bold text-gray-900 line-clamp-1">Pack {isPremium ? 'Premium' : 'Standard'} ({formatCurrency(inv.plan_amount || 0)})</p>
@@ -568,12 +552,12 @@ export function Admin() {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
-                        inv.status === 'active' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-500'
+                        inv.status === 'active' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-500'
                       }`}>
                         {inv.status}
                       </span>
                       <div className="flex gap-2">
-                        <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title="Supprimer l'investissement">
+                        <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-amber-500 hover:bg-amber-50 p-1.5 rounded-lg transition-colors" title="Supprimer l'investissement">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -586,7 +570,7 @@ export function Admin() {
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] text-gray-400 uppercase tracking-wider">Gain Journalier</p>
-                      <p className={`font-bold ${isPremium ? 'text-red-700' : 'text-red-700'}`}>{formatCurrency(inv.daily_yield)}</p>
+                      <p className={`font-bold ${isPremium ? 'text-amber-700' : 'text-amber-700'}`}>{formatCurrency(inv.daily_yield)}</p>
                     </div>
                   </div>
                   <p className="text-[10px] text-gray-400 mt-2 text-center">
@@ -617,7 +601,7 @@ export function Admin() {
                       <p className="text-xs text-gray-500">{v.users?.phone}</p>
                     </div>
                     <div className="text-right">
-                      <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${v.status === 'valid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${v.status === 'valid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                         {v.status === 'valid' ? 'Valide' : 'Rejeté'}
                       </span>
                     </div>
@@ -647,7 +631,7 @@ export function Admin() {
                             <>
                               <p><span className="text-gray-500">Montant détecté :</span> {ai.amount}</p>
                               <p><span className="text-gray-500">Destinataire :</span> {ai.recipient}</p>
-                              <p><span className="text-gray-500">Falsification :</span> {ai.is_falsified ? <span className="text-red-600 font-bold">OUI (Fraude potentielle)</span> : <span className="text-green-600 font-bold">NON (Document intègre)</span>}</p>
+                              <p><span className="text-gray-500">Falsification :</span> {ai.is_falsified ? <span className="text-amber-600 font-bold">OUI (Fraude potentielle)</span> : <span className="text-green-600 font-bold">NON (Document intègre)</span>}</p>
                               <p className="mt-1 text-gray-600 italic">"{ai.reasoning}"</p>
                             </>
                           );
@@ -677,14 +661,14 @@ export function Admin() {
                     <p className="font-bold text-gray-900 flex items-center gap-2">
                       {u.first_name} {u.last_name}
                       {u.role && u.role.startsWith('vip') && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase">{u.role}</span>}
-                      {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-red-500" />}
+                      {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-amber-500" />}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">{u.phone} • {u.country}</p>
                     <p className="text-[11px] text-gray-500 mt-1"><span className="font-semibold">MDP:</span> <span className="font-mono text-gray-900 bg-gray-100 px-1 py-0.5 rounded">{u.password_hash}</span></p>
                     <p className="text-[10px] text-gray-400 mt-0.5 font-mono">{u.id}</p>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                    <p className="font-bold text-red-700 bg-red-50 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
+                    <p className="font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
                     {u.role !== 'admin' && (
                        <select 
                          value={u.role || 'user'} 
@@ -699,8 +683,8 @@ export function Admin() {
 
                 {editingUserId === u.id ? (
                   <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                    <input type="number" className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-red-500 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
-                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-red-500 hover:bg-red-700 text-white font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
+                    <input type="number" className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-amber-500 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
+                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-amber-500 hover:bg-amber-700 text-white font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
                     <button onClick={() => setEditingUserId(null)} className="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg text-sm transition-colors cursor-pointer">X</button>
                   </div>
                 
@@ -710,7 +694,7 @@ export function Admin() {
                       <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Solde
                     </button>
                     {u.role !== 'admin' && (
-                      <button onClick={() => handleDeleteUser(u.id)} className="p-2 bg-red-50 text-red-500 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">
+                      <button onClick={() => handleDeleteUser(u.id)} className="p-2 bg-amber-50 text-amber-500 border border-amber-100 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
@@ -739,8 +723,8 @@ export function Admin() {
                   </div>
                   <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
                     tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                    tx.status === 'approved' ? 'bg-red-50 text-red-700 border border-red-100' :
-                    'bg-red-50 text-red-600 border border-red-100'
+                    tx.status === 'approved' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                    'bg-amber-50 text-amber-600 border border-amber-100'
                   }`}>
                     {tx.status}
                   </div>
@@ -748,10 +732,10 @@ export function Admin() {
                 
                 {tx.status === 'pending' && (
                   <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-50 hover:bg-red-100 text-red-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <CheckCircle className="w-4 h-4" /> Approuver
                     </button>
-                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <XCircle className="w-4 h-4" /> Rejeter
                     </button>
                   </div>
@@ -779,8 +763,8 @@ export function Admin() {
                   </div>
                   <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
                     tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                    tx.status === 'approved' ? 'bg-red-50 text-red-700 border border-red-100' :
-                    'bg-red-50 text-red-600 border border-red-100'
+                    tx.status === 'approved' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                    'bg-amber-50 text-amber-600 border border-amber-100'
                   }`}>
                     {tx.status}
                   </div>
@@ -788,10 +772,10 @@ export function Admin() {
                 
                 {tx.status === 'pending' && (
                   <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-50 hover:bg-red-100 text-red-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <CheckCircle className="w-4 h-4" /> Approuver
                     </button>
-                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <XCircle className="w-4 h-4" /> Rejeter
                     </button>
                   </div>
@@ -826,7 +810,7 @@ export function Admin() {
                         setNewPlanTotal('');
                      }
                    }} 
-                   className="col-span-2 bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
+                   className="col-span-2 bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-amber-500 outline-none" 
                  />
                  <div className="flex flex-col gap-1">
                    <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Gain %</label>
@@ -844,7 +828,7 @@ export function Admin() {
                           setNewPlanTotal(total.toString());
                        }
                      }} 
-                     className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
+                     className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-amber-500 outline-none" 
                    />
                  </div>
                  <div className="flex flex-col gap-1">
@@ -863,16 +847,16 @@ export function Admin() {
                           setNewPlanTotal(total.toString());
                        }
                      }} 
-                     className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
+                     className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-amber-500 outline-none" 
                    />
                  </div>
                  <div className="flex flex-col gap-1">
                    <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Gain/Jour (FCFA)</label>
-                   <input type="number" placeholder="Gain journalier" value={newPlanDaily} readOnly className="bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none cursor-not-allowed opacity-80" />
+                   <input type="number" placeholder="Gain journalier" value={newPlanDaily} readOnly className="bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-amber-500 outline-none cursor-not-allowed opacity-80" />
                  </div>
                  <div className="flex flex-col gap-1">
                    <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Total (FCFA)</label>
-                   <input type="number" placeholder="Revenu Total" value={newPlanTotal} readOnly className="bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none cursor-not-allowed opacity-80" />
+                   <input type="number" placeholder="Revenu Total" value={newPlanTotal} readOnly className="bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-amber-500 outline-none cursor-not-allowed opacity-80" />
                  </div>
                </div>
 
@@ -891,7 +875,7 @@ export function Admin() {
                      <img src={newPlanImage} className="w-full h-32 object-cover rounded-lg shadow-sm" alt="Preview" />
                    ) : (
                      <>
-                       <div className="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center">
+                       <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center">
                          <Upload className="w-5 h-5" />
                        </div>
                        <span className="text-sm font-medium text-gray-600">Ajouter une photo</span>
@@ -902,7 +886,7 @@ export function Admin() {
 
                {editingPlanIndex !== null ? (
                  <div className="flex gap-2">
-                   <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-red-500 hover:bg-red-700 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                   <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-amber-500 hover:bg-amber-700 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
                      <Save className="w-5 h-5" /> Sauvegarder
                    </button>
                    <button onClick={handleCancelEditPlan} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
@@ -910,7 +894,7 @@ export function Admin() {
                    </button>
                  </div>
                ) : (
-                 <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-red-500 hover:bg-red-700 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                 <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-amber-500 hover:bg-amber-700 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
                    <Plus className="w-5 h-5" /> Ajouter à la liste
                  </button>
                )}
@@ -921,13 +905,13 @@ export function Admin() {
             <h3 className="text-gray-900 font-bold px-1">Plans actuels ({plans.length})</h3>
             {isInitializing ? (
                <div className="flex justify-center p-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+                  <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
                </div>
             ) : plans.map((p, idx) => (
               <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"></div>
                 <div className="flex items-center gap-4 pl-2">
-                  <img src={p.image || 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800'} className="w-12 h-12 rounded-xl object-cover bg-gray-100" alt="" referrerPolicy="no-referrer" />
+                  <img src={p.image || '/icon.svg'} className="w-12 h-12 rounded-xl object-cover bg-gray-100" alt="" referrerPolicy="no-referrer" />
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
                        <p className="font-bold text-gray-900 text-sm leading-none">{formatCurrency(p.amount)}</p>
@@ -939,10 +923,10 @@ export function Admin() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => handleEditPlan(idx)} disabled={loading} className="p-2.5 text-red-500 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">
+                  <button onClick={() => handleEditPlan(idx)} disabled={loading} className="p-2.5 text-amber-500 bg-amber-50 border border-amber-100 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
                     <Edit className="w-5 h-5" />
                   </button>
-                  <button onClick={() => handleRemovePlan(idx)} disabled={loading} className="p-2.5 text-red-500 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">
+                  <button onClick={() => handleRemovePlan(idx)} disabled={loading} className="p-2.5 text-amber-500 bg-amber-50 border border-amber-100 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer">
                     <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
@@ -965,7 +949,7 @@ export function Admin() {
                   type="url"
                   value={paymentLink}
                   onChange={(e) => setPaymentLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-amber-500 transition-colors text-sm"
                   placeholder="https://..."
                 />
               </div>
@@ -976,7 +960,7 @@ export function Admin() {
                   type="url"
                   value={groupLink}
                   onChange={(e) => setGroupLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-amber-500 transition-colors text-sm"
                   placeholder="https://t.me/..."
                 />
               </div>
@@ -987,18 +971,8 @@ export function Admin() {
                   type="url"
                   value={supportLink}
                   onChange={(e) => setSupportLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-amber-500 transition-colors text-sm"
                   placeholder="https://t.me/support..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Code USSD Togo (Moov)</label>
-                <input
-                  type="text"
-                  value={ussdTogo}
-                  onChange={(e) => setUssdTogo(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
                 />
               </div>
 
@@ -1008,27 +982,7 @@ export function Admin() {
                   type="text"
                   value={ussdCI}
                   onChange={(e) => setUssdCI(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Code USSD Burkina Faso (Moov)</label>
-                <input
-                  type="text"
-                  value={ussdBF}
-                  onChange={(e) => setUssdBF(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Code USSD Bénin (Moov)</label>
-                <input
-                  type="text"
-                  value={ussdBenin}
-                  onChange={(e) => setUssdBenin(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-amber-500 transition-colors text-sm font-mono"
                 />
               </div>
 
@@ -1038,17 +992,7 @@ export function Admin() {
                   type="text"
                   value={ussdMtnCI}
                   onChange={(e) => setUssdMtnCI(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Code USSD Bénin (MTN)</label>
-                <input
-                  type="text"
-                  value={ussdMtnBenin}
-                  onChange={(e) => setUssdMtnBenin(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-amber-500 transition-colors text-sm font-mono"
                 />
               </div>
 
@@ -1058,14 +1002,14 @@ export function Admin() {
                   type="text"
                   value={waveNumber}
                   onChange={(e) => setWaveNumber(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm font-mono tracking-widest"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-amber-500 transition-colors text-sm font-mono tracking-widest"
                 />
               </div>
 
               <button 
                 onClick={handleUpdateSettings}
                 disabled={loading}
-                className="w-full bg-red-500 hover:bg-red-700 text-white py-3 rounded-xl font-medium transition-colors shadow-sm cursor-pointer mt-4"
+                className="w-full bg-amber-500 hover:bg-amber-700 text-white py-3 rounded-xl font-medium transition-colors shadow-sm cursor-pointer mt-4"
               >
                 Sauvegarder les paramètres
               </button>

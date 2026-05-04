@@ -18,29 +18,29 @@ export default defineConfig(({mode}) => {
           clientsClaim: true,
           skipWaiting: true
         },
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['favicon.ico', 'icon.svg', 'apple-touch-icon.png'],
         manifest: {
-          name: 'Qualcomm',
-          short_name: 'Qualcomm',
-          description: 'Qualcomm Platform',
-          theme_color: '#1e3a8a',
-          background_color: '#0f172a',
+          name: 'SoleilPower',
+          short_name: 'SoleilPower',
+          description: 'Plateforme Soleil-Power',
+          theme_color: '#f59e0b',
+          background_color: '#111111',
           display: 'standalone',
           icons: [
             {
-              src: 'https://i.imgur.com/awFyFRj.png',
+              src: '/icon.svg',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/svg+xml'
             },
             {
-              src: 'https://i.imgur.com/awFyFRj.png',
+              src: '/icon.svg',
               sizes: '512x512',
-              type: 'image/png'
+              type: 'image/svg+xml'
             },
             {
-              src: 'https://i.imgur.com/awFyFRj.png',
+              src: '/icon.svg',
               sizes: '512x512',
-              type: 'image/png',
+              type: 'image/svg+xml',
               purpose: 'any maskable'
             }
           ]

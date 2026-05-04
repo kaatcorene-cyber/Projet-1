@@ -1,25 +1,31 @@
+import express from "express";
+import { createServer as createViteServer } from "vite";
+import path from "path";
+import * as url from 'url';
 import TelegramBot from 'node-telegram-bot-api';
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
 
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
+
+// --- TELEGRAM BOT & CRON LOGIC ---
 const token = '8624832383:AAHhIgbdrbxl5wXl0ntUwM2jjXhTOZ015r0';
-let activeGroupId: string | null = null; // Will auto-detect
+let activeGroupId: string | null = null; 
 
 const bot = new TelegramBot(token, { polling: true });
 
 const userWarnings = new Map<number, number>();
-const ALLOWED_LINK = "petrolimex-ci.site/register";
+const ALLOWED_LINK = "sunpower-ci.site/register";
 
-let lastWelcomeMessageId: number | null = null; // Store the ID of the last welcome message
+let lastWelcomeMessageId: number | null = null; 
 
-console.log("🤖 Petrolimex Bot démarré avec succès ! En attente de messages...");
+console.log("🤖 Sunpower Server + Bot démarré avec succès ! En attente de messages...");
 
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from?.id;
   const userName = msg.from?.first_name || msg.from?.username || "Membre";
 
-  // Auto-detect group ID if we don't have one and this is a group chat
   if ((msg.chat.type === 'group' || msg.chat.type === 'supergroup') && !activeGroupId) {
     activeGroupId = chatId.toString();
     console.log(`📌 Groupe détecté et enregistré : ${activeGroupId}`);
@@ -28,7 +34,6 @@ bot.on('message', async (msg) => {
 
   if (!userId) return;
 
-  // Link checking logic
   if (msg.text || msg.caption) {
     const textToCheck = msg.text || msg.caption || "";
     const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?)/ig;
@@ -38,15 +43,15 @@ bot.on('message', async (msg) => {
       try {
         const chatMember = await bot.getChatMember(chatId, userId);
         if (chatMember.status === 'creator' || chatMember.status === 'administrator') {
-            return; // Admins are exempt
+            return; 
         }
       } catch (e: any) {
          console.warn("Impossible de vérifier le statut administratif.", e.message);
       }
 
       let containsBadLink = false;
-      for (const url of urls) {
-        if (!url.toLowerCase().includes(ALLOWED_LINK.toLowerCase())) {
+      for (const urlMatch of urls) {
+        if (!urlMatch.toLowerCase().includes(ALLOWED_LINK.toLowerCase())) {
           containsBadLink = true;
           break;
         }
@@ -54,21 +59,17 @@ bot.on('message', async (msg) => {
 
       if (containsBadLink) {
         try {
-          // 1. Delete message
           await bot.deleteMessage(chatId, msg.message_id);
           
-          // 2. Count warning
           let warnings = userWarnings.get(userId) || 0;
           warnings += 1;
           userWarnings.set(userId, warnings);
 
           if (warnings >= 3) {
-            // 3. Ban
             await bot.banChatMember(chatId, userId);
             await bot.sendMessage(chatId, `🚫 <b>Bannissement Automatique</b>\n\nL'utilisateur <a href="tg://user?id=${userId}">${userName}</a> a été définitivement banni du groupe pour avoir envoyé plus de 3 liens non autorisés.`, { parse_mode: 'HTML' });
             userWarnings.delete(userId);
           } else {
-            // Warn
             const warnMsg = await bot.sendMessage(chatId, `⚠️ <b>Avertissement pour <a href="tg://user?id=${userId}">${userName}</a> !</b>\n\nLes liens externes sont strictement interdits dans ce groupe, à l'exception du lien d'inscription officiel.\n\n🛑 <b>Avertissement ${warnings}/3</b> avant bannissement définitif du groupe.`, { parse_mode: 'HTML' });
             
             setTimeout(() => {
@@ -82,14 +83,13 @@ bot.on('message', async (msg) => {
     }
   }
 
-  // --- WELCOME MESSAGE LOGIC ---
   if (msg.new_chat_members && msg.new_chat_members.length > 0) {
     for (const newMember of msg.new_chat_members) {
-      if (newMember.is_bot) continue; // Ignore other bots
+      if (newMember.is_bot) continue; 
       
       const memberName = newMember.first_name || newMember.username || "nouveau membre";
       
-      const welcomeText = `Bienvenue sur la plateforme <b>PETROLIMEX</b>, <a href="tg://user?id=${newMember.id}">${memberName}</a> ! 🛢️
+      const welcomeText = `Bienvenue sur la plateforme <b>SUNPOWER</b>, <a href="tg://user?id=${newMember.id}">${memberName}</a> ! 🛢️
 
 Cher client fidèle,
 Nous sommes ravis de vous compter parmi nos membres. 🙌
@@ -111,20 +111,17 @@ Nous sommes ravis de vous compter parmi nos membres. 🙌
 • 🥈 <b>Niveau 2 :</b> 3%
 • 🥉 <b>Niveau 3 :</b> 2%
 
-🚀 <i><b>PETROLIMEX</b>, votre partenaire de confiance</i>`;
+🚀 <i><b>SUNPOWER</b>, votre partenaire de confiance</i>`;
 
       try {
-        // Delete previous welcome message if it exists
         if (lastWelcomeMessageId) {
           await bot.deleteMessage(chatId, lastWelcomeMessageId).catch(() => {});
         }
         
-        // Delete the system "User joined the group" message (Optional but cleaner)
         await bot.deleteMessage(chatId, msg.message_id).catch(() => {});
 
-        // Send the new welcome message
         const welcomeMsg = await bot.sendMessage(chatId, welcomeText, { parse_mode: 'HTML', disable_web_page_preview: true });
-        lastWelcomeMessageId = welcomeMsg.message_id; // Store to delete next time
+        lastWelcomeMessageId = welcomeMsg.message_id; 
       } catch (error: any) {
         console.error("Erreur d'envoi du message de bienvenue :", error.message);
       }
@@ -132,13 +129,11 @@ Nous sommes ravis de vous compter parmi nos membres. 🙌
   }
 });
 
-// --- DAILY GAINS BACKGROUND JOB ---
-// This runs every minute
-
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://ooekuyetmfgmpmwxtkpf.supabase.co';
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vZWt1eWV0bWZnbXBtd3h0a3BmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjA4MTA5OSwiZXhwIjoyMDkxNjU3MDk5fQ.yQAGVNueCiTZ57_wY8ArZs5H5OAo465AbtpUeGdrLhI';
 const supabase = createClient(SUPABASE_URL.replace('.supabase.com', '.supabase.co'), SUPABASE_KEY);
 
+// GAINS AUTO CRON (Runs every minute)
 cron.schedule('* * * * *', async () => {
   try {
     const now = new Date().getTime();
@@ -162,29 +157,25 @@ cron.schedule('* * * * *', async () => {
       const missingDays = totalDaysElapsed - lastPaidDaysElapsed;
       
       if (missingDays > 0) {
-        // Evaluate completion based on expected end
         let endT = inv.end_date ? new Date(inv.end_date).getTime() : null;
         let totalExpectedDays = endT ? Math.round((endT - start) / (24 * 60 * 60 * 1000)) : Infinity;
         
         let daysToAdd = missingDays;
         
-        // Prevent paying beyond the plan's end date
         if (lastPaidDaysElapsed + daysToAdd > totalExpectedDays) {
            daysToAdd = totalExpectedDays - lastPaidDaysElapsed;
         }
         
         if (daysToAdd > 0) {
-          // Calculate exact schedule to avoid skipping days
           let newLastPaidTime = lastPaid + daysToAdd * 24 * 60 * 60 * 1000;
           if (newLastPaidTime > now) newLastPaidTime = now;
           const newLastPaid = new Date(newLastPaidTime).toISOString();
           
           const amountToAdd = Number(inv.daily_yield) * daysToAdd;
 
-          // 1. Update investment last_paid_at
+          // Transactions array to run them sequentially and ensure they commit properly
           await supabase.from('investments').update({ last_paid_at: newLastPaid }).eq('id', inv.id);
           
-          // 2. Insert transaction
           await supabase.from('transactions').insert({
             user_id: inv.user_id,
             type: 'daily_gain',
@@ -193,7 +184,6 @@ cron.schedule('* * * * *', async () => {
             reference: `Gain du plan (x${daysToAdd}) (Auto)`
           });
           
-          // 3. Update user balance
           const { data: usr } = await supabase.from('users').select('balance').eq('id', inv.user_id).single();
           if (usr) {
             await supabase.from('users').update({ balance: Number(usr.balance) + amountToAdd }).eq('id', inv.user_id);
@@ -206,7 +196,7 @@ cron.schedule('* * * * *', async () => {
       if (inv.end_date) {
         const endT = new Date(inv.end_date).getTime();
         const totalExpectedDays = Math.round((endT - start) / (24 * 60 * 60 * 1000));
-        const currentLastPaid = Math.floor((new Date(inv.last_paid_at || inv.created_at).getTime() - start) / (24 * 60 * 60 * 1000)) + missingDays; // approximation
+        const currentLastPaid = Math.floor((new Date(inv.last_paid_at || inv.created_at).getTime() - start) / (24 * 60 * 60 * 1000)) + missingDays; 
         
         if (currentLastPaid >= totalExpectedDays || now >= endT) {
           await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
@@ -220,7 +210,6 @@ cron.schedule('* * * * *', async () => {
 });
 
 
-// Close group at 17:00 GMT
 cron.schedule('0 17 * * *', async () => {
   if (!activeGroupId) return;
   try {
@@ -237,7 +226,6 @@ cron.schedule('0 17 * * *', async () => {
   }
 }, { timezone: "UTC" });
 
-// Open group at 09:00 GMT
 cron.schedule('0 9 * * *', async () => {
   if (!activeGroupId) return;
   try {
@@ -254,3 +242,43 @@ cron.schedule('0 9 * * *', async () => {
     console.error("Erreur ouverture", e.message);
   }
 }, { timezone: "UTC" });
+
+// --- EXPRESS + VITE SERVER ---
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
+
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
+  // Block requests from qualcomm.site
+  app.use((req, res, next) => {
+    const host = req.get('host') || '';
+    const origin = req.get('origin') || '';
+    if (host.toLowerCase().includes('qualcomm.site') || origin.toLowerCase().includes('qualcomm.site')) {
+      return res.status(403).send('Accès refusé. Ce domaine a été désactivé.');
+    }
+    next();
+  });
+
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();
