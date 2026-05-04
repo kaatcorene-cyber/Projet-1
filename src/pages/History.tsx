@@ -15,7 +15,7 @@ export function History() {
 
     const intervalId = setInterval(() => {
       fetchData();
-    }, 5000);
+    }, 60000);
 
     return () => clearInterval(intervalId);
   }, [user]);
@@ -27,7 +27,8 @@ export function History() {
       .from('transactions')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
     
     if (txData) {
       setTransactions(txData);

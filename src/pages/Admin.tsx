@@ -72,7 +72,7 @@ export function Admin() {
     // Polling for live admin updates
     const intervalId = setInterval(() => {
       fetchData(false); // pass a flag to possibly NOT trigger loading state
-    }, 5000);
+    }, 60000);
 
     return () => clearInterval(intervalId);
   }, [user, navigate]);
@@ -81,11 +81,11 @@ export function Admin() {
     if (showLoading) setIsInitializing(true);
     try {
       const [txsRes, usersRes, settingsRes, invsRes, verifsRes] = await Promise.all([
-        supabase.from('transactions').select('*, users(first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
-        supabase.from('users').select('*').order('created_at', { ascending: false }),
+        supabase.from('transactions').select('*, users(first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }).limit(500),
+        supabase.from('users').select('*').order('created_at', { ascending: false }).limit(500),
         supabase.from('settings').select('*'),
-        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false }),
-        supabase.from('deposit_verifications').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false })
+        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false }).limit(500),
+        supabase.from('deposit_verifications').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false }).limit(100)
       ]);
 
       if (txsRes.data) setTransactions(txsRes.data);

@@ -32,7 +32,7 @@ export function Invest() {
     const intervalId = setInterval(() => {
       refreshUser();
       fetchPlans();
-    }, 5000);
+    }, 60000);
 
     return () => clearInterval(intervalId);
   }, []);

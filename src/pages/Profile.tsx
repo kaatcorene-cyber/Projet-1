@@ -154,7 +154,7 @@ export function Profile() {
     const intervalId = setInterval(() => {
       refreshUser();
       fetchData();
-    }, 15000);
+    }, 60000);
 
     return () => clearInterval(intervalId);
   }, [user?.id]);
