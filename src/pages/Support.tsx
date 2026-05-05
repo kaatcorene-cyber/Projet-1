@@ -315,7 +315,7 @@ export function Support() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col font-sans relative overflow-x-hidden">
       {/* Background FX */}
       <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
