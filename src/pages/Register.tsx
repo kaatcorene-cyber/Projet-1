@@ -70,7 +70,7 @@ export function Register() {
             password_hash: formData.password,
             referral_code: myReferralCode,
             referred_by: formData.referralCode ? formData.referralCode.trim().toUpperCase() : null,
-            balance: 100 // Signup bonus
+            balance: 500 // Signup bonus
           }
         ])
         .select()
@@ -92,7 +92,7 @@ export function Register() {
         const { error: txError } = await supabase.from('transactions').insert([{
           user_id: data.id,
           type: 'signup_bonus',
-          amount: 100,
+          amount: 500,
           status: 'completed'
         }]);
         if (txError) console.warn("Failed to insert bonus", txError);
@@ -122,7 +122,7 @@ export function Register() {
         </div>
         <h1 className="text-3xl font-black tracking-tight mb-3 text-white">Rejoindre le Réseau</h1>
         <p className="text-amber-500 font-bold text-xs uppercase tracking-widest bg-amber-500/10 px-4 py-2 rounded-full border border-amber-500/20">
-          Bonus de bienvenue : 100 FCFA offerts !
+          Bonus de bienvenue : 500 FCFA offerts !
         </p>
       </div>
 

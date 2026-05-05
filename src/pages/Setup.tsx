@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS users (
   last_name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   role TEXT DEFAULT 'user',
-  balance NUMERIC DEFAULT 100,
+  balance NUMERIC DEFAULT 500,
   referral_code TEXT UNIQUE,
   referred_by TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

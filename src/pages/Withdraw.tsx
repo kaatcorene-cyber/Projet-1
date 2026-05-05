@@ -39,8 +39,8 @@ export function Withdraw() {
     
     const numAmount = Number(amount);
     
-    if (numAmount < 1000) {
-      return setMessage({ type: 'error', text: 'Extraction minimum requise : 1 000 FCFA.' });
+    if (numAmount < 1500) {
+      return setMessage({ type: 'error', text: 'Extraction minimum requise : 1 500 FCFA.' });
     }
 
     if (Number(user.balance) < numAmount) {
@@ -134,9 +134,9 @@ export function Withdraw() {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-amber-500 placeholder-amber-500/30 outline-none"
-                  placeholder="1000"
+                  placeholder="1500"
                   required
-                  min="1000"
+                  min="1500"
                 />
               </div>
             </div>
@@ -180,7 +180,7 @@ export function Withdraw() {
             </div>
           </div>
 
-          {amount && Number(amount) >= 1000 && (
+          {amount && Number(amount) >= 1500 && (
             <p className="text-sm font-medium text-center text-gray-400 bg-[#111] border border-white/5 py-4 rounded-2xl shadow-inner">
               Rendement net estimé : <br/>
               <span className="font-black text-2xl text-amber-500 drop-shadow-md">{formatCurrency(Number(amount) * 0.80)}</span>

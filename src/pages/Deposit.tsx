@@ -46,8 +46,8 @@ export function Deposit() {
     e.preventDefault();
     if (!user) return;
     
-    if (Number(amount) < 1000) {
-      setError('Le montant minimum de financement est de 1000 FCFA.');
+    if (Number(amount) < 2500) {
+      setError('Le montant minimum de financement est de 2500 FCFA.');
       return;
     }
 
@@ -239,9 +239,9 @@ export function Deposit() {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="w-full bg-transparent border-none p-0 focus:ring-0 text-4xl font-black text-amber-500 placeholder-amber-500/30 outline-none"
-                  placeholder="1000"
+                  placeholder="2500"
                   required
-                  min="1000"
+                  min="2500"
                 />
                 <span className="text-gray-400 font-black ml-2 text-xl tracking-tighter">XOF</span>
               </div>
