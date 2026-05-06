@@ -82,8 +82,8 @@ export function Dashboard() {
     <div className="min-h-screen bg-[#0a0a0a] pb-24 font-sans text-gray-100 overflow-x-hidden">
       {/* Dynamic Background */}
       <div className="fixed inset-0 pointer-events-none">
-         <div className="absolute top-[-10%] left-[-10%] w-[300px] h-[300px] bg-amber-500/10 rounded-full blur-3xl"></div>
-         <div className="absolute top-[40%] right-[-10%] w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-3xl"></div>
+         <div className="absolute top-[-10%] left-[-10%] w-[300px] h-[300px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent"></div>
+         <div className="absolute top-[40%] right-[-10%] w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500/5 to-transparent"></div>
          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]"></div>
       </div>
 

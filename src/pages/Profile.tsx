@@ -58,7 +58,7 @@ function CountdownTimer({ activeInvestments }: { activeInvestments: any[] }) {
 
   return (
     <div className="bg-[#1a1a1a] rounded-3xl p-6 relative overflow-hidden flex items-center justify-between border border-white/10 shadow-2xl mt-6">
-      <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-500 rounded-full blur-2xl opacity-20 pointer-events-none"></div>
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/20 to-transparent pointer-events-none"></div>
       
       <div>
         <div className="flex items-center gap-2 mb-2">
@@ -75,7 +75,7 @@ function CountdownTimer({ activeInvestments }: { activeInvestments: any[] }) {
       </div>
 
       <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
-        <svg className="w-20 h-20 transform -rotate-90 drop-shadow-lg" viewBox="0 0 80 80">
+        <svg className="w-20 h-20 transform -rotate-90 " viewBox="0 0 80 80">
           <circle 
             className="text-white/5" 
             strokeWidth="6" 
@@ -86,7 +86,7 @@ function CountdownTimer({ activeInvestments }: { activeInvestments: any[] }) {
             cy="40" 
           />
           <circle 
-            className="text-amber-500 transition-all duration-1000 ease-linear shadow-[0_0_10px_rgba(245,158,11,0.5)]" 
+            className="text-amber-500 transition-all duration-1000 ease-linear " 
             strokeWidth="6" 
             strokeDasharray={circumference} 
             strokeDashoffset={strokeDashoffset}
@@ -183,12 +183,21 @@ export function Profile() {
     navigate('/login');
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
+        <p className="absolute mt-20 text-amber-500 font-bold animate-pulse">Chargement...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] pb-24 font-sans text-gray-100">
       {/* Dynamic Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-600/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3"></div>
+         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/5 to-transparent -translate-y-1/2 translate-x-1/3"></div>
+         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/5 to-transparent translate-y-1/3 -translate-x-1/3"></div>
          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]"></div>
       </div>
       

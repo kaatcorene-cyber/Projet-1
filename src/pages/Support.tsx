@@ -317,7 +317,7 @@ export function Support() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col font-sans relative overflow-x-hidden">
       {/* Background FX */}
-      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/5 to-transparent -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
 
       <header className="bg-[#111] px-5 pt-14 pb-4 shadow-2xl border-b border-white/5 sticky top-0 z-20 flex items-center gap-4">

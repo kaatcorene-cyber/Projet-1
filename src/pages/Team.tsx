@@ -159,8 +159,8 @@ export function Team() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-5 pt-16 pb-24 font-sans relative overflow-x-hidden">
       {/* Background FX */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/5 to-transparent translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
 
       <header className="flex justify-between items-end pb-6 border-b border-white/5 relative z-10">
@@ -177,7 +177,7 @@ export function Team() {
       <div className="mt-6 bg-[#111] border text-center border-white/5 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden z-10 group">
         <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none group-hover:bg-amber-500/20 transition-all duration-500"></div>
         <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-3 z-10 relative drop-shadow-sm">Énergie Récupérée (Parrainage)</p>
-        <h2 className="text-5xl font-black text-white tracking-tighter mb-5 z-10 relative drop-shadow-lg">{formatCurrency(teamStats.totalBonus)}</h2>
+        <h2 className="text-5xl font-black text-white tracking-tighter mb-5 z-10 relative ">{formatCurrency(teamStats.totalBonus)}</h2>
         
         <div className="inline-flex items-center justify-center px-4 py-2 bg-[#0a0a0a] text-amber-500 rounded-xl text-xs font-black border border-white/5 mb-8 z-10 relative gap-2 shadow-inner uppercase tracking-wider">
           <Network className="w-4 h-4 text-white" />
