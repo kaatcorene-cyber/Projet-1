@@ -241,6 +241,18 @@ export function Dashboard() {
              </div>
 
              <div className="mt-8">
+               <h2 className="text-xl font-black text-white mb-4">🏆 Nos Certifications</h2>
+               <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 mb-6">
+                 <p className="text-gray-300 font-medium leading-relaxed">
+                   Notre plateforme est <strong>certifiée et reconnue</strong> pour sa fiabilité et sa sécurité. Nous avons obtenu les certifications nécessaires pour vous garantir un environnement d'investissement sûr, transparent et pérenne. L'engagement envers la sécurité de vos fonds et de vos données est notre priorité absolue.
+                 </p>
+               </div>
+               <div className="rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl">
+                 <img src="https://i.imgur.com/Z1rI7N1.jpeg" alt="Certification SOLEIL-POWER" className="w-full h-auto object-cover" />
+               </div>
+             </div>
+
+             <div className="mt-8">
                <h2 className="text-xl font-black text-white mb-6">📸 Notre Galerie</h2>
                <div className="grid grid-cols-2 gap-3 mb-8">
                  <div className="rounded-[1.5rem] overflow-hidden border border-white/10 shadow-lg aspect-square">
