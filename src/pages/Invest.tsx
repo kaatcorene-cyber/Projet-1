@@ -157,31 +157,34 @@ export function Invest() {
             <p className="text-amber-500 font-bold tracking-widest text-xs uppercase animate-pulse">Synchronisation des panneaux...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 pb-safe">
+          <div className="space-y-5">
             {activePlans.length === 0 ? (
-              <div className="col-span-2 bg-[#111] rounded-2xl p-8 text-center border border-white/5">
+              <div className="bg-[#111] rounded-3xl p-8 text-center shadow-inner border border-white/5">
                 <p className="text-gray-500 font-medium text-sm">Réseau indisponible, réessayez plus tard.</p>
               </div>
             ) : (
               activePlans.map((plan, idx) => (
-                <div key={idx} className="bg-[#111] border border-white/10 rounded-2xl p-3 flex flex-col relative">
-                   <div className="flex justify-between items-start mb-2">
-                     <span className="text-white font-bold">{formatCurrency(plan.amount)}</span>
-                     <span className="text-gray-500 text-[10px] bg-white/5 px-1.5 py-0.5 rounded">{plan.duration || 60}J</span>
-                   </div>
-                   <div className="text-amber-500 text-xs font-medium mb-3">
-                     +{formatCurrency(plan.daily)}<span className="text-gray-500 text-[10px]">/jour</span>
-                   </div>
-                   <div className="text-gray-400 text-[10px] mb-3">
-                     Total: {formatCurrency(plan.total)}
-                   </div>
-                   <button
+                <div key={idx} className="bg-[#111] border border-white/5 rounded-2xl p-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-white/10 bg-[#1a1a1a]">
+                      <img src={plan.image || '/icon.svg'} alt="Générateur Solaire" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-white font-semibold text-base truncate">{formatCurrency(plan.amount)}</h3>
+                      <p className="text-amber-500 text-xs truncate">+{formatCurrency(plan.daily)} / jour</p>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 flex flex-col items-end gap-2">
+                    <p className="text-gray-500 text-[10px] font-medium">{plan.duration || 60} Jours</p>
+                    <button
                       onClick={() => handleInvest(plan, idx)}
                       disabled={loading === idx || (user?.balance || 0) < plan.amount}
-                      className="w-full py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 text-black bg-amber-500 hover:bg-amber-400 flex items-center justify-center mt-auto"
+                      className="px-4 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 text-black bg-amber-500 hover:bg-amber-400 flex items-center justify-center min-w-[90px]"
                     >
                       {loading === idx ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Investir'}
-                   </button>
+                    </button>
+                  </div>
                 </div>
               ))
             )}
