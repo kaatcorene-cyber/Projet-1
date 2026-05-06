@@ -112,8 +112,8 @@ export function Register() {
   return (
     <div className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-md mx-auto relative overflow-x-hidden bg-[#0a0a0a] text-gray-100 font-sans">
       {/* Background FX */}
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-600/10 rounded-full blur-[120px] translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-600/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
 
       <div className="text-center mb-8 flex flex-col items-center relative z-10">
         <div className="mb-6 flex items-center justify-center gap-1.5">

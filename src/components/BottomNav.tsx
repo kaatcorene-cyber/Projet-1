@@ -9,7 +9,8 @@ export function BottomNav() {
     { icon: LayoutDashboard, label: 'Accueil', path: '/dashboard' },
     { icon: TrendingUp, label: 'Générateurs', path: '/invest' },
     { icon: Network, label: 'Équipe', path: '/team' },
-    { icon: Clock, label: 'Activité', path: '/history' }
+    { icon: Clock, label: 'Activité', path: '/history' },
+    { icon: User, label: 'Profil', path: '/profile' },
   ];
 
   return (

@@ -5,6 +5,7 @@ import { BottomNav } from './BottomNav';
 import { LogOut, Settings, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { parseSafeDate } from '../lib/utils';
 
 export function Layout() {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -35,12 +36,12 @@ export function Layout() {
       const completedInvestments: string[] = [];
 
       for (const inv of investments) {
-          const startDate = new Date(inv.start_date || inv.created_at || Date.now()).getTime();
+          const startDate = parseSafeDate(inv.start_date || inv.created_at || Date.now());
           let effectiveNow = Date.now();
           let isExpired = false;
 
           if (inv.end_date) {
-            const endTimestamp = new Date(inv.end_date).getTime();
+            const endTimestamp = parseSafeDate(inv.end_date);
             if (Date.now() >= endTimestamp) {
               effectiveNow = endTimestamp;
               isExpired = true;
@@ -52,8 +53,11 @@ export function Layout() {
           const missedDays = daysElapsed - paidCount;
 
           if (missedDays > 0) {
-              totalToAdd += (inv.daily_yield * missedDays);
-              for (let i = 0; i < missedDays; i++) {
+              // Ensure we don't attempt to process an infinite number of days if bug happens
+              const boundedMissedDays = Math.min(missedDays, 1000);
+              
+              totalToAdd += (inv.daily_yield * boundedMissedDays);
+              for (let i = 0; i < boundedMissedDays; i++) {
                   newTransactions.push({
                       user_id: userId,
                       type: 'daily_gain',
