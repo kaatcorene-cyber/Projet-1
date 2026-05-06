@@ -252,12 +252,12 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  // Block requests from qualcomm.site
+  // Redirect old domain
   app.use((req, res, next) => {
     const host = req.get('host') || '';
     const origin = req.get('origin') || '';
     if (host.toLowerCase().includes('qualcomm.site') || origin.toLowerCase().includes('qualcomm.site')) {
-      return res.status(403).send('Accès refusé. Ce domaine a été désactivé.');
+      return res.redirect(301, 'https://soleil-power.xyz' + req.originalUrl);
     }
     next();
   });
