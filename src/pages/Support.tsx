@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Send, ImagePlus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, ImagePlus, Loader2, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
@@ -59,18 +59,16 @@ export function Support() {
   }, [verifState]);
 
   useEffect(() => {
-    // Fetch support link
     supabase.from('settings').select('*').eq('key', 'support_link').single().then(({ data }) => {
       if (data && data.value) setSupportLink(data.value);
     });
 
-    // Initial greeting
     if (messages.length === 0) {
       setMessages([
         {
           id: '1',
           sender: 'bot',
-          text: `Bonjour ${user?.first_name || ''} ! Je suis l'assistant QUALCOMM. Comment puis-je vous aider aujourd'hui ?`
+          text: `Bonjour ${user?.first_name || ''} ! Je suis le Service Client de SoleilPower. Comment puis-je vous assister aujourd'hui ?`
         }
       ]);
     }
@@ -111,97 +109,96 @@ export function Support() {
         responseText = `J'attends toujours une capture d'écran. Veuillez utiliser l'icône d'ajout d'image (🖼️) pour joindre la preuve de votre transfert.`;
       } else if (isDepositProblem) {
         setVerifState({ step: 'ask_name', name: '', amount: '', number: '' });
-        responseText = `Je suis navré d'apprendre que votre dépôt n'a pas été crédité. Ne vous inquiétez pas, notre système intelligent peut le vérifier immédiatement. Pour commencer, quel est votre nom complet ?`;
+        responseText = `Je comprends que votre dépôt n'a pas encore été crédité. Rassurez-vous, notre système d'analyse automatisé va procéder à une vérification immédiate. Pour des raisons de conformité, veuillez m'indiquer votre nom complet.`;
       } else if (lower.includes('télécharg') || lower.includes('install') || lower.includes('application') || lower.includes('appli')) {
         responseText = `
           <span>
-            Rien de plus facile que de <b>télécharger notre application</b> afin de l'avoir toujours à portée de main ! Il vous suffit d'appuyer sur l'icône ⬇️ (ou dans le menu de votre navigateur) pour lancer l'installation.<br/><br/>
-            <b>• Pour les utilisateurs d'Android :</b><br/>
-            Ouvrez le fichier une fois téléchargé, puis laissez-vous guider pour installer l'application de façon classique.<br/><br/>
-            <b>• Pour les utilisateurs d'iPhone (iOS) :</b><br/>
-            1. Appuyez sur l'icône de partage ou les 3 petits points situés en bas de votre navigateur.<br/>
-            2. Touchez l'option <b>« Partager »</b> dans le menu.<br/>
-            3. Choisissez ensuite <b>« Sur l'écran d'accueil »</b>.<br/>
-            4. Pour finir, appuyez sur <b>« Ajouter »</b> et le tour est joué !<br/><br/>
-            L'application apparaîtra comme par magie sur votre écran d'accueil.
+            L'installation de l'application <b>SoleilPower</b> s'effectue en quelques instants. Appuyez sur l'icône d'installation ⬇️ (ou accédez au menu de votre navigateur) pour procéder à l'ajout.<br/><br/>
+            <b>• Sur appareil Android :</b><br/>
+            Acceptez l'installation via la bannière qui s'affiche au bas de l'écran ou depuis le menu de votre navigateur (Ajouter à l'écran d'accueil).<br/><br/>
+            <b>• Sur appareil iOS (iPhone) :</b><br/>
+            1. Appuyez sur l'icône de partage située en bas de votre navigateur Safari.<br/>
+            2. Sélectionnez l'option <b>« Sur l'écran d'accueil »</b>.<br/>
+            3. Validez en appuyant sur <b>« Ajouter »</b>.<br/><br/>
+            L'application sera ainsi disponible directement sur votre écran d'accueil pour une gestion optimale de vos actifs solaires.
           </span>
         `;
       } else if (lower.includes('moov') || lower.includes('mtn')) {
         responseText = `
           <span>
-            Excellente question ! Voici les instructions détaillées pour effectuer votre <b>rechargement par Moov Money ou MTN Money</b> en toute simplicité :<br/><br/>
-            <b>Étape 1 :</b> Cliquez sur le bouton « Recharger » pour débuter l'opération.<br/>
-            <b>Étape 2 :</b> Optez pour le moyen de paiement « Moov Money ou MTN Money ».<br/>
-            <b>Étape 3 :</b> Renseignez soigneusement votre numéro de téléphone ainsi que le montant souhaité.<br/>
-            <b>Étape 4 :</b> Appuyez sur « Lancer le code USSD ». Il ne vous restera plus qu'à renseigner le montant à recharger directement sur l'invite de votre téléphone, puis à finaliser la transaction avec votre code secret Mobile Money.<br/><br/>
-            Et voilà, votre compte sera crédité en un clin d'œil !
+            Voici la procédure à suivre pour effectuer un dépôt via <b>Moov Money ou MTN Mobile Money</b> sur votre compte SoleilPower :<br/><br/>
+            <b>Étape 1 :</b> Accédez à la rubrique « Recharger » et sélectionnez l'opérateur concerné (Moov ou MTN).<br/>
+            <b>Étape 2 :</b> Saisissez le montant de votre investissement et votre numéro de téléphone de facturation.<br/>
+            <b>Étape 3 :</b> Cliquez sur « Lancer le code système ». Vous serez redirigé vers l'invite de commande de votre téléphone.<br/>
+            <b>Étape 4 :</b> Entrez manuellement le montant défini et confirmez à l'aide de votre code PIN personnel.<br/><br/>
+            Le système créditera vos fonds instantanément dès la validation du réseau opérateur.
           </span>
         `;
       } else if (lower.includes('wave')) {
         responseText = `
           <span>
-            C'est parfait ! Voici les informations nécessaires pour effectuer votre <b>rechargement par Wave</b> :<br/><br/>
-            <b>Étape 1 :</b> Rendez-vous sur l'option « Recharger ».<br/>
-            <b>Étape 2 :</b> Sélectionnez simplement le moyen de paiement « Wave ».<br/>
-            <b>Étape 3 :</b> Saisissez votre numéro de téléphone et indiquez le montant souhaité.<br/>
-            <b>Étape 4 :</b> Vous verrez apparaître un numéro de paiement : copiez-le et suivez les instructions à l'écran pour réaliser le transfert.<br/><br/>
-            Votre solde sera actualisé très rapidement, merci de votre confiance !
+            Voici le protocole de rechargement via <b>Wave</b> sur la plateforme SoleilPower :<br/><br/>
+            <b>Étape 1 :</b> Rendez-vous dans la section « Recharger » et choisissez l'option « Wave ».<br/>
+            <b>Étape 2 :</b> Renseignez le montant désiré et votre numéro de compte Wave.<br/>
+            <b>Étape 3 :</b> Un identifiant de paiement vous sera fourni. Copiez ce numéro.<br/>
+            <b>Étape 4 :</b> Effectuez l'envoi des fonds vers ce numéro directement depuis votre application Wave.<br/><br/>
+            Votre dépôt sera analysé et crédité sur votre solde d'investisseur de manière sécurisée et rapide.
           </span>
         `;
       } else if (lower.includes('attente') && (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement'))) {
-        responseText = "Je vois que vous êtes en attente de la validation de votre dépôt. Ne vous inquiétez pas, vos fonds sont en sécurité ! Les recharges s'effectuent généralement en 5 à 15 minutes. Si ce délai est légèrement dépassé, n'hésitez pas à transmettre votre reçu de paiement à notre service client sur WhatsApp pour une validation immédiate.";
+        responseText = "Nous comprenons que votre transaction est en attente de traitement. Soyez assuré que vos fonds sont sécurisés. Le délai de traitement interbancaire ou de l'opérateur varie généralement de 5 à 15 minutes. Si vos fonds ne sont toujours pas reflétés au-delà de ce délai, utilisez la commande « mon dépôt n'est pas crédité » pour procéder à une vérification avec votre reçu.";
       } else if ((lower.includes('étape') || lower.includes('etape') || lower.includes('comment')) && (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement') || lower.includes('payer'))) {
         responseText = `
           <span>
-            Avec grand plaisir ! Pour recharger votre compte, rendez-vous sur le bouton « Recharger » de votre menu. Nous prenons en charge <b>Wave</b>, <b>Moov Money</b> et <b>MTN Money</b>.<br/><br/>
-            <i>Si vous souhaitez le processus détaillé, merci de me confirmer l'opérateur que vous utilisez (par exemple : « comment recharger par Wave » ou « étapes pour MTN »).</i>
+            Pour créditer votre solde d'investisseur, accédez à l'onglet « Recharger » depuis votre interface principale. Nous supportons les réseaux <b>Wave</b>, <b>Moov Money</b> et <b>MTN Mobile Money</b>.<br/><br/>
+            <i>Si vous désirez consulter une procédure spécifique, veuillez indiquer le nom de votre opérateur (ex: « comment recharger par Wave », « procédure pour MTN »).</i>
           </span>
         `;
       } else if (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement') || lower.includes('payer')) {
-        responseText = "Souhaitez-vous des informations concernant un dépôt en attente, ou avez-vous besoin des étapes pour recharger votre compte ? Précisez-moi votre besoin pour que je puisse vous guider parfaitement.";
+        responseText = "Veuillez préciser l'objet de votre requête. Souhaitez-vous obtenir de l'assistance pour un dépôt en attente d'approbation ou avez-vous besoin d'orientations sur le processus de rechargement ?";
       } else if (lower.includes('attente') && (lower.includes('retrait') || lower.includes('retirer'))) {
-        responseText = "Je comprends tout à fait votre préoccupation concernant votre retrait en attente. Rassurez-vous, le traitement des retraits s'effectue sous 24 heures maximum, le temps pour notre équipe financière de sécuriser votre transaction. Veuillez patienter un peu, vos fonds seront bientôt disponibles sur votre compte !";
+        responseText = "Le statut de votre demande de retrait est actuellement en traitement. Nos administrateurs financiers valident chaque décaissement manuellement afin de garantir la sécurité des fonds. Ce processus peut prendre jusqu'à 24 heures ouvrées. Vos fonds vous parviendront sous peu.";
       } else if ((lower.includes('étape') || lower.includes('etape') || lower.includes('comment')) && (lower.includes('retrait') || lower.includes('retirer'))) {
         responseText = `
           <span>
-            C'est très simple ! Voici comment procéder pour effectuer votre retrait en toute sérénité :<br/><br/>
-            <b>Étape 1 :</b> Rendez-vous sur la page « Retrait » depuis votre tableau de bord.<br/>
-            <b>Étape 2 :</b> Indiquez le montant que vous souhaitez retirer.<br/>
-            <b>Étape 3 :</b> Choisissez votre moyen de paiement et saisissez votre numéro de téléphone.<br/>
-            <b>Étape 4 :</b> Entrez votre mot de passe pour confirmer puis validez votre demande.<br/><br/>
-            Ensuite, il ne vous reste plus qu'à patienter, notre équipe se charge du reste !
+            Afin de procéder au décaissement de vos rendements, veuillez suivre la démarche ci-dessous :<br/><br/>
+            <b>Étape 1 :</b> Cliquez sur la section « Retrait » de votre tableau de bord.<br/>
+            <b>Étape 2 :</b> Spécifiez le montant exact que vous désirez retirer de votre solde.<br/>
+            <b>Étape 3 :</b> Entrez le numéro de téléphone de réception ou de facturation adéquat.<br/>
+            <b>Étape 4 :</b> Confirmez la transaction à l'aide de votre mot de passe d'accès pour finaliser l'opération.<br/><br/>
+            Une fois validée, la requête est transmise à nos équipes pour libération des fonds.
           </span>
         `;
       } else if (lower.includes('retrait') || lower.includes('retirer')) {
-        responseText = "Avez-vous une question sur un retrait en attente ou souhaitez-vous connaître les étapes pour retirer vos fonds ? Je suis là pour vous orienter, n'hésitez pas à préciser votre demande.";
+        responseText = "Veuillez préciser votre demande concernant les décaissements. Voulez-vous faire un suivi sur un retrait en cours d'approbation ou avez-vous besoin d'indications sur la procédure complète ?";
       } else if (lower.includes('parrain') || lower.includes('invit') || lower.includes('équipe') || lower.includes('equipe') || lower.includes('affili')) {
         responseText = `
           <span>
-            C'est une excellente initiative de vouloir parrainer ! Voici comment procéder pour étendre votre équipe :<br/><br/>
-            <b>Étape 1 :</b> Rendez-vous dans la section « Équipe » située au bas de votre écran.<br/>
-            <b>Étape 2 :</b> Vous y découvrirez votre lien d'invitation personnel.<br/>
-            <b>Étape 3 :</b> Copiez-le simplement et partagez-le avec vos proches.<br/><br/>
-            Dès qu'ils s'inscriront et réaliseront leur premier investissement, vous serez récompensé avec d'excellentes commissions. À vous de jouer !
+            SoleilPower vous offre l'opportunité de multiplier vos sources de revenus grâce à notre programme d'affiliation structuré en réseau :<br/><br/>
+            <b>Étape 1 :</b> Naviguez vers l'onglet « Réseau » ou « Équipe » en bas de votre écran.<br/>
+            <b>Étape 2 :</b> Repérez et copiez votre lien de parrainage affilié unique.<br/>
+            <b>Étape 3 :</b> Diffusez-le à votre entourage ou vos collaborateurs.<br/><br/>
+            Lorsqu'un partenaire s'inscrit via votre lien et initialise un actif solaire, la plateforme vous octroiera automatiquement les commissions correspondantes selon notre stratégie de rendement de niveaux.
           </span>
         `;
-      } else if (lower.includes('investir') || lower.includes('plan') || lower.includes('vip')) {
+      } else if (lower.includes('investir') || lower.includes('plan') || lower.includes('vip') || lower.includes('générateur') || lower.includes('generateur')) {
         responseText = `
           <span>
-            Investir avec QUALCOMM est conçu pour être rapide et très intuitif ! Voici les étapes à suivre :<br/><br/>
-            <b>Étape 1 :</b> Assurez-vous d'avoir rechargé votre compte en utilisant le bouton « Recharger ».<br/>
-            <b>Étape 2 :</b> Accédez ensuite à la rubrique « Investir », facilement accessible en bas de votre écran.<br/>
-            <b>Étape 3 :</b> Parcourez nos offres et sélectionnez le plan qui s'aligne avec vos objectifs.<br/>
-            <b>Étape 4 :</b> Un simple clic sur « Investir » validera votre choix.<br/><br/>
-            Félicitations, tout est prêt ! Vos bénéfices seront dorénavant versés sur votre compte de manière automatique chaque jour.
+            L'acquisition d'un générateur solaire sur la plateforme SoleilPower est optimisée pour garantir une rentabilité efficace :<br/><br/>
+            <b>Étape 1 :</b> Vérifiez que votre solde d'intérêts a été rechargé conformément à la valeur de l'actif souhaité.<br/>
+            <b>Étape 2 :</b> Consultez la liste des générateurs disponibles dans la section « Générateurs » (Investir).<br/>
+            <b>Étape 3 :</b> Évaluez les rendements proposés pour chaque contrat et sélectionnez l'équipement solaire visé.<br/>
+            <b>Étape 4 :</b> Lancez le processus d'acquisition par le biais du bouton d'investissement.<br/><br/>
+            Une fois le contrat acté, la génération de vos intérêts débute instamment et les profits vous seront versés quotidiennement.
           </span>
         `;
       } else if (lower.includes('bonjour') || lower.includes('salut') || lower.includes('coucou')) {
-        responseText = "Bonjour ! Je suis ravi de vous assister. Comment puis-je vous aider aujourd'hui ? (Exemple: Comment investir ? Comment faire un retrait ?)";
+        responseText = "Bonjour ! Le Service Client SoleilPower est à votre écoute pour vous assister dans vos opérations. Souhaitez-vous des conseils sur un dépôt, un retrait ou un forfait d'investissement ?";
       } else {
         const finalLink = supportLink ? (supportLink.startsWith('http') ? supportLink : `https://${supportLink}`) : 'https://wa.me/2250574738155';
         responseText = `
           <span>
-            Je suis navré, je ne suis pas certain de bien comprendre votre demande. Pour vous offrir la meilleure assistance possible, je vous invite à échanger directement avec notre équipe d'assistance sur WhatsApp : <a href="${finalLink}" target="_blank" rel="noopener noreferrer" className="text-red-500 font-bold underline whitespace-nowrap">Cliquez ici pour discuter</a>
+            Je vous prie de m'excuser mais mon référentiel actuel ne me permet pas de traiter cette requête spécifiquement. Pour bénéficier d'un support approfondi de notre équipe technique ou financière, je vous encourage vivement à nous contacter via l'assistance WhatsApp officielle : <a href="${finalLink}" target="_blank" rel="noopener noreferrer" className="text-amber-500 font-bold underline whitespace-nowrap">Contacter un conseiller expert</a>
           </span>
         `;
       }
@@ -217,7 +214,6 @@ export function Support() {
     if (!file) return;
 
     if (verifState.step !== 'ask_receipt') {
-      // Allow upload anyway but don't do verification if they aren't in this step
       const botMsg: Message = { 
         id: Date.now().toString(), 
         sender: 'bot', 
@@ -251,26 +247,25 @@ export function Support() {
         
         const loweredRecipient = result.recipient.toLowerCase();
         if (!result.is_falsified) {
-          if (loweredRecipient.includes('0140814162') || loweredRecipient.includes('0595918513') || loweredRecipient.includes('qualcomm entreprise')) {
+          if (loweredRecipient.includes('0140814162') || loweredRecipient.includes('0595918513') || loweredRecipient.includes('soleil-power entreprise')) {
             isValid = true;
           }
         }
 
         const numericAmount = Number(verifState.amount.replace(/[^0-9]/g, ''));
         if (result.amount !== numericAmount) {
-           isValid = false; // Mismatch in amount declared vs found
+           isValid = false; 
         }
 
         const finalStatus = isValid ? 'valid' : 'rejected';
         
-        // Save to database
         if (user) {
            await supabase.from('deposit_verifications').insert({
              user_id: user.id,
              full_name: verifState.name,
              amount: numericAmount || result.amount,
              sender_number: verifState.number,
-             receipt_url: 'uploaded_via_chat', // Normally we would upload to storage, keeping placeholder
+             receipt_url: 'uploaded_via_chat', 
              status: finalStatus,
              ai_analysis: JSON.stringify(result)
            });
@@ -278,14 +273,12 @@ export function Support() {
            if (isValid) {
              const amt = numericAmount || result.amount;
              
-             // Refresh user current balance
              const { data: userData } = await supabase.from('users').select('balance').eq('id', user.id).single();
              if (userData) {
                 const newBalance = Number(userData.balance || 0) + amt;
                 
                 await supabase.from('users').update({ balance: newBalance }).eq('id', user.id);
                 
-                // Add an approved transaction
                 await supabase.from('transactions').insert({
                   user_id: user.id,
                   type: 'deposit',
@@ -318,72 +311,75 @@ export function Support() {
     };
     reader.readAsDataURL(file);
     
-    // reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      <header className="bg-white px-5 pt-14 pb-4 shadow-sm border-b border-gray-200 sticky top-0 z-10 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-900 active:bg-gray-100 transition-colors">
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col font-sans relative overflow-x-hidden">
+      {/* Background FX */}
+      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
+
+      <header className="bg-[#111] px-5 pt-14 pb-4 shadow-2xl border-b border-white/5 sticky top-0 z-20 flex items-center gap-4">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center text-white hover:bg-white/10 transition-colors border border-white/5 shadow-inner">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-lg font-black text-gray-900 tracking-tight">Support Qualcomm</h1>
-          <p className="text-xs text-green-500 font-bold flex items-center gap-1">
+          <h1 className="text-xl font-black text-white tracking-tight flex items-center gap-1.5"><Sun className="w-5 h-5 text-amber-500" /> Service Client</h1>
+          <p className="text-[10px] text-green-400 font-bold flex items-center gap-1 uppercase tracking-widest mt-0.5">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
             </span>
-            En ligne
+            Opérationnel
           </p>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-4 pb-24">
+      <div className="flex-1 overflow-y-auto p-5 space-y-5 pb-32 relative z-10 scrollbar-hide">
         <div className="flex justify-center mb-6">
-           <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Aujourd'hui</span>
+           <span className="text-[9px] uppercase font-bold text-gray-500 tracking-widest bg-[#111] px-3 py-1 rounded-full border border-white/5 shadow-inner">Historique des communications</span>
         </div>
         
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.sender === 'bot' && (
-              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2 shrink-0 mt-auto mb-1 border border-gray-100 shadow-sm relative overflow-hidden">
-                <img src="https://i.imgur.com/awFyFRj.png" alt="QA" className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
+              <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center mr-3 shrink-0 mt-auto mb-1 border border-amber-500/20 shadow-inner relative overflow-hidden">
+                <Sun className="w-5 h-5 text-amber-500" />
               </div>
             )}
             
-            <div className={`max-w-[85%] ${msg.sender === 'user' ? 'bg-red-600 text-white rounded-2xl rounded-tr-sm pl-4 pr-5 py-3 shadow-md' : 'bg-white border border-gray-100 text-gray-800 rounded-2xl rounded-tl-sm pl-5 pr-4 py-3 shadow-md'}`}>
+            <div className={`max-w-[85%] ${msg.sender === 'user' ? 'bg-amber-500 text-black rounded-[1.2rem] rounded-tr-sm pl-4 pr-5 py-3 shadow-[0_0_15px_rgba(245,158,11,0.15)] font-bold' : 'bg-[#111] border border-white/5 text-gray-300 rounded-[1.2rem] rounded-tl-sm pl-5 pr-4 py-3 shadow-xl'}`}>
               {msg.imageUrl && (
-                <img src={msg.imageUrl} alt="preuve" className="w-full max-w-[200px] rounded-lg mb-2 object-cover" />
+                <img src={msg.imageUrl} alt="preuve" className="w-full max-w-[200px] rounded-xl mb-3 object-cover shadow-md border border-white/10" />
               )}
               {msg.sender === 'user' ? (
-                <div className="text-[14px] leading-relaxed font-medium break-words">{msg.text}</div>
+                <div className="text-[14px] leading-relaxed break-words">{msg.text}</div>
               ) : (
-                <div className="text-[14px] leading-relaxed font-medium break-words" dangerouslySetInnerHTML={{ __html: msg.text }} />
+                <div className="text-[14px] leading-relaxed break-words font-medium" dangerouslySetInnerHTML={{ __html: msg.text }} />
               )}
             </div>
           </div>
         ))}
 
         {isTyping && (
-          <div className="flex justify-start animate-fade-in">
-            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2 shrink-0 mt-auto mb-1 border border-gray-100 shadow-sm relative overflow-hidden">
-              <img src="https://i.imgur.com/awFyFRj.png" alt="QA" className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
+          <div className="flex justify-start animate-fade-in mb-4">
+            <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center mr-3 shrink-0 mt-auto mb-1 border border-amber-500/20 shadow-inner relative overflow-hidden">
+              <Sun className="w-5 h-5 text-amber-500" />
             </div>
-            <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-4 shadow-md flex items-center gap-1.5 h-[46px]">
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+            <div className="bg-[#111] border border-white/5 rounded-[1.2rem] rounded-tl-sm px-5 py-4 shadow-xl flex items-center gap-1.5 h-[46px]">
+              <div className="w-1.5 h-1.5 bg-amber-500/50 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-1.5 h-1.5 bg-amber-500/70 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce"></div>
             </div>
           </div>
         )}
 
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <div className="bg-white border-t border-gray-200 p-4 sticky bottom-0 z-10 pb-8 cursor-pointer">
-        <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
+      <div className="bg-[#0a0a0a]/80 backdrop-blur-md border-t border-white/5 p-4 fixed bottom-0 left-0 right-0 z-20 pb-safe">
+        <form onSubmit={handleSendMessage} className="flex gap-2 items-center max-w-4xl mx-auto">
           <input 
             type="file" 
             accept="image/*" 
@@ -394,7 +390,7 @@ export function Support() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-12 h-12 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors shrink-0"
+            className="w-12 h-12 bg-[#111] text-gray-400 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors shrink-0 shadow-inner border border-white/5"
           >
             <ImagePlus className="w-5 h-5" />
           </button>
@@ -402,13 +398,13 @@ export function Support() {
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Écrivez votre question ici..."
-            className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-5 py-3 focus:outline-none focus:border-red-500 focus:bg-white transition-colors text-sm"
+            placeholder="Transmettre un message..."
+            className="flex-1 bg-[#111] border border-white/5 rounded-full px-5 py-3.5 focus:outline-none focus:border-amber-500/50 text-white transition-colors text-sm font-medium placeholder-gray-600 shadow-inner"
           />
           <button
             type="submit"
             disabled={!inputText.trim()}
-            className="w-12 h-12 bg-red-600 text-white rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300 disabled:text-gray-500 transition-all active:scale-95 shrink-0"
+            className="w-12 h-12 bg-amber-500 text-black rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-[#111] disabled:text-gray-600 transition-all active:scale-95 shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.2)] disabled:shadow-none"
           >
             <Send className="w-5 h-5" />
           </button>

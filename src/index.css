@@ -2,24 +2,32 @@
 
 @layer base {
   body {
-    @apply text-slate-900;
-    background: #ffffff;
-    background-size: 400% 400%;
-    animation: moveGradient 12s ease infinite;
+    @apply text-zinc-900 antialiased;
+    background-color: #FAFAFA;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.08) 0px, transparent 50%);
+    background-size: 100% 100%;
     background-attachment: fixed;
+    min-height: 100vh;
   }
 }
 
-@keyframes moveGradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+@layer utilities {
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl;
+  }
+  .sun-gradient {
+    @apply bg-gradient-to-br from-amber-400 to-amber-600 text-white;
+  }
+  .sun-text-gradient {
+    @apply bg-gradient-to-br from-amber-500 to-orange-600 bg-clip-text text-transparent;
+  }
 }
 
 @theme {
-  /* Theme settings for QUALCOMM (Red/White) */
-  --animate-fade-in: fade-in 0.3s ease-out forwards;
-  --animate-slide-up: slide-up 0.4s ease-out forwards;
+  --animate-fade-in: fade-in 0.4s ease-out forwards;
+  --animate-slide-up: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes fade-in {
@@ -28,6 +36,6 @@
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
