@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthState>()(
       }
     }),
     {
-      name: 'sunpower-auth'
+      name: 'qualcomm-auth'
     }
   )
 );

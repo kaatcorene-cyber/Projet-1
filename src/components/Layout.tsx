@@ -106,7 +106,7 @@ export function Layout() {
           {isInstallable && (
             <button 
               onClick={installPWA}
-              className="w-10 h-10 bg-amber-500 border border-amber-400 rounded-full flex items-center justify-center text-slate-900 shadow-sm hover:bg-amber-700 transition-colors animate-pulse"
+              className="w-10 h-10 bg-red-500 border border-red-400 rounded-full flex items-center justify-center text-slate-900 shadow-sm hover:bg-red-700 transition-colors animate-pulse"
               title="Télécharger l'Application"
             >
               <Download className="w-5 h-5" />
@@ -120,6 +120,12 @@ export function Layout() {
               <Settings className="w-5 h-5" />
             </button>
           )}
+          <button 
+            onClick={handleLogout}
+            className="w-10 h-10 bg-gray-100 border border-gray-200 rounded-full flex items-center justify-center text-red-600 shadow-sm hover:bg-gray-200 transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
 
         <Outlet />
