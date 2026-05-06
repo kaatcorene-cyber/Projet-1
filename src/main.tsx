@@ -8,7 +8,7 @@ const checkAndRender = () => {
   const hostname = window.location.hostname.toLowerCase();
   
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
-  const isPreview = hostname.endsWith('.run.app');
+  const isPreview = hostname.endsWith('.run.app') || hostname.endsWith('.vercel.app');
   const isAllowed = hostname === 'soleil-power.xyz' || hostname.endsWith('.soleil-power.xyz');
   
   const isBlocked = !isLocal && !isPreview && !isAllowed;
