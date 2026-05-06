@@ -18,8 +18,7 @@ export function Invest() {
   const { user, refreshUser } = useAuthStore();
   const { settingsCache, setSettingsCache } = useAppStore();
   
-  const [plans, setPlans] = useState<any[]>([]);
-  const [isInitializing, setIsInitializing] = useState(!settingsCache);
+  const [plans, setPlans] = useState<any[]>(DEFAULT_PLANS);
   const [loading, setLoading] = useState<number | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
@@ -63,7 +62,6 @@ export function Invest() {
     } else if (!settingsCache) {
       setPlans(DEFAULT_PLANS);
     }
-    setIsInitializing(false);
   };
 
   const activePlans = plans
@@ -148,65 +146,55 @@ export function Invest() {
           </div>
         )}
 
-        {isInitializing ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
-              <Sun className="w-6 h-6 text-amber-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        <div className="space-y-5">
+          {activePlans.length === 0 ? (
+            <div className="bg-[#111] rounded-3xl p-8 text-center shadow-inner border border-white/5">
+              <p className="text-gray-500 font-medium text-sm">Réseau indisponible, réessayez plus tard.</p>
             </div>
-            <p className="text-amber-500 font-bold tracking-widest text-xs uppercase animate-pulse">Synchronisation des panneaux...</p>
-          </div>
-        ) : (
-          <div className="space-y-5">
-            {activePlans.length === 0 ? (
-              <div className="bg-[#111] rounded-3xl p-8 text-center shadow-inner border border-white/5">
-                <p className="text-gray-500 font-medium text-sm">Réseau indisponible, réessayez plus tard.</p>
-              </div>
-            ) : (
-              activePlans.map((plan, idx) => (
-                <div key={idx} className="bg-[#111] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
-                  {/* Header */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-white/10 bg-[#1a1a1a]">
-                      <img src={plan.image || '/icon.svg'} alt="Générateur Solaire" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-white font-semibold text-lg">{formatCurrency(plan.amount)}</h3>
-                      <p className="text-gray-400 text-sm">Générateur Solaire</p>
-                    </div>
+          ) : (
+            activePlans.map((plan, idx) => (
+              <div key={idx} className="bg-[#111] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+                {/* Header */}
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-white/10 bg-[#1a1a1a]">
+                    <img src={plan.image || '/icon.svg'} alt="Générateur Solaire" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
-
-                  {/* Stats - minimal */}
-                  <div className="bg-[#1a1a1a] rounded-xl p-3 flex justify-between items-center border border-white/5">
-                    <div>
-                       <p className="text-gray-500 text-xs mb-0.5">Quotidien</p>
-                       <p className="text-amber-500 font-semibold">{formatCurrency(plan.daily)}</p>
-                    </div>
-                    <div className="w-px h-8 bg-white/10"></div>
-                    <div className="text-center">
-                       <p className="text-gray-500 text-xs mb-0.5">Total</p>
-                       <p className="text-white font-semibold">{formatCurrency(plan.total)}</p>
-                    </div>
-                    <div className="w-px h-8 bg-white/10"></div>
-                    <div className="text-right">
-                       <p className="text-gray-500 text-xs mb-0.5">Durée</p>
-                       <p className="text-white font-semibold">{plan.duration || 60} Jours</p>
-                    </div>
+                  <div className="flex-1">
+                    <h3 className="text-white font-semibold text-lg">{formatCurrency(plan.amount)}</h3>
+                    <p className="text-gray-400 text-sm">Générateur Solaire</p>
                   </div>
-
-                  {/* Action */}
-                  <button
-                    onClick={() => handleInvest(plan, idx)}
-                    disabled={loading === idx || (user?.balance || 0) < plan.amount}
-                    className="w-full py-3 rounded-xl font-medium transition-colors disabled:opacity-50 text-black bg-amber-500 hover:bg-amber-400 flex justify-center items-center"
-                  >
-                    {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Investir'}
-                  </button>
                 </div>
-              ))
-            )}
-          </div>
-        )}
+
+                {/* Stats - minimal */}
+                <div className="bg-[#1a1a1a] rounded-xl p-3 flex justify-between items-center border border-white/5">
+                  <div>
+                     <p className="text-gray-500 text-xs mb-0.5">Quotidien</p>
+                     <p className="text-amber-500 font-semibold">{formatCurrency(plan.daily)}</p>
+                  </div>
+                  <div className="w-px h-8 bg-white/10"></div>
+                  <div className="text-center">
+                     <p className="text-gray-500 text-xs mb-0.5">Total</p>
+                     <p className="text-white font-semibold">{formatCurrency(plan.total)}</p>
+                  </div>
+                  <div className="w-px h-8 bg-white/10"></div>
+                  <div className="text-right">
+                     <p className="text-gray-500 text-xs mb-0.5">Durée</p>
+                     <p className="text-white font-semibold">{plan.duration || 60} Jours</p>
+                  </div>
+                </div>
+
+                {/* Action */}
+                <button
+                  onClick={() => handleInvest(plan, idx)}
+                  disabled={loading === idx || (user?.balance || 0) < plan.amount}
+                  className="w-full py-3 rounded-xl font-medium transition-colors disabled:opacity-50 text-black bg-amber-500 hover:bg-amber-400 flex justify-center items-center"
+                >
+                  {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Investir'}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

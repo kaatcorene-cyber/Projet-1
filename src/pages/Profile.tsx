@@ -124,6 +124,7 @@ export function Profile() {
       setDailyGain(totalDaily);
     }
     if (settingsCache) applySettings(settingsCache);
+    if (settingsCache && investmentsCache) setIsLoading(false);
     
     fetchData();
 
