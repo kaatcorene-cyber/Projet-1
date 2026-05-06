@@ -157,63 +157,31 @@ export function Invest() {
             <p className="text-amber-500 font-bold tracking-widest text-xs uppercase animate-pulse">Synchronisation des panneaux...</p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-3 pb-safe">
             {activePlans.length === 0 ? (
-              <div className="bg-[#111] rounded-3xl p-8 text-center shadow-inner border border-white/5">
+              <div className="col-span-2 bg-[#111] rounded-2xl p-8 text-center border border-white/5">
                 <p className="text-gray-500 font-medium text-sm">Réseau indisponible, réessayez plus tard.</p>
               </div>
             ) : (
               activePlans.map((plan, idx) => (
-                <div key={idx} className="bg-[#111] border border-white/5 rounded-[2rem] overflow-hidden shadow-2xl relative transition-all hover:border-amber-500/30 group flex flex-col">
-                  {/* Header Image Full Width */}
-                  <div className="w-full h-36 relative overflow-hidden">
-                     <img src={plan.image || '/icon.svg'} alt="Panneau Solaire" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
-                     <div className="absolute inset-0 bg-gradient-to-t from-[#111] via-[#111]/30 to-transparent z-10"></div>
-                     <div className="absolute top-3 left-3 z-20 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/10 flex items-center gap-1.5 shadow-lg">
-                       <img src="/icon.svg" className="w-4 h-4 object-contain" alt="Logo" />
-                       <span className="text-[10px] font-bold text-white uppercase tracking-wider">SoleilPower</span>
-                     </div>
-                     <div className="absolute bottom-3 right-3 z-20">
-                        <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 backdrop-blur-md rounded-xl px-2.5 py-1 border border-amber-500/20 shadow-inner flex items-center gap-1 uppercase tracking-widest">
-                          <BatteryCharging className="w-3 h-3" />
-                          {plan.duration || 60} Jrs
-                        </span>
-                     </div>
-                  </div>
-
-                  <div className="p-5 pt-2 flex-col relative z-20">
-                     <div className="flex justify-between items-start mb-4">
-                       <div>
-                          <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-1 flex items-center gap-1">
-                            <PanelTop className="w-3 h-3 text-amber-500" />
-                            Prix du Générateur
-                          </p>
-                          <p className="text-3xl font-black text-white tracking-tighter drop-shadow-md">{formatCurrency(plan.amount)}</p>
-                       </div>
-                     </div>
-                     
-                     <div className="grid grid-cols-2 gap-3 mb-5">
-                       <div className="bg-[#1a1a1a] p-3 rounded-2xl border border-white/5 shadow-inner">
-                         <p className="text-gray-500 text-[9px] uppercase font-bold tracking-widest mb-0.5 flex items-center gap-1">
-                           <Zap className="w-3 h-3 text-amber-500" />
-                           Production / Jour
-                         </p>
-                         <p className="text-lg font-black text-amber-500">{formatCurrency(plan.daily)}</p>
-                       </div>
-                       <div className="bg-[#1a1a1a] p-3 rounded-2xl border border-white/5 shadow-inner text-right">
-                         <p className="text-gray-500 text-[9px] uppercase font-bold tracking-widest mb-0.5">Capacité Totale</p>
-                         <p className="text-lg font-black text-white">{formatCurrency(plan.total)}</p>
-                       </div>
-                     </div>
-                     
-                     <button
-                       onClick={() => handleInvest(plan, idx)}
-                       disabled={loading === idx || (user?.balance || 0) < plan.amount}
-                       className="w-full py-4 rounded-xl font-black transition-all disabled:opacity-50 text-black bg-amber-500 hover:bg-amber-400 flex justify-center items-center shadow-[0_0_20px_rgba(245,158,11,0.2)] active:scale-[0.98]"
-                     >
-                       {loading === idx ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Acheter le Générateur'}
-                     </button>
-                  </div>
+                <div key={idx} className="bg-[#111] border border-white/10 rounded-2xl p-3 flex flex-col relative">
+                   <div className="flex justify-between items-start mb-2">
+                     <span className="text-white font-bold">{formatCurrency(plan.amount)}</span>
+                     <span className="text-gray-500 text-[10px] bg-white/5 px-1.5 py-0.5 rounded">{plan.duration || 60}J</span>
+                   </div>
+                   <div className="text-amber-500 text-xs font-medium mb-3">
+                     +{formatCurrency(plan.daily)}<span className="text-gray-500 text-[10px]">/jour</span>
+                   </div>
+                   <div className="text-gray-400 text-[10px] mb-3">
+                     Total: {formatCurrency(plan.total)}
+                   </div>
+                   <button
+                      onClick={() => handleInvest(plan, idx)}
+                      disabled={loading === idx || (user?.balance || 0) < plan.amount}
+                      className="w-full py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 text-black bg-amber-500 hover:bg-amber-400 flex items-center justify-center mt-auto"
+                    >
+                      {loading === idx ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Investir'}
+                   </button>
                 </div>
               ))
             )}

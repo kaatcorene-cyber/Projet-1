@@ -115,7 +115,6 @@ export function Profile() {
   const [dailyGain, setDailyGain] = useState(0);
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
-  const [isLoading, setIsLoading] = useState(!settingsCache || !investmentsCache);
 
   useEffect(() => {
     refreshUser();
@@ -152,7 +151,7 @@ export function Profile() {
 
   const fetchData = async () => {
     const currentUser = useAuthStore.getState().user;
-    if (!currentUser) return setIsLoading(false);
+    if (!currentUser) return;
     try {
       const [invRes, settingsRes] = await Promise.all([
         supabase.from('investments').select('*').eq('user_id', currentUser.id).eq('status', 'active'),
@@ -169,8 +168,6 @@ export function Profile() {
       }
     } catch (err) {
       console.error(err);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -182,15 +179,6 @@ export function Profile() {
     setUser(null);
     navigate('/login');
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
-        <p className="absolute mt-20 text-amber-500 font-bold animate-pulse">Chargement...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] pb-24 font-sans text-gray-100">
