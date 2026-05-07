@@ -153,15 +153,16 @@ export function Deposit() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 p-5 pt-16 pb-24 font-sans relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-5 pt-16 pb-24 font-sans relative overflow-x-hidden">
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
 
       <header className="flex items-center gap-4 mb-8 relative z-10">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-[#111] border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-[#1a1a1a] transition-colors shadow-lg shadow-black/50">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Financement</h1>
+           <h1 className="text-2xl font-black text-white tracking-tight">Financement</h1>
            <p className="text-amber-500 text-[10px] uppercase font-bold tracking-widest">Recharger le capital</p>
         </div>
       </header>
@@ -215,12 +216,21 @@ export function Deposit() {
                      <div className="bg-gray-50 border border-gray-200 p-6 rounded-2xl flex flex-col items-center justify-center shadow-inner overflow-hidden">
                         <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Soleil-Power</p>
                         <p className="text-3xl font-black text-gray-900 tracking-widest leading-none mb-5">{getMethodNum()}</p>
-                        <button 
-                          onClick={() => handleCopy(getMethodNum())}
-                          className="flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-100 rounded-xl text-black border border-gray-200 transition-colors shadow-sm active:scale-95"
-                        >
-                          {copied ? <><CheckCircle2 className="w-5 h-5 text-green-500" /> Numéro copié</> : <><Copy className="w-5 h-5" /> Copier le numéro</>}
-                        </button>
+                        <div className="w-full space-y-3">
+                          <button 
+                            onClick={() => handleCopy(getMethodNum())}
+                            className="flex items-center justify-center gap-2 w-full py-3 bg-white hover:bg-gray-100 rounded-xl text-black border border-gray-200 transition-colors shadow-sm active:scale-95"
+                          >
+                            {copied ? <><CheckCircle2 className="w-5 h-5 text-green-500" /> Numéro copié</> : <><Copy className="w-5 h-5" /> Copier le numéro</>}
+                          </button>
+                          
+                          {ussdCode && (
+                            <a href={`tel:${ussdCode.replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-3 text-sm font-black rounded-xl transition-all shadow-sm active:scale-95 ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#ffe066] text-black' : 'bg-[#FF7900] hover:bg-[#ff9433] text-white'}`}>
+                              <Phone className="w-4 h-4" />
+                              Payer
+                            </a>
+                          )}
+                        </div>
                      </div>
                    </div>
                    
@@ -255,7 +265,7 @@ export function Deposit() {
                         <p className="text-3xl font-black text-[#1C3FB7] tracking-widest leading-none mb-5">{getMethodNum()}</p>
                         <button 
                           onClick={() => handleCopy(getMethodNum())}
-                          className="flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-100 rounded-xl text-[#1C3FB7] border border-gray-200 transition-colors shadow-sm active:scale-95"
+                          className="flex items-center justify-center gap-2 w-full py-3 bg-white hover:bg-gray-100 rounded-xl text-[#1C3FB7] border border-gray-200 transition-colors shadow-sm active:scale-95"
                         >
                           {copied ? <><CheckCircle2 className="w-5 h-5 text-green-500" /> Numéro copié</> : <><Copy className="w-5 h-5" /> Copier le numéro</>}
                         </button>
@@ -272,60 +282,60 @@ export function Deposit() {
          </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between mb-2 relative overflow-hidden">
+          <div className="bg-[#111] p-5 rounded-3xl shadow-2xl border border-white/5 flex items-center justify-between mb-2 relative overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent -mr-16 -mt-16"></div>
              <div>
                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 shadow-sm">Puissance Actuelle</p>
-               <p className="text-2xl font-black text-gray-900 tracking-tight">{formatCurrency(user?.balance || 0)}</p>
+               <p className="text-2xl font-black text-white tracking-tight">{formatCurrency(user?.balance || 0)}</p>
              </div>
-             <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center shrink-0 border border-amber-100 shadow-inner">
+             <div className="w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center shrink-0 border border-amber-500/20 shadow-inner">
                <Wallet className="w-7 h-7 text-amber-500" />
              </div>
           </div>
 
           {error && (
-            <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-bold flex items-center gap-2 animate-in fade-in zoom-in duration-200">
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-bold flex items-center gap-2 animate-in fade-in zoom-in duration-200">
               <Info className="w-5 h-5 shrink-0" />
               {error}
             </div>
           )}
 
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
+          <div className="bg-[#111] rounded-3xl border border-white/5 shadow-2xl overflow-hidden">
              
-             <div className="px-5 py-4 border-b border-gray-50">
+             <div className="px-5 py-4 border-b border-white/5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Moyen de paiement ({country})</label>
               <select
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
-                className="w-full bg-transparent border-none p-0 focus:ring-0 text-xl font-black text-gray-900 mt-1 appearance-none outline-none"
+                className="w-full bg-transparent border-none p-0 focus:ring-0 text-xl font-black text-white mt-1 appearance-none outline-none"
                 required
               >
                 {allowedMethods.map(m => (
-                  <option key={m.id} value={m.id} className="bg-white text-gray-900">{m.label}</option>
+                  <option key={m.id} value={m.id} className="bg-[#111] text-white">{m.label}</option>
                 ))}
               </select>
             </div>
 
-            <div className="px-5 py-4 border-b border-gray-50">
+            <div className="px-5 py-4 border-b border-white/5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Numéro de source</label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-transparent border-none p-0 focus:ring-0 text-xl font-black text-gray-900 placeholder-gray-300 mt-1 outline-none tracking-wider"
+                className="w-full bg-transparent border-none p-0 focus:ring-0 text-xl font-black text-white placeholder-gray-600 mt-1 outline-none tracking-wider"
                 placeholder="Numéro du compte"
                 required
               />
             </div>
             
-            <div className="px-5 py-5 bg-gray-50">
+            <div className="px-5 py-5 bg-[#0a0a0a]/50">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Volume à injecter</label>
               <div className="flex items-center mt-2">
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-4xl font-black text-amber-500 placeholder-amber-200 outline-none"
+                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-4xl font-black text-amber-500 placeholder-amber-500/30 outline-none"
                   placeholder="2500"
                   required
                   min="2500"
