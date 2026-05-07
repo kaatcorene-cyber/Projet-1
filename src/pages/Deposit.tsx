@@ -22,7 +22,7 @@ export function Deposit() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [phone, setPhone] = useState('');
-  const country = user?.country || "Cote d'Ivoire";
+  const [country, setCountry] = useState<string>(user?.country || "Cote d'Ivoire");
   const [method, setMethod] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -295,9 +295,25 @@ export function Deposit() {
           )}
 
           <div className="bg-[#111] rounded-3xl border border-white/5 shadow-2xl overflow-hidden">
-             
              <div className="px-5 py-4 border-b border-white/5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Moyen de paiement ({country})</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Pays d'opération</label>
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="w-full bg-transparent border-none p-0 focus:ring-0 text-xl font-black text-white mt-1 appearance-none outline-none"
+                required
+              >
+                <option value="Cote d'Ivoire">Côte d'Ivoire</option>
+                <option value="Bénin">Bénin</option>
+                <option value="Togo">Togo</option>
+                <option value="Burkina Faso">Burkina Faso</option>
+                <option value="Niger">Niger</option>
+                <option value="Mali">Mali</option>
+                <option value="Sénégal">Sénégal</option>
+              </select>
+            </div>
+             <div className="px-5 py-4 border-b border-white/5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Moyen de paiement</label>
               <select
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
