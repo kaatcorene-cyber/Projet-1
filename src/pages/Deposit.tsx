@@ -199,6 +199,12 @@ export function Deposit() {
                  </div>
                  
                  <div className="space-y-5 text-sm text-gray-700 font-medium">
+                   {country !== "Cote d'Ivoire" && (
+                     <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl text-sm mb-2 shadow-sm">
+                       <p className="font-bold mb-1 flex items-center gap-1.5"><Info className="w-4 h-4 text-amber-600" /> Transfert International</p>
+                       <p>Ceci est un transfert international vers la Côte d'Ivoire. Suivez les instructions de votre opérateur pour transférer vers un compte {getMethodName()} Ivoirien.</p>
+                     </div>
+                   )}
                    <div className="flex items-start gap-4">
                      <div className="bg-gray-100 text-gray-600 w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold mt-0.5">1</div>
                      <div className="w-full">
@@ -231,6 +237,12 @@ export function Deposit() {
                  </div>
                  
                  <div className="space-y-5 text-sm text-gray-700 font-medium">
+                   {country !== "Cote d'Ivoire" && (
+                     <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl text-sm mb-2 shadow-sm">
+                       <p className="font-bold mb-1 flex items-center gap-1.5"><Info className="w-4 h-4 text-amber-600" /> Transfert International</p>
+                       <p>Ceci est un transfert international vers la Côte d'Ivoire. Suivez les instructions de l'application Wave pour transférer vers ce compte Ivoirien.</p>
+                     </div>
+                   )}
                    <div className="flex items-start gap-4">
                      <div className="bg-[#1C3FB7]/10 text-[#1C3FB7] w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold mt-0.5">1</div>
                      <p className="pt-1">Ouvrez votre application Wave.</p>
