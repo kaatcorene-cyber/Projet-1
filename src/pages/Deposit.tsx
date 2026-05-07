@@ -170,64 +170,64 @@ export function Deposit() {
       <div className="relative z-10 max-w-lg mx-auto">
       {step === 2 ? (
          <div className="bg-white rounded-[2rem] p-6 text-center shadow-xl border border-gray-100 mt-4 animate-in fade-in duration-300">
-           <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-green-100">
-             <CheckCircle2 className="w-12 h-12 text-green-500" />
+           <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-green-100">
+             <CheckCircle2 className="w-8 h-8 text-green-500" />
            </div>
            
-           <h2 className="text-2xl font-black text-gray-900 mb-2">Demande Validée</h2>
-           <p className="text-gray-500 mb-6 font-medium text-sm">Le réseau a enregistré votre demande d'ajout de <span className="text-amber-500 font-black">{formatCurrency(Number(amount))}</span>.</p>
+           <h2 className="text-xl font-black text-gray-900 mb-1">Demande Validée</h2>
+           <p className="text-gray-500 mb-4 font-medium text-xs">Alerte de versement de <span className="text-amber-500 font-black">{formatCurrency(Number(amount))}</span> enregistrée.</p>
            
-           <div className="w-full h-px bg-gray-100 mb-6"></div>
+           <div className="w-full h-px bg-gray-100 mb-4"></div>
 
            {(method === 'moov' || method === 'mtn') && ussdCode && country === "Cote d'Ivoire" && (
-              <div className="mb-8 text-left">
-                <p className="text-sm font-bold text-gray-900 mb-3 text-center uppercase tracking-wider flex items-center justify-center gap-2">
-                   <Zap className="w-4 h-4 text-amber-500" />
+              <div className="mb-4 text-left">
+                <p className="text-xs font-bold text-gray-900 mb-2 text-center uppercase tracking-wider flex items-center justify-center gap-1.5">
+                   <Zap className="w-3 h-3 text-amber-500" />
                    Action Sécurisée
                 </p>
-                <p className="text-sm text-gray-500 mb-4 text-center">Le code a été exécuté sur votre téléphone. Si rien ne se passe, relancez ci-dessous :</p>
+                <p className="text-xs text-gray-500 mb-3 text-center">Le code a été exécuté. Si rien ne se passe, relancez :</p>
                 
-                <a href={`tel:${ussdCode.replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-4 font-black rounded-xl mb-4 transition-all shadow-md active:scale-95 ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#ffe066] text-black' : 'bg-[#FF7900] hover:bg-[#ff9433] text-white'}`}>
-                  <Phone className="w-5 h-5" />
+                <a href={`tel:${ussdCode.replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-3 text-sm font-black rounded-xl mb-4 transition-all shadow-md active:scale-95 ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#ffe066] text-black' : 'bg-[#FF7900] hover:bg-[#ff9433] text-white'}`}>
+                  <Phone className="w-4 h-4" />
                   Initialiser le Transfert
                 </a>
               </div>
            )}
 
            {((method === 'moov' || method === 'mtn') && (!ussdCode || country !== "Cote d'Ivoire")) && (
-              <div className="mb-8 text-left bg-white border border-gray-100 p-6 rounded-[1.5rem] shadow-sm">
-                 <div className="flex items-center justify-center gap-3 mb-6">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${method === 'mtn' ? 'bg-[#FFCC00]' : 'bg-[#FF7900]'}`}>
-                      <Wallet className="w-5 h-5 text-black" />
+              <div className="mb-4 text-left bg-white border border-gray-100 p-4 rounded-[1.5rem] shadow-sm">
+                 <div className="flex items-center justify-center gap-3 mb-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm ${method === 'mtn' ? 'bg-[#FFCC00]' : 'bg-[#FF7900]'}`}>
+                      <Wallet className="w-4 h-4 text-black" />
                     </div>
-                    <p className="font-bold text-gray-900 text-lg">Paiement {getMethodName()}</p>
+                    <p className="font-bold text-gray-900 text-md">Paiement {getMethodName()}</p>
                  </div>
                  
-                 <div className="space-y-6 text-sm text-gray-700 font-medium">
+                 <div className="space-y-4 text-sm text-gray-700 font-medium">
                    {country !== "Cote d'Ivoire" && (
-                     <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl text-sm shadow-sm text-center">
-                       <p className="font-bold mb-1 flex items-center justify-center gap-1.5"><Info className="w-4 h-4 text-amber-600" /> Transfert International</p>
+                     <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs shadow-sm text-center">
+                       <p className="font-bold mb-1 flex items-center justify-center gap-1.5"><Info className="w-3 h-3 text-amber-600" /> Transfert International</p>
                        <p>Ceci est un transfert vers la Côte d'Ivoire. <strong>Veuillez saisir le numéro et le montant manuellement.</strong></p>
                      </div>
                    )}
                    
                    <div className="w-full text-center">
-                     <p className="mb-4">Copiez le numéro ci-dessous pour votre transfert de <strong className="text-black text-lg">{formatCurrency(Number(amount))}</strong> :</p>
-                     <div className="bg-gray-50 border border-gray-200 p-6 rounded-2xl flex flex-col items-center justify-center shadow-inner overflow-hidden">
-                        <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Soleil-Power</p>
-                        <p className="text-3xl font-black text-gray-900 tracking-widest leading-none mb-5">{getMethodNum()}</p>
-                        <div className="w-full space-y-3">
+                     <p className="mb-2 text-xs">Copiez le numéro ci-dessous pour votre transfert de <strong className="text-black text-sm">{formatCurrency(Number(amount))}</strong> :</p>
+                     <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl flex flex-col items-center justify-center shadow-inner overflow-hidden">
+                        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Soleil-Power</p>
+                        <p className="text-2xl font-black text-gray-900 tracking-wider leading-none mb-3 break-all">{getMethodNum()}</p>
+                        <div className="w-full space-y-2">
                           <button 
                             onClick={() => handleCopy(getMethodNum())}
-                            className="flex items-center justify-center gap-2 w-full py-3 bg-white hover:bg-gray-100 rounded-xl text-black border border-gray-200 transition-colors shadow-sm active:scale-95"
+                            className="flex items-center justify-center gap-2 w-full py-2 bg-white hover:bg-gray-100 rounded-lg text-black border border-gray-200 transition-colors shadow-sm active:scale-95 text-xs font-bold"
                           >
-                            {copied ? <><CheckCircle2 className="w-5 h-5 text-green-500" /> Numéro copié</> : <><Copy className="w-5 h-5" /> Copier le numéro</>}
+                            {copied ? <><CheckCircle2 className="w-4 h-4 text-green-500" /> Numéro copié</> : <><Copy className="w-4 h-4" /> Copier le numéro</>}
                           </button>
                           
                           {ussdCode && (
-                            <a href={`tel:${ussdCode.replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-3 text-sm font-black rounded-xl transition-all shadow-sm active:scale-95 ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#ffe066] text-black' : 'bg-[#FF7900] hover:bg-[#ff9433] text-white'}`}>
+                            <a href={`tel:${ussdCode.replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-2 text-xs font-black rounded-lg transition-all shadow-sm active:scale-95 ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#ffe066] text-black' : 'bg-[#FF7900] hover:bg-[#ff9433] text-white'}`}>
                               <Phone className="w-4 h-4" />
-                              Payer
+                              Payer via USSD
                             </a>
                           )}
                         </div>
@@ -235,39 +235,39 @@ export function Deposit() {
                    </div>
                    
                    {country === "Cote d'Ivoire" && (
-                     <p className="text-center text-xs text-gray-500">Effectuez le transfert depuis votre application ou via USSD.</p>
+                     <p className="text-center text-[10px] text-gray-500">Effectuez le transfert depuis votre application ou via USSD.</p>
                    )}
                  </div>
               </div>
            )}
 
            {method === 'wave' && (
-              <div className="mb-8 text-left bg-white border border-gray-100 p-6 rounded-[1.5rem] shadow-sm">
-                 <div className="flex items-center justify-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-full bg-[#1C3FB7] flex items-center justify-center shadow-sm">
-                      <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+              <div className="mb-4 text-left bg-white border border-gray-100 p-4 rounded-[1.5rem] shadow-sm">
+                 <div className="flex items-center justify-center gap-3 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-[#1C3FB7] flex items-center justify-center shadow-sm">
+                      <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
                     </div>
-                    <p className="font-bold text-[#1C3FB7] text-lg">Paiement Wave</p>
+                    <p className="font-bold text-[#1C3FB7] text-md">Paiement Wave</p>
                  </div>
                  
-                 <div className="space-y-6 text-sm text-gray-700 font-medium">
+                 <div className="space-y-4 text-sm text-gray-700 font-medium">
                    {country !== "Cote d'Ivoire" && (
-                     <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl text-sm shadow-sm text-center">
-                       <p className="font-bold mb-1 flex items-center justify-center gap-1.5"><Info className="w-4 h-4 text-amber-600" /> Transfert International</p>
-                       <p>Ceci est un transfert vers la Côte d'Ivoire. <strong>Veuillez saisir le numéro et le montant manuellement dans l'application.</strong></p>
+                     <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs shadow-sm text-center">
+                       <p className="font-bold mb-1 flex items-center justify-center gap-1.5"><Info className="w-3 h-3 text-amber-600" /> Transfert International</p>
+                       <p>Ceci est un transfert vers la Côte d'Ivoire. <strong>Veuillez saisir le numéro manuellement dans l'application.</strong></p>
                      </div>
                    )}
                    
                    <div className="w-full text-center">
-                     <p className="mb-4">Copiez le numéro ci-dessous pour votre transfert de <strong className="text-black text-lg">{formatCurrency(Number(amount))}</strong> :</p>
-                     <div className="bg-gray-50 border border-gray-200 p-6 rounded-2xl flex flex-col items-center justify-center shadow-inner overflow-hidden">
-                        <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">Soleil-Power</p>
-                        <p className="text-3xl font-black text-[#1C3FB7] tracking-widest leading-none mb-5">{getMethodNum()}</p>
+                     <p className="mb-2 text-xs">Copiez le numéro ci-dessous pour votre transfert de <strong className="text-black text-sm">{formatCurrency(Number(amount))}</strong> :</p>
+                     <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl flex flex-col items-center justify-center shadow-inner overflow-hidden">
+                        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Soleil-Power</p>
+                        <p className="text-2xl font-black text-[#1C3FB7] tracking-wider leading-none mb-3 break-all">{getMethodNum()}</p>
                         <button 
                           onClick={() => handleCopy(getMethodNum())}
-                          className="flex items-center justify-center gap-2 w-full py-3 bg-white hover:bg-gray-100 rounded-xl text-[#1C3FB7] border border-gray-200 transition-colors shadow-sm active:scale-95"
+                          className="flex items-center justify-center gap-2 w-full py-2 bg-white hover:bg-gray-100 rounded-lg text-[#1C3FB7] border border-gray-200 transition-colors shadow-sm active:scale-95 text-xs font-bold"
                         >
-                          {copied ? <><CheckCircle2 className="w-5 h-5 text-green-500" /> Numéro copié</> : <><Copy className="w-5 h-5" /> Copier le numéro</>}
+                          {copied ? <><CheckCircle2 className="w-4 h-4 text-green-500" /> Numéro copié</> : <><Copy className="w-4 h-4" /> Copier le numéro</>}
                         </button>
                      </div>
                    </div>
