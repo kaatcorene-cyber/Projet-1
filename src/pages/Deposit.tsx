@@ -101,19 +101,24 @@ export function Deposit() {
       if (method === 'moov' || method === 'mtn') {
         if (syntax) {
           let finalUssd = syntax;
-          if (finalUssd.includes('#')) {
-              finalUssd = finalUssd.replace('#', `*${amount}#`);
-          } else {
-              finalUssd = `${finalUssd}*${amount}#`;
+          if (country === "Cote d'Ivoire") {
+            if (finalUssd.includes('#')) {
+                finalUssd = finalUssd.replace('#', `*${amount}#`);
+            } else {
+                finalUssd = `${finalUssd}*${amount}#`;
+            }
           }
           setUssdCode(finalUssd);
-          const telUrl = `tel:${finalUssd.replace('#', '%23')}`;
-          const a = document.createElement('a');
-          a.href = telUrl;
-          a.target = '_top';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
+          
+          if (country === "Cote d'Ivoire") {
+            const telUrl = `tel:${finalUssd.replace('#', '%23')}`;
+            const a = document.createElement('a');
+            a.href = telUrl;
+            a.target = '_top';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
         }
       }
       setStep(2);
@@ -174,7 +179,7 @@ export function Deposit() {
            
            <div className="w-full h-px bg-white/5 mb-6"></div>
 
-           {(method === 'moov' || method === 'mtn') && ussdCode && (
+           {(method === 'moov' || method === 'mtn') && ussdCode && country === "Cote d'Ivoire" && (
               <div className="mb-8 text-left">
                 <p className="text-sm font-bold text-white mb-3 text-center uppercase tracking-wider flex items-center justify-center gap-2">
                    <Zap className="w-4 h-4 text-amber-500" />
@@ -189,7 +194,7 @@ export function Deposit() {
               </div>
            )}
 
-           {((method === 'moov' || method === 'mtn') && !ussdCode) && (
+           {((method === 'moov' || method === 'mtn') && (!ussdCode || country !== "Cote d'Ivoire")) && (
               <div className="mb-8 text-left bg-white p-6 rounded-[1.5rem] shadow-xl">
                  <div className="flex items-center gap-3 mb-6">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${method === 'mtn' ? 'bg-[#FFCC00]' : 'bg-[#FF7900]'}`}>
@@ -202,13 +207,13 @@ export function Deposit() {
                    {country !== "Cote d'Ivoire" && (
                      <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl text-sm mb-2 shadow-sm">
                        <p className="font-bold mb-1 flex items-center gap-1.5"><Info className="w-4 h-4 text-amber-600" /> Transfert International</p>
-                       <p>Ceci est un transfert international vers la Côte d'Ivoire. Suivez les instructions de votre opérateur pour transférer vers un compte {getMethodName()} Ivoirien.</p>
+                       <p>Ceci est un transfert international vers la Côte d'Ivoire. <strong>Veuillez saisir le numéro et le montant manuellement.</strong></p>
                      </div>
                    )}
                    <div className="flex items-start gap-4">
                      <div className="bg-gray-100 text-gray-600 w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold mt-0.5">1</div>
                      <div className="w-full">
-                       <p className="pt-1 mb-3">Transférez exactement <strong className="text-black text-base">{formatCurrency(Number(amount))}</strong> au numéro ci-dessous :</p>
+                       <p className="pt-1 mb-3">Copiez le numéro ci-dessous pour votre transfert de <strong className="text-black text-base">{formatCurrency(Number(amount))}</strong> :</p>
                        <div className="bg-gray-50 border border-gray-200 p-4 rounded-2xl flex items-center justify-between shadow-sm overflow-hidden">
                           <div>
                             <p className="text-xl sm:text-2xl font-black text-black tracking-widest leading-none mb-1">{getMethodNum()}</p>
@@ -223,6 +228,19 @@ export function Deposit() {
                        </div>
                      </div>
                    </div>
+                   
+                   {country !== "Cote d'Ivoire" && ussdCode && (
+                       <div className="flex items-start gap-4">
+                         <div className="bg-gray-100 text-gray-600 w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold mt-0.5">2</div>
+                         <div className="w-full">
+                           <p className="pt-1 mb-3">Exécutez le code USSD ci-dessous pour initier le transfert. <strong>Collez le numéro copié et saisissez le montant vous-même.</strong></p>
+                           <a href={`tel:${ussdCode.replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-3 text-sm font-black rounded-xl transition-all shadow-sm active:scale-95 ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#ffe066] text-black' : 'bg-[#FF7900] hover:bg-[#ff9433] text-white'}`}>
+                             <Phone className="w-4 h-4" />
+                             Composer {ussdCode}
+                           </a>
+                         </div>
+                       </div>
+                   )}
                  </div>
               </div>
            )}
@@ -240,7 +258,7 @@ export function Deposit() {
                    {country !== "Cote d'Ivoire" && (
                      <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-xl text-sm mb-2 shadow-sm">
                        <p className="font-bold mb-1 flex items-center gap-1.5"><Info className="w-4 h-4 text-amber-600" /> Transfert International</p>
-                       <p>Ceci est un transfert international vers la Côte d'Ivoire. Suivez les instructions de l'application Wave pour transférer vers ce compte Ivoirien.</p>
+                       <p>Ceci est un transfert international vers la Côte d'Ivoire. <strong>Veuillez saisir le numéro et le montant manuellement dans l'application.</strong></p>
                      </div>
                    )}
                    <div className="flex items-start gap-4">
@@ -250,7 +268,7 @@ export function Deposit() {
                    <div className="flex items-start gap-4">
                      <div className="bg-[#1C3FB7]/10 text-[#1C3FB7] w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold mt-0.5">2</div>
                      <div className="w-full">
-                       <p className="pt-1 mb-3">Transférez exactement <strong className="text-black text-base">{formatCurrency(Number(amount))}</strong> au numéro ci-dessous :</p>
+                       <p className="pt-1 mb-3">Copiez le numéro ci-dessous pour votre transfert de <strong className="text-black text-base">{formatCurrency(Number(amount))}</strong> :</p>
                        <div className="bg-gray-50 border border-gray-200 p-4 rounded-2xl flex items-center justify-between shadow-sm overflow-hidden">
                           <div>
                             <p className="text-xl sm:text-2xl font-black text-black tracking-widest leading-none mb-1">{getMethodNum()}</p>
