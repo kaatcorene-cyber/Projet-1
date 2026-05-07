@@ -146,34 +146,37 @@ export function Deposit() {
 
 
            {method === 'wave' && (
-              <div className="mb-8 text-left bg-[#1C3FB7]/10 border border-[#1C3FB7]/20 p-5 rounded-[1.5rem]">
-                 <p className="font-black text-[#608bfa] mb-4 uppercase tracking-wider text-sm flex items-center gap-2">
-                   <Zap className="w-4 h-4" /> Protocole Wave
-                 </p>
-                 <div className="space-y-4 text-sm text-[#8caeff] font-medium">
-                   <p className="flex items-center gap-3">
-                     <span className="bg-[#1C3FB7]/20 border border-[#1C3FB7]/30 text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs shadow-inner">1</span>
-                     <span>Ouvrir l'application Wave.</span>
-                   </p>
-                   <p className="flex items-center gap-3">
-                     <span className="bg-[#1C3FB7]/20 border border-[#1C3FB7]/30 text-white w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs shadow-inner">2</span>
-                     <span>Transférer le montant de <strong className="text-white">{formatCurrency(Number(amount))}</strong> au destinataire suivant :</span>
-                   </p>
-                   
-                   <div className="ml-9 my-3 bg-[#111] p-4 rounded-2xl border border-white/5 shadow-inner flex items-center justify-between">
-                      <div>
-                        <p className="text-xl font-black text-white tracking-widest leading-none drop-shadow-md">{waveNum}</p>
-                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1.5">Soleil-Power Network</p>
-                      </div>
-                      <button 
-                        onClick={handleCopy}
-                        className="p-3 bg-[#1a1a1a] hover:bg-white/5 rounded-xl text-amber-500 transition-colors border border-white/5 shadow-sm active:scale-95"
-                      >
-                        {copied ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
-                      </button>
+              <div className="mb-8 text-left bg-white p-6 rounded-[1.5rem] shadow-xl">
+                 <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-[#1C3FB7] flex items-center justify-center shadow-lg">
+                      <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+                    </div>
+                    <p className="font-bold text-[#1C3FB7] text-lg">Paiement Wave</p>
+                 </div>
+                 
+                 <div className="space-y-5 text-sm text-gray-700 font-medium">
+                   <div className="flex items-start gap-4">
+                     <div className="bg-[#1C3FB7]/10 text-[#1C3FB7] w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold mt-0.5">1</div>
+                     <p className="pt-1">Ouvrez votre application Wave.</p>
                    </div>
-                   
-                   
+                   <div className="flex items-start gap-4">
+                     <div className="bg-[#1C3FB7]/10 text-[#1C3FB7] w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold mt-0.5">2</div>
+                     <div className="w-full">
+                       <p className="pt-1 mb-3">Transférez exactement <strong className="text-black text-base">{formatCurrency(Number(amount))}</strong> au numéro ci-dessous :</p>
+                       <div className="bg-gray-50 border border-gray-200 p-4 rounded-2xl flex items-center justify-between shadow-sm overflow-hidden">
+                          <div>
+                            <p className="text-xl sm:text-2xl font-black text-black tracking-widest leading-none mb-1">{waveNum}</p>
+                            <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Soleil-Power</p>
+                          </div>
+                          <button 
+                            onClick={handleCopy}
+                            className="p-3 bg-white hover:bg-gray-100 rounded-xl text-[#1C3FB7] border border-gray-200 transition-colors shadow-sm active:scale-95 flex items-center justify-center shrink-0"
+                          >
+                            {copied ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+                          </button>
+                       </div>
+                     </div>
+                   </div>
                  </div>
               </div>
            )}

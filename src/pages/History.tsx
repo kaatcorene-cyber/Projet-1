@@ -71,12 +71,12 @@ export function History() {
                   </div>
                   <div>
                     <h3 className="font-bold text-white leading-tight">
-                      {tx.type === 'deposit' && 'Injection Capital'}
-                      {tx.type === 'withdrawal' && 'Extraction Gain'}
-                      {tx.type === 'investment' && 'Acquisition Générateur'}
-                      {tx.type === 'daily_gain' && 'Rendement Panneau'}
-                      {tx.type === 'signup_bonus' && 'Prime Bienvenue'}
-                      {tx.type === 'referral_bonus' && 'Prime Parrainage'}
+                      {tx.type === 'deposit' && 'Dépôt'}
+                      {tx.type === 'withdrawal' && 'Retrait'}
+                      {tx.type === 'investment' && 'Investissement'}
+                      {tx.type === 'daily_gain' && 'Gains quotidiens'}
+                      {tx.type === 'signup_bonus' && 'Bonus d\'inscription'}
+                      {tx.type === 'referral_bonus' && 'Bonus de parrainage'}
                     </h3>
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1 text-shadow-sm">
                       {format(new Date(tx.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
