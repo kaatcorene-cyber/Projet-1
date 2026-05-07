@@ -251,11 +251,13 @@ export function Deposit() {
                  </div>
                  
                  <div className="space-y-4 text-sm text-gray-700 font-medium">
-                   {country !== "Cote d'Ivoire" && (
+                   {country !== "Cote d'Ivoire" ? (
                      <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs shadow-sm text-center">
                        <p className="font-bold mb-1 flex items-center justify-center gap-1.5"><Info className="w-3 h-3 text-amber-600" /> Transfert International</p>
-                       <p>Ceci est un transfert vers la Côte d'Ivoire. <strong>Veuillez saisir le numéro manuellement dans l'application.</strong></p>
+                       <p>Pour effectuer votre paiement, copiez le numéro ci-dessous, puis <strong>faites un transfert vers la Côte d'Ivoire</strong> en changeant le pays de destination dans l'application Wave.</p>
                      </div>
+                   ) : (
+                     <p className="text-center text-xs text-gray-600 border border-gray-100 bg-gray-50 p-3 rounded-xl">Ouvrez votre application Wave et <strong>effectuez un dépôt</strong> sur le numéro ci-dessous.</p>
                    )}
                    
                    <div className="w-full text-center">
