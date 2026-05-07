@@ -160,21 +160,40 @@ export function Register() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Téléphone</label>
+            <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Pays</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-black border-r border-white/10 pr-3">
-                +225
-              </span>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/^\+225/, '') })}
-                className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl pl-[4.5rem] pr-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all placeholder:text-gray-600 font-medium tracking-wide"
-                placeholder="0123456789"
+              <select
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all font-medium appearance-none"
                 required
-              />
+              >
+                <option value="Cote d'Ivoire">Côte d'Ivoire</option>
+                <option value="Bénin">Bénin</option>
+                <option value="Togo">Togo</option>
+                <option value="Burkina Faso">Burkina Faso</option>
+                <option value="Niger">Niger</option>
+                <option value="Mali">Mali</option>
+                <option value="Sénégal">Sénégal</option>
+              </select>
+              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+              </div>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Téléphone</label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all placeholder:text-gray-600 font-medium tracking-wide"
+              placeholder="0123456789"
+              required
+            />
           </div>
 
           <div className="space-y-1.5">
