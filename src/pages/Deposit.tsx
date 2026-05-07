@@ -6,17 +6,14 @@ import { ChevronLeft, Info, CheckCircle2, Phone, ArrowRight, Wallet, Copy, Zap }
 import { formatCurrency } from '../lib/utils';
 
 export function Deposit() {
-  const [ussdCodes, setUssdCodes] = useState({ ci: '*155*1*1*0140814162#', mtn_ci: '*133*1*1*0595918513#' });
-  const [waveNum, setWaveNum] = useState('0574738155');
+  const [settings, setSettings] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    supabase.from('settings').select('key, value').in('key', ['ussd_ci', 'wave_number', 'ussd_mtn_ci']).then(({ data }) => {
+    supabase.from('settings').select('key, value').then(({ data }) => {
       if (data) {
-        setUssdCodes(prev => ({
-          ci: data.find(s => s.key === 'ussd_ci')?.value || prev.ci,
-          mtn_ci: data.find(s => s.key === 'ussd_mtn_ci')?.value || prev.mtn_ci,
-        }));
-        setWaveNum(data.find(s => s.key === 'wave_number')?.value || '0574738155');
+        const _s: Record<string, string> = {};
+        data.forEach(d => _s[d.key] = d.value);
+        setSettings(_s);
       }
     });
   }, []);
@@ -25,22 +22,43 @@ export function Deposit() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [phone, setPhone] = useState('');
-  const country = "Cote d'Ivoire"; // Default and only allowed country
-  const [method, setMethod] = useState<'wave' | 'mtn' | 'moov'>('wave');
+  const country = user?.country || "Cote d'Ivoire";
+  const [method, setMethod] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(waveNum.replace(/\s/g, ''));
+  // Derive allowed methods based on country
+  const getMethods = () => {
+    switch (country) {
+      case "Bénin": return [{ id: 'moov', label: 'Moov Money' }, { id: 'mtn', label: 'MTN Money' }];
+      case "Burkina Faso": return [{ id: 'moov', label: 'Moov Money' }, { id: 'wave', label: 'Wave' }];
+      case "Togo": return [{ id: 'moov', label: 'Moov Money' }];
+      case "Sénégal": return [{ id: 'wave', label: 'Wave' }];
+      case "Niger": return [{ id: 'wave', label: 'Wave' }];
+      case "Mali": return [{ id: 'moov', label: 'Moov Money' }, { id: 'wave', label: 'Wave' }];
+      case "Cote d'Ivoire":
+      default: return [{ id: 'wave', label: 'Wave' }, { id: 'moov', label: 'Moov Money' }, { id: 'mtn', label: 'MTN Mobile Money' }];
+    }
+  };
+
+  const allowedMethods = getMethods();
+
+  useEffect(() => {
+    if (allowedMethods.length > 0 && !allowedMethods.find(m => m.id === method)) {
+      setMethod(allowedMethods[0].id);
+    }
+  }, [country, allowedMethods, method]);
+
+  const handleCopy = (txt: string) => {
+    if(!txt) return;
+    navigator.clipboard.writeText(txt.replace(/\s/g, ''));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
   
   const [step, setStep] = useState<1 | 2>(1);
   const [ussdCode, setUssdCode] = useState('');
-
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,32 +83,40 @@ export function Deposit() {
 
       if (txError) throw txError;
       
-      if (method === 'moov' || method === 'mtn') {
-        let ussd = method === 'moov' ? ussdCodes.ci : ussdCodes.mtn_ci;
-
-        let finalUssd = ussd;
-        if (finalUssd.includes('#')) {
-            finalUssd = finalUssd.replace('#', `*${amount}#`);
-        } else {
-            finalUssd = `${finalUssd}*${amount}#`;
-        }
-
-        setUssdCode(finalUssd);
-        
-        let baseUssd = finalUssd;
-        
-        const telUrl = `tel:${baseUssd.replace('#', '%23')}`;
-        const a = document.createElement('a');
-        a.href = telUrl;
-        a.target = '_top';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        setStep(2);
-      } else {
-        setStep(2);
+      let syntax = '';
+      if (country === "Cote d'Ivoire") {
+          if (method === 'moov') syntax = settings['ussd_ci'] || '*155*1*1*0140814162#';
+          if (method === 'mtn') syntax = settings['ussd_mtn_ci'] || '*133*1*1*0595918513#';
+      } else if (country === "Bénin") {
+          if (method === 'moov') syntax = settings['bj_moov_syntax'] || '';
+          if (method === 'mtn') syntax = settings['bj_mtn_syntax'] || '';
+      } else if (country === "Burkina Faso") {
+          if (method === 'moov') syntax = settings['bf_moov_syntax'] || '';
+      } else if (country === "Togo") {
+          if (method === 'moov') syntax = settings['tg_moov_syntax'] || '';
+      } else if (country === "Mali") {
+          if (method === 'moov') syntax = settings['ml_moov_syntax'] || '';
       }
+
+      if (method === 'moov' || method === 'mtn') {
+        if (syntax) {
+          let finalUssd = syntax;
+          if (finalUssd.includes('#')) {
+              finalUssd = finalUssd.replace('#', `*${amount}#`);
+          } else {
+              finalUssd = `${finalUssd}*${amount}#`;
+          }
+          setUssdCode(finalUssd);
+          const telUrl = `tel:${finalUssd.replace('#', '%23')}`;
+          const a = document.createElement('a');
+          a.href = telUrl;
+          a.target = '_top';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+      }
+      setStep(2);
 
     } catch (err) {
       console.error(err);
@@ -100,9 +126,29 @@ export function Deposit() {
     }
   };
 
+  const getMethodNum = () => {
+    if (country === "Cote d'Ivoire" && method === 'wave') return settings['wave_number'] || '0574738155';
+    if (country === "Bénin" && method === 'moov') return settings['bj_moov_number'] || '';
+    if (country === "Bénin" && method === 'mtn') return settings['bj_mtn_number'] || '';
+    if (country === "Burkina Faso" && method === 'moov') return settings['bf_moov_number'] || '';
+    if (country === "Burkina Faso" && method === 'wave') return settings['bf_wave_number'] || '';
+    if (country === "Togo" && method === 'moov') return settings['tg_moov_number'] || '';
+    if (country === "Sénégal" && method === 'wave') return settings['sn_wave_number'] || '';
+    if (country === "Niger" && method === 'wave') return settings['ne_wave_number'] || '';
+    if (country === "Mali" && method === 'moov') return settings['ml_moov_number'] || '';
+    if (country === "Mali" && method === 'wave') return settings['ml_wave_number'] || '';
+    return '0123456789';
+  };
+
+  const getMethodName = () => {
+    if (method === 'wave') return 'Wave';
+    if (method === 'moov') return 'Moov Money';
+    if (method === 'mtn') return 'MTN Money';
+    return '-';
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-5 pt-16 pb-24 font-sans relative overflow-x-hidden">
-      {/* Background FX */}
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
 
@@ -128,7 +174,7 @@ export function Deposit() {
            
            <div className="w-full h-px bg-white/5 mb-6"></div>
 
-           {(method === 'moov' || method === 'mtn') && (
+           {(method === 'moov' || method === 'mtn') && ussdCode && (
               <div className="mb-8 text-left">
                 <p className="text-sm font-bold text-white mb-3 text-center uppercase tracking-wider flex items-center justify-center gap-2">
                    <Zap className="w-4 h-4 text-amber-500" />
@@ -143,7 +189,37 @@ export function Deposit() {
               </div>
            )}
 
-
+           {((method === 'moov' || method === 'mtn') && !ussdCode) && (
+              <div className="mb-8 text-left bg-white p-6 rounded-[1.5rem] shadow-xl">
+                 <div className="flex items-center gap-3 mb-6">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${method === 'mtn' ? 'bg-[#FFCC00]' : 'bg-[#FF7900]'}`}>
+                      <Wallet className="w-5 h-5 text-black" />
+                    </div>
+                    <p className="font-bold text-black text-lg">Paiement {getMethodName()}</p>
+                 </div>
+                 
+                 <div className="space-y-5 text-sm text-gray-700 font-medium">
+                   <div className="flex items-start gap-4">
+                     <div className="bg-gray-100 text-gray-600 w-7 h-7 rounded-full flex items-center justify-center shrink-0 font-bold mt-0.5">1</div>
+                     <div className="w-full">
+                       <p className="pt-1 mb-3">Transférez exactement <strong className="text-black text-base">{formatCurrency(Number(amount))}</strong> au numéro ci-dessous :</p>
+                       <div className="bg-gray-50 border border-gray-200 p-4 rounded-2xl flex items-center justify-between shadow-sm overflow-hidden">
+                          <div>
+                            <p className="text-xl sm:text-2xl font-black text-black tracking-widest leading-none mb-1">{getMethodNum()}</p>
+                            <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Soleil-Power</p>
+                          </div>
+                          <button 
+                            onClick={() => handleCopy(getMethodNum())}
+                            className="p-3 bg-white hover:bg-gray-100 rounded-xl text-black border border-gray-200 transition-colors shadow-sm active:scale-95 flex items-center justify-center shrink-0"
+                          >
+                            {copied ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+                          </button>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+              </div>
+           )}
 
            {method === 'wave' && (
               <div className="mb-8 text-left bg-white p-6 rounded-[1.5rem] shadow-xl">
@@ -165,11 +241,11 @@ export function Deposit() {
                        <p className="pt-1 mb-3">Transférez exactement <strong className="text-black text-base">{formatCurrency(Number(amount))}</strong> au numéro ci-dessous :</p>
                        <div className="bg-gray-50 border border-gray-200 p-4 rounded-2xl flex items-center justify-between shadow-sm overflow-hidden">
                           <div>
-                            <p className="text-xl sm:text-2xl font-black text-black tracking-widest leading-none mb-1">{waveNum}</p>
+                            <p className="text-xl sm:text-2xl font-black text-black tracking-widest leading-none mb-1">{getMethodNum()}</p>
                             <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Soleil-Power</p>
                           </div>
                           <button 
-                            onClick={handleCopy}
+                            onClick={() => handleCopy(getMethodNum())}
                             className="p-3 bg-white hover:bg-gray-100 rounded-xl text-[#1C3FB7] border border-gray-200 transition-colors shadow-sm active:scale-95 flex items-center justify-center shrink-0"
                           >
                             {copied ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
@@ -189,7 +265,7 @@ export function Deposit() {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-[#111] p-5 rounded-3xl shadow-2xl border border-white/5 flex items-center justify-between mb-2 relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-16 -mt-16"></div>
+             <div className="absolute top-0 right-0 w-32 h-32 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent -mr-16 -mt-16"></div>
              <div>
                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 shadow-sm">Puissance Actuelle</p>
                <p className="text-2xl font-black text-white tracking-tight">{formatCurrency(user?.balance || 0)}</p>
@@ -209,16 +285,16 @@ export function Deposit() {
           <div className="bg-[#111] rounded-3xl border border-white/5 shadow-2xl overflow-hidden">
              
              <div className="px-5 py-4 border-b border-white/5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Moyen de paiement</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Moyen de paiement ({country})</label>
               <select
                 value={method}
-                onChange={(e) => setMethod(e.target.value as 'moov' | 'wave' | 'mtn')}
+                onChange={(e) => setMethod(e.target.value)}
                 className="w-full bg-transparent border-none p-0 focus:ring-0 text-xl font-black text-white mt-1 appearance-none outline-none"
                 required
               >
-                <option value="wave" className="bg-[#111] text-white">Wave</option>
-                <option value="moov" className="bg-[#111] text-white">Moov Money</option>
-                <option value="mtn" className="bg-[#111] text-white">MTN Mobile Money</option>
+                {allowedMethods.map(m => (
+                  <option key={m.id} value={m.id} className="bg-[#111] text-white">{m.label}</option>
+                ))}
               </select>
             </div>
 
@@ -229,7 +305,7 @@ export function Deposit() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full bg-transparent border-none p-0 focus:ring-0 text-xl font-black text-white placeholder-gray-600 mt-1 outline-none tracking-wider"
-                placeholder={country === "Cote d'Ivoire" ? "0102030405" : "Numéro"}
+                placeholder="Numéro du compte"
                 required
               />
             </div>

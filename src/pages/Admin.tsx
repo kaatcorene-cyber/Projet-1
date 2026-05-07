@@ -37,6 +37,7 @@ export function Admin() {
   const [waveNumber, setWaveNumber] = useState('0574738155');
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
+  const [extraSettings, setExtraSettings] = useState<Record<string, string>>({});
 
   const [plans, setPlans] = useState<any[]>([]);
   
@@ -112,6 +113,15 @@ export function Admin() {
         if (uc) setUssdCI(uc.value);
         if (wn) setWaveNumber(wn.value);
         if (u_mtn_ci) setUssdMtnCI(u_mtn_ci.value);
+
+        const extraKeys = ['bj_moov_number', 'bj_moov_syntax', 'bj_mtn_number', 'bj_mtn_syntax', 'bf_moov_number', 'bf_moov_syntax', 'bf_wave_number', 'tg_moov_number', 'tg_moov_syntax', 'sn_wave_number', 'ne_wave_number', 'ml_moov_number', 'ml_moov_syntax', 'ml_wave_number'];
+        const extraObj: Record<string, string> = {};
+        extraKeys.forEach(k => {
+           const f = settingsRes.data.find(s => s.key === k);
+           if (f) extraObj[k] = f.value;
+           else extraObj[k] = '';
+        });
+        setExtraSettings(extraObj);
         
         const dbPlansStr = settingsRes.data.find(s => s.key === 'investment_plans');
         if (dbPlansStr && dbPlansStr.value) {
@@ -402,14 +412,18 @@ export function Admin() {
   // --- Settings Handlers ---
   const handleUpdateSettings = async () => {
     setLoading(true);
-    const { error } = await supabase.from('settings').upsert([
+    const toUpsert = [
       { key: 'payment_link', value: paymentLink },
       { key: 'group_link', value: groupLink },
       { key: 'support_link', value: supportLink },
       { key: 'ussd_ci', value: ussdCI },
       { key: 'ussd_mtn_ci', value: ussdMtnCI },
       { key: 'wave_number', value: waveNumber }
-    ], { onConflict: 'key' });
+    ];
+    for (const k of Object.keys(extraSettings)) {
+       toUpsert.push({ key: k, value: extraSettings[k] });
+    }
+    const { error } = await supabase.from('settings').upsert(toUpsert, { onConflict: 'key' });
     setLoading(false);
     
     if (error) {
@@ -997,13 +1011,59 @@ export function Admin() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Numéro de paiement Wave</label>
+                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Numéro Wave (Côte d'Ivoire)</label>
                 <input
                   type="text"
                   value={waveNumber}
                   onChange={(e) => setWaveNumber(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-amber-500 transition-colors text-sm font-mono tracking-widest"
                 />
+              </div>
+
+              <div className="pt-4 mt-4 border-t border-gray-200">
+                <h3 className="text-md font-bold text-gray-800 mb-4">Moyens de paiement par pays</h3>
+                
+                <p className="text-sm font-bold text-gray-700 bg-gray-100 p-2 rounded mb-2">Bénin</p>
+                <div className="space-y-3 mb-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Numéro Moov" value={extraSettings['bj_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                    <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['bj_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Numéro MTN" value={extraSettings['bj_mtn_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_mtn_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                    <input type="text" placeholder="Code USSD MTN (*...#)" value={extraSettings['bj_mtn_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_mtn_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                </div>
+
+                <p className="text-sm font-bold text-gray-700 bg-gray-100 p-2 rounded mb-2">Burkina Faso</p>
+                <div className="space-y-3 mb-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Numéro Moov" value={extraSettings['bf_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bf_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                    <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['bf_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bf_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                  <input type="text" placeholder="Numéro Wave" value={extraSettings['bf_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bf_wave_number: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                </div>
+
+                <p className="text-sm font-bold text-gray-700 bg-gray-100 p-2 rounded mb-2">Togo</p>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <input type="text" placeholder="Numéro Moov" value={extraSettings['tg_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, tg_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['tg_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, tg_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                </div>
+
+                <p className="text-sm font-bold text-gray-700 bg-gray-100 p-2 rounded mb-2">Sénégal & Niger</p>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <input type="text" placeholder="Sénégal - Numéro Wave" value={extraSettings['sn_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, sn_wave_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  <input type="text" placeholder="Niger - Numéro Wave" value={extraSettings['ne_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ne_wave_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                </div>
+
+                <p className="text-sm font-bold text-gray-700 bg-gray-100 p-2 rounded mb-2">Mali</p>
+                <div className="space-y-3 mb-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Numéro Moov" value={extraSettings['ml_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ml_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                    <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['ml_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ml_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                  <input type="text" placeholder="Numéro Wave" value={extraSettings['ml_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ml_wave_number: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                </div>
               </div>
 
               <button 

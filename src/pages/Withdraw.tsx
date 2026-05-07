@@ -11,10 +11,20 @@ export function Withdraw() {
   const [amount, setAmount] = useState('');
   const country = user?.country || "Cote d'Ivoire";
   
-  let availableMethods = ['Orange Money', 'MTN Mobile Money', 'Wave', 'Moov Money'];
-  if (country === 'Togo') availableMethods = ['Moov Money', 'T-Money'];
-  else if (country === 'Burkina Faso') availableMethods = ['Orange Money', 'Moov Money', 'Wave'];
-  else if (country === 'Benin') availableMethods = ['Moov Money', 'MTN Mobile Money', 'Celtiis'];
+  const getMethods = () => {
+    switch (country) {
+      case "Bénin": return ['Moov Money', 'MTN Money'];
+      case "Burkina Faso": return ['Moov Money', 'Wave'];
+      case "Togo": return ['Moov Money'];
+      case "Sénégal": return ['Wave'];
+      case "Niger": return ['Wave'];
+      case "Mali": return ['Moov Money', 'Wave'];
+      case "Cote d'Ivoire":
+      default: return ['Wave', 'Moov Money', 'MTN Mobile Money'];
+    }
+  };
+
+  const availableMethods = getMethods();
 
   const [method, setMethod] = useState(availableMethods[0]);
   const [phone, setPhone] = useState('');
