@@ -336,7 +336,7 @@ export function Support() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-5 pb-32 relative z-10 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto p-5 space-y-5 pb-[160px] relative z-10 scrollbar-hide">
         <div className="flex justify-center mb-6">
            <span className="text-[9px] uppercase font-bold text-gray-500 tracking-widest bg-[#111] px-3 py-1 rounded-full border border-white/5 shadow-inner">Historique des communications</span>
         </div>
@@ -378,7 +378,7 @@ export function Support() {
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <div className="bg-[#0a0a0a]/80 backdrop-blur-md border-t border-white/5 p-4 fixed bottom-0 left-0 right-0 z-20 pb-safe">
+      <div className="bg-[#0a0a0a]/80 backdrop-blur-md border-t border-white/5 p-4 fixed bottom-[72px] left-0 right-0 z-40">
         <form onSubmit={handleSendMessage} className="flex gap-2 items-center max-w-4xl mx-auto">
           <input 
             type="file" 
