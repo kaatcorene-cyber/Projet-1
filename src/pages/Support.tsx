@@ -78,14 +78,14 @@ export function Support() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = inputText.trim();
+  const handleSendMessage = (e?: React.FormEvent, predefinedText?: string) => {
+    if (e) e.preventDefault();
+    const text = predefinedText || inputText.trim();
     if (!text) return;
 
     const userMsg: Message = { id: Date.now().toString(), sender: 'user', text };
     setMessages(prev => [...prev, userMsg]);
-    setInputText('');
+    if (!predefinedText) setInputText('');
     setIsTyping(true);
 
     setTimeout(() => {
