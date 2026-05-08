@@ -11,14 +11,11 @@ export const supabase = createClient(formattedUrl, supabaseKey);
 export const checkDbSetup = async () => {
   try {
     // Check if both the table and the new column exist
-    const { error } = await supabase.from('users').select('id, country').limit(1);
+    const { error: usersError } = await supabase.from('users').select('id, country').limit(1);
+    const { error: verifError } = await supabase.from('deposit_verifications').select('id').limit(1);
     
-    if (error) {
-      // relation does not exist OR column does not exist OR schema cache says no table
-      if (error.code === '42P01' || error.code === '42703' || error.code === 'PGRST205' || error.message.includes('Could not find the table')) {
-        return false;
-      }
-      // If it's a different error, we assume DB is reachable but maybe empty (still returning true)
+    if (usersError || verifError) {
+      return false;
     }
     
     // Also check if RLS might be blocking
