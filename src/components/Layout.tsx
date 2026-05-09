@@ -8,10 +8,16 @@ import { usePWAInstall } from '../hooks/usePWAInstall';
 import { parseSafeDate } from '../lib/utils';
 
 export function Layout() {
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user, logout, refreshUser } = useAuthStore();
   const navigate = useNavigate();
   const hasCheckedYields = useRef(false);
   const { isInstallable, installPWA } = usePWAInstall();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshUser();
+    }
+  }, [isAuthenticated, refreshUser]);
 
   useEffect(() => {
     if (user?.id && !hasCheckedYields.current) {

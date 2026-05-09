@@ -12,6 +12,7 @@ interface User {
   balance: number;
   referral_code: string;
   referred_by?: string;
+  password_hash?: string;
 }
 
 interface AuthState {
@@ -32,14 +33,20 @@ export const useAuthStore = create<AuthState>()(
       refreshUser: async () => {
         const { user } = get();
         if (!user) return;
-        const { data } = await supabase.from('users').select('*').eq('id', user.id).single();
+        const { data } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
         if (data) {
+          if (user.password_hash && data.password_hash !== user.password_hash) {
+            get().logout();
+            return;
+          }
           if (!data.referral_code) {
             const myReferralCode = (data.first_name?.substring(0, 3).toUpperCase() || 'USR') + Math.random().toString(36).substring(2, 6).toUpperCase();
             await supabase.from('users').update({ referral_code: myReferralCode }).eq('id', user.id);
             data.referral_code = myReferralCode;
           }
           set({ user: data });
+        } else {
+          get().logout();
         }
       }
     }),
