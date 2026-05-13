@@ -16,7 +16,8 @@ import { Withdraw } from './pages/Withdraw';
 import { Admin } from './pages/Admin';
 import { Setup } from './pages/Setup';
 import { Support } from './pages/Support';
-import { Profile } from './pages/Profile';
+import { Bank } from './pages/Bank';
+import { Devices } from './pages/Devices';
 
 export default function App() {
   return (
@@ -31,9 +32,10 @@ export default function App() {
           <Route path="/invest" element={<Invest />} />
           <Route path="/team" element={<Team />} />
           <Route path="/history" element={<History />} />
-          <Route path="/profile" element={<Profile />} />
           <Route path="/deposit" element={<Deposit />} />
           <Route path="/withdraw" element={<Withdraw />} />
+          <Route path="/bank" element={<Bank />} />
+          <Route path="/devices" element={<Devices />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/support" element={<Support />} />
         </Route>

@@ -1,4 +1,4 @@
-import { Sun } from 'lucide-react';
+import { } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
@@ -7,12 +7,8 @@ import { supabase, checkDbSetup } from '../lib/supabase';
 export function Register() {
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
     phone: '',
-    country: "Cote d'Ivoire",
     password: '',
-    confirmPassword: '',
     referralCode: (searchParams.get('ref') && searchParams.get('ref') !== 'undefined') ? searchParams.get('ref') : ''
   });
   const [error, setError] = useState('');
@@ -34,19 +30,21 @@ export function Register() {
     e.preventDefault();
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      return setError('Les mots de passe ne correspondent pas');
-    }
-
     setLoading(true);
     const cleanPhone = formData.phone.replace(/\s/g, ''); // Clean spaces
+
+    if (!/^\d{10}$/.test(cleanPhone)) {
+      setError('Le numéro de téléphone doit contenir exactement 10 chiffres (ex: 0102030405).');
+      setLoading(false);
+      return;
+    }
 
     try {
       const { data: existingUser, error: existError } = await supabase
         .from('users')
         .select('id')
         .eq('phone', cleanPhone)
-        .eq('country', formData.country)
+        .eq('country', "Cote d'Ivoire")
         .maybeSingle();
 
       if (existError) console.warn("DB Check Warning:", existError);
@@ -57,20 +55,20 @@ export function Register() {
         return;
       }
 
-      const myReferralCode = formData.firstName.substring(0, 3).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
+      const myReferralCode = "SIM" + Math.random().toString(36).substring(2, 6).toUpperCase();
 
       const { data, error: insertError } = await supabase
         .from('users')
         .insert([
           {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
+            first_name: "Membre",
+            last_name: "SIM",
             phone: cleanPhone,
-            country: formData.country,
+            country: "Cote d'Ivoire",
             password_hash: formData.password,
             referral_code: myReferralCode,
             referred_by: formData.referralCode ? formData.referralCode.trim().toUpperCase() : null,
-            balance: 500 // Signup bonus
+            balance: 0
           }
         ])
         .select()
@@ -89,14 +87,6 @@ export function Register() {
             setError(`Erreur Serveur: ${insertError?.message || 'Impossible de créer le compte'}`);
         }
       } else {
-        const { error: txError } = await supabase.from('transactions').insert([{
-          user_id: data.id,
-          type: 'signup_bonus',
-          amount: 500,
-          status: 'completed'
-        }]);
-        if (txError) console.warn("Failed to insert bonus", txError);
-        
         sessionStorage.removeItem('welcome_shown');
         setUser(data);
         navigate('/dashboard');
@@ -110,142 +100,83 @@ export function Register() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-md mx-auto relative overflow-x-hidden bg-[#0a0a0a] text-gray-100 font-sans">
-      {/* Background FX */}
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
-
-      <div className="text-center mb-8 flex flex-col items-center relative z-10">
-        <div className="mb-6 flex items-center justify-center gap-1.5">
-           <Sun className="w-8 h-8 text-amber-500" />
-           <span className="font-black text-white tracking-tighter text-lg whitespace-nowrap">SOLEIL<span className="text-amber-500">-POWER</span></span>
-        </div>
-        <h1 className="text-3xl font-black tracking-tight mb-3 text-white">Rejoindre le Réseau</h1>
-        <p className="text-amber-500 font-bold text-xs uppercase tracking-widest bg-amber-500/10 px-4 py-2 rounded-full border border-amber-500/20">
-          Bonus de bienvenue : 500 FCFA offerts !
-        </p>
-      </div>
-
-      <div className="bg-[#111] border border-white/5 rounded-[2rem] p-6 shadow-2xl relative z-10">
-        <form onSubmit={handleRegister} className="space-y-5">
-          {error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-bold text-center">
-              {error}
-            </div>
-          )}
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Prénom</label>
-              <input
-                type="text"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all font-medium"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Nom</label>
-              <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all font-medium"
-                required
-              />
-            </div>
+    <div className="min-h-[100dvh] flex flex-col justify-center px-6 mx-auto bg-white text-neutral-900 font-sans relative overflow-hidden">
+      <div className="max-w-md w-full mx-auto relative z-10 pt-16 pb-12">
+        <div className="text-center mb-6 flex flex-col items-center">
+          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-neutral-100 shadow-xl mb-4 p-1 shrink-0 overflow-hidden">
+            <img src="https://i.imgur.com/HfAOyni.jpeg" alt="Logo SIM" className="w-full h-full object-contain" />
           </div>
+          <h1 className="text-2xl font-black tracking-tight mb-2 text-neutral-900 drop-shadow-sm">Créer un compte</h1>
+        </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Pays</label>
-            <div className="relative">
-              <select
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all font-medium appearance-none"
-                required
-              >
-                <option value="Cote d'Ivoire">Côte d'Ivoire</option>
-                <option value="Bénin">Bénin</option>
-                <option value="Togo">Togo</option>
-                <option value="Burkina Faso">Burkina Faso</option>
-                <option value="Niger">Niger</option>
-                <option value="Mali">Mali</option>
-                <option value="Sénégal">Sénégal</option>
-              </select>
-              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+        <div className="bg-white rounded-3xl p-6 relative shadow-sm border border-neutral-100">
+          <form onSubmit={handleRegister} className="space-y-4">
+            {error && (
+              <div className="p-4 bg-brand/10 border border-brand/20 rounded-2xl text-brand text-xs font-bold text-center">
+                {error}
+              </div>
+            )}
+            
+            <div className="space-y-1.5 pt-2">
+              <label className="text-[10px] font-bold text-neutral-500 ml-1 uppercase tracking-widest">Numéro de téléphone</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-4 text-neutral-500 font-bold text-sm pointer-events-none">
+                  +225
+                </div>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl pl-14 pr-4 py-4 text-neutral-900 focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 hover:bg-neutral-100 transition-all placeholder:text-neutral-400 text-sm font-bold"
+                  placeholder="0102030405"
+                  maxLength={10}
+                  required
+                />
               </div>
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Téléphone</label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all placeholder:text-gray-600 font-medium tracking-wide"
-              placeholder="0123456789"
-              required
-            />
-          </div>
+            <div className="space-y-1.5 pt-2">
+              <label className="text-[10px] font-bold text-neutral-500 ml-1 uppercase tracking-widest">Mot de passe</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-4 text-neutral-900 focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 hover:bg-neutral-100 transition-all placeholder:text-neutral-400 text-sm font-bold"
+                placeholder="••••••••"
+                required
+              />
+            </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Mot de passe</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all font-medium"
-              required
-            />
-          </div>
+            <div className="space-y-1.5 pt-2">
+              <label className="text-[10px] font-bold text-neutral-500 ml-1 uppercase tracking-widest">Code parrain (Optionnel)</label>
+              <input
+                type="text"
+                name="referralCode"
+                value={formData.referralCode}
+                onChange={handleChange}
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-4 text-neutral-900 focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 hover:bg-neutral-100 transition-all placeholder:text-neutral-400 text-sm font-bold uppercase"
+                placeholder="Optionnel"
+              />
+            </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Confirmer</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all font-medium"
-              required
-            />
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-brand hover:bg-[#c40828] text-white font-black uppercase tracking-wider py-4 rounded-2xl mt-8 transition-all shadow-[0_4px_14px_0_rgba(229,9,47,0.39)] active:scale-95 disabled:opacity-50 text-xs"
+            >
+              {loading ? 'Création...' : 'S\'inscrire'}
+            </button>
+          </form>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Code parrain (Optionnel)</label>
-            <input
-              type="text"
-              name="referralCode"
-              value={formData.referralCode}
-              onChange={handleChange}
-              className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all font-medium uppercase"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-amber-500 hover:bg-amber-400 text-black font-black py-4 rounded-2xl mt-8 transition-all shadow-[0_0_30px_rgba(245,158,11,0.2)] active:scale-95 disabled:opacity-50"
-          >
-            {loading ? 'Connexion au réseau...' : 'Rejoindre Soleil-Power'}
-          </button>
-        </form>
-
-        <p className="text-center text-gray-400 text-sm mt-8 font-medium">
-          Déjà un compte ?{' '}
-          <Link to="/login" className="text-amber-500 hover:text-amber-400 font-bold tracking-wide transition-colors">
-            Ouvrir une session
-          </Link>
-        </p>
+          <p className="text-center text-neutral-500 text-xs mt-6 font-medium">
+            Déjà un compte ?{' '}
+            <Link to="/login" className="text-brand hover:text-[#c40828] font-bold transition-colors">
+              Se connecter
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

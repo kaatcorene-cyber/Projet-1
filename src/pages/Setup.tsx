@@ -98,7 +98,7 @@ ALTER TABLE deposit_verifications ADD COLUMN IF NOT EXISTS sender_number TEXT;
 INSERT INTO settings (key, value) VALUES ('payment_link', 'https://bkapay.com/merchant/20cf6268') ON CONFLICT DO NOTHING;
 
 INSERT INTO users (phone, country, first_name, last_name, password_hash, role, balance)
-VALUES ('mission01', "Cote d'Ivoire", 'Admin', 'SOLEIL-POWER', 'admin123', 'admin', 0)
+VALUES ('mission01', "Cote d'Ivoire", 'Admin', 'SIM.COM', 'admin123', 'admin', 0)
 ON CONFLICT (phone, country) DO NOTHING;
 `;
 
@@ -114,8 +114,8 @@ ON CONFLICT (phone, country) DO NOTHING;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-6 flex flex-col items-center justify-center max-w-md mx-auto">
-      <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mb-6">
-        <Database className="w-8 h-8 text-amber-500" />
+      <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+        <Database className="w-8 h-8 text-red-500" />
       </div>
       <h1 className="text-2xl font-bold mb-2 text-center">Configuration Requise</h1>
       <p className="text-gray-500 text-center mb-8">
@@ -128,7 +128,7 @@ ON CONFLICT (phone, country) DO NOTHING;
             onClick={copyToClipboard}
             className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
           >
-            {copied ? <CheckCircle className="w-4 h-4 text-amber-500" /> : <Copy className="w-4 h-4" />}
+            {copied ? <CheckCircle className="w-4 h-4 text-red-500" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
         <pre className="bg-white p-4 rounded-xl overflow-x-auto text-xs text-gray-600 border border-gray-200 h-64">
@@ -138,7 +138,7 @@ ON CONFLICT (phone, country) DO NOTHING;
 
       <button 
         onClick={() => window.location.reload()}
-        className="mt-8 w-full py-3 bg-amber-500 hover:bg-amber-700 text-white rounded-xl font-medium transition-colors"
+        className="mt-8 w-full py-3 bg-red-500 hover:bg-red-700 text-gray-900 rounded-xl font-medium transition-colors"
       >
         J'ai exécuté le script
       </button>

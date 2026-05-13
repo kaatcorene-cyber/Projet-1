@@ -36,41 +36,37 @@ export function History() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-5 pt-16 pb-24 font-sans relative overflow-x-hidden">
-      {/* Background FX */}
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
-
-      <header className="flex justify-between items-end pb-6 border-b border-white/5 relative z-10">
+    <div className="min-h-[100dvh] bg-white text-neutral-900 pb-24 font-sans overflow-x-hidden relative">
+      <header className="bg-white/80 backdrop-blur-xl rounded-none rounded-b-3xl px-5 pt-12 pb-4 border-b border-neutral-200 sticky top-0 z-30 flex items-center justify-between shadow-sm">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Historique</h1>
-          <p className="text-amber-500 text-[10px] font-bold uppercase tracking-widest mt-1">Flux d'Énergie</p>
+          <h1 className="text-xl font-bold text-neutral-900 tracking-tight">Historique</h1>
+          <p className="text-neutral-500 font-medium text-xs mt-0.5">Flux de transactions</p>
         </div>
-        <div className="flex items-center gap-1.5 mb-1">
-           <Sun className="w-8 h-8 text-amber-500" />
-           <span className="font-black text-white tracking-tighter text-lg whitespace-nowrap">SOLEIL<span className="text-amber-500">-POWER</span></span>
+        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 border border-neutral-200 overflow-hidden shadow-sm p-1">
+           <img src="https://i.imgur.com/HfAOyni.jpeg" alt="SIM" className="w-full h-full object-contain" />
         </div>
       </header>
 
-      <div className="relative z-10 mt-6 bg-[#111] rounded-[2rem] shadow-2xl border border-white/5 overflow-hidden">
+      <div className="px-5 pt-6 max-w-lg mx-auto animate-in slide-in-from-bottom-4 duration-500">
+        <div className="bg-white rounded-3xl overflow-hidden border border-neutral-200 shadow-sm">
         {transactions.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 text-sm font-bold tracking-wider uppercase">
+          <div className="text-center py-12 text-neutral-400 text-sm font-semibold tracking-wider">
             Aucun transit détecté
           </div>
         ) : (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-neutral-100">
             {transactions.map((tx) => (
-              <div key={tx.id} className="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
+              <div key={tx.id} className="p-5 flex items-center justify-between hover:bg-neutral-50 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-inner border ${
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border shadow-sm ${
                     tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
-                      ? 'bg-green-500/10 text-green-400 border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]' 
-                      : 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
+                      ? 'bg-brand/10 text-brand border-brand/20' 
+                      : 'bg-neutral-100 text-neutral-500 border-neutral-200'
                   }`}>
-                    {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? <ArrowDownRight className="w-6 h-6" /> : <ArrowUpRight className="w-6 h-6" />}
+                    {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                   </div>
                   <div>
-                    <h3 className="font-bold text-white leading-tight">
+                    <h3 className="font-bold text-neutral-900 text-sm">
                       {tx.type === 'deposit' && 'Dépôt'}
                       {tx.type === 'withdrawal' && 'Retrait'}
                       {tx.type === 'investment' && 'Investissement'}
@@ -78,22 +74,22 @@ export function History() {
                       {tx.type === 'signup_bonus' && 'Bonus d\'inscription'}
                       {tx.type === 'referral_bonus' && 'Bonus de parrainage'}
                     </h3>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1 text-shadow-sm">
+                    <p className="text-[10px] text-neutral-500 font-semibold uppercase tracking-widest mt-0.5">
                       {format(new Date(tx.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`text-lg font-black tracking-tighter drop-shadow-md ${
+                  <p className={`text-[15px] font-bold tracking-tight ${
                     tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
-                      ? 'text-green-400' 
-                      : 'text-white'
+                      ? 'text-brand' 
+                      : 'text-neutral-900'
                   }`}>
                     {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </p>
-                  <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${
-                    tx.status === 'completed' || tx.status === 'approved' ? 'text-green-500' :
-                    tx.status === 'pending' ? 'text-amber-500' : 'text-red-500'
+                  <p className={`text-[9px] font-bold uppercase tracking-widest mt-1 px-2 py-0.5 rounded-md inline-block border ${
+                    tx.status === 'completed' || tx.status === 'approved' ? 'text-brand bg-brand/10 border-brand/20' :
+                    tx.status === 'pending' ? 'text-[#ff9800] bg-[#fff3e0] border-[#ffe0b2]' : 'text-neutral-500 bg-neutral-100 border-neutral-200'
                   }`}>
                     {tx.status === 'completed' || tx.status === 'approved' ? 'Validé' :
                      tx.status === 'pending' ? 'Traitement' : 'Rejeté'}
@@ -103,6 +99,7 @@ export function History() {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

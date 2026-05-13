@@ -7,7 +7,7 @@ import './index.css';
 if (typeof window !== 'undefined') {
   const host = window.location.hostname.toLowerCase();
   if (host.includes('qualcomm.site')) {
-    window.location.href = 'https://soleil-power.xyz' + window.location.pathname + window.location.search;
+    window.location.href = 'https://sim.com' + window.location.pathname + window.location.search;
   }
 }
 

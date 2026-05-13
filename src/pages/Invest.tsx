@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
+import { motion } from 'motion/react';
 import { CheckCircle2, AlertCircle, Loader2, Sun, Zap, PanelTop, BatteryCharging, ShieldAlert } from 'lucide-react';
 
 const DEFAULT_PLANS = [
@@ -133,36 +134,48 @@ export function Invest() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-5 pt-16 pb-24 font-sans relative overflow-x-hidden">
-      {/* Background FX */}
-      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent -translate-y-1/2 -translate-x-1/4 pointer-events-none"></div>
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
+    <div className="min-h-[100dvh] bg-white font-sans text-neutral-900 pb-24 overflow-x-hidden relative">
+      {/* Immersive Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-brand/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+      </div>
 
-      <header className="flex justify-between items-end pb-6 relative z-10">
-        <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Générateurs</h1>
-          <p className="text-amber-500 text-[10px] font-bold uppercase tracking-widest mt-1">Parc Solaire Actif</p>
+      {/* Dynamic Header */}
+      <div className="bg-white/80 backdrop-blur-xl px-5 pt-12 pb-4 sticky top-0 z-30 border-b border-neutral-200 rounded-none rounded-b-3xl shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-neutral-900 tracking-tight">Nos Parcs Actifs</h1>
+            <p className="text-neutral-500 font-medium text-xs mt-0.5">Achetez et générez des rendements</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 border border-neutral-200 shadow-sm overflow-hidden p-1">
+              <img src="https://i.imgur.com/HfAOyni.jpeg" alt="SIM" className="w-full h-full object-contain" />
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 mb-1">
-           <Sun className="w-8 h-8 text-amber-500" />
-           <span className="font-black text-white tracking-tighter text-lg whitespace-nowrap">SOLEIL<span className="text-amber-500">-POWER</span></span>
-        </div>
-      </header>
+      </div>
 
-      <div className="relative z-10 max-w-xl mx-auto space-y-6">
+      <div className="px-5 pt-6 max-w-xl mx-auto space-y-8 relative z-10">
+        
         {message && (
-          <div className={`p-4 rounded-2xl flex items-center gap-3 animate-in fade-in zoom-in duration-200 shadow-xl ${
-            message.type === 'success' ? 'bg-green-500/10 border border-green-500/20 text-green-400' : 'bg-red-500/10 border border-red-500/20 text-red-400'
-          }`}>
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className={`p-4 rounded-2xl flex items-center gap-3 shadow-sm border ${
+              message.type === 'success' ? 'bg-brand/5 border-brand/20 text-brand' : 'bg-red-50 border-red-200 text-brand'
+            }`}
+          >
             {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
             <p className="text-sm font-bold">{message.text}</p>
-          </div>
+          </motion.div>
         )}
+
+
 
         <div className="space-y-5">
           {activePlans.length === 0 ? (
-            <div className="bg-[#111] rounded-3xl p-8 text-center shadow-inner border border-white/5">
-              <p className="text-gray-500 font-medium text-sm">Réseau indisponible, réessayez plus tard.</p>
+            <div className="bg-white rounded-3xl p-8 text-center border border-neutral-200 shadow-sm">
+              <p className="text-neutral-500 font-medium text-sm">Réseau indisponible, réessayez plus tard.</p>
             </div>
           ) : (
             activePlans.map((plan, idx) => {
@@ -172,100 +185,72 @@ export function Invest() {
               const isAvailable = isBonus ? stockRemaining! > 0 : true;
 
               return (
-                <div key={idx} className={`bg-[#111] border rounded-2xl p-4 flex flex-col gap-4 relative overflow-hidden ${isBonus ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)] mt-4 mb-2' : 'border-white/5'}`}>
-                  {/* Glowing background for bonus */}
-                  {isBonus && (
-                     <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[80px] pointer-events-none rounded-full translate-x-1/2 -translate-y-1/2"></div>
-                  )}
-
-                  {/* Header */}
-                  <div className="flex items-center gap-4 relative z-10">
-                    <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-white/10 bg-[#1a1a1a] relative group">
-                      {isBonus ? (
-                        <div className="w-full h-full relative bg-gradient-to-br from-[#2a1b0a] to-[#0a0602] flex items-center justify-center p-2 border border-amber-500/30">
-                          {/* Simulated image element */}
-                          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
-                          <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded-sm uppercase whitespace-nowrap shadow-[0_0_10px_rgba(245,158,11,0.5)]">
-                            BONUS
-                          </div>
-                          <div className="flex flex-col items-center justify-center mt-3 scale-[0.85]">
-                            <Sun className="w-6 h-6 text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
-                            <span className="text-[7px] font-black whitespace-nowrap mt-1 text-white tracking-tighter">SOLEIL<span className="text-amber-500">-POWER</span></span>
-                          </div>
-                          {stockRemaining !== null && stockRemaining > 0 && (
-                             <div className="absolute bottom-0 inset-x-0 bg-black/80 backdrop-blur-sm py-1 border-t border-amber-500/20 text-center">
-                               <p className="text-[9px] font-bold text-amber-500">RES: {stockRemaining}</p>
-                             </div>
-                          )}
-                          {stockRemaining !== null && stockRemaining <= 0 && (
-                             <div className="absolute inset-0 bg-black/80 flex items-center justify-center backdrop-blur-sm">
-                               <span className="text-[10px] font-bold text-red-500 uppercase rotate-[-20deg] border border-red-500 px-1 py-0.5">ÉPUISÉ</span>
-                             </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="w-full h-full">
-                          <img src={plan.image || '/icon.svg'} alt="Générateur Solaire" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className={`font-semibold text-lg ${isBonus ? 'text-amber-400' : 'text-white'}`}>{formatCurrency(plan.amount)}</h3>
-                          <p className="text-gray-400 text-sm">{isBonus ? 'Générateur Spécial' : 'Générateur Solaire'}</p>
-                        </div>
-                        {isBonus && (
-                          <div className="flex flex-col items-end">
-                            <span className="text-[10px] font-bold bg-amber-500/10 text-amber-400 px-2 py-1 rounded-md border border-amber-500/20 whitespace-nowrap uppercase tracking-wider">Édition Limitée</span>
-                            {stockRemaining !== null && (
-                              <span className={`text-[10px] font-semibold mt-1 ${stockRemaining > 0 ? 'text-gray-400' : 'text-red-400'}`}>
-                                {stockRemaining > 0 ? `${stockRemaining} restants` : 'Stock épuisé'}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                <motion.div 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: idx * 0.05 }}
+                  key={idx} 
+                  className={`border rounded-2xl p-4 flex flex-col gap-4 relative overflow-hidden transition-all shadow-sm ${isBonus ? 'bg-[#c40828] border-[#a0001d] text-white shadow-[0_8px_30px_rgba(196,8,40,0.5)]' : 'bg-brand border-brand/80 text-white shadow-[0_8px_30px_rgba(229,9,47,0.3)]'}`}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                  {/* Basic Info */}
+                  <div className="flex items-center justify-between relative z-10">
+                     <div>
+                       <p className="text-[10px] uppercase tracking-widest font-black mb-1 text-white/80 drop-shadow-sm">{isBonus ? 'Offre Spéciale' : 'Standard'}</p>
+                       <h3 className="font-black text-2xl tracking-tight text-white drop-shadow-md">{formatCurrency(plan.amount)}</h3>
+                     </div>
+                     <div className="w-14 h-14 rounded-xl overflow-hidden shadow-sm shrink-0 border border-white/20 bg-white/10 p-1">
+                       <img 
+                         src={plan.image || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=400'} 
+                         alt="Générateur" 
+                         className="w-full h-full object-cover rounded-lg" 
+                         referrerPolicy="no-referrer" 
+                       />
+                     </div>
                   </div>
 
-                  {/* Stats - minimal */}
-                  <div className={`rounded-xl p-3 flex justify-between items-center border relative z-10 ${isBonus ? 'bg-amber-950/20 border-amber-500/20' : 'bg-[#1a1a1a] border-white/5'}`}>
-                    <div>
-                       <p className="text-gray-500 text-xs mb-0.5">Quotidien</p>
-                       <p className="text-amber-500 font-semibold">{formatCurrency(plan.daily)}</p>
-                    </div>
-                    <div className="w-px h-8 bg-white/10"></div>
+                  {/* Stats */}
+                  <div className="flex justify-between items-center bg-black/10 rounded-xl p-3 border border-white/10 relative z-10">
                     <div className="text-center">
-                       <p className="text-gray-500 text-xs mb-0.5">Total</p>
-                       <p className="text-white font-semibold">{formatCurrency(plan.total)}</p>
+                       <p className="text-white/70 text-[9px] uppercase tracking-wider font-bold mb-0.5">Gain/Jour</p>
+                       <p className="text-white font-black text-sm">{formatCurrency(plan.daily)}</p>
                     </div>
-                    <div className="w-px h-8 bg-white/10"></div>
-                    <div className="text-right">
-                       <p className="text-gray-500 text-xs mb-0.5">Durée</p>
-                       <p className="text-white font-semibold">{plan.duration || 60} Jours</p>
+                    <div className="w-px h-6 bg-white/20"></div>
+                    <div className="text-center">
+                       <p className="text-white/70 text-[9px] uppercase tracking-wider font-bold mb-0.5">Total</p>
+                       <p className="text-white font-bold text-sm">{formatCurrency(plan.total)}</p>
+                    </div>
+                    <div className="w-px h-6 bg-white/20"></div>
+                    <div className="text-center">
+                       <p className="text-white/70 text-[9px] uppercase tracking-wider font-bold mb-0.5">Validité</p>
+                       <p className="text-white font-bold text-sm">{plan.duration || 60} J</p>
                     </div>
                   </div>
 
-                  {/* Action */}
-                  <button
-                    onClick={() => handleInvest(plan, idx)}
-                    disabled={loading === idx || (user?.balance || 0) < plan.amount || !isAvailable}
-                    className={`w-full py-3 rounded-xl font-medium transition-colors disabled:opacity-50 flex justify-center items-center relative z-10 ${
-                      !isAvailable 
-                        ? 'bg-[#1a1a1a] text-gray-400 border border-white/5' 
-                        : isBonus
-                          ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:from-amber-400 hover:to-yellow-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-                          : 'bg-amber-500 hover:bg-amber-400 text-black'
-                    }`}
-                  >
-                    {loading === idx ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      !isAvailable ? 'Stock Épuisé' : 'Investir'
+                  {/* Actions & Stock */}
+                  <div className="flex gap-2 items-center relative z-10">
+                    {isBonus && stockRemaining !== null && (
+                      <div className={`text-[10px] font-black uppercase tracking-wider px-3 py-3 rounded-xl border flex-1 text-center ${stockRemaining > 0 ? 'bg-white/20 text-white border-white/30' : 'bg-black/20 text-white/50 border-white/10'}`}>
+                        {stockRemaining > 0 ? `${stockRemaining} restants` : 'Épuisé'}
+                      </div>
                     )}
-                  </button>
-                </div>
+                    <button
+                      onClick={() => handleInvest(plan, idx)}
+                      disabled={loading === idx || (user?.balance || 0) < plan.amount || !isAvailable}
+                      className={`py-3 px-4 rounded-xl font-black uppercase tracking-wider transition-all flex justify-center items-center text-xs active:scale-[0.98] ${isBonus && stockRemaining !== null ? 'w-auto flex-1' : 'w-full'} ${
+                        !isAvailable 
+                          ? 'bg-black/20 text-white/50 border border-white/10' 
+                          : 'bg-white hover:bg-neutral-100 text-brand shadow-[0_2px_8px_0_rgba(0,0,0,0.1)] disabled:bg-white/50 disabled:shadow-none'
+                      }`}
+                    >
+                      {loading === idx ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-brand" />
+                      ) : (
+                        !isAvailable ? 'Épuisé' : 'Acheter'
+                      )}
+                    </button>
+                  </div>
+                </motion.div>
               );
             })
           )}

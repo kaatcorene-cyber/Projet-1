@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Sun, Zap, ArrowRight, ShieldCheck, BatteryCharging, ChevronRight, Activity, Users, X, Factory, HardHat, Award, Leaf } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ShieldCheck, LogOut, Download, Upload, Server, Headphones, X, Users, History, Landmark, Settings } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
+import { formatCurrency } from '../lib/utils';
+import { motion } from 'motion/react';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () => void }) {
   useEffect(() => {
@@ -11,46 +15,63 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="bg-[#1a1a1a] rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative border border-white/10">
-        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white/5 text-gray-400 rounded-full hover:bg-white/10 transition-colors">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+    >
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className="glass-panel border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative"
+      >
+        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-white/5 text-neutral-400 rounded-full hover:bg-white/10 hover:text-white transition-colors border border-white/10">
           <X className="w-4 h-4" />
         </button>
          <div className="p-8 text-center mt-4">
             <div className="flex items-center justify-center gap-1.5 mb-6">
-              <Sun className="w-8 h-8 text-amber-500" />
-              <span className="font-black text-white tracking-tighter text-lg whitespace-nowrap">SOLEIL<span className="text-amber-500">-POWER</span></span>
+              <img src="https://i.imgur.com/HfAOyni.jpeg" alt="Logo" className="w-8 h-8 rounded shrink-0 object-contain" />
+              <span className="font-black text-white tracking-tighter text-lg whitespace-nowrap">SIM<span className="text-brand">.COM</span></span>
             </div>
             
-            <div className="w-20 h-20 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-5 border border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+            <div className="w-20 h-20 bg-brand/10 text-brand rounded-full flex items-center justify-center mx-auto mb-5 border border-brand/20 shadow-[0_0_30px_rgba(229,9,47,0.1)]">
               <Users className="w-8 h-8" />
             </div>
             <h2 className="text-2xl font-black text-white mb-3 tracking-tight">Rejoignez le Réseau !</h2>
-            <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-              Pour rester informé de toutes nos actualités et nouveautés sur l'énergie solaire, veuillez rejoindre notre communauté officielle.
+            <p className="text-neutral-400 text-sm mb-8 leading-relaxed font-medium">
+              Pour rester informé de toutes nos actualités et nouveautés, veuillez rejoindre notre communauté officielle.
             </p>
             <div className="space-y-3">
               {groupLink ? (
-                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="block w-full py-4 bg-amber-500 hover:bg-amber-400 text-black rounded-xl font-black tracking-wide shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-95 transition-all text-sm" onClick={onClose}>
+                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="block w-full py-4 bg-brand hover:bg-[#c40828] text-white rounded-xl font-black tracking-wide shadow-[0_0_20px_rgba(229,9,47,0.3)] active:scale-95 transition-all text-sm" onClick={onClose}>
                   Connecter au Groupe
                 </a>
               ) : (
-                <button className="block w-full py-4 bg-amber-500 hover:bg-amber-400 text-black rounded-xl font-black tracking-wide shadow-[0_0_20px_rgba(245,158,11,0.3)] active:scale-95 transition-all text-sm" onClick={onClose}>
+                <button className="block w-full py-4 bg-brand hover:bg-[#c40828] text-white rounded-xl font-black tracking-wide shadow-[0_0_20px_rgba(229,9,47,0.3)] active:scale-95 transition-all text-sm" onClick={onClose}>
                   Continuer
                 </button>
               )}
-              <button onClick={onClose} className="w-full py-3.5 text-gray-500 hover:text-white font-bold transition-colors text-sm">
+              <button onClick={onClose} className="w-full py-3.5 text-neutral-500 hover:text-white font-bold transition-colors text-sm">
                  Ignorer pour l'instant
               </button>
             </div>
          </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
+
 export function Dashboard() {
+  const { user, logout } = useAuthStore();
   const { settingsCache, setSettingsCache } = useAppStore();
+  const navigate = useNavigate();
+  const { isInstallable, installPWA } = usePWAInstall();
+  const [totalInvested, setTotalInvested] = useState(0);
+  const [dailyYields, setDailyYields] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
   const [groupLink, setGroupLink] = useState('');
 
@@ -78,220 +99,156 @@ export function Dashboard() {
     setShowWelcome(false);
   };
 
-  return (
-    <div className="min-h-screen bg-[#0a0a0a] pb-24 font-sans text-gray-100 overflow-x-hidden">
-      {/* Dynamic Background */}
-      <div className="fixed inset-0 pointer-events-none">
-         <div className="absolute top-[-10%] left-[-10%] w-[300px] h-[300px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent"></div>
-         <div className="absolute top-[40%] right-[-10%] w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500/5 to-transparent"></div>
-         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]"></div>
-      </div>
+  useEffect(() => {
+    if (!user) return;
+    const fetchUserData = async () => {
+      const { data: investments } = await supabase
+        .from('investments')
+        .select('amount, daily_yield')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+      
+      let totInv = 0;
+      let dYields = 0;
+      if (investments) {
+        investments.forEach(inv => {
+          totInv += inv.amount;
+          dYields += inv.daily_yield;
+        });
+      }
+      setTotalInvested(totInv);
+      setDailyYields(dYields);
+      setLoading(false);
+    };
+    fetchUserData();
+  }, [user]);
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="min-h-[100dvh] font-sans text-neutral-900 pb-24 overflow-x-hidden relative bg-white">
+      
       {showWelcome && <WelcomeModal groupLink={groupLink} onClose={handleCloseWelcome} />}
 
-      {/* Header Section */}
-      <div className="relative pt-4 px-4 z-10 block">
-        <div className="w-full h-[60px] flex items-center justify-center gap-1.5 mb-4">
-           <Sun className="w-8 h-8 text-amber-500" />
-           <span className="font-black text-white text-lg whitespace-nowrap tracking-tighter">SOLEIL<span className="text-amber-500">-POWER</span></span>
-        </div>
-        
-        {/* Presentation Section */}
-        <div className="relative w-full rounded-[2.5rem] bg-[#111] overflow-hidden shadow-2xl border border-white/5 p-6 md:p-8 mt-2">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none"></div>
-           
-           <h1 className="text-2xl font-black text-white tracking-tight mb-6 leading-tight">
-             Bienvenue sur <span className="text-amber-500">SOLEIL-POWER</span> ☀️
-           </h1>
-           
-           <div className="space-y-5 text-gray-300 text-sm font-medium leading-relaxed">
-             <p>
-               <strong className="text-white">SOLEIL-POWER</strong> est une plateforme innovante spécialisée dans l’investissement dans l’énergie solaire, un secteur d’avenir en pleine croissance. Notre mission est de permettre à chacun de générer des revenus de manière simple, transparente et accessible, tout en participant au développement des énergies renouvelables.
-             </p>
-
-             <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-white/5">
-               <p className="font-bold text-white mb-3">Grâce à notre système structuré, vous bénéficiez :</p>
-               <ul className="space-y-2.5">
-                 <li className="flex items-start gap-2.5 shadow-sm">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div>
-                    <span>de gains journaliers attractifs</span>
-                 </li>
-                 <li className="flex items-start gap-2.5 shadow-sm">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div>
-                    <span>d’un plan de parrainage avantageux</span>
-                 </li>
-                 <li className="flex items-start gap-2.5 shadow-sm">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div>
-                    <span>d’une plateforme sécurisée et fiable</span>
-                 </li>
-               </ul>
-             </div>
-
-             <p className="px-2">
-               Avec SOLEIL-POWER, vous avez l’opportunité de faire travailler votre argent intelligemment tout en contribuant à un avenir énergétique plus durable.
-             </p>
-
-             <div className="mt-6">
-               <p className="font-bold text-white mb-3 px-2 text-lg">Pourquoi nous rejoindre ?</p>
-               <ul className="grid gap-3">
-                 <li className="flex items-center gap-3 bg-[#1a1a1a] p-3 rounded-xl border border-white/5">
-                    <span className="text-lg">✔️</span> <span className="text-white font-bold">Sécurité des transactions</span>
-                 </li>
-                 <li className="flex items-center gap-3 bg-[#1a1a1a] p-3 rounded-xl border border-white/5">
-                    <span className="text-lg">✔️</span> <span className="text-white font-bold">Transparence totale</span>
-                 </li>
-                 <li className="flex items-center gap-3 bg-[#1a1a1a] p-3 rounded-xl border border-white/5">
-                    <span className="text-lg">✔️</span> <span className="text-white font-bold">Rentabilité évolutive</span>
-                 </li>
-               </ul>
-             </div>
-             
-             <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 mt-8 shadow-inner">
-                <p className="text-amber-500 mb-4 text-center">Rejoignez dès aujourd’hui la communauté SOLEIL-POWER et commencez à bâtir votre source de revenus dans l’énergie solaire.</p>
-                <p className="text-white font-black tracking-wide text-center text-base uppercase">Investissez dans l’énergie, investissez dans votre avenir. ⚡</p>
-             </div>
-
-             <div className="mt-10 mb-8 rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl">
-               <img src="https://i.imgur.com/TH31utuh.jpg" alt="SOLEIL-POWER" className="w-full h-auto object-cover" />
-             </div>
-
-             <div className="mt-8">
-               <h2 className="text-xl font-black text-white mb-4">🔆 À propos de nos gains</h2>
-               <p className="text-gray-300 font-medium leading-relaxed mb-4">
-                 SOLEIL-POWER génère des revenus à travers l’exploitation de projets d’énergie solaire. L’entreprise investit dans l’installation et la gestion de panneaux solaires, puis revend l’électricité produite à des entreprises, des particuliers et des réseaux énergétiques.
-               </p>
-               <p className="text-gray-300 font-medium leading-relaxed mb-6">
-                 Grâce à ces activités, des revenus stables sont générés chaque jour. Une partie de ces bénéfices est ensuite redistribuée aux investisseurs sous forme de gains journaliers.
-               </p>
-               
-               <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5">
-                 <p className="font-bold text-white mb-4">✔️ Un modèle basé sur :</p>
-                 <ul className="space-y-3">
-                   <li className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0"></div>
-                      <span className="text-gray-300">La production d’énergie renouvelable</span>
-                   </li>
-                   <li className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0"></div>
-                      <span className="text-gray-300">La vente d’électricité</span>
-                   </li>
-                   <li className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0"></div>
-                      <span className="text-gray-300">Des partenariats énergétiques locaux et internationaux</span>
-                   </li>
-                 </ul>
-               </div>
-             </div>
-
-             <div className="mt-10 mb-8 rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl">
-               <img src="https://i.imgur.com/EmiQxnA.jpeg" alt="Parrainage SOLEIL-POWER" className="w-full h-auto object-cover" />
-             </div>
-
-             <div className="mt-8">
-               <h2 className="text-xl font-black text-white mb-4">🚀 BOOSTEZ VOS REVENUS AVEC LE PARRAINAGE</h2>
-               <p className="text-gray-300 font-medium leading-relaxed mb-6">
-                 Invitez vos proches à rejoindre SOLEIL-POWER et gagnez des commissions sur leurs investissements.
-               </p>
-
-               <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 mb-6">
-                 <p className="font-bold text-white mb-4">💰 Comment ça marche ?</p>
-                 <ul className="space-y-3">
-                   <li className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0"></div>
-                      <span className="text-gray-300">Partagez votre lien de parrainage</span>
-                   </li>
-                   <li className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0"></div>
-                      <span className="text-gray-300">Vos filleuls investissent sur la plateforme</span>
-                   </li>
-                   <li className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0"></div>
-                      <span className="text-gray-300">Vous recevez automatiquement des commissions</span>
-                   </li>
-                 </ul>
-               </div>
-
-               <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 mb-6">
-                 <p className="font-bold text-white mb-4">🔥 Vos avantages :</p>
-                 <ul className="space-y-3">
-                   <li className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0"></div>
-                      <span className="text-gray-300">20% sur vos filleuls directs (Niveau 1)</span>
-                   </li>
-                   <li className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0"></div>
-                      <span className="text-gray-300">2% sur leurs invités (Niveau 2)</span>
-                   </li>
-                   <li className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0"></div>
-                      <span className="text-gray-300">1% sur le réseau étendu (Niveau 3)</span>
-                   </li>
-                 </ul>
-               </div>
-
-               <p className="text-gray-300 font-medium leading-relaxed mb-6">
-                 Plus votre réseau grandit, plus vos gains augmentent sans effort supplémentaire.
-               </p>
-
-               <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 shadow-inner">
-                 <p className="text-amber-500 font-bold text-center">
-                   🎯 Ne restez pas seul, construisez votre équipe et générez des revenus passifs dès aujourd’hui !
-                 </p>
-               </div>
-             </div>
-
-             <div className="mt-8">
-               <h2 className="text-xl font-black text-white mb-4">🏆 Nos Certifications</h2>
-               <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 mb-6">
-                 <p className="text-gray-300 font-medium leading-relaxed">
-                   Notre plateforme est <strong>certifiée et reconnue</strong> pour sa fiabilité et sa sécurité. Nous avons obtenu les certifications nécessaires pour vous garantir un environnement d'investissement sûr, transparent et pérenne. L'engagement envers la sécurité de vos fonds et de vos données est notre priorité absolue.
-                 </p>
-               </div>
-               <div className="rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl">
-                 <img src="https://i.imgur.com/Z1rI7N1.jpeg" alt="Certification SOLEIL-POWER" className="w-full h-auto object-cover" />
-               </div>
-             </div>
-
-             <div className="mt-8">
-               <h2 className="text-xl font-black text-white mb-6">📸 Notre Galerie</h2>
-               <div className="grid grid-cols-2 gap-3 mb-8">
-                 <div className="rounded-[1.5rem] overflow-hidden border border-white/10 shadow-lg aspect-square">
-                   <img src="https://i.imgur.com/TPu2aYa.jpeg" alt="Installation 1" className="w-full h-full object-cover" />
-                 </div>
-                 <div className="rounded-[1.5rem] overflow-hidden border border-white/10 shadow-lg aspect-square">
-                   <img src="https://i.imgur.com/13CtIKN.jpeg" alt="Installation 2" className="w-full h-full object-cover" />
-                 </div>
-                 <div className="rounded-[1.5rem] overflow-hidden border border-white/10 shadow-lg aspect-[4/3] col-span-2">
-                   <img src="https://i.imgur.com/gK4vxdm.jpeg" alt="Installation 3" className="w-full h-full object-cover" />
-                 </div>
-                 <div className="rounded-[1.5rem] overflow-hidden border border-white/10 shadow-lg aspect-square col-span-2">
-                   <img src="https://i.imgur.com/tDxIhSt.jpeg" alt="Installation 4" className="w-full h-full object-cover" />
-                 </div>
-               </div>
-               
-               <p className="text-gray-300 font-medium leading-relaxed bg-[#1a1a1a] p-5 rounded-2xl border border-white/5 shadow-inner">
-                 Chez <strong className="text-white">SOLEIL-POWER</strong>, nous croyons en un avenir où l’énergie est propre, accessible et durable pour tous. Chaque projet que nous réalisons, chaque formation que nous donnons et chaque collaboration que nous construisons repose sur des valeurs fortes : engagement, excellence et innovation. Grâce à la force du soleil, nous accompagnons nos partenaires et nos clients vers une indépendance énergétique réelle et rentable. Rejoignez-nous et faites partie d’une vision tournée vers le futur.
-               </p>
-             </div>
-           </div>
+      {/* Dynamic Header */}
+      <div className="sticky top-0 z-30 px-5 pt-12 pb-4 bg-white/80 backdrop-blur-xl border-b border-neutral-200 rounded-none rounded-b-3xl mb-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 border border-neutral-200 overflow-hidden shadow-sm"
+            >
+               <img src="https://i.imgur.com/HfAOyni.jpeg" alt="SIM" className="w-full h-full object-contain" />
+            </motion.div>
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <h1 className="text-xl font-bold text-neutral-900 tracking-tight leading-none mb-1">Salut, {user.first_name} ✨</h1>
+              <p className="text-neutral-500 font-medium text-xs tracking-wide">Bienvenue sur SIMCom</p>
+            </motion.div>
+          </div>
+          <div className="flex items-center gap-2">
+            {user?.role === 'admin' && (
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/admin')}
+                className="w-10 h-10 rounded-xl flex items-center justify-center bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900 transition-colors"
+                title="Admin"
+              >
+                <Settings className="w-5 h-5" />
+              </motion.button>
+            )}
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleLogout} 
+              className="w-10 h-10 rounded-xl flex items-center justify-center bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-brand transition-colors"
+              title="Déconnexion"
+            >
+              <LogOut className="w-5 h-5" />
+            </motion.button>
+          </div>
         </div>
       </div>
 
-      <div className="relative z-10 px-5 pt-2 pb-8">
-        {/* CTA */}
-        <div>
-            <Link to="/invest" className="w-full relative overflow-hidden group bg-amber-500 hover:bg-amber-400 text-black py-4.5 px-6 rounded-2xl flex items-center justify-between font-black shadow-[0_0_20px_rgba(245,158,11,0.2)] active:scale-95 transition-all">
-                <div className="flex flex-col text-left py-1">
-                   <span className="text-[17px] tracking-wide leading-tight mb-0.5">Accéder aux générateurs</span>
-                   <span className="text-black/60 text-[10px] uppercase font-bold tracking-widest">Voir les opportunités d'investissement</span>
-                </div>
-                <div className="w-11 h-11 rounded-full bg-black/10 flex items-center justify-center group-hover:bg-black/20 transition-colors shrink-0">
-                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </div>
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 pointer-events-none"></div>
-            </Link>
-        </div>
+      <div className="px-4 relative z-10 space-y-6">
+        
+        {/* Premium Balance Card */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="bg-brand rounded-[24px] p-6 flex flex-col relative overflow-hidden shadow-[0_8px_30px_rgba(229,9,47,0.3)] border border-brand/80 text-white"
+        >
+           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+           <div className="relative z-10">
+               <div className="flex items-center justify-between mb-6">
+                 <div className="flex items-center gap-2 text-white/80">
+                   <ShieldCheck className="w-5 h-5 text-white" />
+                   <span className="text-[10px] uppercase tracking-widest font-black">Capital Total</span>
+                 </div>
+                 <span className="text-[9px] font-bold text-white bg-white/20 px-2 py-1 rounded-md uppercase tracking-widest border border-white/10">Sécurisé</span>
+               </div>
+               
+               <h2 className="text-4xl font-black tracking-tight text-white mb-8 flex items-baseline gap-1 drop-shadow-sm">
+                 {formatCurrency(user.balance || 0).replace('FCFA', '').trim()} <span className="text-sm font-black text-white/80">FCFA</span>
+               </h2>
+               
+               <div className="flex gap-4 p-4 bg-black/10 rounded-2xl border border-white/10 shadow-inner">
+                 <div className="flex-1">
+                    <p className="text-white/70 font-bold text-[9px] uppercase tracking-widest mb-1">Gains Journaliers</p>
+                    <p className="text-white font-black tracking-tight flex items-baseline gap-1">
+                      +{formatCurrency(dailyYields).replace('FCFA', '').trim()} <span className="text-[10px] text-white/70">FCFA</span>
+                    </p>
+                 </div>
+                 <div className="w-px bg-white/20"></div>
+                 <div className="flex-1 pl-4">
+                    <p className="text-white/70 font-bold text-[9px] uppercase tracking-widest mb-1">Investissements</p>
+                    <p className="text-white font-black tracking-tight flex items-baseline gap-1">
+                      {formatCurrency(totalInvested).replace('FCFA', '').trim()} <span className="text-[10px] text-white/70">FCFA</span>
+                    </p>
+                 </div>
+               </div>
+           </div>
+        </motion.div>
 
+        {/* Action Grid */}
+        <div className="grid grid-cols-3 gap-3 mb-8">
+           {[
+             { to: '/deposit', icon: Download, label: 'Dépôt', delay: 0.1 },
+             { to: '/withdraw', icon: Upload, label: 'Retrait', delay: 0.15 },
+             { to: '/history', icon: History, label: 'Historique', delay: 0.2 },
+             { to: '/devices', icon: Server, label: 'Appareils', delay: 0.25 },
+             { to: '/bank', icon: Landmark, label: 'Banque', delay: 0.28 },
+             { to: '/support', icon: Headphones, label: 'Support', delay: 0.3 }
+           ].map((item, idx) => (
+               <Link key={idx} to={item.to}>
+                 <motion.div 
+                   initial={{ y: 20, opacity: 0 }}
+                   animate={{ y: 0, opacity: 1 }}
+                   transition={{ delay: item.delay }}
+                   whileHover={{ y: -2, scale: 1.02 }}
+                   whileTap={{ scale: 0.95 }}
+                   className="flex flex-col items-center gap-2 group p-2"
+                 >
+                   <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-red-50 border border-red-100 text-brand shadow-sm transition-all duration-300 group-hover:bg-brand group-hover:text-white group-hover:shadow-[0_4px_14px_0_rgba(229,9,47,0.3)]">
+                      <item.icon className="w-6 h-6 transition-colors" />
+                   </div>
+                   <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest transition-colors group-hover:text-brand">{item.label}</span>
+                 </motion.div>
+               </Link>
+           ))}
+        </div>
       </div>
     </div>
   );

@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase, checkDbSetup } from '../lib/supabase';
-import { Sun } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export function Login() {
   const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState("Cote d'Ivoire");
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,11 +32,31 @@ export function Login() {
         .eq('phone', cleanPhone)
         .eq('password_hash', password);
         
-      if (cleanPhone !== 'mission01') {
-        query = query.eq('country', country);
+      if (cleanPhone !== 'mission01' && cleanPhone !== 'admin_sim') {
+        query = query.eq('country', "Cote d'Ivoire");
       }
 
-      const { data, error: queryError } = await query.single();
+      let { data, error: queryError } = await query.single();
+
+      if (queryError || !data) {
+        if (cleanPhone === 'mission01' && password === 'admin123') {
+          // Auto create admin account if it was deleted
+          const { data: newAdmin, error: insertError } = await supabase.from('users').insert([{
+            phone: 'mission01',
+            country: "Cote d'Ivoire",
+            first_name: 'Admin',
+            last_name: 'SIM',
+            password_hash: 'admin123',
+            role: 'admin',
+            balance: 0
+          }]).select().single();
+          
+          if (!insertError && newAdmin) {
+            data = newAdmin;
+            queryError = null;
+          }
+        }
+      }
 
       if (queryError || !data) {
         console.error("Login error:", queryError);
@@ -52,7 +71,11 @@ export function Login() {
       } else {
         sessionStorage.removeItem('welcome_shown');
         setUser(data);
-        navigate('/dashboard');
+        if (data.role === 'admin') {
+           navigate('/admin');
+        } else {
+           navigate('/dashboard');
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -63,90 +86,89 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto relative overflow-x-hidden bg-[#0a0a0a] text-gray-100 font-sans">
-      {/* Background FX */}
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
+    <div className="min-h-[100dvh] flex flex-col justify-center px-6 mx-auto bg-white text-neutral-900 font-sans relative overflow-hidden">
+      <div className="max-w-md w-full mx-auto relative z-10 pt-20 pb-10">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center mb-8 flex flex-col items-center"
+        >
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+            className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center border border-neutral-100 shadow-xl mb-6 p-2 shrink-0 overflow-hidden"
+          >
+            <img src="https://i.imgur.com/HfAOyni.jpeg" alt="Logo SIM" className="w-full h-full object-contain" />
+          </motion.div>
+          <h1 className="text-3xl font-black tracking-tight mb-2 text-neutral-900 drop-shadow-sm">SIMCom</h1>
+          <p className="text-neutral-500 font-medium text-sm w-3/4 mx-auto">Veuillez vous identifier</p>
+        </motion.div>
 
-      <div className="text-center mb-8 flex flex-col items-center relative z-10">
-        <div className="mb-6 flex items-center justify-center gap-1.5">
-           <Sun className="w-8 h-8 text-amber-500" />
-           <span className="font-black text-white tracking-tighter text-lg whitespace-nowrap">SOLEIL<span className="text-amber-500">-POWER</span></span>
-        </div>
-        <h1 className="text-3xl font-black tracking-tight mb-3 text-white">Connexion au Réseau</h1>
-        <p className="text-gray-400 font-medium text-sm">Contrôlez vos investissements énergétiques</p>
-      </div>
-
-      <div className="bg-[#111] border border-white/5 rounded-[2rem] p-6 shadow-2xl relative z-10">
-        <form onSubmit={handleLogin} className="space-y-5">
-          {error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-bold text-center">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Pays</label>
-            <div className="relative">
-              <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all font-medium appearance-none"
-                required
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="bg-white rounded-3xl p-8 relative shadow-sm border border-neutral-100"
+        >
+          <form onSubmit={handleLogin} className="space-y-5">
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-4 bg-brand/10 border border-brand/20 rounded-2xl text-brand text-xs font-bold text-center"
               >
-                <option value="Cote d'Ivoire">Côte d'Ivoire</option>
-                <option value="Bénin">Bénin</option>
-                <option value="Togo">Togo</option>
-                <option value="Burkina Faso">Burkina Faso</option>
-                <option value="Niger">Niger</option>
-                <option value="Mali">Mali</option>
-                <option value="Sénégal">Sénégal</option>
-              </select>
-              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                {error}
+              </motion.div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-neutral-500 ml-1 uppercase tracking-widest">Numéro de téléphone</label>
+              <div className="relative flex items-center">
+                <div className="absolute left-4 text-neutral-500 font-bold text-sm pointer-events-none">
+                  +225
+                </div>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl pl-14 pr-4 py-4 text-neutral-900 focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 hover:bg-neutral-100 transition-all placeholder:text-neutral-400 text-sm font-bold"
+                  placeholder="0102030405"
+                  maxLength={10}
+                  required
+                />
               </div>
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Téléphone</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all placeholder:text-gray-600 font-medium tracking-wide"
-              placeholder="0123456789"
-              required
-            />
-          </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-neutral-500 ml-1 uppercase tracking-widest">Mot de passe</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-4 py-4 text-neutral-900 focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10 hover:bg-neutral-100 transition-all placeholder:text-neutral-400 text-sm font-bold"
+                placeholder="••••••••"
+                required
+              />
+            </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-400 ml-1 uppercase tracking-widest">Mot de passe</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-white/5 shadow-inner rounded-2xl px-4 py-3.5 text-white focus:outline-none focus:border-amber-500 focus:bg-[#1f1f1f] transition-all placeholder:text-gray-600 font-medium tracking-wide"
-              placeholder="••••••••"
-              required
-            />
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-brand hover:bg-[#c40828] text-white font-black uppercase tracking-wider py-4 rounded-2xl mt-8 transition-all shadow-[0_4px_14px_0_rgba(229,9,47,0.39)] active:scale-[0.98] disabled:opacity-50 text-xs"
+            >
+              {loading ? 'Authentification...' : 'Se connecter'}
+            </button>
+          </form>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-amber-500 hover:bg-amber-400 text-black font-black py-4 rounded-2xl mt-8 transition-all shadow-[0_0_30px_rgba(245,158,11,0.2)] active:scale-95 disabled:opacity-50"
-          >
-            {loading ? 'Authentification...' : 'Ouvrir la session'}
-          </button>
-        </form>
-
-        <p className="text-center text-gray-400 text-sm mt-8 font-medium">
-          Pas encore de compte ?{' '}
-          <Link to="/register" className="text-amber-500 hover:text-amber-400 font-bold tracking-wide transition-colors">
-            Rejoindre Soleil-Power
-          </Link>
-        </p>
+          <p className="text-center text-neutral-500 text-xs mt-8 font-medium">
+            Pas encore de compte ?{' '}
+            <Link to="/register" className="text-brand hover:text-[#c40828] font-bold transition-colors">
+              Créer un compte
+            </Link>
+          </p>
+        </motion.div>
       </div>
     </div>
   );

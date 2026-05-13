@@ -109,29 +109,8 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen text-slate-900 pb-16 font-sans">
-      <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden">
-        {/* Top Mini Header for Admin and Logout */}
-        <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
-          {isInstallable && (
-            <button 
-              onClick={installPWA}
-              className="w-10 h-10 bg-amber-500 border border-amber-400 rounded-full flex items-center justify-center text-slate-900 shadow-sm hover:bg-amber-700 transition-colors animate-pulse"
-              title="Télécharger l'Application"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-          )}
-          {user?.role === 'admin' && (
-            <button 
-              onClick={() => navigate('/admin')}
-              className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-
+    <div className="min-h-[100dvh] bg-white text-neutral-900 pb-16 font-sans">
+      <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden bg-white">
         <Outlet />
       </main>
       <BottomNav />

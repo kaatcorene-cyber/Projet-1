@@ -6,6 +6,7 @@ import { Copy, CheckCircle2, Users, ChevronDown, ChevronUp, AlertCircle, Sun, Ne
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { motion, AnimatePresence } from 'motion/react';
 
 export function Team() {
   const { user } = useAuthStore();
@@ -118,182 +119,182 @@ export function Team() {
 
   const renderMemberList = (members: any[]) => {
     if (members.length === 0) {
-      return <p className="text-sm text-gray-500 py-3 text-center bg-[#0a0a0a] rounded-xl mt-2 border border-white/5 uppercase tracking-widest font-bold">Aucune cellule active.</p>;
+      return <p className="text-sm text-neutral-500 py-4 text-center bg-white rounded-2xl mt-2 border border-neutral-100 uppercase tracking-widest font-bold">Aucun membre actif.</p>;
     }
     return (
       <div className="mt-4 space-y-3">
-        {members.map(member => {
+        {members.map((member, idx) => {
           const totalInvested = member.investments?.reduce((sum: number, inv: any) => sum + (Number(inv.plan_amount) || 0), 0) || 0;
           return (
-          <div key={member.id} className="flex flex-col gap-3 p-4 bg-[#0a0a0a] rounded-2xl border border-white/5 shadow-inner hover:border-amber-500/20 transition-all">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.05 }}
+            key={member.id} 
+            className="flex flex-col gap-3 p-4 bg-white rounded-[20px] border border-neutral-200 hover:border-neutral-300 transition-all shadow-sm"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-black text-white text-sm tracking-tight drop-shadow-sm">
+                <p className="font-black text-neutral-900 text-sm tracking-tight">
                   {member.first_name} {member.last_name}
                 </p>
-                <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-bold text-shadow-sm">Connecté le {format(new Date(member.created_at), 'dd/MM/yyyy', { locale: fr })}</p>
+                <p className="text-[10px] text-neutral-500 mt-1 uppercase tracking-widest font-bold">Inscrit le {format(new Date(member.created_at), 'dd/MM/yyyy', { locale: fr })}</p>
               </div>
               <div className="text-right">
-                <p className="text-[11px] font-black text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20 tracking-wider">
+                <p className="text-[11px] font-black text-neutral-600 bg-neutral-100 px-2.5 py-1 rounded-md border border-neutral-200 tracking-wider">
                   {member.phone}
                 </p>
               </div>
             </div>
             {totalInvested > 0 ? (
-              <div className="flex items-center justify-between bg-amber-500/10 rounded-xl p-3 border border-amber-500/20 shadow-inner">
-                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Puissance déployée</span>
-                 <span className="text-sm font-black text-amber-500 drop-shadow-md">{formatCurrency(totalInvested)}</span>
+              <div className="flex items-center justify-between bg-brand/5 border border-brand/10 rounded-xl p-3 shadow-inner">
+                 <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">Investissement total</span>
+                 <span className="text-sm font-black text-neutral-900">{formatCurrency(totalInvested)}</span>
               </div>
             ) : (
-              <div className="flex items-center justify-between bg-[#111] rounded-xl p-3 border border-white/5">
-                 <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Puissance déployée</span>
-                 <span className="text-sm font-black text-gray-500">0 FCFA</span>
+              <div className="flex items-center justify-between bg-neutral-50 rounded-xl p-3 border border-neutral-200 shadow-inner">
+                 <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Investissement total</span>
+                 <span className="text-sm font-black text-neutral-400">0 FCFA</span>
               </div>
             )}
-          </div>
+          </motion.div>
         )})}
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-100 p-5 pt-16 pb-24 font-sans relative overflow-x-hidden">
-      {/* Background FX */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 to-transparent -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/5 to-transparent translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
-
-      <header className="flex justify-between items-end pb-6 border-b border-white/5 relative z-10">
-        <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Réseau</h1>
-          <p className="text-amber-500 text-[10px] font-bold uppercase tracking-widest mt-1">Expansion du Parc</p>
-        </div>
-        <div className="flex items-center gap-1.5 mb-1">
-           <Sun className="w-8 h-8 text-amber-500" />
-           <span className="font-black text-white tracking-tighter text-lg whitespace-nowrap">SOLEIL<span className="text-amber-500">-POWER</span></span>
-        </div>
-      </header>
-
-      <div className="mt-6 bg-[#111] border text-center border-white/5 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden z-10 group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none group-hover:bg-amber-500/20 transition-all duration-500"></div>
-        <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-3 z-10 relative drop-shadow-sm">Énergie Récupérée (Parrainage)</p>
-        <h2 className="text-5xl font-black text-white tracking-tighter mb-5 z-10 relative ">{formatCurrency(teamStats.totalBonus)}</h2>
-        
-        <div className="inline-flex items-center justify-center px-4 py-2 bg-[#0a0a0a] text-amber-500 rounded-xl text-xs font-black border border-white/5 mb-8 z-10 relative gap-2 shadow-inner uppercase tracking-wider">
-          <Network className="w-4 h-4 text-white" />
-          Nœuds Actifs : <span className="text-white text-sm">{totalMembers}</span>
-        </div>
-
-        <div className="flex flex-col gap-3 relative z-10">
-          <input 
-            readOnly
-            type="text"
-            value={referralLink}
-            onClick={(e) => (e.target as HTMLInputElement).select()}
-            className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-4 text-center text-amber-500 text-xs font-mono font-bold tracking-tight focus:outline-none focus:border-amber-500/50 transition-colors shadow-inner"
-          />
-          <button 
-            onClick={copyCode}
-            className="w-full py-4 bg-amber-500 hover:bg-amber-400 rounded-xl flex items-center justify-center gap-2 text-black font-black transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] active:scale-95"
-          >
-            {copyStatus === 'success' ? (
-              <>
-                <CheckCircle2 className="w-5 h-5" /> Lien synchronisé !
-              </>
-            ) : (
-              <>
-                <Copy className="w-5 h-5" /> Partager le faisceau
-              </>
-            )}
-          </button>
-        </div>
-
-        {copyStatus === 'error' && (
-          <div className="mt-4 bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-left animate-in fade-in zoom-in duration-200">
-            <p className="text-red-400 text-[10px] font-bold flex items-start gap-2 uppercase tracking-wide">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> 
-              Sélectionnez et copiez manuellement
-            </p>
-          </div>
-        )}
+    <div className="min-h-[100dvh] bg-white text-neutral-900 pb-24 font-sans overflow-x-hidden relative">
+      {/* Immersive Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-brand/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
       </div>
 
-      <div className="space-y-4 animate-fade-in mt-8 relative z-10">
-        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2 drop-shadow-sm">Topologie du Réseau</h3>
+      {/* Dynamic Header */}
+      <div className="bg-white/80 backdrop-blur-xl px-5 pt-12 pb-4 sticky top-0 z-30 border-b border-neutral-200 rounded-none rounded-b-3xl shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-neutral-900 tracking-tight">Mon Équipe</h1>
+            <p className="text-neutral-500 font-medium text-xs mt-0.5">Invitez et touchez des commissions</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 border border-neutral-200 overflow-hidden shadow-sm p-1">
+              <img src="https://i.imgur.com/HfAOyni.jpeg" alt="SIM" className="w-full h-full object-contain" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-5 pt-6 max-w-xl mx-auto space-y-8 relative z-10">
         
-        {/* LEVEL 1 */}
-        <div className="bg-[#111] border border-white/5 shadow-2xl rounded-2xl overflow-hidden transition-all duration-300">
-          <button 
-            onClick={() => setExpandedLevel(expandedLevel === 1 ? null : 1)}
-            className="w-full p-4 flex items-center justify-between bg-transparent cursor-pointer hover:bg-white/5 transition-colors"
-          >
-            <div className="text-left flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-center text-amber-500 font-black text-xl shadow-inner drop-shadow-md">1</div>
-              <div>
-                <p className="font-black text-white text-lg">Cercle Primaire <span className="text-[10px] font-black text-amber-500 ml-2 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">20%</span></p>
-                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1">{teamStats.level1.length} nœuds</p>
-              </div>
-            </div>
-            <div className="text-gray-500">
-              {expandedLevel === 1 ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
-            </div>
-          </button>
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-[28px] p-8 text-center shadow-sm border border-neutral-200 relative overflow-hidden mb-8"
+        >
+          <div className="absolute top-0 right-0 w-40 h-40 bg-brand/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-40 h-40 bg-brand/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
           
-          {expandedLevel === 1 && (
-            <div className="px-5 pb-5 border-t border-white/5 bg-[#111]">
-              {isLoading ? <p className="text-[10px] text-amber-500 text-center py-6 font-black uppercase tracking-widest animate-pulse drop-shadow-md">Analyse en cours...</p> : renderMemberList(teamStats.level1)}
-            </div>
-          )}
-        </div>
+          <p className="text-brand text-[10px] font-black uppercase tracking-widest mb-2 relative z-10">Total Généré par le réseau</p>
+          <h2 className="text-[2.5rem] font-black leading-none text-brand tracking-tight flex items-baseline justify-center gap-1 mb-6 relative z-10">
+            {formatCurrency(teamStats.totalBonus).replace('FCFA', '').trim()} <span className="text-lg font-bold text-brand/70">FCFA</span>
+          </h2>
+          
+          <div className="inline-flex items-center justify-center px-4 py-2 bg-brand/5 text-brand rounded-xl text-xs font-bold border border-brand/20 mb-6 relative z-10 gap-2 uppercase tracking-wider shadow-inner">
+            <Network className="w-4 h-4 text-brand" />
+            Membres actifs : <span className="font-black">{totalMembers}</span>
+          </div>
 
-        {/* LEVEL 2 */}
-        <div className="bg-[#111] border border-white/5 shadow-2xl rounded-2xl overflow-hidden transition-all duration-300">
-          <button 
-            onClick={() => setExpandedLevel(expandedLevel === 2 ? null : 2)}
-            className="w-full p-4 flex items-center justify-between bg-transparent cursor-pointer hover:bg-white/5 transition-colors"
-          >
-            <div className="text-left flex items-center gap-4">
-              <div className="w-12 h-12 bg-gray-500/10 border border-white/10 rounded-xl flex items-center justify-center text-gray-400 font-black text-xl shadow-inner">2</div>
-              <div>
-                <p className="font-black text-white text-lg">Cercle Secondaire <span className="text-[10px] font-black text-amber-500 ml-2 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">2%</span></p>
-                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1">{teamStats.level2.length} nœuds</p>
-              </div>
-            </div>
-            <div className="text-gray-500">
-              {expandedLevel === 2 ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
-            </div>
-          </button>
-          
-          {expandedLevel === 2 && (
-            <div className="px-5 pb-5 border-t border-white/5 bg-[#111]">
-               {isLoading ? <p className="text-[10px] text-amber-500 text-center py-6 font-black uppercase tracking-widest animate-pulse drop-shadow-md">Analyse en cours...</p> : renderMemberList(teamStats.level2)}
-            </div>
-          )}
-        </div>
+          <div className="flex flex-col gap-3 relative z-10 bg-neutral-50 p-3 rounded-[20px] border border-neutral-200 shadow-inner">
+            <input 
+              readOnly
+              type="text"
+              value={referralLink}
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+              className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3.5 text-center text-neutral-600 text-xs font-mono tracking-tight focus:outline-none shadow-sm cursor-pointer hover:bg-neutral-50 transition-colors"
+            />
+            <motion.button 
+              whileTap={{ scale: 0.95 }}
+              onClick={copyCode}
+              className="w-full py-4 bg-brand hover:bg-[#c40828] rounded-xl flex items-center justify-center gap-2 text-white font-black uppercase tracking-wider shadow-[0_4px_14px_0_rgba(229,9,47,0.39)] text-xs"
+            >
+              {copyStatus === 'success' ? (
+                <>
+                  <CheckCircle2 className="w-5 h-5 text-white" /> Lien copié !
+                </>
+              ) : (
+                <>
+                  <Copy className="w-5 h-5" /> Copier mon lien
+                </>
+              )}
+            </motion.button>
+          </div>
 
-        {/* LEVEL 3 */}
-        <div className="bg-[#111] border border-white/5 shadow-2xl rounded-2xl overflow-hidden transition-all duration-300">
-          <button 
-            onClick={() => setExpandedLevel(expandedLevel === 3 ? null : 3)}
-            className="w-full p-4 flex items-center justify-between bg-transparent cursor-pointer hover:bg-white/5 transition-colors"
-          >
-            <div className="text-left flex items-center gap-4">
-              <div className="w-12 h-12 bg-gray-500/10 border border-white/10 rounded-xl flex items-center justify-center text-gray-400 font-black text-xl shadow-inner">3</div>
-              <div>
-                <p className="font-black text-white text-lg">Cercle Tertiaire <span className="text-[10px] font-black text-amber-500 ml-2 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">1%</span></p>
-                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1">{teamStats.level3.length} nœuds</p>
-              </div>
-            </div>
-            <div className="text-gray-500">
-              {expandedLevel === 3 ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
-            </div>
-          </button>
-          
-          {expandedLevel === 3 && (
-            <div className="px-5 pb-5 border-t border-white/5 bg-[#111]">
-               {isLoading ? <p className="text-[10px] text-amber-500 text-center py-6 font-black uppercase tracking-widest animate-pulse drop-shadow-md">Analyse en cours...</p> : renderMemberList(teamStats.level3)}
-            </div>
-          )}
+          <AnimatePresence>
+            {copyStatus === 'error' && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="mt-4 bg-red-50 border border-red-200 rounded-xl p-3 text-left"
+              >
+                <p className="text-brand text-[10px] font-bold flex items-start gap-2 uppercase tracking-wide">
+                  <AlertCircle className="w-4 h-4 shrink-0" /> 
+                  Sélectionnez et copiez manuellement
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        <div className="space-y-4 relative z-10">
+          <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1">Topologie du Réseau</h3>
+        
+          {[
+            { level: 1, percent: '20%', members: teamStats.level1, color: 'text-brand', bg: 'bg-brand/10' },
+            { level: 2, percent: '2%', members: teamStats.level2, color: 'text-neutral-500', bg: 'bg-neutral-100' },
+            { level: 3, percent: '1%', members: teamStats.level3, color: 'text-neutral-500', bg: 'bg-neutral-100' }
+          ].map((item, idx) => (
+            <motion.div 
+              key={item.level}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 + (idx * 0.1) }}
+              className="bg-white border border-neutral-200 shadow-sm rounded-[24px] overflow-hidden transition-all duration-300"
+            >
+              <button 
+                onClick={() => setExpandedLevel(expandedLevel === item.level ? null : item.level)}
+                className="w-full p-5 flex items-center justify-between bg-transparent cursor-pointer hover:bg-neutral-50 transition-colors"
+              >
+                <div className="text-left flex items-center gap-4">
+                  <div className={`w-14 h-14 ${item.bg} border ${item.level === 1 ? 'border-brand/20' : 'border-neutral-200'} rounded-2xl flex items-center justify-center ${item.color} font-black text-xl shadow-sm`}>
+                    {item.level}
+                  </div>
+                  <div>
+                    <p className="font-bold text-neutral-900 text-lg">Niveau {item.level} <span className="text-[10px] font-bold text-brand ml-2 bg-brand/10 px-2 py-1 rounded-md border border-brand/20">{item.percent}</span></p>
+                    <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mt-0.5">{item.members.length} membre(s)</p>
+                  </div>
+                </div>
+                <div className="text-neutral-500 w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center border border-neutral-200">
+                  {expandedLevel === item.level ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </div>
+              </button>
+              
+              <AnimatePresence>
+                {expandedLevel === item.level && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="px-5 pb-5 border-t border-neutral-200 bg-neutral-50"
+                  >
+                    {isLoading ? <p className="text-[10px] text-neutral-500 text-center py-6 font-semibold uppercase tracking-widest animate-pulse">Chargement...</p> : renderMemberList(item.members)}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))}
         </div>
       </div>
     </div>

@@ -68,7 +68,7 @@ export function Support() {
         {
           id: '1',
           sender: 'bot',
-          text: `Bonjour ${user?.first_name || ''} ! Je suis le Service Client de SoleilPower. Comment puis-je vous assister aujourd'hui ?`
+          text: `Bonjour ${user?.first_name || ''} ! Je suis le Service Client de SIM.COM. Comment puis-je vous assister aujourd'hui ?`
         }
       ]);
     }
@@ -113,20 +113,20 @@ export function Support() {
       } else if (lower.includes('télécharg') || lower.includes('install') || lower.includes('application') || lower.includes('appli')) {
         responseText = `
           <span>
-            L'installation de l'application <b>SoleilPower</b> s'effectue en quelques instants. Appuyez sur l'icône d'installation ⬇️ (ou accédez au menu de votre navigateur) pour procéder à l'ajout.<br/><br/>
+            L'installation de l'application <b>SIM.COM</b> s'effectue en quelques instants. Appuyez sur l'icône d'installation ⬇️ (ou accédez au menu de votre navigateur) pour procéder à l'ajout.<br/><br/>
             <b>• Sur appareil Android :</b><br/>
             Acceptez l'installation via la bannière qui s'affiche au bas de l'écran ou depuis le menu de votre navigateur (Ajouter à l'écran d'accueil).<br/><br/>
             <b>• Sur appareil iOS (iPhone) :</b><br/>
             1. Appuyez sur l'icône de partage située en bas de votre navigateur Safari.<br/>
             2. Sélectionnez l'option <b>« Sur l'écran d'accueil »</b>.<br/>
             3. Validez en appuyant sur <b>« Ajouter »</b>.<br/><br/>
-            L'application sera ainsi disponible directement sur votre écran d'accueil pour une gestion optimale de vos actifs solaires.
+            L'application sera ainsi disponible directement sur votre écran d'accueil pour une gestion optimale de vos actifs SIM.COMs.
           </span>
         `;
       } else if (lower.includes('moov') || lower.includes('mtn')) {
         responseText = `
           <span>
-            Voici la procédure à suivre pour effectuer un dépôt via <b>Moov Money ou MTN Mobile Money</b> sur votre compte SoleilPower :<br/><br/>
+            Voici la procédure à suivre pour effectuer un dépôt via <b>Moov Money ou MTN Mobile Money</b> sur votre compte SIM.COM :<br/><br/>
             <b>Étape 1 :</b> Accédez à la rubrique « Recharger » et sélectionnez l'opérateur concerné (Moov ou MTN).<br/>
             <b>Étape 2 :</b> Saisissez le montant de votre investissement et votre numéro de téléphone de facturation.<br/>
             <b>Étape 3 :</b> Cliquez sur « Lancer le code système ». Vous serez redirigé vers l'invite de commande de votre téléphone.<br/>
@@ -137,7 +137,7 @@ export function Support() {
       } else if (lower.includes('wave')) {
         responseText = `
           <span>
-            Voici le protocole de rechargement via <b>Wave</b> sur la plateforme SoleilPower :<br/><br/>
+            Voici le protocole de rechargement via <b>Wave</b> sur la plateforme SIM.COM :<br/><br/>
             <b>Étape 1 :</b> Rendez-vous dans la section « Recharger » et choisissez l'option « Wave ».<br/>
             <b>Étape 2 :</b> Renseignez le montant désiré et votre numéro de compte Wave.<br/>
             <b>Étape 3 :</b> Un identifiant de paiement vous sera fourni. Copiez ce numéro.<br/>
@@ -174,26 +174,26 @@ export function Support() {
       } else if (lower.includes('parrain') || lower.includes('invit') || lower.includes('équipe') || lower.includes('equipe') || lower.includes('affili')) {
         responseText = `
           <span>
-            SoleilPower vous offre l'opportunité de multiplier vos sources de revenus grâce à notre programme d'affiliation structuré en réseau :<br/><br/>
+            SIM.COM vous offre l'opportunité de multiplier vos sources de revenus grâce à notre programme d'affiliation structuré en réseau :<br/><br/>
             <b>Étape 1 :</b> Naviguez vers l'onglet « Réseau » ou « Équipe » en bas de votre écran.<br/>
             <b>Étape 2 :</b> Repérez et copiez votre lien de parrainage affilié unique.<br/>
             <b>Étape 3 :</b> Diffusez-le à votre entourage ou vos collaborateurs.<br/><br/>
-            Lorsqu'un partenaire s'inscrit via votre lien et initialise un actif solaire, la plateforme vous octroiera automatiquement les commissions correspondantes selon notre stratégie de rendement de niveaux.
+            Lorsqu'un partenaire s'inscrit via votre lien et initialise un actif SIM.COM, la plateforme vous octroiera automatiquement les commissions correspondantes selon notre stratégie de rendement de niveaux.
           </span>
         `;
       } else if (lower.includes('investir') || lower.includes('plan') || lower.includes('vip') || lower.includes('générateur') || lower.includes('generateur')) {
         responseText = `
           <span>
-            L'acquisition d'un générateur solaire sur la plateforme SoleilPower est optimisée pour garantir une rentabilité efficace :<br/><br/>
+            L'acquisition d'un générateur SIM.COM sur la plateforme SIM.COM est optimisée pour garantir une rentabilité efficace :<br/><br/>
             <b>Étape 1 :</b> Vérifiez que votre solde d'intérêts a été rechargé conformément à la valeur de l'actif souhaité.<br/>
             <b>Étape 2 :</b> Consultez la liste des générateurs disponibles dans la section « Générateurs » (Investir).<br/>
-            <b>Étape 3 :</b> Évaluez les rendements proposés pour chaque contrat et sélectionnez l'équipement solaire visé.<br/>
+            <b>Étape 3 :</b> Évaluez les rendements proposés pour chaque contrat et sélectionnez l'équipement SIM.COM visé.<br/>
             <b>Étape 4 :</b> Lancez le processus d'acquisition par le biais du bouton d'investissement.<br/><br/>
             Une fois le contrat acté, la génération de vos intérêts débute instamment et les profits vous seront versés quotidiennement.
           </span>
         `;
       } else if (lower.includes('bonjour') || lower.includes('salut') || lower.includes('coucou')) {
-        responseText = "Bonjour ! Le Service Client SoleilPower est à votre écoute pour vous assister dans vos opérations. Souhaitez-vous des conseils sur un dépôt, un retrait ou un forfait d'investissement ?";
+        responseText = "Bonjour ! Le Service Client SIM.COM est à votre écoute pour vous assister dans vos opérations. Souhaitez-vous des conseils sur un dépôt, un retrait ou un forfait d'investissement ?";
       } else {
         const finalLink = supportLink ? (supportLink.startsWith('http') ? supportLink : `https://${supportLink}`) : 'https://wa.me/2250574738155';
         responseText = `
@@ -251,7 +251,7 @@ export function Support() {
         
         const loweredRecipient = result.recipient.toLowerCase();
         if (!result.is_falsified) {
-          if (loweredRecipient.includes('0140814162') || loweredRecipient.includes('0595918513') || loweredRecipient.includes('soleil-power entreprise')) {
+          if (loweredRecipient.includes('0140814162') || loweredRecipient.includes('0595918513') || loweredRecipient.includes('SIM.COM entreprise')) {
             isValid = true;
           }
         }
@@ -319,43 +319,49 @@ export function Support() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col font-sans relative overflow-x-hidden">
-      {/* Background FX */}
-      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/5 to-transparent -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none"></div>
+    <div className="min-h-[100dvh] bg-white flex flex-col font-sans relative overflow-x-hidden text-neutral-900">
+      {/* Immersive Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-brand/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+      </div>
 
-      <header className="bg-[#111] px-5 pt-14 pb-4 shadow-2xl border-b border-white/5 sticky top-0 z-20 flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center text-white hover:bg-white/10 transition-colors border border-white/5 shadow-inner">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-xl font-black text-white tracking-tight flex items-center gap-1.5"><Sun className="w-5 h-5 text-amber-500" /> Service Client</h1>
-          <p className="text-[10px] text-green-400 font-bold flex items-center gap-1 uppercase tracking-widest mt-0.5">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            </span>
-            Opérationnel
-          </p>
+      <header className="bg-white/80 backdrop-blur-xl px-5 pt-12 pb-4 border-b border-neutral-200 sticky top-0 z-30 flex items-center justify-between rounded-none rounded-b-3xl shadow-sm">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-xl bg-neutral-100 shadow-sm border border-neutral-200 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-neutral-900 tracking-tight flex items-center gap-1.5">Service Client</h1>
+            <p className="text-[10px] text-brand font-bold flex items-center gap-1 uppercase tracking-widest mt-0.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
+              </span>
+              En ligne
+            </p>
+          </div>
+        </div>
+        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shrink-0 border border-neutral-200 overflow-hidden shadow-sm p-1">
+           <img src="https://i.imgur.com/HfAOyni.jpeg" alt="SIM" className="w-full h-full object-contain" />
         </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-5 pb-[160px] relative z-10 scrollbar-hide">
         <div className="flex justify-center mb-6">
-           <span className="text-[9px] uppercase font-bold text-gray-500 tracking-widest bg-[#111] px-3 py-1 rounded-full border border-white/5 shadow-inner">Historique des communications</span>
+           <span className="text-[9px] uppercase font-bold text-neutral-500 tracking-widest bg-white px-3 py-1 rounded-full border border-neutral-200 shadow-sm">Historique des communications</span>
         </div>
         
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.sender === 'bot' && (
-              <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center mr-3 shrink-0 mt-auto mb-1 border border-amber-500/20 shadow-inner relative overflow-hidden">
-                <Sun className="w-5 h-5 text-amber-500" />
+              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-3 shrink-0 mt-auto mb-1 border border-neutral-200 relative overflow-hidden shadow-sm p-1">
+                <img src="https://i.imgur.com/HfAOyni.jpeg" alt="Logo" className="w-full h-full object-contain" />
               </div>
             )}
             
-            <div className={`max-w-[85%] ${msg.sender === 'user' ? 'bg-amber-500 text-black rounded-[1.2rem] rounded-tr-sm pl-4 pr-5 py-3 shadow-[0_0_15px_rgba(245,158,11,0.15)] font-bold' : 'bg-[#111] border border-white/5 text-gray-300 rounded-[1.2rem] rounded-tl-sm pl-5 pr-4 py-3 shadow-xl'}`}>
+            <div className={`max-w-[85%] ${msg.sender === 'user' ? 'bg-brand text-white rounded-[1.2rem] rounded-tr-sm pl-4 pr-5 py-3 shadow-[0_4px_14px_0_rgba(229,9,47,0.39)] font-bold' : 'bg-white border border-neutral-200 text-neutral-800 rounded-[1.2rem] rounded-tl-sm pl-5 pr-4 py-3 shadow-sm'}`}>
               {msg.imageUrl && (
-                <img src={msg.imageUrl} alt="preuve" className="w-full max-w-[200px] rounded-xl mb-3 object-cover shadow-md border border-white/10" />
+                <img src={msg.imageUrl} alt="preuve" className="w-full max-w-[200px] rounded-xl mb-3 object-cover border border-neutral-200 shadow-sm" />
               )}
               {msg.sender === 'user' ? (
                 <div className="text-[14px] leading-relaxed break-words">{msg.text}</div>
@@ -368,13 +374,13 @@ export function Support() {
 
         {isTyping && (
           <div className="flex justify-start animate-fade-in mb-4">
-            <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center mr-3 shrink-0 mt-auto mb-1 border border-amber-500/20 shadow-inner relative overflow-hidden">
-              <Sun className="w-5 h-5 text-amber-500" />
+            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-3 shrink-0 mt-auto mb-1 border border-neutral-200 relative overflow-hidden shadow-sm p-1">
+              <img src="https://i.imgur.com/HfAOyni.jpeg" alt="Logo" className="w-full h-full object-contain" />
             </div>
-            <div className="bg-[#111] border border-white/5 rounded-[1.2rem] rounded-tl-sm px-5 py-4 shadow-xl flex items-center gap-1.5 h-[46px]">
-              <div className="w-1.5 h-1.5 bg-amber-500/50 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-              <div className="w-1.5 h-1.5 bg-amber-500/70 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-              <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce"></div>
+            <div className="bg-white border border-neutral-200 rounded-[1.2rem] rounded-tl-sm px-5 py-4 flex items-center gap-1.5 h-[46px] shadow-sm">
+              <div className="w-1.5 h-1.5 bg-brand/50 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-1.5 h-1.5 bg-brand/70 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-1.5 h-1.5 bg-brand rounded-full animate-bounce"></div>
             </div>
           </div>
         )}
@@ -382,7 +388,7 @@ export function Support() {
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <div className="bg-[#0a0a0a]/80 backdrop-blur-md border-t border-white/5 p-4 fixed bottom-[72px] left-0 right-0 z-40">
+      <div className="bg-white/90 backdrop-blur-md border-t border-neutral-200 p-4 fixed bottom-[72px] left-0 right-0 z-40 shadow-[0_-4px_14px_0_rgba(0,0,0,0.05)]">
         <form onSubmit={handleSendMessage} className="flex gap-2 items-center max-w-4xl mx-auto">
           <input 
             type="file" 
@@ -394,7 +400,7 @@ export function Support() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-12 h-12 bg-[#111] text-gray-400 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors shrink-0 shadow-inner border border-white/5"
+            className="w-12 h-12 bg-neutral-100 text-neutral-500 rounded-xl flex items-center justify-center hover:bg-neutral-200 transition-colors shrink-0 border border-neutral-200"
           >
             <ImagePlus className="w-5 h-5" />
           </button>
@@ -403,12 +409,12 @@ export function Support() {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Transmettre un message..."
-            className="flex-1 bg-[#111] border border-white/5 rounded-full px-5 py-3.5 focus:outline-none focus:border-amber-500/50 text-white transition-colors text-sm font-medium placeholder-gray-600 shadow-inner"
+            className="flex-1 bg-neutral-50 border border-neutral-200 rounded-xl px-5 py-3.5 focus:outline-none focus:border-brand/50 focus:ring-1 focus:ring-brand/50 text-neutral-900 transition-all text-sm font-medium placeholder-neutral-400 shadow-inner"
           />
           <button
             type="submit"
             disabled={!inputText.trim()}
-            className="w-12 h-12 bg-amber-500 text-black rounded-full flex items-center justify-center disabled:opacity-50 disabled:bg-[#111] disabled:text-gray-600 transition-all active:scale-95 shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.2)] disabled:shadow-none"
+            className="w-12 h-12 bg-brand text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:bg-neutral-200 disabled:text-neutral-400 transition-all active:scale-95 shrink-0 shadow-[0_4px_14px_0_rgba(229,9,47,0.39)] disabled:shadow-none"
           >
             <Send className="w-5 h-5" />
           </button>

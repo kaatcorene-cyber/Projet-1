@@ -21,7 +21,7 @@ export const useAppStore = create<AppState>()(
       setTeamStatsCache: (teamStatsCache) => set({ teamStatsCache }),
     }),
     {
-      name: 'soleil-app-storage',
+      name: 'sim-app-storage',
     }
   )
 );
