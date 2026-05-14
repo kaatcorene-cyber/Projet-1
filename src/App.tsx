@@ -16,10 +16,14 @@ import { Withdraw } from './pages/Withdraw';
 import { Admin } from './pages/Admin';
 import { Setup } from './pages/Setup';
 import { Support } from './pages/Support';
+import { Bank } from './pages/Bank';
+import { Products } from './pages/Products';
+import { AnimatedBackground } from './components/AnimatedBackground';
 
 export default function App() {
   return (
     <BrowserRouter>
+      <AnimatedBackground />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -34,6 +38,8 @@ export default function App() {
           <Route path="/withdraw" element={<Withdraw />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/support" element={<Support />} />
+          <Route path="/bank" element={<Bank />} />
+          <Route path="/products" element={<Products />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -6,8 +6,6 @@ import { supabase, checkDbSetup } from '../lib/supabase';
 export function Register() {
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
     phone: '',
     country: "Cote d'Ivoire",
     password: '',
@@ -60,14 +58,12 @@ export function Register() {
       }
 
       // Generate a simple referral code if none generated yet
-      const myReferralCode = formData.firstName.substring(0, 3).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
+      const myReferralCode = 'USER' + Math.random().toString(36).substring(2, 6).toUpperCase();
 
       const { data, error: insertError } = await supabase
         .from('users')
         .insert([
           {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
             phone: cleanPhone,
             country: formData.country,
             password_hash: formData.password, // In a real app, hash this!
@@ -120,7 +116,7 @@ export function Register() {
       <div className="text-center mb-8 flex flex-col items-center">
         <div className="bg-white p-3 rounded-2xl shadow-xl mb-4 relative">
            <div className="absolute inset-0 bg-red-100 blur-3xl rounded-full opacity-50"></div>
-          <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-[40px] object-contain relative z-10" referrerPolicy="no-referrer" />
+          <img src="https://i.imgur.com/IKSCH3N.png" alt="SIMcom" className="h-[40px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">Créer un compte</h1>
         <p className="text-red-100 font-medium text-sm">Bonus de bienvenue : 100 FCFA offerts !</p>
@@ -133,31 +129,6 @@ export function Register() {
               {error}
             </div>
           )}
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Prénom</label>
-              <input
-                type="text"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium"
-                required
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Nom</label>
-              <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium"
-                required
-              />
-            </div>
-          </div>
 
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Pays</label>

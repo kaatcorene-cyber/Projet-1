@@ -70,7 +70,7 @@ export function Support() {
         {
           id: '1',
           sender: 'bot',
-          text: `Bonjour ${user?.first_name || ''} ! Je suis l'assistant QUALCOMM. Comment puis-je vous aider aujourd'hui ?`
+          text: `Bonjour ! Je suis l'assistant SIMcom. Comment puis-je vous aider aujourd'hui ?`
         }
       ]);
     }
@@ -187,7 +187,7 @@ export function Support() {
       } else if (lower.includes('investir') || lower.includes('plan') || lower.includes('vip')) {
         responseText = `
           <span>
-            Investir avec QUALCOMM est conçu pour être rapide et très intuitif ! Voici les étapes à suivre :<br/><br/>
+            Investir avec SIMcom est conçu pour être rapide et très intuitif ! Voici les étapes à suivre :<br/><br/>
             <b>Étape 1 :</b> Assurez-vous d'avoir rechargé votre compte en utilisant le bouton « Recharger ».<br/>
             <b>Étape 2 :</b> Accédez ensuite à la rubrique « Investir », facilement accessible en bas de votre écran.<br/>
             <b>Étape 3 :</b> Parcourez nos offres et sélectionnez le plan qui s'aligne avec vos objectifs.<br/>
@@ -323,13 +323,13 @@ export function Support() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-transparent flex flex-col font-sans">
       <header className="bg-white px-5 pt-14 pb-4 shadow-sm border-b border-gray-200 sticky top-0 z-10 flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-900 active:bg-gray-100 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-lg font-black text-gray-900 tracking-tight">Support Qualcomm</h1>
+          <h1 className="text-lg font-black text-gray-900 tracking-tight">Support SIMcom</h1>
           <p className="text-xs text-green-500 font-bold flex items-center gap-1">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -349,7 +349,7 @@ export function Support() {
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.sender === 'bot' && (
               <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2 shrink-0 mt-auto mb-1 border border-gray-100 shadow-sm relative overflow-hidden">
-                <img src="https://i.imgur.com/awFyFRj.png" alt="QA" className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
+                <img src="https://i.imgur.com/IKSCH3N.png" alt="QA" className="w-6 h-6 rounded-full object-contain" referrerPolicy="no-referrer" />
               </div>
             )}
             
@@ -369,7 +369,7 @@ export function Support() {
         {isTyping && (
           <div className="flex justify-start animate-fade-in">
             <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center mr-2 shrink-0 mt-auto mb-1 border border-gray-100 shadow-sm relative overflow-hidden">
-              <img src="https://i.imgur.com/awFyFRj.png" alt="QA" className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
+              <img src="https://i.imgur.com/IKSCH3N.png" alt="QA" className="w-6 h-6 gap-1 rounded-full object-contain" referrerPolicy="no-referrer" />
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-4 shadow-md flex items-center gap-1.5 h-[46px]">
               <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>

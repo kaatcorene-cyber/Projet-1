@@ -101,17 +101,8 @@ export function Layout() {
   return (
     <div className="min-h-screen text-slate-900 pb-16 font-sans">
       <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden">
-        {/* Top Mini Header for Admin and Logout */}
+        {/* Top Mini Header for Admin */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
-          {isInstallable && (
-            <button 
-              onClick={installPWA}
-              className="w-10 h-10 bg-red-500 border border-red-400 rounded-full flex items-center justify-center text-slate-900 shadow-sm hover:bg-red-700 transition-colors animate-pulse"
-              title="Télécharger l'Application"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-          )}
           {user?.role === 'admin' && (
             <button 
               onClick={() => navigate('/admin')}
@@ -120,12 +111,6 @@ export function Layout() {
               <Settings className="w-5 h-5" />
             </button>
           )}
-          <button 
-            onClick={handleLogout}
-            className="w-10 h-10 bg-gray-100 border border-gray-200 rounded-full flex items-center justify-center text-red-600 shadow-sm hover:bg-gray-200 transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
         </div>
 
         <Outlet />

@@ -29,11 +29,11 @@ export function Invest() {
     }
     fetchPlans();
 
-    // Polling to keep user balance updated
+    // Polling to keep user balance updated (Reduced frequency to save database quota)
     const intervalId = setInterval(() => {
       refreshUser();
       fetchPlans();
-    }, 5000);
+    }, 60000 * 2); // 2 minutes instead of 5 seconds
 
     return () => clearInterval(intervalId);
   }, []);
@@ -126,13 +126,13 @@ export function Invest() {
   };
 
   return (
-    <div className="p-5 space-y-6 pt-16 pb-24 min-h-screen bg-gray-50">
+    <div className="p-5 space-y-6 pt-16 pb-24 min-h-screen bg-transparent">
       <header className="flex justify-between items-end pb-2 border-b border-gray-200">
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Investissements</h1>
           <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-1">Développez votre capital</p>
         </div>
-        <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-6 object-contain" referrerPolicy="no-referrer" />
+        <img src="https://i.imgur.com/IKSCH3N.png" alt="SIMcom" className="h-6 rounded-full object-contain" referrerPolicy="no-referrer" />
       </header>
 
       {message && (

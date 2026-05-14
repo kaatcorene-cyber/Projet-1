@@ -73,10 +73,10 @@ export function Admin() {
     }
     fetchData();
 
-    // Polling for live admin updates
+    // Polling for live admin updates (Reduced frequency to save database quota)
     const intervalId = setInterval(() => {
       fetchData(false); // pass a flag to possibly NOT trigger loading state
-    }, 5000);
+    }, 60000 * 2); // 2 minutes instead of 5 seconds
 
     return () => clearInterval(intervalId);
   }, [user, navigate]);

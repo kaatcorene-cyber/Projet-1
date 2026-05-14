@@ -137,7 +137,7 @@ export function Team() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900 text-sm">
-                  {member.first_name} {member.last_name}
+                  {member.phone}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">Inscrit le {format(new Date(member.created_at), 'dd MMM yyyy', { locale: fr })}</p>
               </div>
@@ -165,13 +165,13 @@ export function Team() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-5 pt-16 pb-24 font-sans">
+    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans">
       <header className="flex justify-between items-end pb-2 border-b border-gray-200 mb-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Mon Équipe</h1>
           <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-1">Gagnez jusqu'à 23%</p>
         </div>
-        <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-6 object-contain" referrerPolicy="no-referrer" />
+        <img src="https://i.imgur.com/IKSCH3N.png" alt="SIMcom" className="h-6 rounded-full object-contain" referrerPolicy="no-referrer" />
       </header>
 
       <div className="bg-white border text-center border-gray-200 rounded-2xl p-6 shadow-sm mb-6 relative overflow-hidden">

@@ -3,8 +3,9 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { Banknote, PlusCircle, Wallet, Activity, Users, LifeBuoy, Crown, Loader2, Zap, ChevronRight, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Banknote, PlusCircle, Wallet, Activity, Users, LifeBuoy, Crown, Loader2, Zap, ChevronRight, X, Building2, PackageCheck, LogOut, Download } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () => void }) {
   useEffect(() => {
@@ -20,7 +21,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
           <X className="w-4 h-4" />
         </button>
          <div className="p-8 text-center mt-2">
-            <img src="https://i.imgur.com/awFyFRj.png" alt="Logo" className="h-8 mx-auto mb-6" referrerPolicy="no-referrer" />
+            <img src="https://i.imgur.com/IKSCH3N.png" alt="Logo" className="h-8 rounded-full mx-auto mb-6" referrerPolicy="no-referrer" />
             <div className="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-5 border-4 border-white shadow-lg shadow-red-500/10">
               <Users className="w-8 h-8" />
             </div>
@@ -48,133 +49,13 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
   )
 }
 
-function CountdownTimer({ activeInvestments, onTickZero }: { activeInvestments: any[], onTickZero: () => void }) {
-  const [timeLeft, setTimeLeft] = useState<{h: number, m: number, s: number, percent: number} | null>(null);
-  const onTickZeroRef = useRef(onTickZero);
 
-  useEffect(() => {
-    onTickZeroRef.current = onTickZero;
-  }, [onTickZero]);
-
-  useEffect(() => {
-    if (!activeInvestments.length) return;
-
-    const calculateTime = () => {
-      let closestPayout = Infinity;
-      const now = Date.now();
-      let shouldTick = false;
-
-      activeInvestments.forEach(inv => {
-        const startDateRaw = inv.start_date || inv.created_at;
-        const lastPaidRaw = inv.last_paid_at || inv.created_at;
-        
-        let start = new Date(startDateRaw).getTime();
-        let lastPaid = new Date(lastPaidRaw).getTime();
-        
-        if (isNaN(start)) start = now;
-        if (isNaN(lastPaid)) lastPaid = start;
-
-        const totalDaysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
-        const lastPaidDaysElapsed = Math.floor((lastPaid - start) / (24 * 60 * 60 * 1000));
-        
-        if (totalDaysElapsed > lastPaidDaysElapsed) {
-          shouldTick = true;
-        }
-
-        const daysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
-        const nextPayout = start + (daysElapsed + 1) * 24 * 60 * 60 * 1000;
-        
-        if (nextPayout < closestPayout) {
-          closestPayout = nextPayout;
-        }
-      });
-
-      if (shouldTick) {
-        onTickZeroRef.current();
-      }
-
-      if (closestPayout === Infinity) return;
-
-      const diff = closestPayout - now;
-      const totalMs = 24 * 60 * 60 * 1000;
-      const progressPercent = ((totalMs - diff) / totalMs) * 100;
-
-      setTimeLeft({
-        h: Math.floor((diff / (1000 * 60 * 60)) % 24),
-        m: Math.floor((diff / 1000 / 60) % 60),
-        s: Math.floor((diff / 1000) % 60),
-        percent: Math.max(0, Math.min(100, progressPercent))
-      });
-    };
-
-    calculateTime();
-    const interval = setInterval(calculateTime, 1000);
-    return () => clearInterval(interval);
-  }, [activeInvestments]);
-
-  if (!timeLeft) return null;
-
-  const radius = 24;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (timeLeft.percent / 100) * circumference;
-
-  return (
-    <div className="bg-white rounded-[2rem] p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative overflow-hidden flex items-center gap-5 border border-gray-100">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-      
-      <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
-        <svg className="w-16 h-16 transform -rotate-90 drop-shadow-sm" viewBox="0 0 64 64">
-          <circle 
-            className="text-gray-100" 
-            strokeWidth="4" 
-            stroke="currentColor" 
-            fill="transparent" 
-            r={radius} 
-            cx="32" 
-            cy="32" 
-          />
-          <circle 
-            className="text-red-500 transition-all duration-1000 ease-linear" 
-            strokeWidth="4" 
-            strokeDasharray={circumference} 
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round" 
-            stroke="currentColor" 
-            fill="transparent" 
-            r={radius} 
-            cx="32" 
-            cy="32" 
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Zap className="w-5 h-5 text-red-500" />
-        </div>
-      </div>
-
-      <div className="flex-1">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Versement via</p>
-          <div className="flex gap-1.5 items-center bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping"></span>
-            <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider">Actif</span>
-          </div>
-        </div>
-        
-        <div className="font-mono text-2xl font-black text-gray-900 tracking-widest flex items-baseline" style={{ fontVariantNumeric: 'tabular-nums' }}>
-          <span>{String(timeLeft.h).padStart(2, '0')}</span>
-          <span className="text-gray-400 mx-1 mb-1">:</span>
-          <span>{String(timeLeft.m).padStart(2, '0')}</span>
-          <span className="text-gray-400 mx-1 mb-1">:</span>
-          <span className="text-red-500">{String(timeLeft.s).padStart(2, '0')}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function Dashboard() {
-  const { user, refreshUser } = useAuthStore();
+  const { user, refreshUser, logout } = useAuthStore();
+  const navigate = useNavigate();
   const { settingsCache, setSettingsCache, investmentsCache, setInvestmentsCache } = useAppStore();
+  const { isInstallable, installPWA } = usePWAInstall();
   
   const [activeInvestments, setActiveInvestments] = useState<any[]>(investmentsCache || []);
   const [dailyGain, setDailyGain] = useState(0);
@@ -207,13 +88,13 @@ export function Dashboard() {
       fetchData();
     }
 
-    // Setup polling for real-time like updates
+    // Setup polling for real-time like updates (Reduced frequency to save database quota)
     const intervalId = setInterval(() => {
       refreshUser();
       const currentUser = useAuthStore.getState().user;
       if (currentUser) processDailyGains();
       fetchData();
-    }, 15000);
+    }, 60000 * 5); // 5 minutes instead of 15 seconds
 
     return () => clearInterval(intervalId);
   }, [user?.id]);
@@ -369,7 +250,7 @@ export function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-sans">
+    <div className="min-h-screen bg-transparent pb-24 font-sans">
       {showWelcome && <WelcomeModal groupLink={groupLink} onClose={handleCloseWelcome} />}
       
       {/* Premium Header Region */}
@@ -377,17 +258,17 @@ export function Dashboard() {
         <header className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
              <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 font-black text-xl shadow-inner border border-red-100">
-               {user?.first_name?.[0]?.toUpperCase() || 'U'}
+               S
              </div>
              <div>
                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">Bienvenue retour</p>
                <h1 className="text-xl font-black text-gray-900 flex items-center gap-2 tracking-tight">
-                 {user?.first_name}
+                 {user?.phone}
                  {getVipBadge()}
                </h1>
              </div>
           </div>
-          <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-5 object-contain opacity-80" referrerPolicy="no-referrer" />
+          <img src="https://i.imgur.com/IKSCH3N.png" alt="SIMcom" className="h-8 rounded-full object-contain opacity-80" referrerPolicy="no-referrer" />
         </header>
 
         {/* Premium Balance Card */}
@@ -428,45 +309,41 @@ export function Dashboard() {
       ) : (
         <div className="px-5 mt-6 space-y-6 animate-fade-in">
           
-          {/* Stats Grid */}
+          {/* Quick Access Grid */}
           <div className="grid grid-cols-2 gap-3">
-             <div className="bg-white rounded-[1.5rem] p-5 border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
-                <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center mb-4">
-                  <Activity className="w-5 h-5 text-red-600" />
-                </div>
-                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Gains Journaliers</p>
-                <p className="text-xl font-black text-gray-900 tracking-tight">{formatCurrency(dailyGain)}</p>
-             </div>
+             <Link to="/products" className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                <PackageCheck className="w-4 h-4 text-orange-500" />
+                <span className="text-xs font-bold text-gray-900">Produits</span>
+             </Link>
              
-             <div className="bg-white rounded-[1.5rem] p-5 border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center mb-4">
-                  <Crown className="w-5 h-5 text-amber-500" />
-                </div>
-                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Plans Actifs</p>
-                <p className="text-xl font-black text-gray-900 tracking-tight">{activeInvestments.length} plan{activeInvestments.length > 1 ? 's' : ''}</p>
-             </div>
+             <Link to="/bank" className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                <Building2 className="w-4 h-4 text-blue-600" />
+                <span className="text-xs font-bold text-gray-900">Banque</span>
+             </Link>
+
+             {groupLink && (
+               <a href={groupLink} target="_blank" rel="noopener noreferrer" className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                   <Users className="w-4 h-4 text-red-600" />
+                   <span className="text-xs font-bold text-gray-900">Groupe</span>
+               </a>
+             )}
+             <Link to="/support" className={`${!groupLink ? 'col-span-2 ' : ''}bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95`}>
+                 <LifeBuoy className="w-4 h-4 text-gray-600" />
+                 <span className="text-xs font-bold text-gray-900">Support</span>
+             </Link>
+             
+             <button onClick={() => isInstallable ? installPWA() : alert("L'application sera bientôt disponible dans votre Play Store et App Store ! ")} className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                 <Download className="w-4 h-4 text-blue-600" />
+                 <span className="text-xs font-bold text-gray-900">Application</span>
+             </button>
+
+             <button onClick={() => { logout(); navigate('/login'); }} className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                 <LogOut className="w-4 h-4 text-gray-600" />
+                 <span className="text-xs font-bold text-gray-900">Déconnexion</span>
+             </button>
           </div>
 
-          {/* Quick Access */}
-          <div className="flex gap-3">
-              {groupLink && (
-                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                    <Users className="w-4 h-4 text-red-600" />
-                    <span className="text-xs font-bold text-gray-900">Groupe</span>
-                </a>
-              )}
-              <Link to="/support" className="flex-1 bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                  <LifeBuoy className="w-4 h-4 text-gray-600" />
-                  <span className="text-xs font-bold text-gray-900">Support</span>
-              </Link>
-          </div>
 
-          {activeInvestments.length > 0 && (
-            <CountdownTimer 
-              activeInvestments={activeInvestments} 
-              onTickZero={() => processDailyGains()} 
-            />
-          )}
         </div>
       )}
     </div>

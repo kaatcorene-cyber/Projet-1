@@ -71,7 +71,7 @@ export function Login() {
       <div className="text-center mb-8 flex flex-col items-center">
         <div className="bg-white p-4 rounded-3xl shadow-xl mb-6 relative">
           <div className="absolute inset-0 bg-red-100 blur-3xl rounded-full opacity-50"></div>
-          <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-[60px] object-contain relative z-10" referrerPolicy="no-referrer" />
+          <img src="https://i.imgur.com/IKSCH3N.png" alt="SIMcom" className="h-[60px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">Bienvenue</h1>
         <p className="text-gray-500 text-sm">Connectez-vous à votre compte</p>

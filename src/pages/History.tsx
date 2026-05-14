@@ -13,10 +13,10 @@ export function History() {
   useEffect(() => {
     fetchData();
 
-    // Polling for real-time history updates
+    // Polling for real-time history updates (Reduced frequency to save database quota)
     const intervalId = setInterval(() => {
       fetchData();
-    }, 5000);
+    }, 60000 * 2);
 
     return () => clearInterval(intervalId);
   }, [user]);
@@ -37,13 +37,13 @@ export function History() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-5 pt-16 pb-24 font-sans">
+    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans">
       <header className="flex justify-between items-end pb-2 border-b border-gray-200 mb-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Historique</h1>
           <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-1">Vos transactions</p>
         </div>
-        <img src="https://i.imgur.com/awFyFRj.png" alt="QUALCOMM" className="h-6 object-contain" referrerPolicy="no-referrer" />
+        <img src="https://i.imgur.com/IKSCH3N.png" alt="SIMcom" className="h-6 rounded-full object-contain" referrerPolicy="no-referrer" />
       </header>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

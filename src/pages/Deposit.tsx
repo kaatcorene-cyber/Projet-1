@@ -129,7 +129,7 @@ export function Deposit() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-5 pt-16 pb-24 font-sans">
+    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans">
       <header className="flex items-center gap-4 mb-6">
         <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors shadow-sm">
           <ChevronLeft className="w-5 h-5" />
@@ -251,7 +251,7 @@ export function Deposit() {
                    <div className="ml-7 my-3 bg-white p-3 rounded-xl border border-[#D5E4FF] shadow-sm flex items-center justify-between">
                       <div>
                         <p className="text-xl font-black text-gray-900 tracking-widest leading-none">{waveNum}</p>
-                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mt-1">Qualcomm Entreprise</p>
+                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mt-1">SIMcom Entreprise</p>
                       </div>
                       <button 
                         onClick={handleCopy}
