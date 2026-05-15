@@ -272,29 +272,29 @@ export function Dashboard() {
         </header>
 
         {/* Premium Balance Card */}
-        <div className="bg-gray-900 rounded-[2rem] p-6 relative overflow-hidden shadow-2xl shadow-gray-900/20">
+        <div className="bg-gradient-to-br from-red-600 to-red-900 rounded-[2rem] p-6 relative overflow-hidden shadow-xl shadow-red-900/20 text-white">
            {/* Abstract shapes */}
-           <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-           <div className="absolute bottom-0 left-0 w-32 h-32 bg-red-600/10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+           <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
            
            <div className="relative z-10 flex justify-between items-start mb-8">
                <div>
-                  <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                    <Wallet className="w-4 h-4 text-red-500" />
+                  <p className="text-red-100 text-xs font-semibold uppercase tracking-widest mb-1.5 flex items-center gap-2 opacity-90">
+                    <Wallet className="w-4 h-4 text-white" />
                     Capital Total
                   </p>
-                  <h2 className="text-4xl font-black tracking-tighter text-white">
+                  <h2 className="text-4xl font-black tracking-tighter drop-shadow-sm">
                     {formatCurrency(Number(user?.balance) || 0)}
                   </h2>
                </div>
            </div>
 
            <div className="relative z-10 grid grid-cols-2 gap-3">
-               <Link to="/deposit" className="bg-white text-gray-900 hover:bg-gray-100 transition-colors py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-sm active:scale-95">
-                   <PlusCircle className="w-5 h-5 text-red-600" />
+               <Link to="/deposit" className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white transition-colors py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-sm border border-white/20 active:scale-95">
+                   <PlusCircle className="w-5 h-5" />
                    Recharger
                </Link>
-               <Link to="/withdraw" className="bg-red-600 text-white hover:bg-red-700 transition-colors py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-sm active:scale-95">
+               <Link to="/withdraw" className="bg-white text-red-700 hover:bg-gray-50 transition-colors py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-sm active:scale-95">
                    <Banknote className="w-5 h-5" />
                    Retirer
                </Link>
