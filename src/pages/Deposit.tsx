@@ -47,6 +47,8 @@ export function Deposit() {
   useEffect(() => {
     if (country === 'Togo' || country === 'Benin') {
       setMethod('moov');
+    } else if (country === 'Niger' || country === 'Senegal' || country === 'Mali') {
+      setMethod('wave');
     }
   }, [country]);
 

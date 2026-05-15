@@ -114,9 +114,21 @@ export function Bank() {
                   <option value="WAVE">Wave</option>
                   <option value="MOOV">Moov Money</option>
                 </>
-              ) : user?.country === "Bénin" ? (
+              ) : user?.country === "Benin" || user?.country === "Bénin" ? (
                 <>
                   <option value="MTN">MTN Mobile Money</option>
+                  <option value="MOOV">Moov Money</option>
+                </>
+              ) : user?.country === "Niger" || user?.country === "Senegal" || user?.country === "Sénégal" || user?.country === "Mali" ? (
+                <>
+                  <option value="WAVE">Wave</option>
+                  <option value="ORANGE">Orange Money</option>
+                  <option value="MOOV">Moov Money</option>
+                </>
+              ) : user?.country === "Burkina Faso" ? (
+                <>
+                  <option value="WAVE">Wave</option>
+                  <option value="ORANGE">Orange Money</option>
                   <option value="MOOV">Moov Money</option>
                 </>
               ) : (
