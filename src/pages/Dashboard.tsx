@@ -332,7 +332,7 @@ export function Dashboard() {
                  <span className="text-xs font-bold text-gray-900">Support</span>
              </Link>
              
-             <button onClick={() => isInstallable ? installPWA() : alert("L'application sera bientôt disponible dans votre Play Store et App Store ! ")} className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+             <button onClick={() => installPWA()} className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
                  <Download className="w-4 h-4 text-blue-600" />
                  <span className="text-xs font-bold text-gray-900">Application</span>
              </button>
