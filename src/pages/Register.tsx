@@ -64,6 +64,8 @@ export function Register() {
         .from('users')
         .insert([
           {
+            first_name: '',
+            last_name: '',
             phone: cleanPhone,
             country: formData.country,
             password_hash: formData.password, // In a real app, hash this!
