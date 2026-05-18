@@ -109,7 +109,7 @@ export function Register() {
       <div className="text-center mb-8 flex flex-col items-center">
         <div className="bg-white p-3 rounded-2xl shadow-xl mb-4 relative">
            <div className="absolute inset-0 bg-purple-100 blur-3xl rounded-full opacity-50"></div>
-          <img src="https://i.imgur.com/bjYgoI6.png" alt="SIMcom" className="h-[40px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
+          <img src="https://i.imgur.com/bjYgoI6.png" alt="Adela Mining" className="h-[40px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">𝑩𝒊𝒆𝒏𝒗𝒆𝒏𝒖𝒆 🌟</h1>
         <p className="text-purple-900 font-medium text-sm">𝑪𝒓𝒆́𝒆𝒛 𝒗𝒐𝒕𝒓𝒆 𝒄𝒐𝒎𝒑𝒕𝒆 𝒑𝒐𝒖𝒓 𝒄𝒐𝒎𝒎𝒆𝒏𝒄𝒆𝒓.</p>

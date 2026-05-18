@@ -20,9 +20,9 @@ export default defineConfig(({mode}) => {
         },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
-          name: 'SIMcom',
-          short_name: 'SIMcom',
-          description: 'SIMcom Platform',
+          name: 'Adela Mining',
+          short_name: 'Adela Mining',
+          description: 'Adela Mining Platform',
           theme_color: '#7e22ce',
           background_color: '#ffffff',
           display: 'standalone',

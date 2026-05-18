@@ -71,7 +71,7 @@ export function Login() {
       <div className="text-center mb-8 flex flex-col items-center">
         <div className="bg-white p-4 rounded-3xl shadow-xl mb-6 relative">
           <div className="absolute inset-0 bg-purple-100 blur-3xl rounded-full opacity-50"></div>
-          <img src="https://i.imgur.com/bjYgoI6.png" alt="SIMcom" className="h-[60px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
+          <img src="https://i.imgur.com/bjYgoI6.png" alt="Adela Mining" className="h-[60px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">𝑩𝒊𝒆𝒏𝒗𝒆𝒏𝒖𝒆 🌟</h1>
         <p className="text-purple-900 font-medium text-sm">𝑪𝒐𝒏𝒏𝒆𝒄𝒕𝒆𝒛-𝒗𝒐𝒖𝒔 à 𝒗𝒐𝒕𝒓𝒆 𝒄𝒐𝒎𝒑𝒕𝒆.</p>
