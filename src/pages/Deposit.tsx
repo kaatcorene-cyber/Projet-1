@@ -1,63 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Info, CheckCircle2, Phone, ArrowRight, Wallet, Copy } from 'lucide-react';
+import { ChevronLeft, Info, CheckCircle2, ArrowRight, Wallet } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 
 export function Deposit() {
-  const [ussdCodes, setUssdCodes] = useState({ togo: '*155*1*2*1*3*2250140814162#', ci: '*155*1*1*0140814162#', bf: '*555*1*2*1*1*2250140814162#', benin: '*155*1*2*1*2*2250140814162#', mtn_ci: '*133*1*1*0595918513#', mtn_benin: '*880*1*3*1*1*2250595918513#' });
-  const [waveNum, setWaveNum] = useState('0574738155');
-
-  useEffect(() => {
-    supabase.from('settings').select('key, value').in('key', ['ussd_togo', 'ussd_ci', 'ussd_bf', 'ussd_benin', 'wave_number', 'ussd_mtn_ci', 'ussd_mtn_benin']).then(({ data }) => {
-      if (data) {
-        setUssdCodes(prev => ({
-          togo: data.find(s => s.key === 'ussd_togo')?.value || prev.togo,
-          ci: data.find(s => s.key === 'ussd_ci')?.value || prev.ci,
-          bf: data.find(s => s.key === 'ussd_bf')?.value || prev.bf,
-          benin: data.find(s => s.key === 'ussd_benin')?.value || prev.benin,
-          mtn_ci: data.find(s => s.key === 'ussd_mtn_ci')?.value || prev.mtn_ci,
-          mtn_benin: data.find(s => s.key === 'ussd_mtn_benin')?.value || prev.mtn_benin,
-        }));
-        setWaveNum(data.find(s => s.key === 'wave_number')?.value || '0574738155');
-      }
-    });
-  }, []);
-
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
-  const [phone, setPhone] = useState('');
-  const country = user?.country || "Cote d'Ivoire";
-  const [method, setMethod] = useState<'moov' | 'wave' | 'mtn'>('moov');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(waveNum.replace(/\s/g, ''));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
   
   const [step, setStep] = useState<1 | 2>(1);
-  const [ussdCode, setUssdCode] = useState('');
-
-  useEffect(() => {
-    if (country === 'Togo' || country === 'Benin') {
-      setMethod('moov');
-    } else if (country === 'Niger' || country === 'Senegal' || country === 'Mali') {
-      setMethod('wave');
-    }
-  }, [country]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     
-    if (Number(amount) < 1000) {
-      setError('Le montant minimum de dépôt est de 1000 FCFA.');
+    if (Number(amount) < 2500) {
+      setError('Le montant minimum de dépôt est de 2500 FCFA.');
       return;
     }
 
@@ -69,62 +31,39 @@ export function Deposit() {
         user_id: user.id,
         type: 'deposit',
         amount: Number(amount),
-        reference: `${method.toUpperCase()} - ${phone}`,
+        reference: `MONEYFUSION - ${user.phone}`,
         status: 'pending'
       }]);
 
       if (txError) throw txError;
       
-      if (method === 'moov' || method === 'mtn') {
-        let ussd = '';
-        if (method === 'moov') {
-          if (country === 'Togo') ussd = ussdCodes.togo;
-          else if (country === "Cote d'Ivoire") ussd = ussdCodes.ci;
-          else if (country === 'Burkina Faso') ussd = ussdCodes.bf;
-          else if (country === 'Benin') ussd = ussdCodes.benin;
-        } else if (method === 'mtn') {
-          if (country === "Cote d'Ivoire") ussd = ussdCodes.mtn_ci;
-          else if (country === 'Benin') ussd = ussdCodes.mtn_benin;
-        }
-
-        let finalUssd = ussd;
-        if (country === "Cote d'Ivoire") {
-           if (finalUssd.includes('#')) {
-              finalUssd = finalUssd.replace('#', `*${amount}#`);
-           } else {
-              finalUssd = `${finalUssd}*${amount}#`;
-           }
-        }
-
-        // We store the full configured USSD so we can extract the number later
-        setUssdCode(finalUssd);
-        
-        let baseUssd = ussd;
-        if (country !== "Cote d'Ivoire") {
-          const match = ussd.match(/(.*)\*(\d{8,15})#?$/);
-          if (match) {
-              baseUssd = match[1] + '#';
-          }
-        } else {
-          baseUssd = finalUssd;
-        }
-        
-        const telUrl = `tel:${baseUssd.replace('#', '%23')}`;
-        const a = document.createElement('a');
-        a.href = telUrl;
-        a.target = '_top';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        setStep(2);
+      const paymentRes = await fetch("https://pay.moneyfusion.net/api/v2/links/init-payment", {
+          method: "POST",
+          headers: {
+             "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+             id: "6a07c1723e8ed1397e29e0da",
+             montant: amount.toString(),
+             name: "Parfait loua",
+             phone: user.phone.replace(/\D/g, ''),
+             customerEmail: "parfaitloua@gmail.com",
+             countryCode: "+225"
+          })
+      });
+      const paymentData = await paymentRes.json();
+      
+      if (paymentData.statut && paymentData.url) {
+          const urlParts = paymentData.url.split('/');
+          urlParts[urlParts.length - 1] = encodeURIComponent("Adela Mining");
+          window.location.href = urlParts.join('/');
       } else {
-        setStep(2);
+          throw new Error(paymentData.message || "Erreur lors de la génération du lien de paiement");
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError('Une erreur est survenue lors de la création du dépôt.');
+      setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
     } finally {
       setLoading(false);
     }
@@ -145,144 +84,21 @@ export function Deposit() {
              <CheckCircle2 className="w-10 h-10 text-green-500" />
            </div>
            
-           <h2 className="text-2xl font-black text-gray-900 mb-2">Demande enregistrée</h2>
-           <p className="text-gray-500 mb-6 font-medium">Votre demande de dépôt de <span className="text-gray-900 font-black">{formatCurrency(Number(amount))}</span> est bien notée.</p>
+           <h2 className="text-2xl font-black text-gray-900 mb-2">Redirection en cours</h2>
+           <p className="text-gray-500 mb-6 font-medium">Veuillez patienter pendant que nous vous redirigeons vers la page de paiement sécurisée pour un montant de <span className="text-gray-900 font-black">{formatCurrency(Number(amount))}</span>.</p>
            
            <div className="w-full h-px bg-gray-100 mb-6"></div>
 
-           {(method === 'moov' || method === 'mtn') && country === "Cote d'Ivoire" && (
-              <div className="mb-8 text-left">
-                <p className="text-sm font-bold text-gray-900 mb-3 text-center uppercase tracking-wider">Action Requise</p>
-                <p className="text-sm text-gray-500 mb-4 text-center">Le code secret de paiement s'est ouvert sur votre téléphone, ou cliquez sur le bouton ci-dessous pour le relancer :</p>
-                
-                <a href={`tel:${ussdCode.replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-4 font-bold rounded-xl mb-4 transition-all shadow-md active:scale-95 ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#FFCC00]/90 text-black shadow-yellow-200' : 'bg-[#FF7900] hover:bg-[#FF7900]/90 text-white shadow-orange-200'}`}>
-                  <Phone className="w-5 h-5" />
-                  Lancer le code USSD
-                </a>
-              </div>
-           )}
-
-           {(method === 'moov' || method === 'mtn') && country !== "Cote d'Ivoire" && (
-              <div className="mb-8 text-left border rounded-xl overflow-hidden bg-white shadow-sm">
-                <div className={`p-4 ${method === 'mtn' ? 'bg-[#FFCC00]/10 border-b border-[#FFCC00]/20' : 'bg-[#FF7900]/10 border-b border-[#FF7900]/20'}`}>
-                   <p className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
-                     <Info className={`w-4 h-4 ${method === 'mtn' ? 'text-yellow-600' : 'text-orange-600'}`} /> 
-                     Action Requise
-                   </p>
-                   <p className="text-xs text-gray-600 font-medium leading-relaxed">
-                     Pour valider votre dépôt de <strong>{formatCurrency(Number(amount))}</strong>, suivez les instructions :
-                   </p>
-                </div>
-                
-                <div className="p-5 space-y-5">
-                  <div className="flex gap-4 items-start">
-                     <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${method === 'mtn' ? 'bg-[#FFCC00] text-black' : 'bg-[#FF7900] text-white'}`}>1</div>
-                     <div>
-                       <p className="text-sm font-medium text-gray-700 mb-2">Copiez ce numéro destinataire avec son indicatif :</p>
-                       <div className="flex items-center gap-2">
-                          <div className="bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg flex-1">
-                            <p className="font-mono text-lg font-black text-gray-900 tracking-wider">
-                              {(() => {
-                                 const numMatch = ussdCode.match(/\*(\d{8,15})#?$/);
-                                 let text = method === 'mtn' ? '2250595918513' : '2250140814162';
-                                 if (numMatch) {
-                                    text = numMatch[1];
-                                 }
-                                 return text;
-                              })()}
-                            </p>
-                          </div>
-                          <button 
-                              onClick={() => {
-                                 const numMatch = ussdCode.match(/\*(\d{8,15})#?$/);
-                                 let text = method === 'mtn' ? '2250595918513' : '2250140814162';
-                                 if (numMatch) {
-                                    text = numMatch[1];
-                                 }
-                                 navigator.clipboard.writeText(text);
-                                 setCopied(true);
-                                 setTimeout(() => setCopied(false), 2000);
-                              }}
-                              className="p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors border border-gray-200 shadow-sm active:scale-95"
-                              title="Copier"
-                            >
-                              {copied ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
-                          </button>
-                       </div>
-                     </div>
-                  </div>
-
-                  <div className="flex gap-4 items-start">
-                     <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${method === 'mtn' ? 'bg-[#FFCC00] text-black' : 'bg-[#FF7900] text-white'}`}>2</div>
-                     <div className="w-full">
-                       <p className="text-sm font-medium text-gray-700 mb-2">Composez et lancez ce code USSD sur votre téléphone :</p>
-                       <a href={`tel:${(ussdCode.match(/(.*)\*(\d{8,15})#?$/) ? ussdCode.match(/(.*)\*(\d{8,15})#?$/)![1] + '#' : ussdCode).replace('#', '%23')}`} className={`flex items-center justify-center gap-2 w-full py-3.5 font-bold rounded-xl transition-all shadow-sm active:scale-[0.98] ${method === 'mtn' ? 'bg-[#FFCC00] hover:bg-[#FFCC00]/90 text-black border border-yellow-400' : 'bg-[#FF7900] hover:bg-[#FF7900]/90 text-white border border-orange-500'}`}>
-                         <Phone className="w-4 h-4" />
-                         {(ussdCode.match(/(.*)\*(\d{8,15})#?$/) ? ussdCode.match(/(.*)\*(\d{8,15})#?$/)![1] + '#' : ussdCode)}
-                       </a>
-                     </div>
-                  </div>
-
-                  <div className="flex gap-4 items-start pb-2">
-                     <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${method === 'mtn' ? 'bg-[#FFCC00] text-black' : 'bg-[#FF7900] text-white'}`}>3</div>
-                     <div>
-                       <p className="text-sm font-medium text-gray-700 leading-snug">
-                         Lorsque demandé, <strong>collez le numéro copié</strong>, puis entrez le montant de <strong>{formatCurrency(Number(amount))}</strong> et validez avec votre mot de passe secret.
-                       </p>
-                     </div>
-                  </div>
-                </div>
-              </div>
-           )}
-
-           {method === 'wave' && (
-              <div className="mb-8 text-left bg-[#F1F6FF] border border-[#D5E4FF] p-5 rounded-xl">
-                 <p className="font-black text-[#1C3FB7] mb-4 uppercase tracking-wider text-sm flex items-center gap-2">
-                   <Info className="w-4 h-4" /> Instructions Wave
-                 </p>
-                 <div className="space-y-3 text-sm text-[#1C3FB7] font-medium">
-                   <p className="flex items-start gap-2">
-                     <span className="bg-[#D5E4FF] text-[#1C3FB7] w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-xs mt-0.5">1</span>
-                     <span>Ouvrez votre application Wave.</span>
-                   </p>
-                   <p className="flex items-start gap-2">
-                     <span className="bg-[#D5E4FF] text-[#1C3FB7] w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-xs mt-0.5">2</span>
-                     <span>Transférez exact. <strong className="text-gray-900">{formatCurrency(Number(amount))}</strong> au :</span>
-                   </p>
-                   
-                   <div className="ml-7 my-3 bg-white p-3 rounded-xl border border-[#D5E4FF] shadow-sm flex items-center justify-between">
-                      <div>
-                        <p className="text-xl font-black text-gray-900 tracking-widest leading-none">{waveNum}</p>
-                        <p className="text-gray-500 text-[10px] font-bold uppercase tracking-wider mt-1">SIMcom Entreprise</p>
-                      </div>
-                      <button 
-                        onClick={handleCopy}
-                        className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
-                        title="Copier le numéro"
-                      >
-                        {copied ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
-                      </button>
-                   </div>
-                   
-                   {country === 'Burkina Faso' && (
-                     <p className="text-red-700 font-bold bg-red-50 p-3 rounded-lg border border-red-100 text-center mt-2">
-                       Attention: Transfert depuis le Burkina vers un compte Wave CI !
-                     </p>
-                   )}
-                 </div>
-              </div>
-           )}
-
            <button onClick={() => navigate('/history')} className="flex items-center justify-center gap-2 w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-gray-200">
-             Terminer et voir l'historique
+             Voir l'historique
              <ArrowRight className="w-5 h-5" />
            </button>
          </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 mb-2">
-             <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center shrink-0">
-               <Wallet className="w-6 h-6 text-red-500" />
+             <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center shrink-0">
+               <Wallet className="w-6 h-6 text-purple-500" />
              </div>
              <div>
                <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Solde Actuel</p>
@@ -298,46 +114,19 @@ export function Deposit() {
           )}
 
           <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
-             
-             <div className="px-4 py-3 border-b border-gray-100">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Moyen de paiement</label>
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value as 'moov' | 'wave' | 'mtn')}
-                className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-black text-gray-900 mt-1 appearance-none outline-none"
-                required
-              >
-                <option value="moov">Moov Money</option>
-                {country !== 'Togo' && <option value="wave">Wave</option>}
-                {(country === "Cote d'Ivoire" || country === "Benin") && <option value="mtn">MTN Mobile Money</option>}
-              </select>
-            </div>
-
-            <div className="px-4 py-3 border-b border-gray-100">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Numéro de téléphone</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-black text-gray-900 placeholder-gray-300 mt-1 outline-none"
-                placeholder={country === "Cote d'Ivoire" ? "Ex: 01 02 03 04 05" : "Entrez votre numéro"}
-                required
-              />
-            </div>
-            
-            <div className="px-4 py-3 bg-gray-50/50">
+            <div className="px-4 py-6 bg-gray-50/50">
               <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Montant (FCFA)</label>
               <div className="flex items-center mt-1">
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-2xl font-black text-red-600 placeholder-red-200 outline-none"
-                  placeholder="1000"
+                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-purple-600 placeholder-purple-200 outline-none"
+                  placeholder="5000"
                   required
-                  min="1000"
+                  min="5000"
                 />
-                <span className="text-gray-400 font-bold ml-2">XOF</span>
+                <span className="text-gray-400 font-bold ml-2 text-xl">XOF</span>
               </div>
             </div>
           </div>
@@ -345,13 +134,13 @@ export function Deposit() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl transition-all duration-300 disabled:opacity-50 shadow-lg shadow-red-200 active:scale-[0.98] flex items-center justify-center gap-2"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl transition-all duration-300 disabled:opacity-50 shadow-lg shadow-purple-200 active:scale-[0.98] flex items-center justify-center gap-2"
           >
-            {loading ? 'Création de la demande...' : 'Confirmer le dépôt'}
+            {loading ? 'Redirection...' : 'Confirmer le dépôt'}
             {!loading && <ArrowRight className="w-5 h-5" />}
           </button>
           
-          <p className="text-center text-xs text-gray-400 font-medium">Le système générera les instructions à l'étape suivante.</p>
+          <p className="text-center text-xs text-gray-400 font-medium">Vous serez redirigé vers une page de paiement sécurisée.</p>
         </form>
       )}
     </div>

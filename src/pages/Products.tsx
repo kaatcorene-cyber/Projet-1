@@ -43,7 +43,7 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
 
   return (
     <div className="bg-white rounded-[2rem] p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative overflow-hidden flex items-center gap-5 border border-gray-100">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+      <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
       
       <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
         <svg className="w-16 h-16 transform -rotate-90 drop-shadow-sm" viewBox="0 0 64 64">
@@ -57,7 +57,7 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
             cy="32" 
           />
           <circle 
-            className="text-red-500 transition-all duration-1000 ease-linear" 
+            className="text-purple-500 transition-all duration-1000 ease-linear" 
             strokeWidth="4" 
             strokeDasharray={circumference} 
             strokeDashoffset={strokeDashoffset}
@@ -70,7 +70,7 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <Zap className="w-5 h-5 text-red-500" />
+          <Zap className="w-5 h-5 text-purple-500" />
         </div>
       </div>
 
@@ -88,7 +88,7 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
           <span className="text-gray-400 mx-1 mb-1">:</span>
           <span>{String(timeLeft.m).padStart(2, '0')}</span>
           <span className="text-gray-400 mx-1 mb-1">:</span>
-          <span className="text-red-500">{String(timeLeft.s).padStart(2, '0')}</span>
+          <span className="text-purple-500">{String(timeLeft.s).padStart(2, '0')}</span>
         </div>
       </div>
     </div>
@@ -129,7 +129,7 @@ export function Products() {
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Mes Produits</h1>
           <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-1">Vos investissements</p>
         </div>
-        <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 border border-red-100">
+        <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 border border-purple-100">
           <PackageCheck className="w-6 h-6" />
         </div>
       </header>
@@ -144,7 +144,7 @@ export function Products() {
             <p className="text-gray-500 text-sm mb-6">Investissez dans un plan pour commencer à générer des revenus.</p>
             <button 
               onClick={() => navigate('/invest')}
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-red-500/25 active:scale-95 transition-all text-sm"
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-purple-500/25 active:scale-95 transition-all text-sm"
             >
               Voir les plans
             </button>

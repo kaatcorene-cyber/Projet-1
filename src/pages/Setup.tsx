@@ -119,8 +119,8 @@ ON CONFLICT (phone, country) DO NOTHING;
 
   return (
     <div className="min-h-screen bg-transparent text-gray-900 p-6 flex flex-col items-center justify-center max-w-md mx-auto">
-      <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
-        <Database className="w-8 h-8 text-red-500" />
+      <div className="w-16 h-16 bg-purple-500/10 rounded-full flex items-center justify-center mb-6">
+        <Database className="w-8 h-8 text-purple-500" />
       </div>
       <h1 className="text-2xl font-bold mb-2 text-center">Configuration Requise</h1>
       <p className="text-gray-500 text-center mb-8">
@@ -133,7 +133,7 @@ ON CONFLICT (phone, country) DO NOTHING;
             onClick={copyToClipboard}
             className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
           >
-            {copied ? <CheckCircle className="w-4 h-4 text-red-500" /> : <Copy className="w-4 h-4" />}
+            {copied ? <CheckCircle className="w-4 h-4 text-purple-500" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
         <pre className="bg-white p-4 rounded-xl overflow-x-auto text-xs text-gray-600 border border-gray-200 h-64">
@@ -143,7 +143,7 @@ ON CONFLICT (phone, country) DO NOTHING;
 
       <button 
         onClick={() => window.location.reload()}
-        className="mt-8 w-full py-3 bg-red-500 hover:bg-red-700 text-white rounded-xl font-medium transition-colors"
+        className="mt-8 w-full py-3 bg-purple-500 hover:bg-purple-700 text-white rounded-xl font-medium transition-colors"
       >
         J'ai exécuté le script
       </button>

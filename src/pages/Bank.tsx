@@ -84,14 +84,14 @@ export function Bank() {
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Ma Banque</h1>
           <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-1">Gérer vos paiements</p>
         </div>
-        <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 border border-red-100">
+        <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 border border-purple-100">
           <Building2 className="w-6 h-6" />
         </div>
       </header>
 
       <div className="px-5 mt-6 max-w-md mx-auto">
         {message && (
-          <div className={`mb-6 p-4 rounded-xl text-sm font-bold flex items-center gap-2 ${message.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-green-50 text-green-600 border border-green-100'}`}>
+          <div className={`mb-6 p-4 rounded-xl text-sm font-bold flex items-center gap-2 ${message.type === 'error' ? 'bg-purple-50 text-purple-600 border border-purple-100' : 'bg-green-50 text-green-600 border border-green-100'}`}>
              {message.text}
           </div>
         )}
@@ -104,7 +104,7 @@ export function Bank() {
             <select
               value={method}
               onChange={(e) => setMethod(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
             >
               <option value="">Sélectionnez un moyen</option>
               {user?.country === "Cote d'Ivoire" ? (
@@ -151,7 +151,7 @@ export function Bank() {
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
                   placeholder="Ex: Jean Dupont"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium placeholder-gray-400"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium placeholder-gray-400"
                 />
              </div>
           </div>
@@ -165,7 +165,7 @@ export function Bank() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Votre mot de passe de connexion"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium placeholder-gray-400"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium placeholder-gray-400"
              />
              <p className="text-gray-400 text-xs mt-2">Nécessaire pour sécuriser l'ajout de votre méthode de retrait.</p>
           </div>
@@ -173,7 +173,7 @@ export function Bank() {
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-red-500/25 active:scale-95 transition-all text-sm flex items-center justify-center gap-2 mt-4"
+            className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-purple-500/25 active:scale-95 transition-all text-sm flex items-center justify-center gap-2 mt-4"
           >
             {isSaving ? "Modification en cours..." : "Sauvegarder"}
           </button>

@@ -70,11 +70,11 @@ export function Login() {
       {/* Container matches animated dark theme */}
       <div className="text-center mb-8 flex flex-col items-center">
         <div className="bg-white p-4 rounded-3xl shadow-xl mb-6 relative">
-          <div className="absolute inset-0 bg-red-100 blur-3xl rounded-full opacity-50"></div>
-          <img src="https://i.imgur.com/IKSCH3N.png" alt="SIMcom" className="h-[60px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-purple-100 blur-3xl rounded-full opacity-50"></div>
+          <img src="https://i.imgur.com/bjYgoI6.png" alt="SIMcom" className="h-[60px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Bienvenue</h1>
-        <p className="text-gray-500 text-sm">Connectez-vous à votre compte</p>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">𝑩𝒊𝒆𝒏𝒗𝒆𝒏𝒖𝒆 🌟</h1>
+        <p className="text-purple-900 font-medium text-sm">𝑪𝒐𝒏𝒏𝒆𝒄𝒕𝒆𝒛-𝒗𝒐𝒖𝒔 à 𝒗𝒐𝒕𝒓𝒆 𝒄𝒐𝒎𝒑𝒕𝒆.</p>
       </div>
 
       <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-2xl">
@@ -86,34 +86,16 @@ export function Login() {
           )}
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Pays</label>
-            <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium appearance-none"
-              required
-            >
-              <option value="Cote d'Ivoire">Côte d'Ivoire</option>
-              <option value="Togo">Togo</option>
-              <option value="Burkina Faso">Burkina Faso</option>
-              <option value="Benin">Bénin</option>
-              <option value="Niger">Niger</option>
-              <option value="Senegal">Sénégal</option>
-              <option value="Mali">Mali</option>
-            </select>
-          </div>
-
-          <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-gray-200 pr-3">
-                {country === "Cote d'Ivoire" ? '+225' : country === 'Togo' ? '+228' : country === 'Benin' ? '+229' : country === 'Niger' ? '+227' : country === 'Senegal' ? '+221' : country === 'Mali' ? '+223' : '+226'}
+                +225
               </span>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/^\+225/, ''))}
-                className="w-full bg-white border border-gray-200 shadow-sm rounded-xl pl-16 pr-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all placeholder:text-gray-400 font-medium tracking-wide"
+                className="w-full bg-white border border-gray-200 shadow-sm rounded-xl pl-16 pr-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all placeholder:text-gray-400 font-medium tracking-wide"
                 placeholder="0123456789"
                 required
               />
@@ -126,7 +108,7 @@ export function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all placeholder:text-gray-400 font-medium"
+              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all placeholder:text-gray-400 font-medium"
               placeholder="••••••••"
               required
             />
@@ -135,7 +117,7 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-white text-red-950 hover:bg-gray-100 font-bold py-4 rounded-xl mt-6 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+            className="w-full bg-white text-purple-950 hover:bg-gray-100 font-bold py-4 rounded-xl mt-6 transition-all shadow-lg active:scale-95 disabled:opacity-50"
           >
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
@@ -143,7 +125,7 @@ export function Login() {
 
         <p className="text-center text-gray-500 text-sm mt-8">
           Pas encore de compte ?{' '}
-          <Link to="/register" className="text-red-700 hover:text-red-800 font-bold tracking-wide transition-colors">
+          <Link to="/register" className="text-purple-700 hover:text-purple-800 font-bold tracking-wide transition-colors">
             S'inscrire
           </Link>
         </p>

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, TrendingUp, Network, Clock } from 'lucide-react';
+import { LayoutDashboard, Gem, Network, Clock } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export function BottomNav() {
@@ -7,7 +7,7 @@ export function BottomNav() {
   
   const navItems = [
     { icon: LayoutDashboard, label: 'Accueil', path: '/dashboard' },
-    { icon: TrendingUp, label: 'Investir', path: '/invest' },
+    { icon: Gem, label: 'Mine', path: '/invest' },
     { icon: Network, label: 'Équipe', path: '/team' },
     { icon: Clock, label: 'Historique', path: '/history' },
   ];
@@ -22,11 +22,14 @@ export function BottomNav() {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors",
-                isActive ? "text-red-400" : "text-slate-400 hover:text-slate-600"
+                "relative flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors",
+                isActive ? "text-purple-700" : "text-gray-500 hover:text-gray-900"
               )}
             >
-              <item.icon className="w-5 h-5" />
+              {isActive && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-purple-700 rounded-b-full"></div>
+              )}
+              <item.icon className={cn("w-5 h-5", isActive && "fill-purple-50")} />
               <span className="text-[10px] font-medium">{item.label}</span>
             </Link>
           );

@@ -23,22 +23,22 @@ export default defineConfig(({mode}) => {
           name: 'SIMcom',
           short_name: 'SIMcom',
           description: 'SIMcom Platform',
-          theme_color: '#1e3a8a',
-          background_color: '#0f172a',
+          theme_color: '#7e22ce',
+          background_color: '#ffffff',
           display: 'standalone',
           icons: [
             {
-              src: 'https://i.imgur.com/IKSCH3N.png',
+              src: 'https://i.imgur.com/bjYgoI6.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'https://i.imgur.com/IKSCH3N.png',
+              src: 'https://i.imgur.com/bjYgoI6.png',
               sizes: '512x512',
               type: 'image/png'
             },
             {
-              src: 'https://i.imgur.com/IKSCH3N.png',
+              src: 'https://i.imgur.com/bjYgoI6.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'

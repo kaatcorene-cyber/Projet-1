@@ -71,7 +71,7 @@ export function Register() {
             password_hash: formData.password, // In a real app, hash this!
             referral_code: myReferralCode,
             referred_by: formData.referralCode ? formData.referralCode.trim().toUpperCase() : null,
-            balance: 100 // Signup bonus
+            balance: 0 // No signup bonus
           }
         ])
         .select()
@@ -92,15 +92,6 @@ export function Register() {
             setError(`Erreur Serveur: ${insertError?.message || 'Impossible de créer le compte'}`);
         }
       } else {
-        // Record the signup bonus transaction safely
-        const { error: txError } = await supabase.from('transactions').insert([{
-          user_id: data.id,
-          type: 'signup_bonus',
-          amount: 100,
-          status: 'completed'
-        }]);
-        if (txError) console.warn("Failed to insert bonus", txError);
-        
         sessionStorage.removeItem('welcome_shown');
         setUser(data);
         navigate('/dashboard');
@@ -117,11 +108,11 @@ export function Register() {
     <div className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-md mx-auto relative overflow-hidden text-gray-900">
       <div className="text-center mb-8 flex flex-col items-center">
         <div className="bg-white p-3 rounded-2xl shadow-xl mb-4 relative">
-           <div className="absolute inset-0 bg-red-100 blur-3xl rounded-full opacity-50"></div>
-          <img src="https://i.imgur.com/IKSCH3N.png" alt="SIMcom" className="h-[40px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
+           <div className="absolute inset-0 bg-purple-100 blur-3xl rounded-full opacity-50"></div>
+          <img src="https://i.imgur.com/bjYgoI6.png" alt="SIMcom" className="h-[40px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Créer un compte</h1>
-        <p className="text-red-100 font-medium text-sm">Bonus de bienvenue : 100 FCFA offerts !</p>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">𝑩𝒊𝒆𝒏𝒗𝒆𝒏𝒖𝒆 🌟</h1>
+        <p className="text-purple-900 font-medium text-sm">𝑪𝒓𝒆́𝒆𝒛 𝒗𝒐𝒕𝒓𝒆 𝒄𝒐𝒎𝒑𝒕𝒆 𝒑𝒐𝒖𝒓 𝒄𝒐𝒎𝒎𝒆𝒏𝒄𝒆𝒓.</p>
       </div>
 
       <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-2xl">
@@ -133,36 +124,17 @@ export function Register() {
           )}
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Pays</label>
-            <select
-              name="country"
-              value={formData.country}
-              onChange={handleChange}
-              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium appearance-none"
-              required
-            >
-              <option value="Cote d'Ivoire">Côte d'Ivoire</option>
-              <option value="Togo">Togo</option>
-              <option value="Burkina Faso">Burkina Faso</option>
-              <option value="Benin">Bénin</option>
-              <option value="Niger">Niger</option>
-              <option value="Senegal">Sénégal</option>
-              <option value="Mali">Mali</option>
-            </select>
-          </div>
-
-          <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-gray-200 pr-3">
-                {formData.country === "Cote d'Ivoire" ? '+225' : formData.country === 'Togo' ? '+228' : formData.country === 'Benin' ? '+229' : formData.country === 'Niger' ? '+227' : formData.country === 'Senegal' ? '+221' : formData.country === 'Mali' ? '+223' : '+226'}
+                +225
               </span>
               <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/^\+225/, '') })}
-                className="w-full bg-white border border-gray-200 shadow-sm rounded-xl pl-16 pr-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all placeholder:text-gray-400 font-medium tracking-wide"
+                className="w-full bg-white border border-gray-200 shadow-sm rounded-xl pl-16 pr-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all placeholder:text-gray-400 font-medium tracking-wide"
                 placeholder="0123456789"
                 required
               />
@@ -176,19 +148,19 @@ export function Register() {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium"
+              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all font-medium"
               required
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Confirmer</label>
+            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Confirmer le mot de passe</label>
             <input
               type="password"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium"
+              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all font-medium"
               required
             />
           </div>
@@ -200,14 +172,14 @@ export function Register() {
               name="referralCode"
               value={formData.referralCode}
               onChange={handleChange}
-              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium uppercase"
+              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all font-medium uppercase"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-white text-red-950 hover:bg-gray-100 font-bold py-4 rounded-xl mt-6 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+            className="w-full bg-white text-purple-950 hover:bg-gray-100 font-bold py-4 rounded-xl mt-6 transition-all shadow-lg active:scale-95 disabled:opacity-50"
           >
             {loading ? 'Inscription...' : 'S\'inscrire'}
           </button>
@@ -215,7 +187,7 @@ export function Register() {
 
         <p className="text-center text-gray-500 text-sm mt-8">
           Déjà un compte ?{' '}
-          <Link to="/login" className="text-red-700 hover:text-red-800 font-bold tracking-wide transition-colors">
+          <Link to="/login" className="text-purple-700 hover:text-purple-800 font-bold tracking-wide transition-colors">
             Se connecter
           </Link>
         </p>

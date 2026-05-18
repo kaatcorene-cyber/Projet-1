@@ -30,8 +30,8 @@ export function Withdraw() {
     
     const numAmount = Number(amount);
     
-    if (numAmount < 1000) {
-      return setMessage({ type: 'error', text: 'Le minimum de retrait est de 1 000 FCFA.' });
+    if (numAmount < 2000) {
+      return setMessage({ type: 'error', text: 'Le minimum de retrait est de 2 000 FCFA.' });
     }
 
     if (Number(user.balance) < numAmount) {
@@ -91,11 +91,11 @@ export function Withdraw() {
       </header>
 
       <div className="bg-white border text-center border-gray-200 rounded-2xl p-6 shadow-sm mb-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-red-600"></div>
+        <div className="absolute top-0 left-0 w-full h-1 bg-purple-600"></div>
         <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Solde disponible</p>
         <h2 className="text-4xl font-black text-gray-900 tracking-tighter">{formatCurrency(user?.balance || 0)}</h2>
-        <div className="mt-4 inline-flex items-center justify-center px-3 py-1 bg-red-50 text-red-700 rounded-full text-xs font-bold border border-red-100">
-          Frais de retrait 20%
+        <div className="mt-4 inline-flex items-center justify-center px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-bold border border-purple-100">
+          Frais de retrait 10%
         </div>
       </div>
 
@@ -115,7 +115,7 @@ export function Withdraw() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {message && (
             <div className={`p-4 rounded-xl text-sm font-medium flex items-center justify-center ${
-              message.type === 'success' ? 'bg-green-50/80 border border-green-100 text-green-600' : 'bg-red-50 border border-red-100 text-red-600'
+              message.type === 'success' ? 'bg-green-50/80 border border-green-100 text-green-600' : 'bg-purple-50 border border-purple-100 text-purple-600'
             }`}>
               {message.text}
             </div>
@@ -136,9 +136,9 @@ export function Withdraw() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-bold text-gray-900 placeholder-gray-300 mt-1"
-                placeholder="Min: 1 000"
+                placeholder="Min: 2 000"
                 required
-                min="1000"
+                min="2000"
               />
             </div>
             
@@ -158,7 +158,7 @@ export function Withdraw() {
           <button
             type="submit"
             disabled={loading || !amount || !password}
-            className="w-full py-4 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-red-500/25 active:scale-95 transition-all text-sm"
+            className="w-full py-4 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-purple-500/25 active:scale-95 transition-all text-sm"
           >
             {loading ? 'Traitement...' : 'Confirmer le retrait'}
           </button>
