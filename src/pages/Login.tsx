@@ -102,19 +102,24 @@ export function Login() {
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
             <div className="flex bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500/50 transition-all w-full">
-              <select
-                value={country}
-                onChange={(e) => {
-                   setCountry(e.target.value as CountryName);
-                   setPhone('');
-                }}
-                className="bg-transparent border-none py-3 pl-3 pr-7 text-gray-500 font-bold focus:outline-none cursor-pointer appearance-none outline-none"
-                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em' }}
-              >
-                {COUNTRY_NAMES.map(c => (
-                  <option key={c} value={c}>{COUNTRIES[c].code}</option>
-                ))}
-              </select>
+              <div className="relative flex items-center bg-transparent shrink-0">
+                <select
+                  value={country}
+                  onChange={(e) => {
+                     setCountry(e.target.value as CountryName);
+                     setPhone('');
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none z-10"
+                >
+                  {COUNTRY_NAMES.map(c => (
+                    <option key={c} value={c}>{c} ({COUNTRIES[c].code})</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none flex items-center gap-1 pl-3 pr-2 py-3 text-gray-500 font-bold">
+                  <span>{selectedCountry.code}</span>
+                  <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20' className="w-4 h-4"><path stroke='#6b7280' strokeLinecap='round' strokeLinejoin='round' strokeWidth='1.5' d='M6 8l4 4 4-4'/></svg>
+                </div>
+              </div>
               <div className="w-px bg-gray-200 my-2"></div>
               <input
                 type="tel"
