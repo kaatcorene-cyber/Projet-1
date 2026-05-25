@@ -20,9 +20,12 @@ export function Withdraw() {
   // We load bank details from user.
   // Note: Since TS interface in useAuthStore doesn't strictly have bank_method, we access it as any or wait for it.
   const bankMethod = (user as any)?.bank_method;
-  const bankAccountName = (user as any)?.bank_account_name;
+  const rawAccountName = (user as any)?.bank_account_name || '';
   
-  const hasBankConfigured = !!bankMethod;
+  const bankAccountName = rawAccountName.split('|||')[0] || '';
+  const bankAccountNumber = rawAccountName.split('|||')[1] || (user as any)?.phone;
+  
+  const hasBankConfigured = !!bankMethod && rawAccountName.includes('|||');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +67,7 @@ export function Withdraw() {
         user_id: user.id,
         type: 'withdrawal',
         amount: numAmount,
-        reference: `${bankMethod} - ${user.phone} (${bankAccountName})`,
+        reference: `${bankMethod} - ${bankAccountNumber} (${bankAccountName})`,
         status: 'pending'
       }]);
 
@@ -125,7 +128,7 @@ export function Withdraw() {
             
             <div className="px-3 py-3 border-b border-gray-100 bg-gray-50/50">
                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Moyen de paiement</p>
-               <p className="font-semibold text-gray-900">{bankMethod} • {user?.phone}</p>
+               <p className="font-semibold text-gray-900">{bankMethod} • {bankAccountNumber}</p>
                <p className="text-gray-500 text-xs">{bankAccountName}</p>
             </div>
 

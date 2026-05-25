@@ -10,7 +10,10 @@ export function Bank() {
   
   const [method, setMethod] = useState('');
   const [accountName, setAccountName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
   const [password, setPassword] = useState('');
+  
+  const [isLinked, setIsLinked] = useState(false);
   
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
@@ -21,7 +24,17 @@ export function Bank() {
         const { data } = await supabase.from('users').select('bank_method, bank_account_name').eq('id', user.id).single();
         if (data) {
           if (data.bank_method) setMethod(data.bank_method);
-          if (data.bank_account_name) setAccountName(data.bank_account_name);
+          if (data.bank_account_name) {
+             const parts = data.bank_account_name.split('|||');
+             setAccountName(parts[0] || '');
+             if (parts.length > 1) {
+                setAccountNumber(parts[1] || '');
+             }
+          }
+          
+          if (data.bank_method && data.bank_account_name && data.bank_account_name.includes('|||')) {
+            setIsLinked(true);
+          }
         }
       };
       fetchBankDetails();
@@ -30,7 +43,7 @@ export function Bank() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!method || !accountName || !password) {
+    if (!method || !accountName || !accountNumber || !password) {
       setMessage({ type: 'error', text: 'Veuillez remplir tous les champs.' });
       return;
     }
@@ -48,10 +61,12 @@ export function Bank() {
         setIsSaving(false);
         return;
       }
+      
+      const packedName = `${accountName}|||${accountNumber}`;
 
       const { error } = await supabase.from('users').update({ 
         bank_method: method, 
-        bank_account_name: accountName 
+        bank_account_name: packedName
       }).eq('id', user?.id);
 
       if (error) {
@@ -96,97 +111,137 @@ export function Bank() {
           </div>
         )}
 
-        <form onSubmit={handleSave} className="space-y-5 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1.5 flex items-center justify-between">
-              Moyen de Paiement
-            </label>
-            <select
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
+        {isLinked ? (
+          <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm text-center">
+            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Building2 className="w-8 h-8" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Compte déjà lié</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              Votre compte de retrait est déjà configuré avec succès. Pour des raisons de sécurité, vous ne pouvez pas le modifier vous-même.
+            </p>
+            <div className="bg-gray-50 p-4 rounded-xl text-left border border-gray-100 mb-6 font-medium text-gray-800">
+              <p className="text-xs uppercase text-gray-400 font-bold mb-1">Détails actuels</p>
+              <p className="mb-1"><span className="text-gray-500">Moyen :</span> {method}</p>
+              <p className="mb-1"><span className="text-gray-500">Nom :</span> {accountName}</p>
+              <p><span className="text-gray-500">Numéro :</span> {accountNumber}</p>
+            </div>
+            <button
+              onClick={() => navigate(-1)}
+              className="w-full py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold tracking-wide transition-all text-sm"
             >
-              <option value="">Sélectionnez un moyen</option>
-              {(user?.country === "Cote d'Ivoire" || user?.country === "Côte d'Ivoire") && (
-                <>
-                  <option value="ORANGE">Orange Money</option>
-                  <option value="MTN">MTN Mobile Money</option>
-                  <option value="MOOV">Moov Money</option>
-                  <option value="WAVE">Wave</option>
-                </>
-              )}
-              {user?.country === "Togo" && (
-                <>
-                  <option value="TMONEY">TMoney</option>
-                  <option value="MOOV">Moov Money</option>
-                </>
-              )}
-              {(user?.country === "Bénin" || user?.country === "Benin") && (
-                <>
-                  <option value="MTN">MTN Mobile Money</option>
-                  <option value="MOOV">Moov Money</option>
-                  <option value="CELTIIS">Celtiis Cash</option>
-                </>
-              )}
-              {(user?.country === "Burkina" || user?.country === "Burkina Faso") && (
-                <>
-                  <option value="ORANGE">Orange Money</option>
-                  <option value="MOOV">Moov Money</option>
-                </>
-              )}
-              {user?.country === "Cameroun" && (
-                <>
-                  <option value="ORANGE">Orange Money</option>
-                  <option value="MTN">MTN Mobile Money</option>
-                </>
-              )}
-              {user?.country === "Niger" && (
-                <>
-                  <option value="AIRTEL">Airtel Money</option>
-                  <option value="MOOV">Moov Money</option>
-                </>
-              )}
-            </select>
+              Retour
+            </button>
           </div>
+        ) : (
+          <form onSubmit={handleSave} className="space-y-5 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                Moyen de Paiement
+              </label>
+              <select
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
+              >
+                <option value="">Sélectionnez un moyen</option>
+                {(user?.country === "Cote d'Ivoire" || user?.country === "Côte d'Ivoire") && (
+                  <>
+                    <option value="ORANGE">Orange Money</option>
+                    <option value="MTN">MTN Mobile Money</option>
+                    <option value="MOOV">Moov Money</option>
+                    <option value="WAVE">Wave</option>
+                  </>
+                )}
+                {user?.country === "Togo" && (
+                  <>
+                    <option value="TMONEY">TMoney</option>
+                    <option value="MOOV">Moov Money</option>
+                  </>
+                )}
+                {(user?.country === "Bénin" || user?.country === "Benin") && (
+                  <>
+                    <option value="MTN">MTN Mobile Money</option>
+                    <option value="MOOV">Moov Money</option>
+                    <option value="CELTIIS">Celtiis Cash</option>
+                  </>
+                )}
+                {(user?.country === "Burkina" || user?.country === "Burkina Faso") && (
+                  <>
+                    <option value="ORANGE">Orange Money</option>
+                    <option value="MOOV">Moov Money</option>
+                  </>
+                )}
+                {user?.country === "Cameroun" && (
+                  <>
+                    <option value="ORANGE">Orange Money</option>
+                    <option value="MTN">MTN Mobile Money</option>
+                  </>
+                )}
+                {user?.country === "Niger" && (
+                  <>
+                    <option value="AIRTEL">Airtel Money</option>
+                    <option value="MOOV">Moov Money</option>
+                  </>
+                )}
+              </select>
+            </div>
 
-          <div>
-             <label className="block text-sm font-bold text-gray-700 mb-1.5 flex items-center justify-between">
-                Nom complet sur le compte
-             </label>
-             <div className="relative">
-                <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
-                  placeholder="Ex: Jean Dupont"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium placeholder-gray-400"
-                />
-             </div>
-          </div>
-          
-          <div className="pt-4 border-t border-gray-100">
-             <label className="block text-sm font-bold text-gray-700 mb-1.5">
-                Confirmation (Mot de passe)
-             </label>
-             <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Votre mot de passe de connexion"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium placeholder-gray-400"
-             />
-             <p className="text-gray-400 text-xs mt-2">Nécessaire pour sécuriser l'ajout de votre méthode de retrait.</p>
-          </div>
+            <div>
+               <label className="block text-sm font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                  Nom complet sur le compte
+               </label>
+               <div className="relative">
+                  <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={accountName}
+                    onChange={(e) => setAccountName(e.target.value)}
+                    placeholder="Ex: Jean Dupont"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium placeholder-gray-400"
+                  />
+               </div>
+            </div>
 
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-purple-500/25 active:scale-95 transition-all text-sm flex items-center justify-center gap-2 mt-4"
-          >
-            {isSaving ? "Modification en cours..." : "Sauvegarder"}
-          </button>
-        </form>
+            <div>
+               <label className="block text-sm font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                  Numéro de compte / mobile
+               </label>
+               <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">#</span>
+                  <input
+                    type="text"
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value)}
+                    placeholder="Ex: 0102030405"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-11 pr-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium placeholder-gray-400"
+                  />
+               </div>
+            </div>
+            
+            <div className="pt-4 border-t border-gray-100">
+               <label className="block text-sm font-bold text-gray-700 mb-1.5">
+                  Confirmation (Mot de passe)
+               </label>
+               <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Votre mot de passe de connexion"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium placeholder-gray-400"
+               />
+               <p className="text-gray-400 text-xs mt-2">Nécessaire pour sécuriser l'ajout de votre méthode de retrait.</p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-purple-500/25 active:scale-95 transition-all text-sm flex items-center justify-center gap-2 mt-4"
+            >
+              {isSaving ? "Modification en cours..." : "Sauvegarder"}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
