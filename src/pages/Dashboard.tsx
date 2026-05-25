@@ -335,10 +335,6 @@ export function Dashboard() {
                    <Banknote className="w-5 h-5 drop-shadow-sm" />
                    Retirer
                </Link>
-               <Link to="/products" className="col-span-2 bg-white/40 hover:bg-white/50 backdrop-blur-md text-white transition-colors py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-md border border-white/50 active:scale-95" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
-                   <Pickaxe className="w-5 h-5 text-yellow-300 drop-shadow-sm" />
-                   Minage
-               </Link>
            </div>
         </div>
       </div>
@@ -361,6 +357,11 @@ export function Dashboard() {
                  <Headset className="w-4 h-4 text-purple-600" />
                  <span className="text-xs font-bold text-gray-900">Support</span>
              </button>
+             
+             <Link to="/products" className="col-span-2 bg-purple-600 p-4 rounded-2xl flex items-center justify-center gap-2 shadow-md hover:bg-purple-700 transition-all active:scale-95">
+                 <Pickaxe className="w-5 h-5 text-yellow-300" />
+                 <span className="text-sm font-bold text-white uppercase tracking-wider">Minage</span>
+             </Link>
              
              <button onClick={() => installPWA()} className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
                  <Download className="w-4 h-4 text-blue-600" />
