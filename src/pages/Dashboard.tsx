@@ -54,7 +54,7 @@ function SupportModal({ groupLink, supportLink, onClose }: { groupLink: string, 
     <>
       <div className="fixed inset-0 z-[40] bg-black/5 backdrop-blur-[1px]" onClick={onClose} />
       <div className="fixed bottom-24 right-5 z-[50] flex flex-col gap-5 items-end animate-in fade-in zoom-in-95 duration-200 origin-bottom-right">
-        <a href={supportLink || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all" onClick={onClose}>
+        <a href="https://wa.me/918349317234" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all" onClick={onClose}>
           <span className="text-base font-bold text-gray-800" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,1)' }}>Service client</span>
           <div className="bg-purple-600 p-4 rounded-full text-white shadow-xl shadow-purple-500/40 transform hover:scale-105 transition-transform">
             <Headset className="w-7 h-7" />
@@ -347,30 +347,30 @@ export function Dashboard() {
         <div className="px-5 mt-6 space-y-6 animate-fade-in">
           
           {/* Quick Access Grid */}
-          <div className="grid grid-cols-2 gap-4">
-             <Link to="/bank" className="bg-white py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                <Building2 className="w-6 h-6 text-blue-600" />
-                <span className="text-sm font-bold text-gray-900">Banque</span>
+          <div className="grid grid-cols-2 gap-3">
+             <Link to="/bank" className="bg-white py-4 px-3 rounded-xl flex flex-col items-center justify-center gap-1.5 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                <Building2 className="w-5 h-5 text-blue-600" />
+                <span className="text-[13px] font-bold text-gray-900">Banque</span>
              </Link>
 
-             <button onClick={() => setShowSupportModal(true)} className="bg-white py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                 <Headset className="w-6 h-6 text-purple-600" />
-                 <span className="text-sm font-bold text-gray-900">Support</span>
+             <button onClick={() => setShowSupportModal(true)} className="bg-white py-4 px-3 rounded-xl flex flex-col items-center justify-center gap-1.5 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                 <Headset className="w-5 h-5 text-purple-600" />
+                 <span className="text-[13px] font-bold text-gray-900">Support</span>
              </button>
              
-             <Link to="/products" className="col-span-2 bg-gradient-to-r from-purple-600 to-indigo-600 py-6 px-4 rounded-2xl flex items-center justify-center gap-3 shadow-md border border-purple-500/30 hover:shadow-lg transition-all active:scale-95">
-                 <Pickaxe className="w-7 h-7 text-yellow-300 drop-shadow-md" />
-                 <span className="text-base font-black text-white uppercase tracking-wider">Minage</span>
+             <Link to="/products" className="col-span-2 bg-gradient-to-r from-purple-600 to-indigo-600 py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md border border-purple-500/30 hover:shadow-lg transition-all active:scale-95">
+                 <Pickaxe className="w-6 h-6 text-yellow-300 drop-shadow-md" />
+                 <span className="text-sm font-black text-white uppercase tracking-wider">Minage</span>
              </Link>
              
-             <button onClick={() => installPWA()} className="bg-white py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                 <Download className="w-6 h-6 text-blue-600" />
-                 <span className="text-sm font-bold text-gray-900">Application</span>
+             <button onClick={() => installPWA()} className="bg-white py-4 px-3 rounded-xl flex flex-col items-center justify-center gap-1.5 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                 <Download className="w-5 h-5 text-blue-600" />
+                 <span className="text-[13px] font-bold text-gray-900">Application</span>
              </button>
 
-             <button onClick={() => { logout(); navigate('/login'); }} className="bg-white py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95 text-red-600">
-                 <LogOut className="w-6 h-6" />
-                 <span className="text-sm font-bold">Déconnexion</span>
+             <button onClick={() => { logout(); navigate('/login'); }} className="bg-white py-4 px-3 rounded-xl flex flex-col items-center justify-center gap-1.5 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95 text-red-600">
+                 <LogOut className="w-5 h-5" />
+                 <span className="text-[13px] font-bold">Déconnexion</span>
              </button>
           </div>
 
