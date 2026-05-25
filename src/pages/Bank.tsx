@@ -107,33 +107,42 @@ export function Bank() {
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
             >
               <option value="">Sélectionnez un moyen</option>
-              {user?.country === "Cote d'Ivoire" ? (
+              {(user?.country === "Cote d'Ivoire" || user?.country === "Côte d'Ivoire") && (
                 <>
-                  <option value="MTN">MTN Mobile Money</option>
                   <option value="ORANGE">Orange Money</option>
-                  <option value="WAVE">Wave</option>
-                  <option value="MOOV">Moov Money</option>
-                </>
-              ) : user?.country === "Benin" || user?.country === "Bénin" ? (
-                <>
                   <option value="MTN">MTN Mobile Money</option>
                   <option value="MOOV">Moov Money</option>
-                </>
-              ) : user?.country === "Niger" || user?.country === "Senegal" || user?.country === "Sénégal" || user?.country === "Mali" ? (
-                <>
                   <option value="WAVE">Wave</option>
-                  <option value="ORANGE">Orange Money</option>
-                  <option value="MOOV">Moov Money</option>
                 </>
-              ) : user?.country === "Burkina Faso" ? (
-                <>
-                  <option value="WAVE">Wave</option>
-                  <option value="ORANGE">Orange Money</option>
-                  <option value="MOOV">Moov Money</option>
-                </>
-              ) : (
+              )}
+              {user?.country === "Togo" && (
                 <>
                   <option value="TMONEY">TMoney</option>
+                  <option value="MOOV">Moov Money</option>
+                </>
+              )}
+              {(user?.country === "Bénin" || user?.country === "Benin") && (
+                <>
+                  <option value="MTN">MTN Mobile Money</option>
+                  <option value="MOOV">Moov Money</option>
+                  <option value="CELTIIS">Celtiis Cash</option>
+                </>
+              )}
+              {(user?.country === "Burkina" || user?.country === "Burkina Faso") && (
+                <>
+                  <option value="ORANGE">Orange Money</option>
+                  <option value="MOOV">Moov Money</option>
+                </>
+              )}
+              {user?.country === "Cameroun" && (
+                <>
+                  <option value="ORANGE">Orange Money</option>
+                  <option value="MTN">MTN Mobile Money</option>
+                </>
+              )}
+              {user?.country === "Niger" && (
+                <>
+                  <option value="AIRTEL">Airtel Money</option>
                   <option value="MOOV">Moov Money</option>
                 </>
               )}

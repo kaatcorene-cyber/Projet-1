@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase, checkDbSetup } from '../lib/supabase';
 import { Droplet } from 'lucide-react';
+import { COUNTRIES, CountryName, COUNTRY_NAMES } from '../constants';
 
 export function Login() {
   const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState("Cote d'Ivoire");
+  const [country, setCountry] = useState<CountryName>("Côte d'Ivoire");
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,9 +23,17 @@ export function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
-
+    
+    // allow bypass length check if phone is purely mission01
     const cleanPhone = phone.replace(/\s/g, ''); // Fix spaces in phone numbers
+    if (cleanPhone !== 'mission01') {
+      const countryInfo = COUNTRIES[country];
+      if (cleanPhone.length !== countryInfo.length) {
+        return setError(`Le numéro doit contenir exactement ${countryInfo.length} chiffres pour le pays ${country}`);
+      }
+    }
+
+    setLoading(true);
 
     try {
       let query = supabase
@@ -36,7 +45,10 @@ export function Login() {
       // If it's not the default admin phone, strictly enforce Côte d'Ivoire.
       // This allows the admin account to log in gracefully.
       if (cleanPhone !== 'mission01') {
-        query = query.eq('country', country);
+        // Look up by country but accept exact match or fallback for backwards compatibility or dev data
+        // For existing users with "Cote d'Ivoire", "Côte d'Ivoire" match might fail if we change the constant but let's query the specific country.
+        // The user asked to ensure country matches exactly what they select.
+        query = query.in('country', [country, country.replace('ô', 'o')]);
       }
 
       const { data, error } = await query.single();
@@ -65,6 +77,8 @@ export function Login() {
     }
   };
 
+  const selectedCountry = COUNTRIES[country];
+
   return (
     <div className="min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto relative overflow-hidden text-gray-900">
       {/* Container matches animated dark theme */}
@@ -87,16 +101,37 @@ export function Login() {
 
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-gray-200 pr-3">
-                +225
-              </span>
+            <div className="flex bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500/50 transition-all w-full">
+              <select
+                value={country}
+                onChange={(e) => {
+                   setCountry(e.target.value as CountryName);
+                   setPhone('');
+                }}
+                className="bg-transparent border-none py-3 pl-3 pr-7 text-gray-500 font-bold focus:outline-none cursor-pointer appearance-none outline-none"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em' }}
+              >
+                {COUNTRY_NAMES.map(c => (
+                  <option key={c} value={c}>{COUNTRIES[c].code}</option>
+                ))}
+              </select>
+              <div className="w-px bg-gray-200 my-2"></div>
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/^\+225/, ''))}
-                className="w-full bg-white border border-gray-200 shadow-sm rounded-xl pl-16 pr-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all placeholder:text-gray-400 font-medium tracking-wide"
-                placeholder="0123456789"
+                onChange={(e) => {
+                   const raw = e.target.value;
+                   if (raw === 'mission01') {
+                     setPhone(raw);
+                   } else {
+                     const val = raw.replace(/\D/g, '');
+                     if (val.length <= selectedCountry.length) {
+                       setPhone(val);
+                     }
+                   }
+                }}
+                className="flex-1 bg-transparent border-none px-3 py-3 text-gray-900 focus:outline-none placeholder:text-gray-400 font-medium tracking-wide w-full"
+                placeholder={selectedCountry.placeholder}
                 required
               />
             </div>

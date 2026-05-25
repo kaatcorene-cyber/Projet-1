@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase, checkDbSetup } from '../lib/supabase';
+import { COUNTRIES, CountryName, COUNTRY_NAMES } from '../constants';
 
 export function Register() {
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     phone: '',
-    country: "Cote d'Ivoire",
+    country: "Côte d'Ivoire" as CountryName,
     password: '',
     confirmPassword: '',
     referralCode: (searchParams.get('ref') && searchParams.get('ref') !== 'undefined') ? searchParams.get('ref') : ''
@@ -30,6 +31,11 @@ export function Register() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const countryInfo = COUNTRIES[formData.country];
+    if (formData.phone.length !== countryInfo.length) {
+      return setError(`Le numéro doit contenir exactement ${countryInfo.length} chiffres pour le pays ${formData.country}`);
+    }
 
     if (formData.password !== formData.confirmPassword) {
       return setError('Les mots de passe ne correspondent pas');
@@ -104,6 +110,8 @@ export function Register() {
     }
   };
 
+  const selectedCountry = COUNTRIES[formData.country];
+
   return (
     <div className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-md mx-auto relative overflow-hidden text-gray-900">
       <div className="text-center mb-8 flex flex-col items-center">
@@ -125,17 +133,33 @@ export function Register() {
 
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-gray-200 pr-3">
-                +225
-              </span>
+            <div className="flex bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500/50 transition-all w-full">
+              <select
+                name="country"
+                value={formData.country}
+                onChange={(e) => {
+                   setFormData({ ...formData, country: e.target.value as CountryName, phone: '' });
+                }}
+                className="bg-transparent border-none py-3 pl-3 pr-7 text-gray-500 font-bold focus:outline-none cursor-pointer appearance-none outline-none"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.25rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em' }}
+              >
+                {COUNTRY_NAMES.map(c => (
+                  <option key={c} value={c}>{COUNTRIES[c].code}</option>
+                ))}
+              </select>
+              <div className="w-px bg-gray-200 my-2"></div>
               <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/^\+225/, '') })}
-                className="w-full bg-white border border-gray-200 shadow-sm rounded-xl pl-16 pr-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all placeholder:text-gray-400 font-medium tracking-wide"
-                placeholder="0123456789"
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '');
+                  if (val.length <= selectedCountry.length) {
+                    setFormData({ ...formData, phone: val });
+                  }
+                }}
+                className="flex-1 bg-transparent border-none px-3 py-3 text-gray-900 focus:outline-none placeholder:text-gray-400 font-medium tracking-wide w-full"
+                placeholder={selectedCountry.placeholder}
                 required
               />
             </div>

@@ -43,6 +43,7 @@ export function Admin() {
   const [newPlanDaily, setNewPlanDaily] = useState('');
   const [newPlanTotal, setNewPlanTotal] = useState('');
   const [newPlanImage, setNewPlanImage] = useState('');
+  const [newPlanCategory, setNewPlanCategory] = useState('basique');
   const [editingPlanIndex, setEditingPlanIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -329,7 +330,7 @@ export function Admin() {
   const handleAddPlan = () => {
     if (!newPlanAmount || !newPlanDaily || !newPlanTotal || !newPlanImage) return;
     const newPlan = {
-      category: 'unique',
+      category: newPlanCategory,
       amount: Number(newPlanAmount),
       percent: Number(newPlanPercent),
       duration: Number(newPlanDuration),
@@ -363,6 +364,7 @@ export function Admin() {
     setNewPlanDaily(plan.daily.toString());
     setNewPlanTotal(plan.total.toString());
     setNewPlanImage(plan.image);
+    setNewPlanCategory(plan.category || 'basique');
     setEditingPlanIndex(index);
     // Scroll to form smoothly
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -370,7 +372,7 @@ export function Admin() {
 
   const handleCancelEditPlan = () => {
     setNewPlanAmount(''); setNewPlanDaily(''); setNewPlanTotal(''); setNewPlanImage('');
-    setNewPlanPercent('18'); setNewPlanDuration('60');
+    setNewPlanPercent('18'); setNewPlanDuration('60'); setNewPlanCategory('basique');
     setEditingPlanIndex(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -711,6 +713,17 @@ export function Admin() {
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
              <h2 className="text-lg font-bold text-gray-900 mb-4">Créer un Plan VIP</h2>
              <div className="space-y-4">
+               <div className="flex flex-col gap-1">
+                 <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Type de mine</label>
+                 <select
+                   value={newPlanCategory}
+                   onChange={e => setNewPlanCategory(e.target.value)}
+                   className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl px-4 py-3 focus:border-purple-500 outline-none w-full appearance-none"
+                 >
+                   <option value="basique">Mine d'Or</option>
+                   <option value="premium">Mine de Diamant</option>
+                 </select>
+               </div>
                <div className="grid grid-cols-2 gap-3 mt-4">
                  <input 
                    type="number" 
@@ -834,6 +847,9 @@ export function Admin() {
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
                        <p className="font-bold text-gray-900 text-sm leading-none">{formatCurrency(p.amount)}</p>
+                       <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${p.category === 'premium' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                         {p.category === 'premium' ? 'Diamant' : 'Or'}
+                       </span>
                     </div>
                     <div className="flex gap-2">
                         <p className="text-[11px] text-gray-500 mt-0.5">Gain/j: <span className="font-bold text-gray-700">{formatCurrency(p.daily)}</span></p>
