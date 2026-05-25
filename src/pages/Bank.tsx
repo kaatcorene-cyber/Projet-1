@@ -8,49 +8,63 @@ export function Bank() {
   const { user, refreshUser } = useAuthStore();
   const navigate = useNavigate();
   
-  const [method, setMethod] = useState('');
-  const [accountName, setAccountName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
+  const [method, setMethod] = useState((user as any)?.bank_method || '');
+  const [accountName, setAccountName] = useState(() => {
+    let name = '';
+    const bAccountName = (user as any)?.bank_account_name;
+    if (bAccountName) {
+      name = bAccountName.split('|||')[0] || '';
+    }
+    return name;
+  });
+  const [accountNumber, setAccountNumber] = useState(() => {
+    let num = '';
+    const bAccountName = (user as any)?.bank_account_name;
+    if (bAccountName) {
+      const parts = bAccountName.split('|||');
+      if (parts.length > 1) {
+        num = parts[1] || '';
+      }
+    }
+    return num;
+  });
   const [password, setPassword] = useState('');
   
-  const [isLinked, setIsLinked] = useState(false);
+  const [isLinked, setIsLinked] = useState(() => {
+    const bMethod = (user as any)?.bank_method;
+    const bAccountName = (user as any)?.bank_account_name;
+    return Boolean(bMethod && bAccountName && bAccountName.includes('|||'));
+  });
   
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
 
   useEffect(() => {
     if (user?.id) {
-      const fetchBankDetails = async () => {
-        const { data } = await supabase.from('users').select('bank_method, bank_account_name').eq('id', user.id).single();
-        let bMethod = data?.bank_method;
-        let bAccountName = data?.bank_account_name;
-        
-        // Fallback to localStorage if DB lacks the columns
-        const localDataRaw = localStorage.getItem('bank_info_' + user.id);
-        if (localDataRaw) {
-          try {
-             const localData = JSON.parse(localDataRaw);
-             if (!bMethod && localData.bank_method) bMethod = localData.bank_method;
-             if (!bAccountName && localData.bank_account_name) bAccountName = localData.bank_account_name;
-          } catch(e) {}
-        }
-        
-        if (bMethod || bAccountName) {
-          if (bMethod) setMethod(bMethod);
-          if (bAccountName) {
-             const parts = bAccountName.split('|||');
+      // Just refresh user data in the background
+      refreshUser();
+      
+      const bMethod = (user as any)?.bank_method;
+      const bAccountName = (user as any)?.bank_account_name;
+      
+      // Fallback to localStorage if state is empty
+      const localDataRaw = localStorage.getItem('bank_info_' + user.id);
+      if (localDataRaw && (!bMethod || !bAccountName)) {
+        try {
+           const localData = JSON.parse(localDataRaw);
+           if (!method && localData.bank_method) setMethod(localData.bank_method);
+           if (!accountName && localData.bank_account_name) {
+             const parts = localData.bank_account_name.split('|||');
              setAccountName(parts[0] || '');
              if (parts.length > 1) {
                 setAccountNumber(parts[1] || '');
              }
-          }
-          
-          if (bMethod && bAccountName && bAccountName.includes('|||')) {
-            setIsLinked(true);
-          }
-        }
-      };
-      fetchBankDetails();
+             if (localData.bank_method && localData.bank_account_name.includes('|||')) {
+               setIsLinked(true);
+             }
+           }
+        } catch(e) {}
+      }
     }
   }, [user]);
 

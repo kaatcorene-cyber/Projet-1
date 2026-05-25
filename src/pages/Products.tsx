@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
+import { useAppStore } from '../store/useAppStore';
 import { Zap, PackageCheck, ChevronLeft, Pickaxe, Diamond, Coins, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../lib/utils';
@@ -122,7 +123,9 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
 export function Products() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [investments, setInvestments] = useState<any[]>([]);
+  const { investmentsCache, setInvestmentsCache } = useAppStore();
+  const [investments, setInvestments] = useState<any[]>(investmentsCache || []);
+  const [isLoading, setIsLoading] = useState(!investmentsCache);
 
   useEffect(() => {
     if (user?.id) {
@@ -130,7 +133,9 @@ export function Products() {
         const { data } = await supabase.from('investments').select('*').eq('user_id', user.id).eq('status', 'active');
         if (data) {
           setInvestments(data);
+          setInvestmentsCache(data);
         }
+        setIsLoading(false);
       };
       
       fetchProducts();
@@ -140,6 +145,8 @@ export function Products() {
       }, 60000 * 2);
       
       return () => clearInterval(intervalId);
+    } else {
+      setIsLoading(false);
     }
   }, [user]);
 
@@ -159,7 +166,11 @@ export function Products() {
       </header>
 
       <div className="px-5 mt-6 max-w-md mx-auto space-y-4">
-        {investments.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="w-8 h-8 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin"></div>
+          </div>
+        ) : investments.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center border border-gray-200 shadow-sm flex flex-col items-center">
             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
               <PackageCheck className="w-8 h-8 text-gray-400" />
