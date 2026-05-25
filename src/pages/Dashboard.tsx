@@ -339,12 +339,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-        </div>
-      ) : (
-        <div className="px-5 mt-6 space-y-6 animate-fade-in">
+      <div className="px-5 mt-6 space-y-6 animate-fade-in">
           
           {/* Quick Access Grid */}
           <div className="grid grid-cols-2 gap-3">
@@ -376,7 +371,6 @@ export function Dashboard() {
 
 
         </div>
-      )}
     </div>
   );
 }

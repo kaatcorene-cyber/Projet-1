@@ -23,7 +23,6 @@ export function Team() {
   });
   
   const [expandedLevel, setExpandedLevel] = useState<number | null>(1);
-  const [isLoading, setIsLoading] = useState(!teamStatsCache);
 
   // Auto-correct the domain for sharing so outside users don't hit the private AI Studio dev wall
   let baseLink = window.location.origin;
@@ -40,7 +39,6 @@ export function Team() {
 
   const fetchTeamStats = async () => {
     if (!user) return;
-    setIsLoading(true);
 
     try {
       // 1. Fetch bonuses
@@ -79,8 +77,6 @@ export function Team() {
       setTeamStatsCache(newStats);
     } catch (e) {
       console.error(e);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -334,14 +330,10 @@ export function Team() {
 
           <div className="bg-white/80 backdrop-blur-md border border-gray-200/60 rounded-2xl overflow-hidden min-h-[200px] shadow-sm">
             <div className="p-4">
-              {isLoading ? (
-                <p className="text-xs text-gray-400 text-center py-8 font-medium uppercase tracking-wider">Chargement...</p>
-              ) : (
-                renderMemberList(
-                  expandedLevel === 1 ? teamStats.level1 :
-                  expandedLevel === 2 ? teamStats.level2 :
-                  teamStats.level3
-                )
+              {renderMemberList(
+                expandedLevel === 1 ? teamStats.level1 :
+                expandedLevel === 2 ? teamStats.level2 :
+                teamStats.level3
               )}
             </div>
           </div>

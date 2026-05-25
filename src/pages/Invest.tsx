@@ -19,7 +19,6 @@ export function Invest() {
   const { settingsCache, setSettingsCache } = useAppStore();
   
   const [plans, setPlans] = useState<any[]>([]);
-  const [isInitializing, setIsInitializing] = useState(!settingsCache);
   const [loading, setLoading] = useState<number | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
   const [activeCategory, setActiveCategory] = useState<'basique' | 'premium'>('premium');
@@ -66,7 +65,6 @@ export function Invest() {
     } else if (!settingsCache) {
       setPlans(DEFAULT_PLANS);
     }
-    setIsInitializing(false);
   };
 
   const activePlans = plans
@@ -172,12 +170,7 @@ export function Invest() {
         </div>
       )}
 
-      {isInitializing ? (
-        <div className="flex flex-col items-center justify-center py-12 gap-3">
-          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-        </div>
-      ) : (
-        <div className="space-y-4 animate-fade-in relative z-10 pb-6">
+      <div className="space-y-4 animate-fade-in relative z-10 pb-6">
           {activePlans.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 text-center shadow-sm border border-gray-100">
               <p className="text-gray-500 font-medium">Aucun plan disponible dans cette catégorie.</p>
@@ -231,7 +224,6 @@ export function Invest() {
             })
           )}
         </div>
-      )}
     </div>
   );
 }
