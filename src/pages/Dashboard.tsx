@@ -347,30 +347,30 @@ export function Dashboard() {
         <div className="px-5 mt-6 space-y-6 animate-fade-in">
           
           {/* Quick Access Grid */}
-          <div className="grid grid-cols-2 gap-3">
-             <Link to="/bank" className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                <Building2 className="w-4 h-4 text-blue-600" />
-                <span className="text-xs font-bold text-gray-900">Banque</span>
+          <div className="grid grid-cols-2 gap-4">
+             <Link to="/bank" className="bg-white py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                <Building2 className="w-6 h-6 text-blue-600" />
+                <span className="text-sm font-bold text-gray-900">Banque</span>
              </Link>
 
-             <button onClick={() => setShowSupportModal(true)} className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                 <Headset className="w-4 h-4 text-purple-600" />
-                 <span className="text-xs font-bold text-gray-900">Support</span>
+             <button onClick={() => setShowSupportModal(true)} className="bg-white py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                 <Headset className="w-6 h-6 text-purple-600" />
+                 <span className="text-sm font-bold text-gray-900">Support</span>
              </button>
              
-             <Link to="/products" className="col-span-2 bg-purple-600 p-4 rounded-2xl flex items-center justify-center gap-2 shadow-md hover:bg-purple-700 transition-all active:scale-95">
-                 <Pickaxe className="w-5 h-5 text-yellow-300" />
-                 <span className="text-sm font-bold text-white uppercase tracking-wider">Minage</span>
+             <Link to="/products" className="col-span-2 bg-gradient-to-r from-purple-600 to-indigo-600 py-6 px-4 rounded-2xl flex items-center justify-center gap-3 shadow-md border border-purple-500/30 hover:shadow-lg transition-all active:scale-95">
+                 <Pickaxe className="w-7 h-7 text-yellow-300 drop-shadow-md" />
+                 <span className="text-base font-black text-white uppercase tracking-wider">Minage</span>
              </Link>
              
-             <button onClick={() => installPWA()} className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                 <Download className="w-4 h-4 text-blue-600" />
-                 <span className="text-xs font-bold text-gray-900">Application</span>
+             <button onClick={() => installPWA()} className="bg-white py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
+                 <Download className="w-6 h-6 text-blue-600" />
+                 <span className="text-sm font-bold text-gray-900">Application</span>
              </button>
 
-             <button onClick={() => { logout(); navigate('/login'); }} className="bg-white p-3.5 rounded-2xl flex items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95 text-red-600">
-                 <LogOut className="w-4 h-4" />
-                 <span className="text-xs font-bold">Déconnexion</span>
+             <button onClick={() => { logout(); navigate('/login'); }} className="bg-white py-5 px-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95 text-red-600">
+                 <LogOut className="w-6 h-6" />
+                 <span className="text-sm font-bold">Déconnexion</span>
              </button>
           </div>
 
