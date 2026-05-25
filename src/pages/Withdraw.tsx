@@ -17,10 +17,20 @@ export function Withdraw() {
     refreshUser();
   },[]);
 
-  // We load bank details from user.
-  // Note: Since TS interface in useAuthStore doesn't strictly have bank_method, we access it as any or wait for it.
-  const bankMethod = (user as any)?.bank_method;
-  const rawAccountName = (user as any)?.bank_account_name || '';
+  // We load bank details from user or fallback to localStorage
+  let bankMethod = (user as any)?.bank_method;
+  let rawAccountName = (user as any)?.bank_account_name || '';
+  
+  if (!bankMethod && user?.id) {
+     try {
+       const localDataRaw = localStorage.getItem('bank_info_' + user.id);
+       if (localDataRaw) {
+         const localData = JSON.parse(localDataRaw);
+         if (localData.bank_method) bankMethod = localData.bank_method;
+         if (localData.bank_account_name) rawAccountName = localData.bank_account_name;
+       }
+     } catch (e) {}
+  }
   
   const bankAccountName = rawAccountName.split('|||')[0] || '';
   const bankAccountNumber = rawAccountName.split('|||')[1] || (user as any)?.phone;

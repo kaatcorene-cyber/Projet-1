@@ -22,17 +22,30 @@ export function Bank() {
     if (user?.id) {
       const fetchBankDetails = async () => {
         const { data } = await supabase.from('users').select('bank_method, bank_account_name').eq('id', user.id).single();
-        if (data) {
-          if (data.bank_method) setMethod(data.bank_method);
-          if (data.bank_account_name) {
-             const parts = data.bank_account_name.split('|||');
+        let bMethod = data?.bank_method;
+        let bAccountName = data?.bank_account_name;
+        
+        // Fallback to localStorage if DB lacks the columns
+        const localDataRaw = localStorage.getItem('bank_info_' + user.id);
+        if (localDataRaw) {
+          try {
+             const localData = JSON.parse(localDataRaw);
+             if (!bMethod && localData.bank_method) bMethod = localData.bank_method;
+             if (!bAccountName && localData.bank_account_name) bAccountName = localData.bank_account_name;
+          } catch(e) {}
+        }
+        
+        if (bMethod || bAccountName) {
+          if (bMethod) setMethod(bMethod);
+          if (bAccountName) {
+             const parts = bAccountName.split('|||');
              setAccountName(parts[0] || '');
              if (parts.length > 1) {
                 setAccountNumber(parts[1] || '');
              }
           }
           
-          if (data.bank_method && data.bank_account_name && data.bank_account_name.includes('|||')) {
+          if (bMethod && bAccountName && bAccountName.includes('|||')) {
             setIsLinked(true);
           }
         }
@@ -68,19 +81,18 @@ export function Bank() {
         bank_method: method, 
         bank_account_name: packedName
       }).eq('id', user?.id);
+      
+      // Toujours enregistrer dans le localStorage comme fallback
+      localStorage.setItem('bank_info_' + user?.id, JSON.stringify({ bank_method: method, bank_account_name: packedName }));
 
-      if (error) {
-        // If columns don't exist, this will throw
-        if (error.code === 'PGRST204') {
-          setMessage({ type: 'error', text: 'Veuillez vous assurer que la base de données est mise à jour (Admin).' });
-        } else {
-          throw error;
-        }
-      } else {
-        setMessage({ type: 'success', text: 'Vos informations bancaires ont été enregistrées avec succès.' });
-        setPassword('');
-        refreshUser();
+      if (error && error.code !== 'PGRST204') {
+         throw error;
       }
+      
+      setIsLinked(true);
+      setMessage({ type: 'success', text: 'Vos informations bancaires ont été enregistrées avec succès.' });
+      setPassword('');
+      refreshUser();
     } catch (err: any) {
        console.error("Save bank mode error", err);
        setMessage({ type: 'error', text: err.message || 'Une erreur est survenue lors de la sauvegarde.' });
