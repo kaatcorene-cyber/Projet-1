@@ -23,6 +23,7 @@ export function Deposit() {
       return;
     }
 
+    setStep(2);
     setLoading(true);
     setError('');
 
@@ -64,6 +65,7 @@ export function Deposit() {
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
+      setStep(1);
     } finally {
       setLoading(false);
     }

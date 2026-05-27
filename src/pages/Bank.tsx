@@ -208,6 +208,11 @@ export function Bank() {
                   <>
                     <option value="AIRTEL">Airtel Money</option>
                     <option value="MOOV">Moov Money</option>
+                    <option value="ZAMANI">Zamani Cash</option>
+                    <option value="AL_IZZA">Al Izza</option>
+                    <option value="NITA">Nita</option>
+                    <option value="MYNITA">MyNita</option>
+                    <option value="AMANATA">Amanata</option>
                   </>
                 )}
               </select>
