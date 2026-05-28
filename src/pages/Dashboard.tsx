@@ -54,7 +54,7 @@ function SupportModal({ groupLink, supportLink, onClose }: { groupLink: string, 
     <>
       <div className="fixed inset-0 z-[40] bg-black/5 backdrop-blur-[1px]" onClick={onClose} />
       <div className="fixed bottom-24 right-5 z-[50] flex flex-col gap-5 items-end animate-in fade-in zoom-in-95 duration-200 origin-bottom-right">
-        <a href="https://wa.me/918349317234" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all" onClick={onClose}>
+        <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all" onClick={onClose}>
           <span className="text-base font-bold text-gray-800" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,1)' }}>Service client</span>
           <div className="bg-purple-600 p-4 rounded-full text-white shadow-xl shadow-purple-500/40 transform hover:scale-105 transition-transform">
             <Headset className="w-7 h-7" />
