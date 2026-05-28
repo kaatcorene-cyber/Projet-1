@@ -139,9 +139,13 @@ export function Dashboard() {
       setGroupLink(formatLink(groupData.value, ''));
     }
     if (supportData?.value) {
-      setSupportLink(formatLink(supportData.value, 'https://t.me/qualcomm_agt'));
+      let finalLink = formatLink(supportData.value, 'https://wa.me/2250544051968');
+      if (finalLink.includes('t.me/qualcomm_agt')) {
+         finalLink = 'https://wa.me/2250544051968';
+      }
+      setSupportLink(finalLink);
     } else {
-      setSupportLink('https://t.me/qualcomm_agt');
+      setSupportLink('https://wa.me/2250544051968');
     }
   };
 
