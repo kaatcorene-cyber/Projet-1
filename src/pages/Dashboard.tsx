@@ -49,26 +49,25 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
   )
 }
 
-function SupportModal({ onClose }: { onClose: () => void }) {
-  const supportL = 'https://wa.me/2250544051968';
-  const groupL = 'https://chat.whatsapp.com/DKDo2qOfJRlF4n0J9tGxNt';
+function SupportModal({ groupLink, supportLink, onClose }: { groupLink: string, supportLink: string, onClose: () => void }) {
   return (
     <>
       <div className="fixed inset-0 z-[40] bg-black/5 backdrop-blur-[1px]" onClick={onClose} />
       <div className="fixed bottom-24 right-5 z-[50] flex flex-col gap-5 items-end animate-in fade-in zoom-in-95 duration-200 origin-bottom-right">
-        <a href={supportL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all" onClick={onClose}>
+        <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all" onClick={onClose}>
           <span className="text-base font-bold text-gray-800" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,1)' }}>Service client</span>
           <div className="bg-purple-600 p-4 rounded-full text-white shadow-xl shadow-purple-500/40 transform hover:scale-105 transition-transform">
             <Headset className="w-7 h-7" />
           </div>
         </a>
-        
-        <a href={groupL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all" onClick={onClose}>
-          <span className="text-lg font-black text-gray-900" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,1)' }}>Groupes officiels</span>
-          <div className="bg-purple-600 p-4 rounded-full text-white shadow-xl shadow-purple-500/40 transform hover:scale-105 transition-transform">
-            <MessageCircle className="w-7 h-7" />
-          </div>
-        </a>
+        {groupLink && (
+          <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all" onClick={onClose}>
+            <span className="text-lg font-black text-gray-900" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,1)' }}>Groupes officiels</span>
+            <div className="bg-purple-600 p-4 rounded-full text-white shadow-xl shadow-purple-500/40 transform hover:scale-105 transition-transform">
+              <MessageCircle className="w-7 h-7" />
+            </div>
+          </a>
+        )}
       </div>
     </>
   )
@@ -137,16 +136,15 @@ export function Dashboard() {
     const supportData = data.find(s => s.key === 'support_link');
 
     if (groupData?.value) {
-      setGroupLink(formatLink(groupData.value, ''));
-    }
-    if (supportData?.value) {
-      let finalLink = formatLink(supportData.value, 'https://wa.me/2250544051968');
-      if (finalLink.includes('t.me/qualcomm_agt')) {
-         finalLink = 'https://wa.me/2250544051968';
-      }
-      setSupportLink(finalLink);
+      setGroupLink(formatLink(groupData.value, 'https://chat.whatsapp.com/DKDo2qOfJRlF4n0J9tGxNt'));
     } else {
-      setSupportLink('https://wa.me/2250544051968');
+      setGroupLink('https://chat.whatsapp.com/DKDo2qOfJRlF4n0J9tGxNt');
+    }
+    
+    if (supportData?.value) {
+      setSupportLink(formatLink(supportData.value, 'https://t.me/qualcomm_agt'));
+    } else {
+      setSupportLink('https://t.me/qualcomm_agt');
     }
   };
 
@@ -281,8 +279,8 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-transparent pb-24 font-sans">
-      {showWelcome && <WelcomeModal groupLink="https://chat.whatsapp.com/DKDo2qOfJRlF4n0J9tGxNt" onClose={handleCloseWelcome} />}
-      {showSupportModal && <SupportModal onClose={() => setShowSupportModal(false)} />}
+      {showWelcome && <WelcomeModal groupLink={groupLink} onClose={handleCloseWelcome} />}
+      {showSupportModal && <SupportModal groupLink={groupLink} supportLink={supportLink} onClose={() => setShowSupportModal(false)} />}
       
       {/* Premium Header Region */}
       <div className="bg-white px-5 pt-16 pb-6 shadow-sm border-b border-gray-200">

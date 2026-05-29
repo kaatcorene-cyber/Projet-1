@@ -99,9 +99,7 @@ export function Admin() {
         if (grp) setGroupLink(grp.value);
 
         const sup = settingsRes.data.find(s => s.key === 'support_link');
-        if (sup) {
-           setSupportLink(sup.value.includes('t.me/qualcomm_agt') ? 'https://wa.me/2250544051968' : sup.value);
-        }
+        if (sup) setSupportLink(sup.value);
         
         const dbPlansStr = settingsRes.data.find(s => s.key === 'investment_plans');
         if (dbPlansStr && dbPlansStr.value) {
@@ -909,7 +907,7 @@ export function Admin() {
                   value={supportLink}
                   onChange={(e) => setSupportLink(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-purple-500 transition-colors text-sm"
-                  placeholder="https://wa.me/2250544051968"
+                  placeholder="https://t.me/support..."
                 />
               </div>
 
