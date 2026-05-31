@@ -11,7 +11,7 @@ export function AnimatedBackground() {
         }} 
       />
       {/* Semi-transparent white overlay to keep the app's dark text readable while letting the image show clearly */}
-      <div className="absolute inset-0 bg-white/70" />
+      <div className="absolute inset-0 bg-zinc-900 border-zinc-800/80 shadow-black/20/70" />
       <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-transparent to-white/90" />
       
       {/* Subtle floating golden particles */}

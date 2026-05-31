@@ -3,19 +3,12 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit, Bot, Search } from 'lucide-react';
+import { ChevronLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit, Bot, Search, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const DEFAULT_PLANS = [
-  { category: 'basique', amount: 2500, daily: 450, total: 3600, image: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800' },
-  { category: 'basique', amount: 5000, daily: 900, total: 7200, image: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?auto=format&fit=crop&q=80&w=800' },
-  { category: 'basique', amount: 10000, daily: 1800, total: 14400, image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800' },
-  { category: 'premium', amount: 2500, daily: 125, total: 7500, image: 'https://images.unsplash.com/photo-1605374668853-2d2d6d841b52?auto=format&fit=crop&q=80&w=800' },
-  { category: 'premium', amount: 5000, daily: 250, total: 15000, image: 'https://images.unsplash.com/photo-1542396601-dca920ea2807?auto=format&fit=crop&q=80&w=800' },
-  { category: 'premium', amount: 10000, daily: 500, total: 30000, image: 'https://images.unsplash.com/photo-1580901368919-7738efb0f87e?auto=format&fit=crop&q=80&w=800' },
-];
+const DEFAULT_PLANS: any[] = [];
 
 const VIP_LEVELS = ['user', 'vip1', 'vip2', 'vip3', 'vip4', 'vip5'];
 
@@ -43,7 +36,6 @@ export function Admin() {
   const [newPlanDaily, setNewPlanDaily] = useState('');
   const [newPlanTotal, setNewPlanTotal] = useState('');
   const [newPlanImage, setNewPlanImage] = useState('');
-  const [newPlanCategory, setNewPlanCategory] = useState('basique');
   const [editingPlanIndex, setEditingPlanIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,6 +43,11 @@ export function Admin() {
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editBalance, setEditBalance] = useState('');
   
+  // States for Banks
+  const [editingBankUserId, setEditingBankUserId] = useState<string | null>(null);
+  const [editBankMethod, setEditBankMethod] = useState('');
+  const [editBankAccountName, setEditBankAccountName] = useState('');
+  const [editBankAccountNumber, setEditBankAccountNumber] = useState('');
   
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -85,7 +82,22 @@ export function Admin() {
       ]);
 
       if (txsRes.data) setTransactions(txsRes.data);
-      if (usersRes.data) setUsersList(usersRes.data);
+      if (usersRes.data) {
+        let uData = usersRes.data;
+        if (settingsRes.data) {
+          uData = uData.map(u => {
+            const bSet = settingsRes.data.find(s => s.key === 'bank_' + u.id);
+            if (bSet && bSet.value) {
+              try {
+                const parsed = JSON.parse(bSet.value);
+                return { ...u, bank_method: parsed.bank_method, bank_account_name: parsed.bank_account_name };
+              } catch(e) {}
+            }
+            return u;
+          });
+        }
+        setUsersList(uData);
+      }
 
       if (invsRes.data) {
         setInvestmentsList(invsRes.data);
@@ -105,7 +117,7 @@ export function Admin() {
         if (dbPlansStr && dbPlansStr.value) {
           try {
             const parsed = JSON.parse(dbPlansStr.value);
-            setPlans(parsed.map((p: any) => ({ ...p, category: p.category || 'basique' })));
+            setPlans(parsed);
           } catch (e) {
             setPlans(DEFAULT_PLANS);
           }
@@ -171,6 +183,57 @@ export function Admin() {
     });
   };
 
+  const handleUpdateUserBank = async (id: string) => {
+    setLoading(true);
+    const packedName = editBankAccountName || editBankAccountNumber 
+      ? `${editBankAccountName}|||${editBankAccountNumber}`
+      : '';
+      
+    try {
+      await supabase.from('users').update({ 
+        bank_method: editBankMethod,
+        bank_account_name: packedName
+      }).eq('id', id);
+    } catch(e) {}
+    
+    // Always save to settings
+    const { error: settingsError } = await supabase.from('settings').upsert({
+      key: 'bank_' + id,
+      value: JSON.stringify({ bank_method: editBankMethod, bank_account_name: packedName })
+    });
+    
+    setLoading(false);
+    if (settingsError) {
+      setMessage({ type: 'error', text: 'Erreur lors de la mise à jour de la banque : ' + settingsError.message });
+    } else {
+      setMessage({ type: 'success', text: 'Coordonnées bancaires mises à jour !' });
+      setEditingBankUserId(null);
+      fetchData();
+    }
+  };
+
+  const handleClearUserBank = async (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      message: 'Voulez-vous vraiment supprimer la banque de cet utilisateur ?',
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          await supabase.from('users').update({ 
+            bank_method: '',
+            bank_account_name: ''
+          }).eq('id', id);
+        } catch(e) {}
+        
+        await supabase.from('settings').delete().eq('key', 'bank_' + id);
+        
+        setLoading(false);
+        setMessage({ type: 'success', text: 'Banque supprimée avec succès !' });
+        fetchData();
+      }
+    });
+  };
+
   const handleRemoveInvestment = async (id: string) => {
     setConfirmModal({
       isOpen: true,
@@ -217,48 +280,48 @@ export function Admin() {
             .eq('status', 'approved');
 
           if (count === 1 && userData.referred_by) {
-            // Level 1 logic (10%)
+            // Level 1 logic (20%)
             const { data: level1 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', userData.referred_by).maybeSingle();
             
             if (level1) {
-              const l1Bonus = amount * 0.10;
+              const l1Bonus = amount * 0.20;
               await supabase.from('users').update({ balance: level1.balance + l1Bonus }).eq('id', level1.id);
               await supabase.from('transactions').insert([{
                 user_id: level1.id,
                 type: 'referral_bonus',
                 amount: l1Bonus,
                 status: 'completed',
-                reference: 'Bonus 1er dépôt L1 (10%)'
+                reference: 'Bonus 1er dépôt L1 (20%)'
               }]);
 
-              // Level 2 logic (2%)
+              // Level 2 logic (3%)
               if (level1.referred_by) {
                 const { data: level2 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', level1.referred_by).maybeSingle();
                 
                 if (level2) {
-                  const l2Bonus = amount * 0.02;
+                  const l2Bonus = amount * 0.03;
                   await supabase.from('users').update({ balance: level2.balance + l2Bonus }).eq('id', level2.id);
                   await supabase.from('transactions').insert([{
                     user_id: level2.id,
                     type: 'referral_bonus',
                     amount: l2Bonus,
                     status: 'completed',
-                    reference: 'Bonus 1er dépôt L2 (2%)'
+                    reference: 'Bonus 1er dépôt L2 (3%)'
                   }]);
 
-                  // Level 3 logic (1%)
+                  // Level 3 logic (2%)
                   if (level2.referred_by) {
                     const { data: level3 } = await supabase.from('users').select('id, balance').eq('referral_code', level2.referred_by).maybeSingle();
                     
                     if (level3) {
-                      const l3Bonus = amount * 0.01;
+                      const l3Bonus = amount * 0.02;
                       await supabase.from('users').update({ balance: level3.balance + l3Bonus }).eq('id', level3.id);
                       await supabase.from('transactions').insert([{
                         user_id: level3.id,
                         type: 'referral_bonus',
                         amount: l3Bonus,
                         status: 'completed',
-                        reference: 'Bonus 1er dépôt L3 (1%)'
+                        reference: 'Bonus 1er dépôt L3 (2%)'
                       }]);
                     }
                   }
@@ -330,7 +393,6 @@ export function Admin() {
   const handleAddPlan = () => {
     if (!newPlanAmount || !newPlanDaily || !newPlanTotal || !newPlanImage) return;
     const newPlan = {
-      category: newPlanCategory,
       amount: Number(newPlanAmount),
       percent: Number(newPlanPercent),
       duration: Number(newPlanDuration),
@@ -364,7 +426,6 @@ export function Admin() {
     setNewPlanDaily(plan.daily.toString());
     setNewPlanTotal(plan.total.toString());
     setNewPlanImage(plan.image);
-    setNewPlanCategory(plan.category || 'basique');
     setEditingPlanIndex(index);
     // Scroll to form smoothly
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -372,7 +433,7 @@ export function Admin() {
 
   const handleCancelEditPlan = () => {
     setNewPlanAmount(''); setNewPlanDaily(''); setNewPlanTotal(''); setNewPlanImage('');
-    setNewPlanPercent('18'); setNewPlanDuration('60'); setNewPlanCategory('basique');
+    setNewPlanPercent('18'); setNewPlanDuration('60'); 
     setEditingPlanIndex(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -407,12 +468,37 @@ export function Admin() {
     }
   };
 
+  const handleWipeData = async () => {
+    setConfirmModal({
+      isOpen: true,
+      message: "Voulez-vous vraiment TOUT EFFACER (Comptes, transferts, dépôts, investissements, plans) ? Cette action est IRRÉVERSIBLE !",
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          await supabase.from('investments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          await supabase.from('users').delete().eq('role', 'user');
+          await supabase.from('settings').upsert({ key: 'investment_plans', value: '[]' });
+          
+          setMessage({ type: 'success', text: 'Toutes les données ont été effacées avec succès !' });
+          setPlans([]);
+          setTimeout(() => window.location.reload(), 2000);
+        } catch (err: any) {
+          setMessage({ type: 'error', text: 'Erreur lors de la suppression : ' + err.message });
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
   const tabs = [
     { id: 'overview', label: "Vue d'ensemble", icon: BarChart3 },
     { id: 'users', label: 'Utilisateurs', icon: Users },
     { id: 'investments', label: 'Investissements', icon: Activity },
     { id: 'deposits', label: 'Dépôts', icon: ArrowDownRight },
     { id: 'withdrawals', label: 'Retraits', icon: ArrowUpRight },
+    { id: 'banks', label: 'Banque', icon: CreditCard },
     { id: 'plans', label: 'Plans VIP', icon: LayoutList },
     { id: 'settings', label: 'Paramètres', icon: SettingsIcon },
   ];
@@ -420,21 +506,21 @@ export function Admin() {
   return (
     <div className="p-6 space-y-6 pb-24 pt-20 max-w-lg mx-auto">
       <header className="flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-900 shadow-sm hover:bg-gray-50 transition-colors shrink-0">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-full flex items-center justify-center text-zinc-50 shadow-sm hover:bg-zinc-800/50 transition-colors shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900 truncate">Administration</h1>
+        <h1 className="text-2xl font-bold text-zinc-50 truncate">Administration</h1>
       </header>
 
       {confirmModal && confirmModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Confirmation</h3>
-            <p className="text-gray-600 mb-6">{confirmModal.message}</p>
+          <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 rounded-[2rem] p-6 w-full max-w-sm shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-zinc-50 mb-2">Confirmation</h3>
+            <p className="text-zinc-400 mb-6">{confirmModal.message}</p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setConfirmModal(null)}
-                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl font-bold transition-colors"
+                className="flex-1 py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-50 rounded-xl font-bold transition-colors"
                 disabled={loading}
               >
                 Annuler
@@ -444,7 +530,7 @@ export function Admin() {
                   setConfirmModal({...confirmModal, isOpen: false});
                   confirmModal.onConfirm();
                 }}
-                className="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-purple-200"
+                className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-red-200"
                 disabled={loading}
               >
                 Confirmer
@@ -455,7 +541,7 @@ export function Admin() {
       )}
       
       {message && (
-        <div className={`p-4 rounded-xl text-sm font-medium ${message.type === 'error' ? 'bg-purple-50 text-purple-700 border border-purple-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
+        <div className={`p-4 rounded-xl text-sm font-medium ${message.type === 'error' ? 'bg-red-500/10 text-red-700 border border-red-500/20' : 'bg-green-50 text-green-700 border border-green-100'}`}>
           {message.text}
         </div>
       )}
@@ -467,7 +553,7 @@ export function Admin() {
             key={t.id}
             onClick={() => { setActiveTab(t.id); setSearchTerm(''); }}
             className={`px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium whitespace-nowrap transition-colors ${
-              activeTab === t.id ? 'bg-purple-500 text-white shadow-md shadow-purple-500/20' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+              activeTab === t.id ? 'bg-red-500/100 text-white shadow-md shadow-red-500/20' : 'bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 text-zinc-400 hover:bg-zinc-800/50'
             }`}
           >
             <t.icon className="w-4 h-4" />
@@ -477,13 +563,13 @@ export function Admin() {
       </div>
 
       {['users', 'deposits', 'withdrawals'].includes(activeTab) && (
-        <div className="bg-white px-4 py-3 border border-gray-200 rounded-xl shadow-sm mb-4">
+        <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 px-4 py-3 border border-zinc-800 rounded-xl shadow-sm mb-4">
           <input
             type="text"
             placeholder="Rechercher par nom ou numéro..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent outline-none text-sm text-gray-900 placeholder-gray-400"
+            className="w-full bg-transparent outline-none text-sm text-zinc-50 placeholder-gray-400"
           />
         </div>
       )}
@@ -491,23 +577,23 @@ export function Admin() {
       {/* CONTENT: OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Vue d'ensemble</h2>
+          <h2 className="text-lg font-bold text-zinc-50 mb-2">Vue d'ensemble</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white border border-purple-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Total des soldes</p>
-               <p className="text-xl font-black text-purple-700">{formatCurrency(0)}</p>
+            <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-red-500/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2">Total des soldes</p>
+               <p className="text-xl font-black text-red-700">{formatCurrency(usersList.reduce((acc, u) => acc + (u.balance || 0), 0))}</p>
             </div>
-            <div className="bg-white border border-purple-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Retraits validés</p>
-               <p className="text-xl font-black text-purple-700">{formatCurrency(0)}</p>
+            <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-red-500/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2">Retraits validés</p>
+               <p className="text-xl font-black text-red-700">{formatCurrency(transactions.filter(t => t.type === 'withdrawal' && t.status === 'approved').reduce((acc, t) => acc + (t.amount || 0), 0))}</p>
             </div>
-            <div className="bg-white border border-amber-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Dépôts validés</p>
-               <p className="text-xl font-black text-amber-600">{formatCurrency(0)}</p>
+            <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-amber-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2">Dépôts validés</p>
+               <p className="text-xl font-black text-amber-600">{formatCurrency(transactions.filter(t => t.type === 'deposit' && t.status === 'approved').reduce((acc, t) => acc + (t.amount || 0), 0))}</p>
             </div>
-            <div className="bg-white border border-purple-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Utilisateurs</p>
-               <p className="text-xl font-black text-purple-600">0</p>
+            <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-red-500/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2">Utilisateurs</p>
+               <p className="text-xl font-black text-red-600">{usersList.length}</p>
             </div>
           </div>
         </div>
@@ -516,47 +602,45 @@ export function Admin() {
       {/* CONTENT: INVESTMENTS */}
       {activeTab === 'investments' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Tous les Investissements ({investmentsList.length})</h2>
+          <h2 className="text-lg font-bold text-zinc-50 mb-2">Tous les Investissements ({investmentsList.length})</h2>
           <div className="space-y-3">
             {investmentsList.length === 0 ? (
-              <p className="text-center text-gray-500 py-8 bg-white rounded-2xl border border-gray-100">Aucun investissement</p>
+              <p className="text-center text-zinc-400 py-8 bg-zinc-900 border-zinc-800/80 shadow-black/20 rounded-2xl border border-zinc-800">Aucun investissement</p>
             ) : (
               investmentsList.map(inv => {
-                const ratio = inv.plan_amount > 0 ? (inv.daily_yield / inv.plan_amount) : 0;
-                const isPremium = Math.abs(ratio - 0.05) < 0.05;
                 
                 return (
-                <div key={inv.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${isPremium ? 'bg-purple-500' : 'bg-purple-500'}`}></div>
+                <div key={inv.id} className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 bg-red-500/100`}></div>
                   <div className="flex justify-between items-start mb-2 pl-2">
                     <div>
-                      <p className="font-bold text-gray-900 line-clamp-1">Pack {isPremium ? 'Premium' : 'Standard'} ({formatCurrency(inv.plan_amount || 0)})</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="font-bold text-zinc-50 line-clamp-1">Contrat ({formatCurrency(inv.plan_amount || 0)})</p>
+                      <p className="text-xs text-zinc-400 mt-0.5">
                         {inv.users?.first_name} {inv.users?.last_name} ({inv.users?.phone})
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
-                        inv.status === 'active' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-500'
+                        inv.status === 'active' ? 'bg-red-500/20 text-red-800' : 'bg-zinc-800 text-zinc-400'
                       }`}>
                         {inv.status}
                       </span>
-                      <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-purple-500 hover:bg-purple-50 p-1.5 rounded-lg transition-colors" title="Supprimer l'investissement">
+                      <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors" title="Supprimer l'investissement">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                   <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50 pl-2">
                     <div>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Prix du pack</p>
-                      <p className="font-bold text-gray-900">{formatCurrency(inv.plan_amount || 0)}</p>
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Prix du pack</p>
+                      <p className="font-bold text-zinc-50">{formatCurrency(inv.plan_amount || 0)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">Gain Journalier</p>
-                      <p className={`font-bold ${isPremium ? 'text-purple-700' : 'text-purple-700'}`}>{formatCurrency(inv.daily_yield)}</p>
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Gain Journalier</p>
+                      <p className={`font-bold text-red-700`}>{formatCurrency(inv.daily_yield)}</p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-2 text-center">
+                  <p className="text-[10px] text-zinc-500 mt-2 text-center">
                     Acheté le : {inv.start_date ? format(new Date(inv.start_date), 'dd MMM yyyy HH:mm', { locale: fr }) : 'Date inconnue'}
                     <br />
                     Expire le : {inv.end_date ? format(new Date(inv.end_date), 'dd MMM yyyy HH:mm', { locale: fr }) : 'Non défini'}
@@ -573,28 +657,28 @@ export function Admin() {
       {/* CONTENT: USERS */}
       {activeTab === 'users' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Gestion des Utilisateurs ({usersList.length})</h2>
+          <h2 className="text-lg font-bold text-zinc-50 mb-2">Gestion des Utilisateurs ({usersList.length})</h2>
           <div className="space-y-3">
             {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
-              <div key={u.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative">
+              <div key={u.id} className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-2xl p-4 shadow-sm relative">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <p className="font-bold text-gray-900 flex items-center gap-2">
-                      {u.first_name} {u.last_name}
-                      {u.role && u.role.startsWith('vip') && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase">{u.role}</span>}
-                      {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-purple-500" />}
+                    <p className="font-bold text-zinc-50 flex items-center gap-2">
+                       {u.first_name} {u.last_name}
+                       {u.role && u.role.startsWith('vip') && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase">{u.role}</span>}
+                       {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-red-500" />}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{u.phone} • {u.country}</p>
-                    <p className="text-[11px] text-gray-500 mt-1"><span className="font-semibold">MDP:</span> <span className="font-mono text-gray-900 bg-gray-100 px-1 py-0.5 rounded">{u.password_hash}</span></p>
-                    <p className="text-[10px] text-gray-400 mt-0.5 font-mono">{u.id}</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">{u.phone} • {u.country}</p>
+                    <p className="text-[11px] text-zinc-400 mt-1"><span className="font-semibold">MDP:</span> <span className="font-mono text-zinc-50 bg-zinc-800 px-1 py-0.5 rounded">{u.password_hash}</span></p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5 font-mono">{u.id}</p>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                    <p className="font-bold text-purple-700 bg-purple-50 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
+                    <p className="font-bold text-red-700 bg-red-500/10 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
                     {u.role !== 'admin' && (
                        <select 
                          value={u.role || 'user'} 
                          onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                         className="text-[10px] border border-gray-200 rounded p-1 bg-white outline-none"
+                         className="text-[10px] border border-zinc-800 rounded p-1 bg-zinc-900 shadow-black/20 outline-none"
                        >
                          {VIP_LEVELS.map(v => <option key={v} value={v}>{v === 'user' ? 'Standard' : v.toUpperCase()}</option>)}
                        </select>
@@ -603,19 +687,18 @@ export function Admin() {
                 </div>
 
                 {editingUserId === u.id ? (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                    <input type="number" className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-purple-500 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
-                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-purple-500 hover:bg-purple-700 text-white font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
-                    <button onClick={() => setEditingUserId(null)} className="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg text-sm transition-colors cursor-pointer">X</button>
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
+                    <input type="number" className="flex-1 bg-zinc-800/50 border border-zinc-800 text-zinc-50 text-sm rounded-lg px-3 py-2 outline-none focus:border-red-500 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
+                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-red-500/100 hover:bg-red-700 text-white font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
+                    <button onClick={() => setEditingUserId(null)} className="px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium rounded-lg text-sm transition-colors cursor-pointer">X</button>
                   </div>
-                
                 ) : (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                    <button onClick={() => {setEditingUserId(u.id); setEditBalance(String(u.balance));}} className="flex-1 py-2 bg-gray-50 text-gray-600 rounded-xl flex items-center justify-center text-xs font-medium hover:bg-gray-100 transition-colors border border-gray-100 cursor-pointer">
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
+                    <button onClick={() => {setEditingUserId(u.id); setEditBalance(String(u.balance));}} className="flex-1 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl flex items-center justify-center text-xs font-medium hover:bg-zinc-800 transition-colors border border-zinc-800 cursor-pointer">
                       <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Solde
                     </button>
                     {u.role !== 'admin' && (
-                      <button onClick={() => handleDeleteUser(u.id)} className="p-2 bg-purple-50 text-purple-500 border border-purple-100 rounded-xl hover:bg-purple-100 transition-colors cursor-pointer">
+                      <button onClick={() => handleDeleteUser(u.id)} className="p-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
@@ -627,36 +710,128 @@ export function Admin() {
         </div>
       )}
 
+      {/* CONTENT: BANKS */}
+      {activeTab === 'banks' && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-zinc-50 mb-2">Gestion des Banques ({usersList.length})</h2>
+          <div className="space-y-3">
+            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} ${(u as any).bank_method} ${(u as any).bank_account_name}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => {
+              const bAccountNameRaw = (u as any)?.bank_account_name || '';
+              const bAccountName = bAccountNameRaw.split('|||')[0] || '';
+              const bAccountNumber = bAccountNameRaw.split('|||')[1] || '';
+              const bMethod = (u as any)?.bank_method || 'Non défini';
+
+              return (
+              <div key={u.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-sm relative">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <p className="font-bold text-zinc-50 flex items-center gap-2">
+                      {u.first_name} {u.last_name}
+                    </p>
+                    <p className="text-[10px] text-zinc-500 mt-1 font-mono">{u.phone}</p>
+                    <div className="mt-2 bg-zinc-800/50 rounded-lg p-2 inline-block space-y-0.5">
+                      <p className="text-xs font-semibold text-zinc-300">
+                        Opérateur: <span className="font-normal text-zinc-400">{bMethod}</span>
+                      </p>
+                      <p className="text-xs font-semibold text-zinc-300">
+                        Nom: <span className="font-normal text-zinc-400">{bAccountName || 'N/A'}</span>
+                      </p>
+                      <p className="text-xs font-semibold text-zinc-300">
+                        Numéro: <span className="font-normal text-zinc-400">{bAccountNumber || 'N/A'}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {editingBankUserId === u.id ? (
+                  <div className="space-y-3 mt-3 pt-3 border-t border-zinc-800">
+                    <input 
+                      type="text" 
+                      placeholder="Opérateur (ex: MTN)"
+                      className="w-full bg-zinc-800/50 border border-zinc-800 text-zinc-50 text-sm rounded-lg px-3 py-2 outline-none focus:border-red-500 font-medium" 
+                      value={editBankMethod} 
+                      onChange={(e) => setEditBankMethod(e.target.value)} 
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="Nom du compte"
+                      className="w-full bg-zinc-800/50 border border-zinc-800 text-zinc-50 text-sm rounded-lg px-3 py-2 outline-none focus:border-red-500 font-medium" 
+                      value={editBankAccountName} 
+                      onChange={(e) => setEditBankAccountName(e.target.value)} 
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="Numéro de compte"
+                      className="w-full bg-zinc-800/50 border border-zinc-800 text-zinc-50 text-sm rounded-lg px-3 py-2 outline-none focus:border-red-500 font-medium" 
+                      value={editBankAccountNumber} 
+                      onChange={(e) => setEditBankAccountNumber(e.target.value)} 
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={() => handleUpdateUserBank(u.id)} disabled={loading} className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
+                      <button onClick={() => setEditingBankUserId(null)} className="px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium rounded-lg text-sm transition-colors cursor-pointer">Annuler</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
+                    <button 
+                      onClick={() => {
+                        setEditingBankUserId(u.id); 
+                        setEditBankMethod((u as any)?.bank_method || '');
+                        setEditBankAccountName(bAccountName);
+                        setEditBankAccountNumber(bAccountNumber);
+                      }} 
+                      className="flex-1 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl flex items-center justify-center text-xs font-medium hover:bg-zinc-800 transition-colors border border-zinc-800 cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Modifier
+                    </button>
+                    {(u as any)?.bank_method && (
+                       <button 
+                         onClick={() => handleClearUserBank(u.id)}
+                         className="px-3 py-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-colors cursor-pointer"
+                         title="Supprimer la banque"
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* CONTENT: DEPOSITS */}
       {activeTab === 'deposits' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Demandes de Dépôts</h2>
+          <h2 className="text-lg font-bold text-zinc-50 mb-2">Demandes de Dépôts</h2>
           <div className="space-y-3">
-            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-gray-500 text-center py-4">Aucun dépôt.</p>}
+            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-zinc-400 text-center py-4">Aucun dépôt.</p>}
             {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
-              <div key={tx.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+              <div key={tx.id} className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <p className="font-bold text-gray-900">{formatCurrency(tx.amount)}</p>
-                    <p className="text-xs text-gray-500 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
-                    <p className="text-xs text-gray-400 mt-1">Ref: {tx.reference}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
+                    <p className="font-bold text-zinc-50">{formatCurrency(tx.amount)}</p>
+                    <p className="text-xs text-zinc-400 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
+                    <p className="text-xs text-zinc-500 mt-1">Ref: {tx.reference}</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
                   </div>
                   <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
                     tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                    tx.status === 'approved' ? 'bg-purple-50 text-purple-700 border border-purple-100' :
-                    'bg-purple-50 text-purple-600 border border-purple-100'
+                    tx.status === 'approved' ? 'bg-red-500/10 text-red-700 border border-red-500/20' :
+                    'bg-red-500/10 text-red-600 border border-red-500/20'
                   }`}>
                     {tx.status}
                   </div>
                 </div>
                 
                 {tx.status === 'pending' && (
-                  <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                  <div className="flex gap-2 mt-4 pt-4 border-t border-zinc-800">
+                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <CheckCircle className="w-4 h-4" /> Approuver
                     </button>
-                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <XCircle className="w-4 h-4" /> Rejeter
                     </button>
                   </div>
@@ -670,33 +845,33 @@ export function Admin() {
       {/* CONTENT: WITHDRAWALS */}
       {activeTab === 'withdrawals' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Demandes de Retraits</h2>
+          <h2 className="text-lg font-bold text-zinc-50 mb-2">Demandes de Retraits</h2>
           <div className="space-y-3">
-            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-gray-500 text-center py-4">Aucun retrait.</p>}
+            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-zinc-400 text-center py-4">Aucun retrait.</p>}
             {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
-              <div key={tx.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+              <div key={tx.id} className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <p className="font-bold text-gray-900">{formatCurrency(tx.amount)}</p>
-                    <p className="text-xs text-gray-500 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
-                    <p className="text-xs text-gray-400 mt-1">Ref/Numéro: {tx.reference}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
+                    <p className="font-bold text-zinc-50">{formatCurrency(tx.amount)}</p>
+                    <p className="text-xs text-zinc-400 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
+                    <p className="text-xs text-zinc-500 mt-1">Ref/Numéro: {tx.reference}</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
                   </div>
                   <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
                     tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                    tx.status === 'approved' ? 'bg-purple-50 text-purple-700 border border-purple-100' :
-                    'bg-purple-50 text-purple-600 border border-purple-100'
+                    tx.status === 'approved' ? 'bg-red-500/10 text-red-700 border border-red-500/20' :
+                    'bg-red-500/10 text-red-600 border border-red-500/20'
                   }`}>
                     {tx.status}
                   </div>
                 </div>
                 
                 {tx.status === 'pending' && (
-                  <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                  <div className="flex gap-2 mt-4 pt-4 border-t border-zinc-800">
+                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <CheckCircle className="w-4 h-4" /> Approuver
                     </button>
-                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <XCircle className="w-4 h-4" /> Rejeter
                     </button>
                   </div>
@@ -710,21 +885,10 @@ export function Admin() {
       {/* CONTENT: PLANS */}
       {activeTab === 'plans' && (
         <div className="space-y-6">
-          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-             <h2 className="text-lg font-bold text-gray-900 mb-4">Créer un Plan VIP</h2>
+          <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-3xl p-6 shadow-sm">
+             <h2 className="text-lg font-bold text-zinc-50 mb-4">{editingPlanIndex !== null ? 'Modifier le contrat' : 'Créer un contrat'}</h2>
              <div className="space-y-4">
-               <div className="flex flex-col gap-1">
-                 <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Type de mine</label>
-                 <select
-                   value={newPlanCategory}
-                   onChange={e => setNewPlanCategory(e.target.value)}
-                   className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl px-4 py-3 focus:border-purple-500 outline-none w-full appearance-none"
-                 >
-                   <option value="basique">Mine d'Or</option>
-                   <option value="premium">Mine de Diamant</option>
-                 </select>
-               </div>
-               <div className="grid grid-cols-2 gap-3 mt-4">
+               <div className="grid grid-cols-2 gap-3">
                  <input 
                    type="number" 
                    placeholder="Montant (ex: 5000)" 
@@ -742,10 +906,10 @@ export function Admin() {
                         setNewPlanTotal('');
                      }
                    }} 
-                   className="col-span-2 bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-purple-500 outline-none" 
+                   className="col-span-2 bg-zinc-800/50 border border-zinc-800 text-zinc-50 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
                  />
                  <div className="flex flex-col gap-1">
-                   <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Gain %</label>
+                   <label className="text-[10px] text-zinc-400 font-bold uppercase ml-1">Gain %</label>
                    <input 
                      type="number" 
                      placeholder="%" 
@@ -760,11 +924,11 @@ export function Admin() {
                           setNewPlanTotal(total.toString());
                        }
                      }} 
-                     className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-purple-500 outline-none" 
+                     className="bg-zinc-800/50 border border-zinc-800 text-zinc-50 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
                    />
                  </div>
                  <div className="flex flex-col gap-1">
-                   <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Durée (jours)</label>
+                   <label className="text-[10px] text-zinc-400 font-bold uppercase ml-1">Durée (jours)</label>
                    <input 
                      type="number" 
                      placeholder="Jours" 
@@ -779,21 +943,21 @@ export function Admin() {
                           setNewPlanTotal(total.toString());
                        }
                      }} 
-                     className="bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-purple-500 outline-none" 
+                     className="bg-zinc-800/50 border border-zinc-800 text-zinc-50 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
                    />
                  </div>
                  <div className="flex flex-col gap-1">
-                   <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Gain/Jour (FCFA)</label>
-                   <input type="number" placeholder="Gain journalier" value={newPlanDaily} readOnly className="bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-purple-500 outline-none cursor-not-allowed opacity-80" />
+                   <label className="text-[10px] text-zinc-400 font-bold uppercase ml-1">Gain/Jour (FCFA)</label>
+                   <input type="number" placeholder="Gain journalier" value={newPlanDaily} readOnly className="bg-zinc-800 border border-zinc-800 text-zinc-50 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none cursor-not-allowed opacity-80" />
                  </div>
                  <div className="flex flex-col gap-1">
-                   <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Total (FCFA)</label>
-                   <input type="number" placeholder="Revenu Total" value={newPlanTotal} readOnly className="bg-gray-100 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-purple-500 outline-none cursor-not-allowed opacity-80" />
+                   <label className="text-[10px] text-zinc-400 font-bold uppercase ml-1">Total (FCFA)</label>
+                   <input type="number" placeholder="Revenu Total" value={newPlanTotal} readOnly className="bg-zinc-800 border border-zinc-800 text-zinc-50 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none cursor-not-allowed opacity-80" />
                  </div>
                </div>
 
                {/* IMAGE UPLOAD */}
-               <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors">
+               <div className="border-2 border-dashed border-zinc-800 rounded-xl p-4 text-center hover:bg-zinc-800/50 transition-colors">
                  <input 
                    type="file" 
                    accept="image/*" 
@@ -807,10 +971,10 @@ export function Admin() {
                      <img src={newPlanImage} className="w-full h-32 object-cover rounded-lg shadow-sm" alt="Preview" />
                    ) : (
                      <>
-                       <div className="w-10 h-10 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center">
+                       <div className="w-10 h-10 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center">
                          <Upload className="w-5 h-5" />
                        </div>
-                       <span className="text-sm font-medium text-gray-600">Ajouter une photo</span>
+                       <span className="text-sm font-medium text-zinc-400">Ajouter une photo</span>
                      </>
                    )}
                  </label>
@@ -818,15 +982,15 @@ export function Admin() {
 
                {editingPlanIndex !== null ? (
                  <div className="flex gap-2">
-                   <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-purple-500 hover:bg-purple-700 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                   <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-red-500/100 hover:bg-red-700 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
                      <Save className="w-5 h-5" /> Sauvegarder
                    </button>
-                   <button onClick={handleCancelEditPlan} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                   <button onClick={handleCancelEditPlan} className="flex-1 bg-zinc-700 hover:bg-gray-300 text-zinc-300 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
                      Annuler
                    </button>
                  </div>
                ) : (
-                 <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-purple-500 hover:bg-purple-700 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                 <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-red-500/100 hover:bg-red-700 disabled:opacity-50 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
                    <Plus className="w-5 h-5" /> Ajouter à la liste
                  </button>
                )}
@@ -834,34 +998,31 @@ export function Admin() {
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-gray-900 font-bold px-1">Plans actuels ({plans.length})</h3>
+            <h3 className="text-zinc-50 font-bold px-1">Plans actuels ({plans.length})</h3>
             {isInitializing ? (
                <div className="flex justify-center p-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+                  <Loader2 className="w-6 h-6 animate-spin text-red-500" />
                </div>
             ) : plans.map((p, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500"></div>
+              <div key={idx} className="flex items-center justify-between p-4 bg-zinc-900 border-zinc-800/80 shadow-black/20 rounded-2xl border border-zinc-800 shadow-sm relative overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500/100"></div>
                 <div className="flex items-center gap-4 pl-2">
-                  <img src={p.image || 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800'} className="w-12 h-12 rounded-xl object-cover bg-gray-100" alt="" referrerPolicy="no-referrer" />
+                  <img src={p.image || 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800'} className="w-12 h-12 rounded-xl object-cover bg-zinc-800" alt="" referrerPolicy="no-referrer" />
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
-                       <p className="font-bold text-gray-900 text-sm leading-none">{formatCurrency(p.amount)}</p>
-                       <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${p.category === 'premium' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                         {p.category === 'premium' ? 'Diamant' : 'Or'}
-                       </span>
+                       <p className="font-bold text-zinc-50 text-sm leading-none">{formatCurrency(p.amount)}</p>
                     </div>
                     <div className="flex gap-2">
-                        <p className="text-[11px] text-gray-500 mt-0.5">Gain/j: <span className="font-bold text-gray-700">{formatCurrency(p.daily)}</span></p>
-                        <p className="text-[11px] text-gray-500 mt-0.5">Total: <span className="font-bold text-gray-700">{formatCurrency(p.total)}</span></p>
+                        <p className="text-[11px] text-zinc-400 mt-0.5">Gain/j: <span className="font-bold text-zinc-300">{formatCurrency(p.daily)}</span></p>
+                        <p className="text-[11px] text-zinc-400 mt-0.5">Total: <span className="font-bold text-zinc-300">{formatCurrency(p.total)}</span></p>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => handleEditPlan(idx)} disabled={loading} className="p-2.5 text-purple-500 bg-purple-50 border border-purple-100 rounded-xl hover:bg-purple-100 transition-colors cursor-pointer">
+                  <button onClick={() => handleEditPlan(idx)} disabled={loading} className="p-2.5 text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors cursor-pointer">
                     <Edit className="w-5 h-5" />
                   </button>
-                  <button onClick={() => handleRemovePlan(idx)} disabled={loading} className="p-2.5 text-purple-500 bg-purple-50 border border-purple-100 rounded-xl hover:bg-purple-100 transition-colors cursor-pointer">
+                  <button onClick={() => handleRemovePlan(idx)} disabled={loading} className="p-2.5 text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors cursor-pointer">
                     <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
@@ -874,39 +1035,39 @@ export function Admin() {
       {/* CONTENT: SETTINGS */}
       {activeTab === 'settings' && (
         <div className="space-y-6">
-          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Configuration globale</h2>
+          <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-3xl p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-zinc-50 mb-4">Configuration globale</h2>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Lien de Paiement</label>
+                <label className="block text-xs font-medium text-zinc-400 ml-1 mb-1">Lien de Paiement</label>
                 <input
                   type="url"
                   value={paymentLink}
                   onChange={(e) => setPaymentLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-purple-500 transition-colors text-sm"
+                  className="w-full bg-zinc-800/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 transition-colors text-sm"
                   placeholder="https://..."
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Lien du Groupe (ex: Telegram/WhatsApp)</label>
+                <label className="block text-xs font-medium text-zinc-400 ml-1 mb-1">Lien du Groupe (ex: Telegram/WhatsApp)</label>
                 <input
                   type="url"
                   value={groupLink}
                   onChange={(e) => setGroupLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-purple-500 transition-colors text-sm"
+                  className="w-full bg-zinc-800/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 transition-colors text-sm"
                   placeholder="https://t.me/..."
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-500 ml-1 mb-1">Lien du Service Client</label>
+                <label className="block text-xs font-medium text-zinc-400 ml-1 mb-1">Lien du Service Client</label>
                 <input
                   type="url"
                   value={supportLink}
                   onChange={(e) => setSupportLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-purple-500 transition-colors text-sm"
+                  className="w-full bg-zinc-800/50 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 transition-colors text-sm"
                   placeholder="https://t.me/support..."
                 />
               </div>
@@ -914,10 +1075,23 @@ export function Admin() {
               <button 
                 onClick={handleUpdateSettings}
                 disabled={loading}
-                className="w-full bg-purple-500 hover:bg-purple-700 text-white py-3 rounded-xl font-medium transition-colors shadow-sm cursor-pointer mt-4"
+                className="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-3 rounded-xl font-medium transition-colors shadow-sm cursor-pointer mt-4 border border-zinc-700"
               >
                 Sauvegarder les paramètres
               </button>
+
+              <div className="pt-6 mt-6 border-t border-red-500/20">
+                <h3 className="text-red-500 font-bold mb-3">Zone de Danger</h3>
+                <button 
+                  onClick={handleWipeData}
+                  disabled={loading}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold transition-colors shadow-lg shadow-red-900/20 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <AlertCircle className="w-5 h-5" />
+                  TOUT EFFACER (RÉINITIALISER)
+                </button>
+                <p className="text-xs text-zinc-500 text-center mt-2">Cette action supprimera tous les utilisateurs, dépôts, retraits et plans d'investissement.</p>
+              </div>
             </div>
           </div>
         </div>

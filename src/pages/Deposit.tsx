@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Info, CheckCircle2, ArrowRight, Wallet } from 'lucide-react';
+import { ChevronLeft, Info, CheckCircle2, ArrowRight, Wallet, ShieldCheck, Zap } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 
 export function Deposit() {
@@ -18,8 +18,8 @@ export function Deposit() {
     e.preventDefault();
     if (!user) return;
     
-    if (Number(amount) < 2500) {
-      setError('Le montant minimum de dépôt est de 2500 FCFA.');
+    if (Number(amount) < 5000) {
+      setError('Le montant minimum de dépôt est de 5000 FCFA.');
       return;
     }
 
@@ -72,77 +72,116 @@ export function Deposit() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans">
-      <header className="flex items-center gap-4 mb-6">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors shadow-sm">
+    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans text-zinc-50">
+      <header className="flex items-center gap-4 mb-8">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors shadow-sm">
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Recharger</h1>
+        <div>
+          <h1 className="text-2xl font-black tracking-tight">Recharger</h1>
+          <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mt-0.5">Ajouter des fonds</p>
+        </div>
       </header>
 
       {step === 2 ? (
-         <div className="bg-white rounded-2xl p-6 text-center shadow-lg border border-gray-100 mt-4 animate-in fade-in zoom-in duration-300">
-           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-             <CheckCircle2 className="w-10 h-10 text-green-500" />
+         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center shadow-2xl mt-4 animate-in fade-in zoom-in duration-300 relative overflow-hidden">
+           {/* Abstract shapes */}
+           <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+           
+           <div className="w-24 h-24 bg-zinc-800 border border-zinc-700/50 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-inner relative z-10">
+             <CheckCircle2 className="w-12 h-12 text-red-500" />
            </div>
            
-           <h2 className="text-2xl font-black text-gray-900 mb-2">Redirection en cours</h2>
-           <p className="text-gray-500 mb-6 font-medium">Veuillez patienter pendant que nous vous redirigeons vers la page de paiement sécurisée pour un montant de <span className="text-gray-900 font-black">{formatCurrency(Number(amount))}</span>.</p>
+           <h2 className="text-2xl font-black text-zinc-50 mb-3 relative z-10">Redirection sécurisée</h2>
+           <p className="text-zinc-400 mb-8 font-medium text-sm leading-relaxed relative z-10">Veuillez patienter pendant le traitement de votre paiement de <span className="text-zinc-50 font-black">{formatCurrency(Number(amount))}</span>.</p>
            
-           <div className="w-full h-px bg-gray-100 mb-6"></div>
-
-           <button onClick={() => navigate('/history')} className="flex items-center justify-center gap-2 w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-gray-200">
+           <button onClick={() => navigate('/history')} className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-50 font-bold py-4 rounded-xl transition-colors shadow-sm relative z-10">
              Voir l'historique
              <ArrowRight className="w-5 h-5" />
            </button>
          </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 mb-2">
-             <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center shrink-0">
-               <Wallet className="w-6 h-6 text-purple-500" />
-             </div>
-             <div>
-               <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Solde Actuel</p>
-               <p className="text-xl font-black text-gray-900">{formatCurrency(user?.balance || 0)}</p>
+        <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in relative z-10">
+          
+          <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-3xl p-6 shadow-lg border border-red-500/30 relative overflow-hidden">
+             {/* Glows */}
+             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-[30px] -mr-8 -mt-8 pointer-events-none"></div>
+             
+             <div className="flex items-start justify-between relative z-10">
+               <div>
+                  <p className="text-red-100 text-xs font-bold uppercase tracking-wider mb-1">Solde Actuel</p>
+                  <p className="text-3xl font-black text-white">{formatCurrency(user?.balance || 0)}</p>
+               </div>
+               <div className="w-12 h-12 bg-black/20 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10">
+                 <Wallet className="w-6 h-6 text-red-100" />
+               </div>
              </div>
           </div>
 
           {error && (
-            <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm font-medium flex items-center gap-2 animate-in fade-in zoom-in duration-200">
-              <Info className="w-5 h-5 shrink-0" />
-              {error}
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-sm font-medium flex items-start gap-3">
+              <Info className="w-5 h-5 shrink-0 mt-0.5" />
+              <p>{error}</p>
             </div>
           )}
 
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
-            <div className="px-4 py-6 bg-gray-50/50">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Montant (FCFA)</label>
-              <div className="flex items-center mt-1">
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-purple-600 placeholder-purple-200 outline-none"
-                  placeholder="5000"
-                  required
-                  min="5000"
-                />
-                <span className="text-gray-400 font-bold ml-2 text-xl">XOF</span>
-              </div>
-            </div>
+          <div className="space-y-3">
+             <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 px-1">Montant à recharger</label>
+             <div className="bg-zinc-900 border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300 flex flex-col">
+                <div className="flex items-center">
+                  <span className="text-zinc-500 font-bold text-2xl mr-3">FCFA</span>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-4xl font-black text-zinc-50 placeholder-zinc-700 outline-none"
+                    placeholder="0"
+                    required
+                    min="5000"
+                  />
+                </div>
+             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl transition-all duration-300 disabled:opacity-50 shadow-lg shadow-purple-200 active:scale-[0.98] flex items-center justify-center gap-2"
-          >
-            {loading ? 'Redirection...' : 'Confirmer le dépôt'}
-            {!loading && <ArrowRight className="w-5 h-5" />}
-          </button>
+          <div className="flex flex-wrap gap-3">
+             {[5000, 15000, 40000, 90000, 200000].map((preset) => (
+               <button
+                 key={preset}
+                 type="button"
+                 onClick={() => setAmount(preset.toString())}
+                 className={`flex-1 min-w-[30%] py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-1 border ${
+                   amount === preset.toString() 
+                     ? 'bg-red-500/20 text-red-500 border-red-500/50 shadow-sm' 
+                     : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300'
+                 }`}
+               >
+                 {preset >= 100000 ? <Zap className="w-3.5 h-3.5" /> : null}
+                 {preset >= 1000 ? `${preset / 1000}k` : preset}
+               </button>
+             ))}
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={loading || !amount || Number(amount) < 5000}
+              className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:hover:bg-red-600 shadow-lg shadow-red-900/20 active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                'Redirection en cours...'
+              ) : (
+                <>
+                  Payer {amount ? formatCurrency(Number(amount)) : ''}
+                  <ArrowRight className="w-5 h-5 ml-1" />
+                </>
+              )}
+            </button>
+          </div>
           
-          <p className="text-center text-xs text-gray-400 font-medium">Vous serez redirigé vers une page de paiement sécurisée.</p>
+          <div className="flex items-center justify-center gap-2 text-zinc-500">
+            <ShieldCheck className="w-4 h-4" />
+            <p className="text-[10px] font-bold uppercase tracking-wider">Paiement 100% sécurisé par MoneyFusion</p>
+          </div>
         </form>
       )}
     </div>

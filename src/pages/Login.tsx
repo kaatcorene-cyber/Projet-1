@@ -80,18 +80,18 @@ export function Login() {
   const selectedCountry = COUNTRIES[country];
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto relative overflow-hidden text-gray-900">
+    <div className="min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto relative overflow-hidden text-zinc-50">
       {/* Container matches animated dark theme */}
       <div className="text-center mb-8 flex flex-col items-center">
-        <div className="bg-white p-4 rounded-3xl shadow-xl mb-6 relative">
-          <div className="absolute inset-0 bg-purple-100 blur-3xl rounded-full opacity-50"></div>
-          <img src="https://i.imgur.com/bjYgoI6.png" alt="Adela Mining" className="h-[60px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
+        <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 p-4 rounded-3xl shadow-xl mb-6 relative border border-zinc-800">
+          <div className="absolute inset-0 bg-red-500/20 blur-3xl rounded-full opacity-50"></div>
+          <img src="https://i.imgur.com/CDLHO6I.png" alt="Adela Mining" className="h-[60px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">𝑩𝒊𝒆𝒏𝒗𝒆𝒏𝒖𝒆 🌟</h1>
-        <p className="text-purple-900 font-medium text-sm">𝑪𝒐𝒏𝒏𝒆𝒄𝒕𝒆𝒛-𝒗𝒐𝒖𝒔 à 𝒗𝒐𝒕𝒓𝒆 𝒄𝒐𝒎𝒑𝒕𝒆.</p>
+        <h1 className="text-3xl grotesk font-black tracking-tight mb-2 text-zinc-50">Bienvenue</h1>
+        <p className="text-zinc-400 font-medium text-sm">Identifiez-vous pour accéder à votre espace collaborateur.</p>
       </div>
 
-      <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-2xl">
+      <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-3xl p-6 shadow-2xl">
         <form onSubmit={handleLogin} className="space-y-4">
           {error && (
             <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm text-center">
@@ -100,8 +100,8 @@ export function Login() {
           )}
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
-            <div className="flex bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500/50 transition-all w-full">
+            <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Téléphone</label>
+            <div className="flex bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 shadow-sm rounded-xl overflow-hidden focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500/50 transition-all w-full">
               <div className="relative flex items-center bg-transparent shrink-0">
                 <select
                   value={country}
@@ -115,12 +115,12 @@ export function Login() {
                     <option key={c} value={c}>{c} ({COUNTRIES[c].code})</option>
                   ))}
                 </select>
-                <div className="pointer-events-none flex items-center gap-1 pl-3 pr-2 py-3 text-gray-500 font-bold">
+                <div className="pointer-events-none flex items-center gap-1 pl-3 pr-2 py-3 text-zinc-400 font-bold">
                   <span>{selectedCountry.code}</span>
                   <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20' className="w-4 h-4"><path stroke='#6b7280' strokeLinecap='round' strokeLinejoin='round' strokeWidth='1.5' d='M6 8l4 4 4-4'/></svg>
                 </div>
               </div>
-              <div className="w-px bg-gray-200 my-2"></div>
+              <div className="w-px bg-zinc-700 my-2"></div>
               <input
                 type="tel"
                 value={phone}
@@ -135,7 +135,7 @@ export function Login() {
                      }
                    }
                 }}
-                className="flex-1 bg-transparent border-none px-3 py-3 text-gray-900 focus:outline-none placeholder:text-gray-400 font-medium tracking-wide w-full"
+                className="flex-1 bg-transparent border-none px-3 py-3 text-zinc-50 focus:outline-none placeholder:text-zinc-500 font-medium tracking-wide w-full"
                 placeholder={selectedCountry.placeholder}
                 required
               />
@@ -143,12 +143,12 @@ export function Login() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Mot de passe</label>
+            <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Mot de passe</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all placeholder:text-gray-400 font-medium"
+              className="w-full bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 shadow-sm rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:bg-zinc-900 border-zinc-800/80 shadow-black/20 focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all placeholder:text-zinc-500 font-medium"
               placeholder="••••••••"
               required
             />
@@ -157,15 +157,15 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-white text-purple-950 hover:bg-gray-100 font-bold py-4 rounded-xl mt-6 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+            className="w-full bg-red-600 text-white hover:bg-red-500 font-bold py-4 rounded-xl mt-6 transition-all shadow-lg active:scale-95 disabled:opacity-50"
           >
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
 
-        <p className="text-center text-gray-500 text-sm mt-8">
+        <p className="text-center text-zinc-400 text-sm mt-8">
           Pas encore de compte ?{' '}
-          <Link to="/register" className="text-purple-700 hover:text-purple-800 font-bold tracking-wide transition-colors">
+          <Link to="/register" className="text-red-700 hover:text-red-800 font-bold tracking-wide transition-colors">
             S'inscrire
           </Link>
         </p>

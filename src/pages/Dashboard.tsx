@@ -3,43 +3,39 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { Banknote, PlusCircle, Wallet, Activity, Users, Headset, MessageCircle, Crown, Loader2, Pickaxe, ChevronRight, X, Building2, PackageCheck, LogOut, Download } from 'lucide-react';
+import { Banknote, PlusCircle, Wallet, Activity, Users, Headset, MessageCircle, Crown, Loader2, Briefcase, ChevronRight, X, Building2, PackageCheck, LogOut, Download, Layers } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () => void }) {
   useEffect(() => {
-    // Prevent scrolling when modal is open
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = 'unset'; };
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-      <div className="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-gray-100 text-gray-500 rounded-full hover:bg-gray-200 transition-colors">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
+        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-zinc-800 text-zinc-400 rounded-full hover:bg-zinc-700 hover:text-zinc-200 transition-colors">
           <X className="w-4 h-4" />
         </button>
          <div className="p-8 text-center mt-2">
-            <img src="https://i.imgur.com/bjYgoI6.png" alt="Logo" className="h-8 rounded-full mx-auto mb-6" referrerPolicy="no-referrer" />
-            <div className="w-20 h-20 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-5 border-4 border-white shadow-lg shadow-purple-500/10">
-              <Users className="w-8 h-8" />
-            </div>
-            <h2 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">Bienvenue !</h2>
-            <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+            <img src="https://i.imgur.com/CDLHO6I.png" alt="Logo" className="h-10 rounded-full mx-auto mb-6" referrerPolicy="no-referrer" />
+            <h2 className="text-2xl font-black text-zinc-50 mb-3 tracking-tight">Bienvenue !</h2>
+            <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
               Pour rester informé de toutes nos actualités et nouveautés, veuillez rejoindre notre communauté officielle.
             </p>
             <div className="space-y-3">
               {groupLink ? (
-                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="block w-full py-4 bg-purple-600 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-purple-500/25 active:scale-95 transition-all text-sm" onClick={onClose}>
+                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="block w-full py-4 bg-red-600 hover:bg-red-500 text-zinc-50 rounded-xl font-bold tracking-wide shadow-lg shadow-red-900/50 active:scale-95 transition-all text-sm" onClick={onClose}>
                   Rejoindre le Groupe
                 </a>
               ) : (
-                <button className="block w-full py-4 bg-purple-600 text-white rounded-xl font-bold tracking-wide shadow-lg shadow-purple-500/25 active:scale-95 transition-all text-sm" onClick={onClose}>
+                <button className="block w-full py-4 bg-red-600 hover:bg-red-500 text-zinc-50 rounded-xl font-bold tracking-wide shadow-lg shadow-red-900/50 active:scale-95 transition-all text-sm" onClick={onClose}>
                   Continuer
                 </button>
               )}
-              <button onClick={onClose} className="w-full py-3.5 text-gray-400 hover:text-gray-900 font-bold transition-colors text-sm">
+              <button onClick={onClose} className="w-full py-3.5 text-zinc-500 hover:text-zinc-300 font-bold transition-colors text-sm">
                 Plus tard
               </button>
             </div>
@@ -52,19 +48,19 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
 function SupportModal({ groupLink, supportLink, onClose }: { groupLink: string, supportLink: string, onClose: () => void }) {
   return (
     <>
-      <div className="fixed inset-0 z-[40] bg-black/5 backdrop-blur-[1px]" onClick={onClose} />
-      <div className="fixed bottom-24 right-5 z-[50] flex flex-col gap-5 items-end animate-in fade-in zoom-in-95 duration-200 origin-bottom-right">
-        <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all" onClick={onClose}>
-          <span className="text-base font-bold text-gray-800" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,1)' }}>Service client</span>
-          <div className="bg-purple-600 p-4 rounded-full text-white shadow-xl shadow-purple-500/40 transform hover:scale-105 transition-transform">
-            <Headset className="w-7 h-7" />
+      <div className="fixed inset-0 z-[40] bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed bottom-24 right-5 z-[50] flex flex-col gap-4 items-end animate-in fade-in zoom-in-95 duration-200 origin-bottom-right">
+        <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all bg-zinc-900 pr-2 pl-4 py-2 rounded-full border border-zinc-800 shadow-xl" onClick={onClose}>
+          <span className="text-sm font-bold text-zinc-200">Service client</span>
+          <div className="bg-red-600 p-3 rounded-full text-zinc-50">
+            <Headset className="w-5 h-5" />
           </div>
         </a>
         {groupLink && (
-          <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all" onClick={onClose}>
-            <span className="text-lg font-black text-gray-900" style={{ textShadow: '0 2px 10px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,1)' }}>Groupes officiels</span>
-            <div className="bg-purple-600 p-4 rounded-full text-white shadow-xl shadow-purple-500/40 transform hover:scale-105 transition-transform">
-              <MessageCircle className="w-7 h-7" />
+          <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all bg-zinc-900 pr-2 pl-4 py-2 rounded-full border border-zinc-800 shadow-xl" onClick={onClose}>
+            <span className="text-sm font-bold text-zinc-200">Groupe officiel</span>
+            <div className="bg-blue-600 p-3 rounded-full text-zinc-50">
+              <MessageCircle className="w-5 h-5" />
             </div>
           </a>
         )}
@@ -72,8 +68,6 @@ function SupportModal({ groupLink, supportLink, onClose }: { groupLink: string, 
     </>
   )
 }
-
-
 
 export function Dashboard() {
   const { user, refreshUser, logout } = useAuthStore();
@@ -88,7 +82,6 @@ export function Dashboard() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
   
-  // Only show loader if we have NO cached data
   const [isLoading, setIsLoading] = useState(!settingsCache || !investmentsCache);
 
   useEffect(() => {
@@ -98,7 +91,6 @@ export function Dashboard() {
       setShowWelcome(true);
     }
 
-    // Apply cached data immediately if available
     if (investmentsCache) {
       const totalDaily = investmentsCache.reduce((acc, curr) => acc + Number(curr.daily_yield), 0);
       setDailyGain(totalDaily);
@@ -113,13 +105,12 @@ export function Dashboard() {
       fetchData();
     }
 
-    // Setup polling for real-time like updates (Reduced frequency to save database quota)
     const intervalId = setInterval(() => {
       refreshUser();
       const currentUser = useAuthStore.getState().user;
       if (currentUser) processDailyGains();
       fetchData();
-    }, 60000 * 5); // 5 minutes instead of 15 seconds
+    }, 60000 * 5);
 
     return () => clearInterval(intervalId);
   }, [user?.id]);
@@ -148,7 +139,6 @@ export function Dashboard() {
     }
   };
 
-  
   const isProcessingGains = useRef(false);
   
   const processDailyGains = async () => {
@@ -175,17 +165,14 @@ export function Dashboard() {
           if (missingDays > 0) {
             hasGlobalChanges = true;
             
-            // Calc exact schedule to avoid skipping days
             let newLastPaidTime = lastPaid + missingDays * 24 * 60 * 60 * 1000;
-            if (newLastPaidTime > now) newLastPaidTime = now; // Safety fallback
+            if (newLastPaidTime > now) newLastPaidTime = now; 
             
             const newLastPaid = new Date(newLastPaidTime).toISOString();
             const amountToAdd = Number(inv.daily_yield) * missingDays;
             
-            // 1. Update investment last_paid_at
             await supabase.from('investments').update({ last_paid_at: newLastPaid }).eq('id', inv.id);
             
-            // 2. Insert transaction
             await supabase.from('transactions').insert({
               user_id: currentUser.id,
               type: 'daily_gain',
@@ -194,19 +181,16 @@ export function Dashboard() {
               reference: `Gain du plan (x${missingDays})`
             });
             
-            // 3. Directly update user balance loop by loop to prevent race conditions
             const { data: usr } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
             if (usr) {
               await supabase.from('users').update({ balance: Number(usr.balance) + amountToAdd }).eq('id', currentUser.id);
             }
           }
           
-          // Check expiration using expected total days to prevent early completion
           if (inv.end_date) {
              const endT = new Date(inv.end_date).getTime();
              const totalExpectedDays = Math.round((endT - start) / (24 * 60 * 60 * 1000));
              
-             // Evaluate completion based on new last paid
              const currentLastPaid = missingDays > 0 ? lastPaidDaysElapsed + missingDays : lastPaidDaysElapsed;
              
              if (currentLastPaid >= totalExpectedDays) {
@@ -229,7 +213,6 @@ export function Dashboard() {
       isProcessingGains.current = false;
     }
   };
-
 
   const fetchData = async () => {
     const currentUser = useAuthStore.getState().user;
@@ -265,7 +248,7 @@ export function Dashboard() {
   const getVipBadge = () => {
     if (!user?.role || user.role === 'user' || user.role === 'admin') return null;
     return (
-      <span className="ml-2 inline-flex items-center gap-1 bg-gradient-to-r from-amber-200 to-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
+      <span className="ml-2 inline-flex items-center gap-1 bg-amber-500/10 text-amber-500 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border border-amber-500/20">
         <Crown className="w-3 h-3" />
         {user.role}
       </span>
@@ -278,103 +261,106 @@ export function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent pb-24 font-sans">
+    <div className="min-h-screen bg-transparent pb-24 font-sans text-zinc-100">
       {showWelcome && <WelcomeModal groupLink={groupLink} onClose={handleCloseWelcome} />}
       {showSupportModal && <SupportModal groupLink={groupLink} supportLink={supportLink} onClose={() => setShowSupportModal(false)} />}
       
-      {/* Premium Header Region */}
-      <div className="bg-white px-5 pt-16 pb-6 shadow-sm border-b border-gray-200">
-        <header className="flex justify-between items-center mb-6">
+      <div className="px-5 pt-12 pb-6">
+        <header className="flex justify-between items-center mb-8 shrink-0">
           <div className="flex items-center gap-3">
-             <img src="https://i.imgur.com/bjYgoI6.png" alt="Logo" className="w-12 h-12 rounded-2xl object-cover shadow-sm border border-gray-100" referrerPolicy="no-referrer" />
+             <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 p-2 shadow-lg flex items-center justify-center">
+                 <img src="https://i.imgur.com/CDLHO6I.png" alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+             </div>
              <div>
-               <h1 className="text-xl font-black text-gray-900 flex items-center gap-2 tracking-tight">
-                 🆔 : {user?.phone?.replace(/^\+\d{1,4}\s?/, '')}
+               <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider mb-0.5">Membre</p>
+               <h1 className="text-lg font-black text-zinc-50 flex items-center gap-2">
+                 🆔 {user?.phone?.replace(/^\+\d{1,4}\s?/, '')}
                  {getVipBadge()}
                </h1>
              </div>
           </div>
         </header>
 
-        {/* Premium Balance Card */}
-        <div 
-          className="rounded-[2rem] p-6 relative overflow-hidden shadow-xl shadow-purple-900/40 text-white"
-        >
-           {/* Background Image of Gold/Diamond Mine */}
-           <div 
-             className="absolute inset-0 z-0"
-             style={{
-               backgroundImage: `url('https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=1200&q=80')`,
-               backgroundSize: 'cover',
-               backgroundPosition: 'center'
-             }}
-           ></div>
+        {/* Emerald Glow Card */}
+        <div className="rounded-3xl p-6 relative overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl flex flex-col justify-between" style={{ minHeight: '220px' }}>
+           <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/20 rounded-full blur-[80px] -mr-16 -mt-16 pointer-events-none"></div>
+           <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-500/10 rounded-full blur-[60px] -ml-16 -mb-16 pointer-events-none"></div>
            
-           {/* Beautiful Gradient Overlay so text is visible but image pops out */}
-           <div className="absolute inset-0 z-0 bg-gradient-to-r from-purple-900/90 via-purple-900/70 to-blue-900/40"></div>
-           
-           {/* Abstract shapes */}
-           <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none z-0"></div>
-           <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none z-0"></div>
-           
-           <div className="relative z-10 flex justify-between items-start mb-8">
-               <div>
-                  <p className="text-purple-100 text-xs font-semibold uppercase tracking-widest mb-1.5 flex items-center gap-2 opacity-90">
-                    <Wallet className="w-4 h-4 text-white" />
-                    Capital Total
-                  </p>
-                  <h2 className="text-4xl font-black tracking-tighter drop-shadow-md text-white shadow-black/50">
-                    {formatCurrency(Number(user?.balance) || 0)}
-                  </h2>
-               </div>
-           </div>
+           <div className="relative z-10">
+              <div className="flex justify-between items-start mb-6">
+                 <div>
+                    <h2 className="text-zinc-400 text-xs font-semibold uppercase tracking-widest mb-2 flex items-center gap-2">
+                      <Wallet className="w-4 h-4 text-red-500" />
+                      Solde Total
+                    </h2>
+                    <div className="text-4xl font-black text-zinc-50 tracking-tight">
+                      {formatCurrency(Number(user?.balance) || 0)}
+                    </div>
+                 </div>
+              </div>
 
-           <div className="relative z-10 grid grid-cols-2 gap-3">
-               <Link to="/deposit" className="bg-white/40 hover:bg-white/50 backdrop-blur-md text-white transition-colors py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-md border border-white/50 active:scale-95" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
-                   <PlusCircle className="w-5 h-5 drop-shadow-sm" />
-                   Recharger
-               </Link>
-               <Link to="/withdraw" className="bg-white/40 hover:bg-white/50 backdrop-blur-md text-white transition-colors py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-md border border-white/50 active:scale-95" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
-                   <Banknote className="w-5 h-5 drop-shadow-sm" />
-                   Retirer
-               </Link>
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                  <Link to="/deposit" className="bg-red-600 hover:bg-red-500 text-zinc-50 transition-all py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-lg shadow-red-900/30 active:scale-95 border border-red-500">
+                      <PlusCircle className="w-5 h-5" />
+                      Recharger
+                  </Link>
+                  <Link to="/withdraw" className="bg-zinc-800 hover:bg-zinc-700 text-zinc-50 transition-all py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-lg active:scale-95 border border-zinc-700">
+                      <Banknote className="w-5 h-5" />
+                      Retirer
+                  </Link>
+              </div>
            </div>
         </div>
-      </div>
 
-      <div className="px-5 mt-6 space-y-6 animate-fade-in">
-          
-          {/* Quick Access Grid */}
-          <div className="grid grid-cols-2 gap-3">
-             <Link to="/bank" className="bg-white py-4 px-3 rounded-xl flex flex-col items-center justify-center gap-1.5 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                <Building2 className="w-5 h-5 text-blue-600" />
-                <span className="text-[13px] font-bold text-gray-900">Banque</span>
-             </Link>
-
-             <button onClick={() => setShowSupportModal(true)} className="bg-white py-4 px-3 rounded-xl flex flex-col items-center justify-center gap-1.5 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                 <Headset className="w-5 h-5 text-purple-600" />
-                 <span className="text-[13px] font-bold text-gray-900">Support</span>
-             </button>
-             
-             <Link to="/products" className="col-span-2 bg-gradient-to-r from-purple-600 to-indigo-600 py-4 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md border border-purple-500/30 hover:shadow-lg transition-all active:scale-95">
-                 <Pickaxe className="w-6 h-6 text-yellow-300 drop-shadow-md" />
-                 <span className="text-sm font-black text-white uppercase tracking-wider">Minage</span>
-             </Link>
-             
-             <button onClick={() => installPWA()} className="bg-white py-4 px-3 rounded-xl flex flex-col items-center justify-center gap-1.5 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95">
-                 <Download className="w-5 h-5 text-blue-600" />
-                 <span className="text-[13px] font-bold text-gray-900">Application</span>
-             </button>
-
-             <button onClick={() => { logout(); navigate('/login'); }} className="bg-white py-4 px-3 rounded-xl flex flex-col items-center justify-center gap-1.5 border border-gray-100 shadow-sm hover:bg-gray-50 transition-all active:scale-95 text-red-600">
+        {/* Actions Grid */}
+        <div className="grid grid-cols-4 gap-3 mt-8">
+           <Link to="/bank" className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-blue-400">
+                 <Building2 className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-bold text-zinc-400">Banque</span>
+           </Link>
+           
+           <button onClick={() => setShowSupportModal(true)} className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-400">
+                 <Headset className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-bold text-zinc-400">Support</span>
+           </button>
+           
+           <button onClick={() => installPWA()} className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-purple-400">
+                 <Download className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-bold text-zinc-400">App</span>
+           </button>
+           
+           <button onClick={() => { logout(); navigate('/login'); }} className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-500">
                  <LogOut className="w-5 h-5" />
-                 <span className="text-[13px] font-bold">Déconnexion</span>
-             </button>
-          </div>
-
-
+              </div>
+              <span className="text-[11px] font-bold text-zinc-400">Quitter</span>
+           </button>
         </div>
+
+        {/* Large Promos / Buttons */}
+        <div className="mt-6 flex flex-col gap-3">
+           <Link to="/products" className="relative overflow-hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex items-center justify-between group active:scale-[0.98] transition-all cursor-pointer">
+              <div className="absolute right-0 top-0 h-full w-32 bg-gradient-to-l from-red-500/10 to-transparent pointer-events-none"></div>
+              <div className="flex flex-col gap-1 z-10">
+                 <h3 className="text-zinc-50 font-bold text-base flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-red-500" />
+                    Contrats Actifs
+                 </h3>
+                 <p className="text-zinc-500 text-xs">Acheter et gérer vos contrats</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-red-400 group-hover:bg-zinc-700 transition-colors z-10">
+                 <ChevronRight className="w-5 h-5" />
+              </div>
+           </Link>
+        </div>
+
+      </div>
     </div>
   );
 }
-

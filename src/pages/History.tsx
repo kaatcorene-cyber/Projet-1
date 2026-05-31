@@ -38,26 +38,26 @@ export function History() {
 
   return (
     <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans">
-      <header className="flex justify-between items-center pb-4 border-b border-gray-200/60 mb-6">
+      <header className="flex justify-between items-center pb-4 border-b border-zinc-800/60 mb-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Historique</h1>
-          <p className="text-gray-500 text-xs font-semibold mt-1">VOS TRANSACTIONS</p>
+          <h1 className="text-3xl font-black text-zinc-50 tracking-tight">Historique</h1>
+          <p className="text-zinc-400 text-xs font-semibold mt-1">VOS TRANSACTIONS</p>
         </div>
-        <img src="https://i.imgur.com/bjYgoI6.png" alt="Logo" className="w-14 h-14 rounded-2xl object-cover shadow-sm border border-gray-200 flex-shrink-0" referrerPolicy="no-referrer" />
+        <img src="https://i.imgur.com/CDLHO6I.png" alt="Logo" className="w-14 h-14 rounded-2xl object-cover shadow-sm border border-zinc-800 flex-shrink-0" referrerPolicy="no-referrer" />
       </header>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 rounded-xl border border-zinc-800 overflow-hidden">
         {transactions.length === 0 ? (
-          <div className="text-center py-10 text-gray-400 text-sm font-semibold">
+          <div className="text-center py-10 text-zinc-500 text-sm font-semibold">
             Aucune transaction
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
             {transactions.map((tx) => (
-              <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+              <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-zinc-800/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div>
-                    <h3 className="font-bold text-gray-900 leading-tight text-base">
+                    <h3 className="font-bold text-zinc-50 leading-tight text-base">
                       {tx.type === 'deposit' && 'Dépôt'}
                       {tx.type === 'withdrawal' && 'Retrait'}
                       {tx.type === 'investment' && 'Investissement'}
@@ -65,7 +65,7 @@ export function History() {
                       {tx.type === 'signup_bonus' && 'Bonus inscript.'}
                       {tx.type === 'referral_bonus' && 'Bonus parrain.'}
                     </h3>
-                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mt-0.5">
+                    <p className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider mt-0.5">
                       {format(new Date(tx.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
                     </p>
                   </div>
@@ -74,13 +74,13 @@ export function History() {
                   <p className={`font-black tracking-tight ${
                     tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
                       ? 'text-green-600' 
-                      : 'text-gray-900'
+                      : 'text-zinc-50'
                   }`}>
                     {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </p>
                   <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
                     tx.status === 'completed' || tx.status === 'approved' ? 'text-green-600' :
-                    tx.status === 'pending' ? 'text-amber-500' : 'text-purple-500'
+                    tx.status === 'pending' ? 'text-amber-500' : 'text-red-500'
                   }`}>
                     {tx.status === 'completed' || tx.status === 'approved' ? 'Complété' :
                      tx.status === 'pending' ? 'En attente' : 'Rejeté'}
