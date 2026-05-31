@@ -11,8 +11,6 @@ export function Deposit() {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  const [step, setStep] = useState<1 | 2>(1);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +21,6 @@ export function Deposit() {
       return;
     }
 
-    setStep(2);
     setLoading(true);
     setError('');
 
@@ -56,7 +53,7 @@ export function Deposit() {
       
       if (paymentData.statut && paymentData.url) {
           const urlParts = paymentData.url.split('/');
-          urlParts[urlParts.length - 1] = encodeURIComponent("Adela Mining");
+          urlParts[urlParts.length - 1] = encodeURIComponent("rechargement");
           window.location.href = urlParts.join('/');
       } else {
           throw new Error(paymentData.message || "Erreur lors de la génération du lien de paiement");
@@ -65,7 +62,6 @@ export function Deposit() {
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
-      setStep(1);
     } finally {
       setLoading(false);
     }
@@ -83,27 +79,9 @@ export function Deposit() {
         </div>
       </header>
 
-      {step === 2 ? (
-         <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 text-center shadow-2xl mt-4 animate-in fade-in zoom-in duration-300 relative overflow-hidden">
-           {/* Abstract shapes */}
-           <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-500/10 rounded-full blur-[40px] pointer-events-none"></div>
-           
-           <div className="w-24 h-24 bg-zinc-800 border border-zinc-700/50 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-inner relative z-10">
-             <CheckCircle2 className="w-12 h-12 text-red-500" />
-           </div>
-           
-           <h2 className="text-2xl font-black text-zinc-50 mb-3 relative z-10">Redirection sécurisée</h2>
-           <p className="text-zinc-400 mb-8 font-medium text-sm leading-relaxed relative z-10">Veuillez patienter pendant le traitement de votre paiement de <span className="text-zinc-50 font-black">{formatCurrency(Number(amount))}</span>.</p>
-           
-           <button onClick={() => navigate('/history')} className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-50 font-bold py-4 rounded-xl transition-colors shadow-sm relative z-10">
-             Voir l'historique
-             <ArrowRight className="w-5 h-5" />
-           </button>
-         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in relative z-10">
-          
-          <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-3xl p-6 shadow-lg border border-red-500/30 relative overflow-hidden">
+      <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in relative z-10">
+        
+        <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-3xl p-6 shadow-lg border border-red-500/30 relative overflow-hidden">
              {/* Glows */}
              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-[30px] -mr-8 -mt-8 pointer-events-none"></div>
              
@@ -178,12 +156,11 @@ export function Deposit() {
             </button>
           </div>
           
-          <div className="flex items-center justify-center gap-2 text-zinc-500">
-            <ShieldCheck className="w-4 h-4" />
-            <p className="text-[10px] font-bold uppercase tracking-wider">Paiement 100% sécurisé par MoneyFusion</p>
-          </div>
-        </form>
-      )}
+        <div className="flex items-center justify-center gap-2 text-zinc-500">
+          <ShieldCheck className="w-4 h-4" />
+          <p className="text-[10px] font-bold uppercase tracking-wider">Paiement 100% sécurisé par MoneyFusion</p>
+        </div>
+      </form>
     </div>
   );
 }
