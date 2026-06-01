@@ -87,8 +87,8 @@ export function Login() {
           <div className="absolute inset-0 bg-red-500/20 blur-3xl rounded-full opacity-50"></div>
           <img src="https://i.imgur.com/CDLHO6I.png" alt="Adela Mining" className="h-[60px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
         </div>
-        <h1 className="text-3xl grotesk font-black tracking-tight mb-2 text-zinc-50">Bienvenue</h1>
-        <p className="text-zinc-400 font-medium text-sm">Identifiez-vous pour accéder à votre espace collaborateur.</p>
+        <h1 className="text-3xl grotesk font-black tracking-tight mb-2 text-zinc-50">Connexion</h1>
+        <p className="text-zinc-400 font-medium text-sm">Identifiez-vous chez collaborateur</p>
       </div>
 
       <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-3xl p-6 shadow-2xl">

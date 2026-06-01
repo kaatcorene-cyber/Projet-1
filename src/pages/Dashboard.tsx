@@ -323,14 +323,14 @@ export function Dashboard() {
               <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-blue-400">
                  <Building2 className="w-5 h-5" />
               </div>
-              <span className="text-[11px] font-bold text-zinc-400">Banque</span>
+              <span className="text-[11px] font-bold text-zinc-400">Comptes</span>
            </Link>
            
            <button onClick={() => setShowSupportModal(true)} className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
               <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-400">
                  <Headset className="w-5 h-5" />
               </div>
-              <span className="text-[11px] font-bold text-zinc-400">Support</span>
+              <span className="text-[11px] font-bold text-zinc-400">Aide</span>
            </button>
            
            <button onClick={() => installPWA()} className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
@@ -340,29 +340,29 @@ export function Dashboard() {
               <span className="text-[11px] font-bold text-zinc-400">App</span>
            </button>
            
-           <button onClick={() => { logout(); navigate('/login'); }} className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
+           <Link to="/products" className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
               <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-500">
-                 <LogOut className="w-5 h-5" />
+                 <Layers className="w-5 h-5" />
               </div>
-              <span className="text-[11px] font-bold text-zinc-400">Quitter</span>
-           </button>
+              <span className="text-[11px] font-bold text-zinc-400">Contrat</span>
+           </Link>
         </div>
 
         {/* Large Promos / Buttons */}
         <div className="mt-6 flex flex-col gap-3">
-           <Link to="/products" className="relative overflow-hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex items-center justify-between group active:scale-[0.98] transition-all cursor-pointer">
+           <button onClick={() => { logout(); navigate('/login'); }} className="w-full relative overflow-hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex items-center justify-between group active:scale-[0.98] transition-all cursor-pointer">
               <div className="absolute right-0 top-0 h-full w-32 bg-gradient-to-l from-red-500/10 to-transparent pointer-events-none"></div>
-              <div className="flex flex-col gap-1 z-10">
+              <div className="flex flex-col gap-1 z-10 text-left">
                  <h3 className="text-zinc-50 font-bold text-base flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-red-500" />
-                    Contrats Actifs
+                    <LogOut className="w-5 h-5 text-red-500" />
+                    Se déconnecter
                  </h3>
-                 <p className="text-zinc-500 text-xs">Acheter et gérer vos contrats</p>
+                 <p className="text-zinc-500 text-xs">Déconnexion de votre espace collaborateur</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-red-400 group-hover:bg-zinc-700 transition-colors z-10">
                  <ChevronRight className="w-5 h-5" />
               </div>
-           </Link>
+           </button>
         </div>
 
       </div>
