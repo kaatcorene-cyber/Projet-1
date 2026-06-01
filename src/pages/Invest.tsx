@@ -169,7 +169,7 @@ export function Invest() {
                     <button
                       onClick={() => handleInvest(plan, idx)}
                       disabled={loading === idx || (user?.balance || 0) < plan.amount}
-                      className="w-full py-3 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-white flex justify-center items-center bg-gray-900 hover:bg-black shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] active:scale-[0.98]"
+                      className="w-full py-3 rounded-xl font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-white flex justify-center items-center bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/20 active:scale-[0.98]"
                     >
                       {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Souscrire'}
                     </button>

@@ -16,26 +16,31 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-zinc-800 text-zinc-400 rounded-full hover:bg-zinc-700 hover:text-zinc-200 transition-colors">
+        <div className="absolute -top-24 -left-24 w-48 h-48 bg-red-600/20 rounded-full blur-[60px] pointer-events-none"></div>
+        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 z-10 flex items-center justify-center bg-zinc-800 text-zinc-400 rounded-full hover:bg-zinc-700 hover:text-zinc-200 transition-colors">
           <X className="w-4 h-4" />
         </button>
-         <div className="p-8 text-center mt-2">
-            <img src="https://i.imgur.com/CDLHO6I.png" alt="Logo" className="h-10 rounded-full mx-auto mb-6" referrerPolicy="no-referrer" />
+         <div className="p-8 text-center mt-2 relative z-10">
+            <div className="w-16 h-16 bg-zinc-800 border border-zinc-700/50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner relative">
+               <img src="https://i.imgur.com/CDLHO6I.png" alt="Logo" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" />
+            </div>
+            
             <h2 className="text-2xl font-black text-zinc-50 mb-3 tracking-tight">Bienvenue !</h2>
-            <p className="text-zinc-400 text-sm mb-8 leading-relaxed">
+            <p className="text-zinc-400 text-sm mb-8 leading-relaxed font-medium">
               Pour rester informé de toutes nos actualités et nouveautés, veuillez rejoindre notre communauté officielle.
             </p>
             <div className="space-y-3">
               {groupLink ? (
-                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="block w-full py-4 bg-red-600 hover:bg-red-500 text-zinc-50 rounded-xl font-bold tracking-wide shadow-lg shadow-red-900/50 active:scale-95 transition-all text-sm" onClick={onClose}>
+                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full py-4 bg-red-600 hover:bg-red-500 text-zinc-50 rounded-2xl font-bold tracking-wide shadow-lg shadow-red-500/25 active:scale-95 transition-all text-sm border border-red-500" onClick={onClose}>
+                  <MessageCircle className="w-5 h-5 mr-2" />
                   Rejoindre le Groupe
                 </a>
               ) : (
-                <button className="block w-full py-4 bg-red-600 hover:bg-red-500 text-zinc-50 rounded-xl font-bold tracking-wide shadow-lg shadow-red-900/50 active:scale-95 transition-all text-sm" onClick={onClose}>
+                <button className="flex items-center justify-center w-full py-4 bg-red-600 hover:bg-red-500 text-zinc-50 rounded-2xl font-bold tracking-wide shadow-lg shadow-red-500/25 active:scale-95 transition-all text-sm border border-red-500" onClick={onClose}>
                   Continuer
                 </button>
               )}
-              <button onClick={onClose} className="w-full py-3.5 text-zinc-500 hover:text-zinc-300 font-bold transition-colors text-sm">
+              <button onClick={onClose} className="w-full py-3.5 text-zinc-500 hover:text-zinc-300 font-bold transition-colors text-sm rounded-xl">
                 Plus tard
               </button>
             </div>
@@ -274,7 +279,7 @@ export function Dashboard() {
              <div>
                <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider mb-0.5">Membre</p>
                <h1 className="text-lg font-black text-zinc-50 flex items-center gap-2">
-                 🆔 {user?.phone?.replace(/^\+\d{1,4}\s?/, '')}
+                 {user?.phone?.replace(/^\+\d{1,4}\s?/, '')}
                  {getVipBadge()}
                </h1>
              </div>
