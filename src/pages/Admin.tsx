@@ -659,7 +659,7 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-zinc-50 mb-2">Gestion des Utilisateurs ({usersList.length})</h2>
           <div className="space-y-3">
-            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
+            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} F•M-${u.id.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
               <div key={u.id} className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-2xl p-4 shadow-sm relative">
                 <div className="flex justify-between items-start mb-3">
                   <div>
@@ -670,7 +670,7 @@ export function Admin() {
                     </p>
                     <p className="text-xs text-zinc-400 mt-0.5">{u.phone} • {u.country}</p>
                     <p className="text-[11px] text-zinc-400 mt-1"><span className="font-semibold">MDP:</span> <span className="font-mono text-zinc-50 bg-zinc-800 px-1 py-0.5 rounded">{u.password_hash}</span></p>
-                    <p className="text-[10px] text-zinc-500 mt-0.5 font-mono">{u.id}</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5 font-mono">F•M-{u.id.substring(0, 6).toUpperCase()}</p>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-1">
                     <p className="font-bold text-red-700 bg-red-500/10 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
@@ -715,7 +715,7 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-zinc-50 mb-2">Gestion des Banques ({usersList.length})</h2>
           <div className="space-y-3">
-            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} ${(u as any).bank_method} ${(u as any).bank_account_name}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => {
+            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} ${u.bank_method} ${u.bank_account_name} F•M-${u.id.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => {
               const bAccountNameRaw = (u as any)?.bank_account_name || '';
               const bAccountName = bAccountNameRaw.split('|||')[0] || '';
               const bAccountNumber = bAccountNameRaw.split('|||')[1] || '';
@@ -807,8 +807,8 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-zinc-50 mb-2">Demandes de Dépôts</h2>
           <div className="space-y-3">
-            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-zinc-400 text-center py-4">Aucun dépôt.</p>}
-            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
+            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} F•M-${t.users?.id?.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-zinc-400 text-center py-4">Aucun dépôt.</p>}
+            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} F•M-${t.users?.id?.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
               <div key={tx.id} className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -847,8 +847,8 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-zinc-50 mb-2">Demandes de Retraits</h2>
           <div className="space-y-3">
-            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-zinc-400 text-center py-4">Aucun retrait.</p>}
-            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
+            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} F•M-${t.users?.id?.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-zinc-400 text-center py-4">Aucun retrait.</p>}
+            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} F•M-${t.users?.id?.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
               <div key={tx.id} className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <div>

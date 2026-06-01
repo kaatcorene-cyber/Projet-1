@@ -277,9 +277,9 @@ export function Dashboard() {
                  <img src="https://i.imgur.com/CDLHO6I.png" alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
              </div>
              <div>
-               <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider mb-0.5">Membre</p>
-               <h1 className="text-lg font-black text-zinc-50 flex items-center gap-2">
-                 {user?.phone?.replace(/^\+\d{1,4}\s?/, '')}
+               <p className="text-white text-xs font-medium uppercase tracking-wider mb-0.5">Identifiant</p>
+               <h1 className="text-lg font-black text-red-500 flex items-center gap-2">
+                 F•M-{user?.id?.substring(0, 6).toUpperCase()}
                  {getVipBadge()}
                </h1>
              </div>
