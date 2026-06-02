@@ -27,15 +27,15 @@ export function Withdraw() {
   const hasBankConfigured = !!bankMethod && rawAccountName.includes('|||');
 
   const numAmount = Number(amount);
-  const feeAmount = numAmount > 0 ? numAmount * 0.20 : 0;
+  const feeAmount = numAmount > 0 ? numAmount * 0.15 : 0;
   const netAmount = numAmount > 0 ? numAmount - feeAmount : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     
-    if (numAmount < 5000) {
-      return setMessage({ type: 'error', text: 'Le minimum de retrait est de 5 000 FCFA.' });
+    if (numAmount < 2000) {
+      return setMessage({ type: 'error', text: 'Le minimum de retrait est de 2 000 FCFA.' });
     }
 
     if (Number(user.balance) < numAmount) {
@@ -114,7 +114,7 @@ export function Withdraw() {
          
          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/20 border border-white/10 text-red-50 rounded-full text-xs font-bold shadow-sm backdrop-blur-sm relative z-10">
            <AlertCircle className="w-3.5 h-3.5" />
-           Frais de retrait : 20%
+           Frais de retrait : 15%
          </div>
       </div>
 
@@ -173,13 +173,13 @@ export function Withdraw() {
                   className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-zinc-50 placeholder-zinc-700 outline-none"
                   placeholder="0"
                   required
-                  min="5000"
+                  min="2000"
                 />
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2 pt-1 pb-1">
-               {[5000, 15000, 40000, 90000].map((preset) => (
+               {[2000, 15000, 40000, 90000].map((preset) => (
                  <button
                    key={preset}
                    type="button"
@@ -203,7 +203,7 @@ export function Withdraw() {
                   <span className="font-semibold text-zinc-300">{formatCurrency(numAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-500">Frais (20%)</span>
+                  <span className="text-zinc-500">Frais (15%)</span>
                   <span className="font-bold text-red-400">-{formatCurrency(feeAmount)}</span>
                 </div>
                 <div className="h-px w-full bg-zinc-800 my-2" />
