@@ -117,7 +117,7 @@ export function Invest() {
         <div>
           <h1 className="text-3xl font-black text-zinc-50 tracking-tight">Contrats</h1>
         </div>
-        <img src="https://i.imgur.com/CDLHO6I.png" alt="Logo" className="w-16 h-16 rounded-2xl object-cover shadow-sm border border-zinc-800 flex-shrink-0" referrerPolicy="no-referrer" />
+        <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="w-16 h-16 rounded-2xl object-cover shadow-sm border border-zinc-800 flex-shrink-0" referrerPolicy="no-referrer" />
       </header>
 
       {message && (

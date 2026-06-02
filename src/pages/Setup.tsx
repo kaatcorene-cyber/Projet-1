@@ -107,7 +107,7 @@ ALTER TABLE deposit_verifications ADD COLUMN IF NOT EXISTS sender_number TEXT;
 INSERT INTO settings (key, value) VALUES ('payment_link', 'https://bkapay.com/merchant/20cf6268') ON CONFLICT DO NOTHING;
 
 INSERT INTO users (phone, country, first_name, last_name, password_hash, role, balance)
-VALUES ('0000000000', "Cote d'Ivoire", 'Admin', 'Adela Mining', 'admin123', 'admin', 0)
+VALUES ('0000000000', "Cote d'Ivoire", 'Admin', 'Fuel•Max', 'admin123', 'admin', 0)
 ON CONFLICT (phone, country) DO NOTHING;
 `;
 

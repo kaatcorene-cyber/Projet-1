@@ -22,7 +22,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
         </button>
          <div className="p-8 text-center mt-2 relative z-10">
             <div className="w-16 h-16 bg-zinc-800 border border-zinc-700/50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner relative">
-               <img src="https://i.imgur.com/CDLHO6I.png" alt="Logo" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" />
+               <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" />
             </div>
             
             <h2 className="text-2xl font-black text-zinc-50 mb-3 tracking-tight">Bienvenue !</h2>
@@ -274,7 +274,7 @@ export function Dashboard() {
         <header className="flex justify-between items-center mb-8 shrink-0">
           <div className="flex items-center gap-3">
              <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 p-2 shadow-lg flex items-center justify-center">
-                 <img src="https://i.imgur.com/CDLHO6I.png" alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                 <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
              </div>
              <div>
                <p className="text-white text-xs font-medium uppercase tracking-wider mb-0.5">Identifiant</p>

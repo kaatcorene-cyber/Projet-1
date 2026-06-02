@@ -117,7 +117,7 @@ export function Register() {
       <div className="text-center mb-8 flex flex-col items-center">
         <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 p-3 rounded-2xl shadow-xl mb-4 relative border border-zinc-800">
            <div className="absolute inset-0 bg-red-500/20 blur-3xl rounded-full opacity-50"></div>
-          <img src="https://i.imgur.com/CDLHO6I.png" alt="Adela Mining" className="h-[40px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
+          <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="h-[40px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
         </div>
         <h1 className="text-3xl grotesk font-black tracking-tight mb-2 text-zinc-50">Inscription</h1>
         <p className="text-zinc-400 font-medium text-sm">Créez votre profil collaborateur.</p>
