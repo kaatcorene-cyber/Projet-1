@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
-import { Building2, Save, CreditCard, ChevronLeft } from 'lucide-react';
+import { PiggyBank, Save, CreditCard, ChevronLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 export function Bank() {
@@ -115,13 +115,13 @@ export function Bank() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans animate-fade-in text-zinc-50">
+    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans text-zinc-50">
       <header className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors shadow-sm shrink-0">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-transparent flex items-center justify-center text-zinc-400 hover:text-zinc-50 transition-colors shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-black tracking-tight">Ma Banque</h1>
+          <h1 className="text-2xl font-black tracking-tight">Caisse</h1>
           <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mt-0.5">Gérer vos paiements</p>
         </div>
       </header>
@@ -134,56 +134,48 @@ export function Bank() {
         )}
 
         {isLinked ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden text-center">
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-500/10 rounded-full blur-[40px] pointer-events-none"></div>
-
-            <div className="w-24 h-24 bg-zinc-800 border border-zinc-700/50 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-inner relative z-10">
-              <Building2 className="w-12 h-12 text-red-500" />
+          <div className="text-center relative pt-8">
+            <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4 relative z-10">
+              <Building2 className="w-10 h-10 text-red-500" />
             </div>
             
-            <h2 className="text-2xl font-black text-zinc-50 mb-3 relative z-10">Compte lié</h2>
+            <h2 className="text-xl font-black text-zinc-50 mb-3 relative z-10">Compte lié</h2>
             <p className="text-zinc-400 text-sm mb-8 leading-relaxed relative z-10">
-              Votre compte de retrait est configuré. Pour des raisons de sécurité, vous ne pouvez pas le modifier vous-même.
+              Votre compte est configuré. Pour des raisons de sécurité, vous ne pouvez pas le modifier vous-même.
             </p>
             
-            <div className="bg-zinc-800/50 p-5 rounded-2xl text-left border border-zinc-700/50 mb-8 relative z-10">
-              <p className="text-[10px] uppercase text-zinc-500 font-bold tracking-wider mb-3">Détails actuels</p>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center pb-3 border-b border-zinc-700/50">
-                   <span className="text-zinc-400 font-medium text-sm">Opérateur</span>
-                   <span className="text-zinc-50 font-bold text-sm bg-zinc-700/50 px-2.5 py-1 rounded-lg">{method}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                   <span className="text-zinc-400 font-medium text-sm">Numéro</span>
-                   <span className="text-zinc-50 font-black text-sm tracking-widest">{accountNumber}</span>
-                </div>
+            <div className="text-left mb-8 relative z-10 space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-zinc-800/50">
+                 <span className="text-zinc-500 font-medium text-sm">Opérateur</span>
+                 <span className="text-zinc-50 font-bold text-sm">{method}</span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b border-zinc-800/50">
+                 <span className="text-zinc-500 font-medium text-sm">Numéro</span>
+                 <span className="text-zinc-50 font-black text-sm tracking-widest">{accountNumber}</span>
               </div>
             </div>
             
             <button
               onClick={() => navigate(-1)}
-              className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-50 rounded-xl font-bold transition-all shadow-sm relative z-10"
+              className="w-full mt-4 py-4 border border-zinc-700 bg-transparent hover:text-zinc-50 text-zinc-300 rounded-xl font-bold transition-all"
             >
               Retour
             </button>
           </div>
         ) : (
           <form onSubmit={handleSave} className="space-y-6 relative z-10">
-            <div className="bg-zinc-900 border border-zinc-800 shadow-2xl p-6 rounded-3xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-[30px] -mr-8 -mt-8 pointer-events-none"></div>
-              
-              <div className="space-y-5 relative z-10">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 px-1">
-                    Moyen de Paiement
-                  </label>
-                  <div className="bg-zinc-900 border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl transition-all duration-300">
-                    <select
-                      value={method}
-                      onChange={(e) => setMethod(e.target.value)}
-                      className="w-full bg-transparent border-none px-4 py-4 text-zinc-50 font-black tracking-wider focus:ring-0 outline-none appearance-none"
-                    >
-                      <option value="" className="bg-zinc-900 text-zinc-400">Sélectionnez un moyen</option>
+            <div className="space-y-4 relative z-10">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 px-1">
+                  Moyen de Paiement
+                </label>
+                <div className="bg-zinc-900/80 border border-zinc-800 focus-within:border-red-500 rounded-2xl transition-all duration-300 shadow-sm">
+                  <select
+                    value={method}
+                    onChange={(e) => setMethod(e.target.value)}
+                    className="w-full bg-transparent border-none px-4 py-3.5 text-zinc-50 font-black tracking-wider focus:ring-0 outline-none appearance-none"
+                  >
+                    <option value="" className="bg-zinc-900 text-zinc-400">Sélectionnez un moyen</option>
                       {(user?.country === "Cote d'Ivoire" || user?.country === "Côte d'Ivoire") && (
                         <>
                           <option value="ORANGE" className="bg-zinc-900">Orange Money</option>
@@ -229,66 +221,64 @@ export function Bank() {
                         </>
                       )}
                     </select>
-                  </div>
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                   <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 px-1">
-                      Numéro de compte / mobile
-                   </label>
-                   <div className="relative bg-zinc-900 border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl transition-all duration-300">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">#</span>
-                      <input
-                        type="text"
-                        value={accountNumber}
-                        onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder="Ex: 0102030405"
-                        className="w-full bg-transparent border-none pl-12 pr-4 py-4 text-zinc-50 font-black tracking-wider focus:ring-0 outline-none placeholder-zinc-700"
-                        required
-                      />
-                   </div>
-                </div>
+              <div className="space-y-2 pt-1">
+                 <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 px-1">
+                    Numéro de compte / mobile
+                 </label>
+                 <div className="relative bg-zinc-900/80 border border-zinc-800 focus-within:border-red-500 rounded-2xl transition-all duration-300 shadow-sm">
+                    <input
+                      type="text"
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value)}
+                      placeholder="Ex: 0102030405"
+                      className="w-full bg-transparent border-none px-4 py-3.5 text-zinc-50 font-black tracking-wider focus:ring-0 outline-none placeholder-zinc-700"
+                      required
+                    />
+                 </div>
+              </div>
 
-                <div className="space-y-2">
-                   <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 px-1">
-                      Nom sur le compte
-                   </label>
-                   <div className="bg-zinc-900 border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl transition-all duration-300">
-                      <input
-                        type="text"
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
-                        placeholder="Ex: Jean Dupont"
-                        className="w-full bg-transparent border-none px-4 py-4 text-zinc-50 font-black tracking-wider focus:ring-0 outline-none placeholder-zinc-700"
-                        required
-                      />
-                   </div>
-                </div>
+              <div className="space-y-2 pt-1">
+                 <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 px-1">
+                    Nom sur le compte
+                 </label>
+                 <div className="bg-zinc-900/80 border border-zinc-800 focus-within:border-red-500 rounded-2xl transition-all duration-300 shadow-sm">
+                    <input
+                      type="text"
+                      value={accountName}
+                      onChange={(e) => setAccountName(e.target.value)}
+                      placeholder="Ex: Jean Dupont"
+                      className="w-full bg-transparent border-none px-4 py-3.5 text-zinc-50 font-black tracking-wider focus:ring-0 outline-none placeholder-zinc-700"
+                      required
+                    />
+                 </div>
               </div>
             </div>
             
-            <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-6 relative z-10 shadow-lg">
-               <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-400 px-1 mb-3">
+            <div className="pt-4 relative z-10">
+               <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500 px-1 mb-2">
                   Sécurité requise
                </label>
-               <div className="bg-zinc-900 border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl transition-all duration-300">
+               <div className="bg-zinc-900/80 border border-zinc-800 focus-within:border-red-500 rounded-2xl transition-all duration-300 shadow-sm">
                  <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-transparent border-none px-4 py-4 text-zinc-50 font-black focus:ring-0 outline-none placeholder-zinc-700 tracking-widest"
+                    className="w-full bg-transparent border-none px-4 py-3.5 text-zinc-50 font-black focus:ring-0 outline-none placeholder-zinc-700 tracking-widest"
                  />
                </div>
-               <p className="text-zinc-500 text-[11px] mt-3 font-medium px-1 leading-relaxed">Veuillez entrer le mot de passe de votre compte pour confirmer les informations de paiement.</p>
+               <p className="text-zinc-600 text-[11px] mt-2 font-medium px-1 leading-relaxed">Entrez le mot de passe de votre compte pour confirmer.</p>
             </div>
 
             <button
               type="submit"
               disabled={isSaving || !method || !accountNumber || !password}
-              className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-bold shadow-lg shadow-red-900/20 active:scale-95 transition-all text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:bg-red-600"
+              className="w-full mt-4 bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-zinc-50 transition-all py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-95 border border-red-500/50 disabled:opacity-50 disabled:active:scale-100"
             >
-              {isSaving ? "Sauvegarde en cours..." : "Confirmer le compte"}
+              {isSaving ? "En cours..." : "Confirmer"}
             </button>
           </form>
         )}

@@ -678,7 +678,7 @@ export function Admin() {
                        <select 
                          value={u.role || 'user'} 
                          onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                         className="text-[10px] border border-zinc-800 rounded p-1 bg-zinc-900 shadow-black/20 outline-none"
+                         className="text-[10px] border border-zinc-800 rounded p-1 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 shadow-black/20 outline-none"
                        >
                          {VIP_LEVELS.map(v => <option key={v} value={v}>{v === 'user' ? 'Standard' : v.toUpperCase()}</option>)}
                        </select>
@@ -722,7 +722,7 @@ export function Admin() {
               const bMethod = (u as any)?.bank_method || 'Non défini';
 
               return (
-              <div key={u.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-sm relative">
+              <div key={u.id} className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-2xl p-4 shadow-sm relative">
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <p className="font-bold text-zinc-50 flex items-center gap-2">
@@ -1007,7 +1007,7 @@ export function Admin() {
               <div key={idx} className="flex items-center justify-between p-4 bg-zinc-900 border-zinc-800/80 shadow-black/20 rounded-2xl border border-zinc-800 shadow-sm relative overflow-hidden">
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500/100"></div>
                 <div className="flex items-center gap-4 pl-2">
-                  <img src={p.image || 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?auto=format&fit=crop&q=80&w=800'} className="w-12 h-12 rounded-xl object-cover bg-zinc-800" alt="" referrerPolicy="no-referrer" />
+                  <img src={p.image || 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=800'} className="w-12 h-12 rounded-xl object-cover bg-zinc-800" alt="" referrerPolicy="no-referrer" />
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
                        <p className="font-bold text-zinc-50 text-sm leading-none">{formatCurrency(p.amount)}</p>

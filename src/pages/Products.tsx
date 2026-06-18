@@ -10,21 +10,21 @@ import { motion } from 'framer-motion';
 const ContractVisual: React.FC = () => {
   return (
     <div className="relative w-24 h-24 flex items-center justify-center bg-zinc-800/80 rounded-2xl border border-zinc-700/50 overflow-hidden shrink-0 shadow-inner">
-      <div className={`absolute inset-0 opacity-20 blur-2xl bg-amber-500`}></div>
+      <div className={`absolute inset-0 opacity-20 blur-2xl bg-red-500`}></div>
       
       <motion.div 
         className="absolute inset-0 flex items-center justify-center"
         animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
-        <div className={`w-14 h-14 rounded-full flex flex-col items-center justify-center border-4 border-zinc-800/50 bg-zinc-900 shadow-md`}>
-           <Zap className="w-6 h-6 text-amber-500" />
+        <div className={`w-14 h-14 rounded-full flex flex-col items-center justify-center border-4 border-zinc-800/50 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 shadow-md`}>
+           <Zap className="w-6 h-6 text-red-500" />
         </div>
       </motion.div>
 
       <motion.div
         className="absolute inset-0 origin-center rounded-full border-2 border-dashed border-transparent"
-        style={{ borderTopColor: 'rgba(245, 158, 11, 0.4)' }}
+        style={{ borderTopColor: 'rgba(239, 68, 68, 0.4)' }}
         animate={{ rotate: 360 }}
         transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
       />
@@ -69,8 +69,8 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
   if (!timeLeft) return null;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 shadow-2xl rounded-3xl p-5 relative overflow-hidden flex items-center gap-5">
-      <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[40px] -mr-16 -mt-16 pointer-events-none bg-amber-500/10`}></div>
+    <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 shadow-2xl rounded-3xl p-5 relative overflow-hidden flex items-center gap-5">
+      <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[40px] -mr-16 -mt-16 pointer-events-none bg-red-500/10`}></div>
       
       <ContractVisual />
 
@@ -90,12 +90,12 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
           <span className="text-zinc-600 mx-1 mb-1">:</span>
           <span>{String(timeLeft.m).padStart(2, '0')}</span>
           <span className="text-zinc-600 mx-1 mb-1">:</span>
-          <span className="text-amber-500">{String(timeLeft.s).padStart(2, '0')}</span>
+          <span className="text-orange-500">{String(timeLeft.s).padStart(2, '0')}</span>
         </div>
         
         <div className="mt-4 w-full bg-zinc-800/80 rounded-full h-2 overflow-hidden border border-zinc-800">
           <div 
-            className="h-full rounded-full transition-all duration-1000 ease-linear bg-gradient-to-r from-amber-600 to-amber-400" 
+            className="h-full rounded-full transition-all duration-1000 ease-linear bg-gradient-to-r from-orange-600 to-red-500" 
             style={{ width: `${timeLeft.percent}%` }}
           ></div>
         </div>
@@ -137,7 +137,7 @@ export function Products() {
   return (
     <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans animate-fade-in text-zinc-50">
       <header className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors shadow-sm shrink-0">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors shadow-sm shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
@@ -152,7 +152,7 @@ export function Products() {
              <div className="w-10 h-10 rounded-full border-4 border-red-500/20 border-t-red-500 animate-spin"></div>
           </div>
         ) : investments.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 text-center shadow-2xl relative overflow-hidden flex flex-col items-center">
+          <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 border border-zinc-800 rounded-3xl p-10 text-center shadow-2xl relative overflow-hidden flex flex-col items-center">
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-500/10 rounded-full blur-[40px] pointer-events-none"></div>
 
             <div className="w-24 h-24 bg-zinc-800 border border-zinc-700/50 rounded-2xl flex items-center justify-center mb-8 shadow-inner relative z-10">

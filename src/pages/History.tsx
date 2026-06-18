@@ -46,13 +46,13 @@ export function History() {
         <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="w-14 h-14 rounded-2xl object-cover shadow-sm border border-zinc-800 flex-shrink-0" referrerPolicy="no-referrer" />
       </header>
 
-      <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 rounded-xl border border-zinc-800 overflow-hidden">
+      <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 shadow-xl rounded-3xl overflow-hidden mb-8">
         {transactions.length === 0 ? (
           <div className="text-center py-10 text-zinc-500 text-sm font-semibold">
             Aucune transaction
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-zinc-800/80">
             {transactions.map((tx) => (
               <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-zinc-800/50 transition-colors">
                 <div className="flex items-center gap-3">
@@ -73,13 +73,13 @@ export function History() {
                 <div className="text-right">
                   <p className={`font-black tracking-tight ${
                     tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
-                      ? 'text-green-600' 
+                      ? 'text-emerald-400' 
                       : 'text-zinc-50'
                   }`}>
                     {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? '+' : '-'}{formatCurrency(tx.amount)}
                   </p>
                   <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
-                    tx.status === 'completed' || tx.status === 'approved' ? 'text-green-600' :
+                    tx.status === 'completed' || tx.status === 'approved' ? 'text-emerald-400' :
                     tx.status === 'pending' ? 'text-amber-500' : 'text-red-500'
                   }`}>
                     {tx.status === 'completed' || tx.status === 'approved' ? 'Complété' :

@@ -136,7 +136,7 @@ export function Team() {
           const investedAmount = firstInvestment ? Number(firstInvestment) : 0;
           
           return (
-            <div key={member.id} className="flex justify-between items-center p-3 bg-zinc-800/50/50 rounded-xl border border-zinc-800">
+            <div key={member.id} className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-xl border border-zinc-800">
               <div>
                 <p className="font-bold text-zinc-50 text-sm tracking-tight">{member.phone}</p>
                 <p className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider mt-0.5">
@@ -173,13 +173,14 @@ export function Team() {
       </header>
 
       <div className="animate-fade-in relative z-10 pb-6">
-        <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20/90 backdrop-blur-md border border-zinc-800/60 rounded-2xl p-4 shadow-sm mb-6 relative overflow-hidden">
-          <div className="flex justify-between items-center mb-4">
+        <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl p-4 shadow-xl mb-6 relative overflow-hidden">
+          <div className="absolute -top-16 -right-16 w-32 h-32 bg-red-500/10 rounded-full blur-[30px] pointer-events-none"></div>
+          <div className="flex justify-between items-center mb-4 relative z-10">
             <div>
               <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">Gains d'équipe</p>
               <h2 className="text-2xl font-black text-zinc-50 tracking-tight">{formatCurrency(teamStats.totalBonus)}</h2>
             </div>
-            <div className="flex bg-red-500/10 text-red-700 px-3 py-1.5 rounded-lg text-sm font-bold items-center gap-1.5 border border-red-500/20">
+            <div className="flex bg-red-500/10 text-red-500 px-3 py-1.5 rounded-xl text-sm font-bold items-center gap-1.5 border border-red-500/20 shadow-inner">
               <Users className="w-4 h-4" />
               {totalMembers}
             </div>
@@ -191,19 +192,19 @@ export function Team() {
               type="text"
               value={referralLink}
               onClick={(e) => (e.target as HTMLInputElement).select()}
-              className="flex-1 w-0 bg-zinc-800/50/50 border border-zinc-800 rounded-xl px-3 py-2 text-zinc-400 text-xs font-mono truncate focus:outline-none focus:border-red-500 transition-colors"
+              className="flex-1 w-0 bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-zinc-300 text-xs font-mono truncate focus:outline-none focus:border-red-500/50 transition-colors shadow-inner"
             />
             <button 
               onClick={copyCode}
-              className="px-4 py-2 bg-gray-900 hover:bg-black rounded-xl flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
+              className="px-4 py-2 bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-xl flex items-center justify-center text-white transition-colors cursor-pointer shrink-0 shadow-[0_0_15px_rgba(239,68,68,0.2)]"
             >
               {copyStatus === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
 
           {copyStatus === 'error' && (
-            <div className="mt-3 bg-amber-50 border border-amber-100 rounded-xl p-3 text-left">
-              <p className="text-amber-700 text-[10px] font-medium flex items-start gap-2">
+            <div className="mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-left">
+              <p className="text-amber-500 text-[10px] font-medium flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> 
                 <span>Cliquez sur le lien, maintenez appuyé, puis "Copier".</span>
               </p>
@@ -211,33 +212,33 @@ export function Team() {
           )}
         </div>
 
-        <div className="flex bg-zinc-700/50 backdrop-blur-md rounded-2xl p-1.5 gap-1.5 mb-4 shadow-inner">
+        <div className="flex bg-zinc-900/60 backdrop-blur-xl border border-zinc-800 rounded-2xl p-1.5 gap-1.5 mb-4 shadow-inner">
           {[1, 2, 3].map((level) => (
             <button
               key={level}
               onClick={() => setExpandedLevel(level)}
               className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all duration-300 flex flex-col items-center justify-center gap-0.5 ${
                 expandedLevel === level 
-                  ? 'bg-zinc-900 border-zinc-800/80 shadow-black/20 text-zinc-50 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12)] border border-zinc-800' 
-                  : 'text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700/50'
+                  ? 'bg-zinc-800 text-zinc-50 shadow-md border border-zinc-700/50' 
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
               }`}
             >
               <div className="flex items-center gap-1">
                 Niv. {level}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${expandedLevel === level ? 'bg-red-500/20 text-red-700 border border-red-500/30/50' : 'bg-zinc-700 text-zinc-400'}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${expandedLevel === level ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-zinc-800/50 border border-zinc-700/50 text-zinc-500'}`}>
                   {level === 1 ? teamStats.level1.length : 
                    level === 2 ? teamStats.level2.length : 
                    teamStats.level3.length}
                 </span>
               </div>
-              <span className={`text-[10px] ${expandedLevel === level ? 'text-red-500' : 'text-zinc-500'}`}>
+              <span className={`text-[10px] ${expandedLevel === level ? 'text-red-400' : 'text-zinc-600'}`}>
                 {level === 1 ? '20%' : level === 2 ? '3%' : '2%'}
               </span>
             </button>
           ))}
         </div>
 
-        <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20/80 backdrop-blur-md border border-zinc-800/60 rounded-2xl overflow-hidden min-h-[200px] shadow-sm">
+        <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl overflow-hidden min-h-[200px] shadow-xl">
           <div className="p-4">
             {renderMemberList(
               expandedLevel === 1 ? teamStats.level1 :

@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { Banknote, PlusCircle, Wallet, Activity, Users, Headset, MessageCircle, Crown, Loader2, Briefcase, ChevronRight, X, Building2, PackageCheck, LogOut, Download, Layers } from 'lucide-react';
+import { Banknote, PlusCircle, Wallet, Activity, Users, Headset, MessageCircle, Crown, Loader2, Briefcase, ChevronRight, X, Building2, PackageCheck, LogOut, Download, Layers, PiggyBank } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
@@ -15,7 +15,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
+      <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-red-600/20 rounded-full blur-[60px] pointer-events-none"></div>
         <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 z-10 flex items-center justify-center bg-zinc-800 text-zinc-400 rounded-full hover:bg-zinc-700 hover:text-zinc-200 transition-colors">
           <X className="w-4 h-4" />
@@ -55,16 +55,16 @@ function SupportModal({ groupLink, supportLink, onClose }: { groupLink: string, 
     <>
       <div className="fixed inset-0 z-[40] bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed bottom-24 right-5 z-[50] flex flex-col gap-4 items-end animate-in fade-in zoom-in-95 duration-200 origin-bottom-right">
-        <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all bg-zinc-900 pr-2 pl-4 py-2 rounded-full border border-zinc-800 shadow-xl" onClick={onClose}>
+        <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 pr-2 pl-4 py-2 rounded-full border border-zinc-800 shadow-xl" onClick={onClose}>
           <span className="text-sm font-bold text-zinc-200">Service client</span>
           <div className="bg-red-600 p-3 rounded-full text-zinc-50">
             <Headset className="w-5 h-5" />
           </div>
         </a>
         {groupLink && (
-          <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all bg-zinc-900 pr-2 pl-4 py-2 rounded-full border border-zinc-800 shadow-xl" onClick={onClose}>
+          <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 pr-2 pl-4 py-2 rounded-full border border-zinc-800 shadow-xl" onClick={onClose}>
             <span className="text-sm font-bold text-zinc-200">Groupe officiel</span>
-            <div className="bg-blue-600 p-3 rounded-full text-zinc-50">
+            <div className="bg-orange-600 p-3 rounded-full text-zinc-50">
               <MessageCircle className="w-5 h-5" />
             </div>
           </a>
@@ -82,6 +82,44 @@ export function Dashboard() {
   
   const [activeInvestments, setActiveInvestments] = useState<any[]>(investmentsCache || []);
   const [dailyGain, setDailyGain] = useState(0);
+  const [todayGain, setTodayGain] = useState(0);
+  const [totalWithdrawn, setTotalWithdrawn] = useState(0);
+
+  const fetchUserData = async () => {
+    const currentUser = useAuthStore.getState().user;
+    if (!currentUser) return;
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const [todayGainRes, withdrawRes] = await Promise.all([
+        supabase
+          .from('transactions')
+          .select('amount')
+          .eq('user_id', currentUser.id)
+          .eq('type', 'daily_gain')
+          .gte('created_at', today.toISOString()),
+        supabase
+          .from('transactions')
+          .select('amount')
+          .eq('user_id', currentUser.id)
+          .eq('type', 'withdrawal')
+          .eq('status', 'approved')
+      ]);
+      
+      if (todayGainRes.data && !todayGainRes.error) {
+        const total = todayGainRes.data.reduce((acc, curr) => acc + Number(curr.amount), 0);
+        setTodayGain(total);
+      }
+
+      if (withdrawRes.data && !withdrawRes.error) {
+        const totalW = withdrawRes.data.reduce((acc, curr) => acc + Number(curr.amount), 0);
+        setTotalWithdrawn(totalW);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
@@ -243,6 +281,7 @@ export function Dashboard() {
         setSettingsCache(settingsRes.data);
         applySettings(settingsRes.data);
       }
+      await fetchUserData();
     } catch (err) {
       console.error(err);
     } finally {
@@ -273,9 +312,7 @@ export function Dashboard() {
       <div className="px-5 pt-12 pb-6">
         <header className="flex justify-between items-center mb-8 shrink-0">
           <div className="flex items-center gap-3">
-             <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 p-2 shadow-lg flex items-center justify-center">
-                 <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-             </div>
+             <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="w-10 h-10 object-contain" referrerPolicy="no-referrer" />
              <div>
                <p className="text-white text-xs font-medium uppercase tracking-wider mb-0.5">Identifiant</p>
                <h1 className="text-lg font-black text-red-500 flex items-center gap-2">
@@ -286,8 +323,8 @@ export function Dashboard() {
           </div>
         </header>
 
-        {/* Emerald Glow Card */}
-        <div className="rounded-3xl p-6 relative overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl flex flex-col justify-between" style={{ minHeight: '220px' }}>
+        {/* Main Red Glow Card */}
+        <div className="rounded-3xl p-6 relative overflow-hidden bg-zinc-900/80 backdrop-blur-xl border border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col justify-between" style={{ minHeight: '220px' }}>
            <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/20 rounded-full blur-[80px] -mr-16 -mt-16 pointer-events-none"></div>
            <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-500/10 rounded-full blur-[60px] -ml-16 -mb-16 pointer-events-none"></div>
            
@@ -298,70 +335,75 @@ export function Dashboard() {
                       <Wallet className="w-4 h-4 text-red-500" />
                       Solde Total
                     </h2>
-                    <div className="text-4xl font-black text-zinc-50 tracking-tight">
+                    <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-zinc-50 to-zinc-400 tracking-tight">
                       {formatCurrency(Number(user?.balance) || 0)}
                     </div>
                  </div>
+                 <button onClick={() => { logout(); navigate('/login'); }} className="w-10 h-10 rounded-full bg-zinc-800/80 border border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-red-400 hover:bg-zinc-700 transition-colors shadow-lg group">
+                    <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-4">
-                  <Link to="/deposit" className="bg-red-600 hover:bg-red-500 text-zinc-50 transition-all py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-lg shadow-red-900/30 active:scale-95 border border-red-500">
+              <div className="grid grid-cols-2 gap-3 mt-4 mb-3">
+                  <Link to="/deposit" className="bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-zinc-50 transition-all py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-95 border border-red-500/50">
                       <PlusCircle className="w-5 h-5" />
                       Recharger
                   </Link>
-                  <Link to="/withdraw" className="bg-zinc-800 hover:bg-zinc-700 text-zinc-50 transition-all py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-lg active:scale-95 border border-zinc-700">
+                  <Link to="/withdraw" className="bg-zinc-800/80 backdrop-blur-sm hover:bg-zinc-700 text-zinc-50 transition-all py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-lg active:scale-95 border border-zinc-700">
                       <Banknote className="w-5 h-5" />
                       Retirer
                   </Link>
+              </div>
+              <div className="flex items-center justify-between text-xs font-medium text-zinc-400 mt-1 px-1">
+                 <span>Total retiré :</span>
+                 <span className="text-zinc-200 font-bold">{formatCurrency(totalWithdrawn)}</span>
+              </div>
+           </div>
+        </div>
+
+        {/* Active Dashboard Summary */}
+        <div className="mt-8">
+           <div className="flex items-center justify-between mb-4 px-1">
+              <h2 className="text-zinc-100 font-bold text-sm tracking-wide">Résumé d'activité</h2>
+           </div>
+           
+           <div className="grid grid-cols-3 gap-2">
+              <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-2xl p-3 shadow-lg flex flex-col items-center text-center justify-center hover:border-red-500/20 transition-all">
+                 <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1 leading-tight">Gain obtenu aujourd'hui</p>
+                 <p className="text-sm font-black text-zinc-100 tracking-tight">{formatCurrency(todayGain)}</p>
+              </div>
+              <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-2xl p-3 shadow-lg flex flex-col items-center text-center justify-center hover:border-orange-500/20 transition-all">
+                 <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1 leading-tight">Gain prévu par jour</p>
+                 <p className="text-sm font-black text-zinc-100 tracking-tight">{formatCurrency(dailyGain)}</p>
+              </div>
+              <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-2xl p-3 shadow-lg flex flex-col items-center text-center justify-center hover:border-amber-500/20 transition-all">
+                 <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1 leading-tight">Contrats actifs</p>
+                 <p className="text-lg font-black text-zinc-100 tracking-tight">{activeInvestments.length}</p>
               </div>
            </div>
         </div>
 
         {/* Actions Grid */}
-        <div className="grid grid-cols-4 gap-3 mt-8">
-           <Link to="/bank" className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-blue-400">
-                 <Building2 className="w-5 h-5" />
-              </div>
-              <span className="text-[11px] font-bold text-zinc-400">Comptes</span>
-           </Link>
-           
-           <button onClick={() => setShowSupportModal(true)} className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-400">
-                 <Headset className="w-5 h-5" />
-              </div>
-              <span className="text-[11px] font-bold text-zinc-400">Aide</span>
-           </button>
-           
-           <button onClick={() => installPWA()} className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-purple-400">
+        <div className="grid grid-cols-3 gap-3 mt-8">
+           <button onClick={() => installPWA()} className="group bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl hover:border-red-500/30 hover:bg-zinc-800/80 transition-all shadow-lg shadow-black/20">
+              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-500 group-hover:scale-110 group-hover:bg-red-500/10 transition-all shadow-inner">
                  <Download className="w-5 h-5" />
               </div>
-              <span className="text-[11px] font-bold text-zinc-400">App</span>
+              <span className="text-[10px] leading-tight text-center font-bold text-zinc-400 group-hover:text-zinc-200 px-1">Télécharger l'application</span>
            </button>
-           
-           <Link to="/products" className="bg-zinc-900 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-zinc-800 hover:bg-zinc-800 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-500">
-                 <Layers className="w-5 h-5" />
-              </div>
-              <span className="text-[11px] font-bold text-zinc-400">Contrat</span>
-           </Link>
-        </div>
 
-        {/* Large Promos / Buttons */}
-        <div className="mt-6 flex flex-col gap-3">
-           <button onClick={() => { logout(); navigate('/login'); }} className="w-full relative overflow-hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex items-center justify-between group active:scale-[0.98] transition-all cursor-pointer">
-              <div className="absolute right-0 top-0 h-full w-32 bg-gradient-to-l from-red-500/10 to-transparent pointer-events-none"></div>
-              <div className="flex flex-col gap-1 z-10 text-left">
-                 <h3 className="text-zinc-50 font-bold text-base flex items-center gap-2">
-                    <LogOut className="w-5 h-5 text-red-500" />
-                    Se déconnecter
-                 </h3>
-                 <p className="text-zinc-500 text-xs">Déconnexion de votre espace collaborateur</p>
+           <Link to="/bank" className="group bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl hover:border-red-500/30 hover:bg-zinc-800/80 transition-all shadow-lg shadow-black/20">
+              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-orange-400 group-hover:scale-110 group-hover:bg-red-500/10 group-hover:text-red-500 transition-all shadow-inner">
+                 <PiggyBank className="w-5 h-5" />
               </div>
-              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-red-400 group-hover:bg-zinc-700 transition-colors z-10">
-                 <ChevronRight className="w-5 h-5" />
+              <span className="text-[11px] font-bold text-zinc-400 group-hover:text-zinc-200">Caisse</span>
+           </Link>
+           
+           <button onClick={() => setShowSupportModal(true)} className="group bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl hover:border-red-500/30 hover:bg-zinc-800/80 transition-all shadow-lg shadow-black/20">
+              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-500 group-hover:scale-110 group-hover:bg-red-500/10 transition-all shadow-inner">
+                 <Headset className="w-5 h-5" />
               </div>
+              <span className="text-[10px] leading-tight text-center font-bold text-zinc-400 group-hover:text-zinc-200 px-1">Service client / Groupe officiel</span>
            </button>
         </div>
 

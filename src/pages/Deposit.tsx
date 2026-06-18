@@ -70,7 +70,7 @@ export function Deposit() {
   return (
     <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans text-zinc-50">
       <header className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors shadow-sm">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors shadow-sm">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
@@ -105,7 +105,7 @@ export function Deposit() {
 
           <div className="space-y-3">
              <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 px-1">Montant à recharger</label>
-             <div className="bg-zinc-900 border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300 flex flex-col">
+             <div className="bg-zinc-900/80 backdrop-blur-xl border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300 flex flex-col">
                 <div className="flex items-center">
                   <span className="text-zinc-500 font-bold text-2xl mr-3">FCFA</span>
                   <input
@@ -121,7 +121,7 @@ export function Deposit() {
              </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+           <div className="flex flex-wrap gap-3">
              {[5000, 15000, 40000, 90000, 200000].map((preset) => (
                <button
                  key={preset}
@@ -130,7 +130,7 @@ export function Deposit() {
                  className={`flex-1 min-w-[30%] py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-1 border ${
                    amount === preset.toString() 
                      ? 'bg-red-500/20 text-red-500 border-red-500/50 shadow-sm' 
-                     : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300'
+                     : 'bg-zinc-900/80 backdrop-blur-xl text-zinc-400 border border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300'
                  }`}
                >
                  {preset >= 100000 ? <Zap className="w-3.5 h-3.5" /> : null}
@@ -143,7 +143,7 @@ export function Deposit() {
             <button
               type="submit"
               disabled={loading || !amount || Number(amount) < 5000}
-              className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:hover:bg-red-600 shadow-lg shadow-red-900/20 active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-4 rounded-2xl transition-all duration-300 disabled:opacity-50 shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-[0.98] border border-red-500/50 flex items-center justify-center gap-2"
             >
               {loading ? (
                 'Redirection en cours...'

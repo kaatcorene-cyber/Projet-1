@@ -88,7 +88,7 @@ export function Withdraw() {
   return (
     <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans animate-fade-in text-zinc-50">
       <header className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors shadow-sm">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors shadow-sm">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
@@ -147,7 +147,7 @@ export function Withdraw() {
 
           <div className="space-y-4">
             {/* Bank Info */}
-            <div className="bg-zinc-900 border-2 border-zinc-800 p-4 rounded-2xl flex items-center gap-4">
+            <div className="bg-zinc-900/80 backdrop-blur-xl border-2 border-zinc-800 p-4 rounded-2xl flex items-center gap-4">
               <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center shrink-0 border border-zinc-700/50">
                 <Building2 className="w-6 h-6 text-zinc-400" />
               </div>
@@ -159,7 +159,7 @@ export function Withdraw() {
             </div>
 
             {/* Amount Input */}
-            <div className="bg-zinc-900 border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300">
+            <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300">
               <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 mb-2 px-1">
                 <ArrowDownRight className="w-3.5 h-3.5" />
                 Montant à retirer
@@ -187,7 +187,7 @@ export function Withdraw() {
                    className={`flex-1 min-w-[22%] py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center border ${
                      amount === preset.toString() 
                        ? 'bg-red-500/20 text-red-500 border-red-500/50 shadow-sm' 
-                       : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300'
+                       : 'bg-zinc-900/80 backdrop-blur-xl text-zinc-400 border border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300'
                    }`}
                  >
                    {preset >= 1000 ? `${preset / 1000}k` : preset}
@@ -215,7 +215,7 @@ export function Withdraw() {
             )}
             
             {/* Password Input */}
-            <div className="bg-zinc-900 border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300">
+            <div className="bg-zinc-900/80 backdrop-blur-xl border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300">
               <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 mb-2 px-1">
                 <Lock className="w-3.5 h-3.5" />
                 Code secret
@@ -236,7 +236,7 @@ export function Withdraw() {
           <button
             type="submit"
             disabled={loading || !amount || !password}
-            className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:hover:bg-red-600 shadow-lg shadow-red-900/20 active:scale-[0.98] flex items-center justify-center gap-2 mt-4"
+            className="w-full bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-4 rounded-2xl transition-all duration-300 disabled:opacity-50 shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-[0.98] border border-red-500/50 flex items-center justify-center gap-2 mt-4"
           >
             {loading ? (
               <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />

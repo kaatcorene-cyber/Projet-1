@@ -99,7 +99,7 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen text-slate-900 pb-16 font-sans">
+    <div className="min-h-screen text-zinc-50 pb-16 font-sans bg-transparent">
       <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden">
         {/* Top Mini Header for Admin */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">

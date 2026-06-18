@@ -6,6 +6,22 @@ let activeGroupId: string | null = null; // Will auto-detect
 
 const bot = new TelegramBot(token, { polling: true });
 
+// Handle polling errors to avoid crashes
+bot.on('polling_error', (error: any) => {
+  const isUnauthorized = error.code === 'ETELEGRAM' && 
+                         (error.message.includes('401') || (error.response && error.response.statusCode === 401));
+                         
+  if (isUnauthorized) {
+    console.warn("⚠️ Jeton Telegram invalide (401 Unauthorized). Le bot ne fonctionnera pas.");
+    // Stop polling if the token is completely invalid
+    bot.stopPolling().catch(() => {});
+  } else {
+    // Suppress general polling errors intentionally to avoid log spam, 
+    // or log them lightly.
+    // console.error("Erreur de polling Telegram :", error.message);
+  }
+});
+
 const userWarnings = new Map<number, number>();
 const ALLOWED_LINK = "petrolimex-ci.site/register";
 

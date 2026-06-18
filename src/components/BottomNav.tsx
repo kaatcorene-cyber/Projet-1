@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Briefcase, Users, History } from 'lucide-react';
+import { Home, ScrollText, Users, History } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export function BottomNav() {
@@ -7,7 +7,7 @@ export function BottomNav() {
   
   const navItems = [
     { icon: Home, label: 'Accueil', path: '/dashboard' },
-    { icon: Briefcase, label: 'Contrat', path: '/invest' },
+    { icon: ScrollText, label: 'Contrat', path: '/invest' },
     { icon: Users, label: 'Équipe', path: '/team' },
     { icon: History, label: 'Historique', path: '/history' },
   ];
@@ -26,7 +26,7 @@ export function BottomNav() {
                 isActive ? "text-red-500 scale-110" : "text-zinc-500 hover:text-zinc-300"
               )}
             >
-              <item.icon className={cn("w-6 h-6", isActive && "drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]")} />
+              <item.icon className={cn("w-6 h-6", isActive && "drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]")} />
               <span className="text-[10px] font-bold tracking-wide">{item.label}</span>
             </Link>
           );

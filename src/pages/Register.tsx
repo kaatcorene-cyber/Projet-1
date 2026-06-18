@@ -7,6 +7,7 @@ import { COUNTRIES, CountryName, COUNTRY_NAMES } from '../constants';
 export function Register() {
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
+    pseudo: '',
     phone: '',
     country: "Côte d'Ivoire" as CountryName,
     password: '',
@@ -70,7 +71,7 @@ export function Register() {
         .from('users')
         .insert([
           {
-            first_name: '',
+            first_name: formData.pseudo,
             last_name: '',
             phone: cleanPhone,
             country: formData.country,
@@ -113,18 +114,18 @@ export function Register() {
   const selectedCountry = COUNTRIES[formData.country];
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-6 py-12 max-w-md mx-auto relative overflow-hidden text-zinc-50">
-      <div className="text-center mb-8 flex flex-col items-center">
-        <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 p-3 rounded-2xl shadow-xl mb-4 relative border border-zinc-800">
-           <div className="absolute inset-0 bg-red-500/20 blur-3xl rounded-full opacity-50"></div>
-          <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="h-[40px] rounded-full object-contain relative z-10" referrerPolicy="no-referrer" />
+    <div className="min-h-screen relative flex flex-col justify-center px-6 overflow-hidden text-zinc-50 bg-transparent">
+      <div className="relative z-10 w-full max-w-md mx-auto flex flex-col justify-center min-h-screen py-8">
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="h-8 w-8 rounded-xl object-cover shadow-sm bg-zinc-900 border border-zinc-800 p-0.5" referrerPolicy="no-referrer" />
+            <h1 className="text-2xl grotesk font-black tracking-tight text-zinc-50">Inscription</h1>
+          </div>
+          <p className="text-zinc-400 font-medium text-xs">Créez votre profil collaborateur.</p>
         </div>
-        <h1 className="text-3xl grotesk font-black tracking-tight mb-2 text-zinc-50">Inscription</h1>
-        <p className="text-zinc-400 font-medium text-sm">Créez votre profil collaborateur.</p>
-      </div>
 
-      <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-3xl p-6 shadow-2xl">
-        <form onSubmit={handleRegister} className="space-y-4">
+        <div className="w-full flex flex-col gap-3">
+          <form onSubmit={handleRegister} className="space-y-3">
           {error && (
             <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm text-center">
               {error}
@@ -132,8 +133,21 @@ export function Register() {
           )}
 
           <div className="space-y-1">
+            <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Pseudo</label>
+            <input
+              type="text"
+              name="pseudo"
+              value={formData.pseudo}
+              onChange={handleChange}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium placeholder:text-zinc-500 tracking-wide"
+              placeholder="Ex: Pablito"
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
             <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Téléphone</label>
-            <div className="flex bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 shadow-sm rounded-xl overflow-hidden focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500/50 transition-all w-full">
+            <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500/50 transition-all w-full">
               <div className="relative flex items-center bg-transparent shrink-0">
                 <select
                   name="country"
@@ -170,28 +184,32 @@ export function Register() {
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Mot de passe</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 shadow-sm rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:bg-zinc-900 border-zinc-800/80 shadow-black/20 focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium"
-              required
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Confirmer le mot de passe</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="w-full bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 shadow-sm rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:bg-zinc-900 border-zinc-800/80 shadow-black/20 focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium"
-              required
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Mot de passe</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="********"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium placeholder:text-zinc-500 tracking-wide"
+                required
+              />
+            </div>
+  
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Confirmer</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="********"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium placeholder:text-zinc-500 tracking-wide"
+                required
+              />
+            </div>
           </div>
 
           <div className="space-y-1">
@@ -201,7 +219,8 @@ export function Register() {
               name="referralCode"
               value={formData.referralCode}
               onChange={handleChange}
-              className="w-full bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 shadow-sm rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:bg-zinc-900 border-zinc-800/80 shadow-black/20 focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium uppercase"
+              placeholder="Laissez vide si vous n'en avez pas"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium placeholder:text-zinc-500 tracking-wide"
             />
           </div>
 
@@ -220,6 +239,7 @@ export function Register() {
             Se connecter
           </Link>
         </p>
+        </div>
       </div>
     </div>
   );
