@@ -14,37 +14,61 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative">
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-red-600/20 rounded-full blur-[60px] pointer-events-none"></div>
-        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 z-10 flex items-center justify-center bg-zinc-800 text-zinc-400 rounded-full hover:bg-zinc-700 hover:text-zinc-200 transition-colors">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Glossy Backdrop */}
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500"></div>
+      
+      <div className="w-full max-w-sm bg-zinc-950 border border-zinc-800/80 rounded-[2.5rem] shadow-2xl relative z-10 animate-in zoom-in-95 fade-in duration-500 overflow-hidden">
+        {/* Glow Effects */}
+        <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-red-600/20 to-transparent"></div>
+        <div className="absolute -top-32 -left-32 w-64 h-64 bg-red-600/30 rounded-full blur-[80px] pointer-events-none mix-blend-screen"></div>
+
+        {/* Close Button */}
+        <button onClick={onClose} className="absolute top-5 right-5 w-8 h-8 z-20 flex items-center justify-center bg-black/40 backdrop-blur-md border border-zinc-800/50 text-zinc-400 rounded-full hover:bg-zinc-800 hover:text-white transition-all">
           <X className="w-4 h-4" />
         </button>
-         <div className="p-8 text-center mt-2 relative z-10">
-            <div className="w-16 h-16 bg-zinc-800 border border-zinc-700/50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner relative">
-               <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" />
+
+        {/* Modal Content */}
+        <div className="pt-12 pb-8 px-6 relative z-10 flex flex-col items-center">
+            {/* Visual Icon Header */}
+            <div className="relative mb-6">
+                <div className="absolute inset-0 bg-red-500/20 rounded-[2rem] blur-xl animate-pulse"></div>
+                <div className="w-24 h-24 bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-[2rem] flex items-center justify-center shadow-inner relative z-10 p-4">
+                    <img src="https://i.imgur.com/CDLHO6I.png" alt="App Logo" className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]" referrerPolicy="no-referrer" />
+                </div>
+                {/* Decorative Badge */}
+                <div className="absolute -bottom-2 -right-2 bg-red-600 text-white p-2 rounded-xl shadow-lg border border-red-500 z-20">
+                  <MessageCircle className="w-5 h-5" />
+                </div>
             </div>
             
-            <h2 className="text-2xl font-black text-zinc-50 mb-3 tracking-tight">Bienvenue !</h2>
-            <p className="text-zinc-400 text-sm mb-8 leading-relaxed font-medium">
-              Pour rester informé de toutes nos actualités et nouveautés, veuillez rejoindre notre communauté officielle.
+            <h2 className="text-2xl font-black text-white text-center mb-3 tracking-tight">Bienvenue sur Fuel•Max</h2>
+            <p className="text-zinc-400 text-center text-sm mb-8 leading-relaxed font-medium">
+              Ne manquez aucune nouveauté, intégrez la <span className="text-red-400 font-bold">communauté officielle</span> pour profiter des meilleurs conseils et du support prioritaire.
             </p>
-            <div className="space-y-3">
+            
+            <div className="w-full space-y-3">
               {groupLink ? (
-                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full py-4 bg-red-600 hover:bg-red-500 text-zinc-50 rounded-2xl font-bold tracking-wide shadow-lg shadow-red-500/25 active:scale-95 transition-all text-sm border border-red-500" onClick={onClose}>
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                  Rejoindre le Groupe
+                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="relative group flex items-center justify-center w-full py-4 rounded-2xl font-bold tracking-wide transition-all overflow-hidden bg-gradient-to-br from-red-600 to-red-700 shadow-[0_0_30px_rgba(239,68,68,0.3)] active:scale-95 border border-red-500/50" onClick={onClose}>
+                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
+                  <span className="relative z-10 flex items-center text-white">
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    Rejoindre le Groupe Officiel
+                  </span>
                 </a>
               ) : (
-                <button className="flex items-center justify-center w-full py-4 bg-red-600 hover:bg-red-500 text-zinc-50 rounded-2xl font-bold tracking-wide shadow-lg shadow-red-500/25 active:scale-95 transition-all text-sm border border-red-500" onClick={onClose}>
-                  Continuer
+                <button className="relative group flex items-center justify-center w-full py-4 rounded-2xl font-bold tracking-wide transition-all overflow-hidden bg-gradient-to-br from-red-600 to-red-700 shadow-[0_0_30px_rgba(239,68,68,0.3)] active:scale-95 border border-red-500/50" onClick={onClose}>
+                  <span className="relative z-10 flex items-center text-white">
+                    Continuer
+                  </span>
                 </button>
               )}
-              <button onClick={onClose} className="w-full py-3.5 text-zinc-500 hover:text-zinc-300 font-bold transition-colors text-sm rounded-xl">
-                Plus tard
+              
+              <button onClick={onClose} className="w-full py-3.5 text-zinc-500 hover:text-zinc-300 font-bold transition-colors text-xs uppercase tracking-wider rounded-xl">
+                Accéder au tableau de bord
               </button>
             </div>
-         </div>
+        </div>
       </div>
     </div>
   )
