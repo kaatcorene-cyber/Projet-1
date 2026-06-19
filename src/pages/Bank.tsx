@@ -41,18 +41,25 @@ export function Bank() {
 
   useEffect(() => {
     if (user?.id) {
-      // Just refresh user data in the background
-      refreshUser();
-      
       const bMethod = (user as any)?.bank_method;
       const bAccountName = (user as any)?.bank_account_name;
       
-      if (!method && bMethod) setMethod(bMethod);
-      if (!accountName && bAccountName) {
-        setAccountName(bAccountName.split('|||')[0] || '');
-        if (bAccountName.includes('|||')) {
-          setAccountNumber(bAccountName.split('|||')[1] || '');
+      if (bMethod) {
+        if (!method) setMethod(bMethod);
+      } else {
+        setMethod('');
+      }
+      
+      if (bAccountName) {
+        if (!accountName) {
+          setAccountName(bAccountName.split('|||')[0] || '');
+          if (bAccountName.includes('|||')) {
+            setAccountNumber(bAccountName.split('|||')[1] || '');
+          }
         }
+      } else {
+        setAccountName('');
+        setAccountNumber('');
       }
       
       if (bMethod && bAccountName && bAccountName.includes('|||')) {
@@ -141,7 +148,7 @@ export function Bank() {
             
             <h2 className="text-xl font-black text-zinc-50 mb-3 relative z-10">Compte lié</h2>
             <p className="text-zinc-400 text-sm mb-8 leading-relaxed relative z-10">
-              Votre compte est configuré. Pour des raisons de sécurité, vous ne pouvez pas le modifier vous-même.
+              Vos informations pour vos retraits ont été déjà configurées.
             </p>
             
             <div className="text-left mb-8 relative z-10 space-y-4">
