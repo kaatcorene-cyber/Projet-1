@@ -64,8 +64,19 @@ export function Register() {
         return;
       }
 
-      // Generate a simple referral code if none generated yet
-      const myReferralCode = 'USER' + Math.random().toString(36).substring(2, 6).toUpperCase();
+      // Generate a simple referral code based on pseudo
+      let myReferralCode = formData.pseudo.replace(/\s+/g, '').toUpperCase();
+      let codeUnique = false;
+      let finalCode = myReferralCode;
+      
+      while(!codeUnique) {
+          const { data: existingRef } = await supabase.from('users').select('id').eq('referral_code', finalCode).maybeSingle();
+          if (existingRef) {
+              finalCode = myReferralCode + Math.floor(Math.random() * 1000);
+          } else {
+              codeUnique = true;
+          }
+      }
 
       const { data, error: insertError } = await supabase
         .from('users')
@@ -76,7 +87,7 @@ export function Register() {
             phone: cleanPhone,
             country: formData.country,
             password_hash: formData.password, // In a real app, hash this!
-            referral_code: myReferralCode,
+            referral_code: finalCode,
             referred_by: formData.referralCode ? formData.referralCode.trim().toUpperCase() : null,
             balance: 0 // No signup bonus
           }

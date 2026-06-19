@@ -35,9 +35,21 @@ export const useAuthStore = create<AuthState>()(
         const { data } = await supabase.from('users').select('*').eq('id', user.id).single();
         if (data) {
           if (!data.referral_code) {
-            const myReferralCode = (data.first_name?.substring(0, 3).toUpperCase() || 'USR') + Math.random().toString(36).substring(2, 6).toUpperCase();
-            await supabase.from('users').update({ referral_code: myReferralCode }).eq('id', user.id);
-            data.referral_code = myReferralCode;
+            let myReferralCode = data.first_name ? data.first_name.replace(/\s+/g, '').toUpperCase() : 'USER';
+            let codeUnique = false;
+            let finalCode = myReferralCode;
+            
+            while(!codeUnique) {
+                const { data: existingRef } = await supabase.from('users').select('id').eq('referral_code', finalCode).maybeSingle();
+                if (existingRef && existingRef.id !== user.id) {
+                    finalCode = myReferralCode + Math.floor(Math.random() * 1000);
+                } else {
+                    codeUnique = true;
+                }
+            }
+            
+            await supabase.from('users').update({ referral_code: finalCode }).eq('id', user.id);
+            data.referral_code = finalCode;
           }
           set({ user: data });
         }
