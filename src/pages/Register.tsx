@@ -26,7 +26,11 @@ export function Register() {
   }, [navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    let value = e.target.value;
+    if (e.target.name === 'pseudo') {
+      value = value.replace(/[^a-zA-Z0-9]/g, '');
+    }
+    setFormData({ ...formData, [e.target.name]: value });
   };
 
   const handleRegister = async (e: React.FormEvent) => {
