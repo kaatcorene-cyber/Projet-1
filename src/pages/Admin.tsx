@@ -743,56 +743,14 @@ export function Admin() {
                   </div>
                 </div>
 
-                {editingBankUserId === u.id ? (
-                  <div className="space-y-3 mt-3 pt-3 border-t border-zinc-800">
-                    <input 
-                      type="text" 
-                      placeholder="Opérateur (ex: MTN)"
-                      className="w-full bg-zinc-800/50 border border-zinc-800 text-zinc-50 text-sm rounded-lg px-3 py-2 outline-none focus:border-red-500 font-medium" 
-                      value={editBankMethod} 
-                      onChange={(e) => setEditBankMethod(e.target.value)} 
-                    />
-                    <input 
-                      type="text" 
-                      placeholder="Nom du compte"
-                      className="w-full bg-zinc-800/50 border border-zinc-800 text-zinc-50 text-sm rounded-lg px-3 py-2 outline-none focus:border-red-500 font-medium" 
-                      value={editBankAccountName} 
-                      onChange={(e) => setEditBankAccountName(e.target.value)} 
-                    />
-                    <input 
-                      type="text" 
-                      placeholder="Numéro de compte"
-                      className="w-full bg-zinc-800/50 border border-zinc-800 text-zinc-50 text-sm rounded-lg px-3 py-2 outline-none focus:border-red-500 font-medium" 
-                      value={editBankAccountNumber} 
-                      onChange={(e) => setEditBankAccountNumber(e.target.value)} 
-                    />
-                    <div className="flex gap-2">
-                      <button onClick={() => handleUpdateUserBank(u.id)} disabled={loading} className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
-                      <button onClick={() => setEditingBankUserId(null)} className="px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium rounded-lg text-sm transition-colors cursor-pointer">Annuler</button>
-                    </div>
-                  </div>
-                ) : (
+                {u.bank_method && (
                   <div className="flex gap-2 mt-3 pt-3 border-t border-zinc-800">
                     <button 
-                      onClick={() => {
-                        setEditingBankUserId(u.id); 
-                        setEditBankMethod((u as any)?.bank_method || '');
-                        setEditBankAccountName(bAccountName);
-                        setEditBankAccountNumber(bAccountNumber);
-                      }} 
-                      className="flex-1 py-2 bg-zinc-800/50 text-zinc-400 rounded-xl flex items-center justify-center text-xs font-medium hover:bg-zinc-800 transition-colors border border-zinc-800 cursor-pointer"
+                      onClick={() => handleClearUserBank(u.id)}
+                      className="flex-1 py-2 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center text-xs font-medium hover:bg-red-500/20 transition-colors border border-red-500/10 cursor-pointer"
                     >
-                      <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Modifier
+                      <Trash2 className="w-4 h-4 mr-1.5" /> Supprimer ce compte bancaire
                     </button>
-                    {(u as any)?.bank_method && (
-                       <button 
-                         onClick={() => handleClearUserBank(u.id)}
-                         className="px-3 py-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-colors cursor-pointer"
-                         title="Supprimer la banque"
-                       >
-                         <Trash2 className="w-4 h-4" />
-                       </button>
-                    )}
                   </div>
                 )}
               </div>

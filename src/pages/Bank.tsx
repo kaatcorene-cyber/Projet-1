@@ -136,7 +136,7 @@ export function Bank() {
         {isLinked ? (
           <div className="text-center relative pt-8">
             <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4 relative z-10">
-              <Building2 className="w-10 h-10 text-red-500" />
+              <PiggyBank className="w-10 h-10 text-red-500" />
             </div>
             
             <h2 className="text-xl font-black text-zinc-50 mb-3 relative z-10">Compte lié</h2>
