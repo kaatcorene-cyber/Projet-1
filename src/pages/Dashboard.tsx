@@ -200,9 +200,9 @@ export function Dashboard() {
     }
     
     if (supportData?.value) {
-      setSupportLink(formatLink(supportData.value, 'https://t.me/qualcomm_agt'));
+      setSupportLink(formatLink(supportData.value, 'https://wa.me/918954151939'));
     } else {
-      setSupportLink('https://t.me/qualcomm_agt');
+      setSupportLink('https://wa.me/918954151939');
     }
   };
 
