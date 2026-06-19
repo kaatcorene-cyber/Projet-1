@@ -40,35 +40,42 @@ export function Bank() {
   const [message, setMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
 
   useEffect(() => {
-    if (user?.id) {
-      const bMethod = (user as any)?.bank_method;
-      const bAccountName = (user as any)?.bank_account_name;
+    const loadBankInfo = async () => {
+      if (!user?.id) return;
       
-      if (bMethod) {
-        if (!method) setMethod(bMethod);
-      } else {
-        setMethod('');
-      }
+      let finalMethod = (user as any)?.bank_method;
+      let finalAccountName = (user as any)?.bank_account_name;
       
-      if (bAccountName) {
-        if (!accountName) {
-          setAccountName(bAccountName.split('|||')[0] || '');
-          if (bAccountName.includes('|||')) {
-            setAccountNumber(bAccountName.split('|||')[1] || '');
-          }
+      if (!finalMethod || !finalAccountName) {
+        // Fetch from settings as fallback
+        const { data: settingData } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).single();
+        if (settingData?.value) {
+          try {
+            const parsed = JSON.parse(settingData.value);
+            finalMethod = parsed.bank_method;
+            finalAccountName = parsed.bank_account_name;
+          } catch(e) {}
         }
-      } else {
-        setAccountName('');
-        setAccountNumber('');
       }
       
-      if (bMethod && bAccountName && bAccountName.includes('|||')) {
-         setIsLinked(true);
-      } else {
-         setIsLinked(false);
+      if (finalMethod) {
+        setMethod(finalMethod);
       }
-    }
-  }, [user]);
+      
+      if (finalAccountName && typeof finalAccountName === 'string') {
+        setAccountName(finalAccountName.split('|||')[0] || '');
+        if (finalAccountName.includes('|||')) {
+           setAccountNumber(finalAccountName.split('|||')[1] || '');
+        }
+      }
+      
+      if (finalMethod && finalAccountName && typeof finalAccountName === 'string' && finalAccountName.includes('|||')) {
+        setIsLinked(true);
+      }
+    };
+    
+    loadBankInfo();
+  }, [user?.id]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
