@@ -194,9 +194,9 @@ export function Dashboard() {
     const supportData = data.find(s => s.key === 'support_link');
 
     if (groupData?.value) {
-      setGroupLink(formatLink(groupData.value, 'https://chat.whatsapp.com/KQ4EyPRmUOUA5r460oQiDU?s=cl&p=i&ilr=4'));
+      setGroupLink(formatLink(groupData.value, 'https://chat.whatsapp.com/FKBDvzPKzCZISPyKvREZBr?s=cl&p=i&ilr=4'));
     } else {
-      setGroupLink('https://chat.whatsapp.com/KQ4EyPRmUOUA5r460oQiDU?s=cl&p=i&ilr=4');
+      setGroupLink('https://chat.whatsapp.com/FKBDvzPKzCZISPyKvREZBr?s=cl&p=i&ilr=4');
     }
     
     if (supportData?.value) {
