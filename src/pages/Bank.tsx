@@ -30,47 +30,52 @@ export function Bank() {
   });
   const [password, setPassword] = useState('');
   
-  const [isLinked, setIsLinked] = useState(() => {
-    const bMethod = (user as any)?.bank_method;
-    const bAccountName = (user as any)?.bank_account_name;
-    return Boolean(bMethod && bAccountName && bAccountName.includes('|||'));
-  });
-  
+  const [isLinked, setIsLinked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
+  const [isBankLoaded, setIsBankLoaded] = useState(false);
 
   useEffect(() => {
     const loadBankInfo = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        setIsBankLoaded(true);
+        return;
+      }
       
-      let finalMethod = (user as any)?.bank_method;
-      let finalAccountName = (user as any)?.bank_account_name;
-      
-      if (!finalMethod || !finalAccountName) {
-        // Fetch from settings as fallback
-        const { data: settingData } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).single();
-        if (settingData?.value) {
-          try {
-            const parsed = JSON.parse(settingData.value);
-            finalMethod = parsed.bank_method;
-            finalAccountName = parsed.bank_account_name;
-          } catch(e) {}
+      try {
+        let finalMethod = (user as any)?.bank_method;
+        let finalAccountName = (user as any)?.bank_account_name;
+        
+        if (!finalMethod || !finalAccountName) {
+          // Fetch from settings as fallback
+          const { data: settingData } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).maybeSingle();
+          if (settingData?.value) {
+            try {
+              const parsed = JSON.parse(settingData.value);
+              finalMethod = parsed.bank_method;
+              finalAccountName = parsed.bank_account_name;
+            } catch(e) {}
+          }
         }
-      }
-      
-      if (finalMethod) {
-        setMethod(finalMethod);
-      }
-      
-      if (finalAccountName && typeof finalAccountName === 'string') {
-        setAccountName(finalAccountName.split('|||')[0] || '');
-        if (finalAccountName.includes('|||')) {
-           setAccountNumber(finalAccountName.split('|||')[1] || '');
+        
+        if (finalMethod) {
+          setMethod(finalMethod);
         }
-      }
-      
-      if (finalMethod && finalAccountName && typeof finalAccountName === 'string' && finalAccountName.includes('|||')) {
-        setIsLinked(true);
+        
+        if (finalAccountName && typeof finalAccountName === 'string') {
+          setAccountName(finalAccountName.split('|||')[0] || '');
+          if (finalAccountName.includes('|||')) {
+             setAccountNumber(finalAccountName.split('|||')[1] || '');
+          }
+        }
+        
+        if (finalMethod && finalAccountName && typeof finalAccountName === 'string' && finalAccountName.includes('|||')) {
+          setIsLinked(true);
+        }
+      } catch (err) {
+        console.error("Error loading bank setup:", err);
+      } finally {
+        setIsBankLoaded(true);
       }
     };
     
@@ -147,7 +152,9 @@ export function Bank() {
           </div>
         )}
 
-        {isLinked ? (
+        {!isBankLoaded ? (
+          <div className="flex justify-center p-8"><div className="w-8 h-8 rounded-full border-4 border-zinc-800 border-t-red-500 animate-spin"></div></div>
+        ) : isLinked ? (
           <div className="text-center relative pt-8">
             <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4 relative z-10">
               <PiggyBank className="w-10 h-10 text-red-500" />

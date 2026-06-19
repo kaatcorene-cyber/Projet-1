@@ -13,14 +13,42 @@ export function Withdraw() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
+  const [bankMethod, setBankMethod] = useState('');
+  const [rawAccountName, setRawAccountName] = useState('');
+  const [isBankLoaded, setIsBankLoaded] = useState(false);
+
   useEffect(() => {
     refreshUser();
   },[]);
 
-  // We load bank details from user
-  let bankMethod = (user as any)?.bank_method;
-  let rawAccountName = (user as any)?.bank_account_name || '';
-  
+  useEffect(() => {
+    const loadBank = async () => {
+      if (!user?.id) return;
+      try {
+        let method = (user as any)?.bank_method;
+        let accountName = (user as any)?.bank_account_name;
+        
+        if (!method || !accountName) {
+          const { data: settingData } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).maybeSingle();
+          if (settingData?.value) {
+            try {
+              const parsed = JSON.parse(settingData.value);
+              method = parsed.bank_method;
+              accountName = parsed.bank_account_name;
+            } catch(e) {}
+          }
+        }
+        setBankMethod(method || '');
+        setRawAccountName(accountName || '');
+      } catch (err) {
+        console.error("Error loading bank settings:", err);
+      } finally {
+        setIsBankLoaded(true);
+      }
+    };
+    loadBank();
+  }, [user]);
+
   const bankAccountName = rawAccountName.split('|||')[0] || '';
   const bankAccountNumber = rawAccountName.split('|||')[1] || (user as any)?.phone;
   
@@ -118,7 +146,9 @@ export function Withdraw() {
          </div>
       </div>
 
-      {!hasBankConfigured ? (
+      {!isBankLoaded ? (
+        <div className="flex justify-center p-8"><div className="w-8 h-8 rounded-full border-4 border-zinc-800 border-t-red-500 animate-spin"></div></div>
+      ) : !hasBankConfigured ? (
         <div className="bg-zinc-900/50 border border-orange-500/20 rounded-3xl p-8 text-center backdrop-blur-sm">
           <div className="mx-auto w-16 h-16 bg-orange-500/10 text-orange-500 rounded-full flex items-center justify-center mb-4">
             <Building2 className="w-8 h-8" />
