@@ -15,59 +15,42 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Glossy Backdrop */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500"></div>
+      {/* Soft Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}></div>
       
-      <div className="w-full max-w-sm bg-zinc-950 border border-zinc-800/80 rounded-[2.5rem] shadow-2xl relative z-10 animate-in zoom-in-95 fade-in duration-500 overflow-hidden">
-        {/* Glow Effects */}
-        <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-red-600/20 to-transparent"></div>
-        <div className="absolute -top-32 -left-32 w-64 h-64 bg-red-600/30 rounded-full blur-[80px] pointer-events-none mix-blend-screen"></div>
-
+      {/* Clean, Simple Card */}
+      <div className="w-full max-w-[320px] bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl relative z-10 animate-in zoom-in-95 fade-in duration-300 p-6 flex flex-col items-center">
         {/* Close Button */}
-        <button onClick={onClose} className="absolute top-5 right-5 w-8 h-8 z-20 flex items-center justify-center bg-black/40 backdrop-blur-md border border-zinc-800/50 text-zinc-400 rounded-full hover:bg-zinc-800 hover:text-white transition-all">
-          <X className="w-4 h-4" />
+        <button onClick={onClose} className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors">
+          <X className="w-5 h-5" />
         </button>
 
-        {/* Modal Content */}
-        <div className="pt-12 pb-8 px-6 relative z-10 flex flex-col items-center">
-            {/* Visual Icon Header */}
-            <div className="relative mb-6">
-                <div className="absolute inset-0 bg-red-500/20 rounded-[2rem] blur-xl animate-pulse"></div>
-                <div className="w-24 h-24 bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-[2rem] flex items-center justify-center shadow-inner relative z-10 p-4">
-                    <img src="https://i.imgur.com/CDLHO6I.png" alt="App Logo" className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]" referrerPolicy="no-referrer" />
-                </div>
-                {/* Decorative Badge */}
-                <div className="absolute -bottom-2 -right-2 bg-red-600 text-white p-2 rounded-xl shadow-lg border border-red-500 z-20">
-                  <MessageCircle className="w-5 h-5" />
-                </div>
-            </div>
-            
-            <h2 className="text-2xl font-black text-white text-center mb-3 tracking-tight">Bienvenue sur Fuel•Max</h2>
-            <p className="text-zinc-400 text-center text-sm mb-8 leading-relaxed font-medium">
-              Ne manquez aucune nouveauté, intégrez la <span className="text-red-400 font-bold">communauté officielle</span> pour profiter des meilleurs conseils et du support prioritaire.
-            </p>
-            
-            <div className="w-full space-y-3">
-              {groupLink ? (
-                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="relative group flex items-center justify-center w-full py-4 rounded-2xl font-bold tracking-wide transition-all overflow-hidden bg-gradient-to-br from-red-600 to-red-700 shadow-[0_0_30px_rgba(239,68,68,0.3)] active:scale-95 border border-red-500/50" onClick={onClose}>
-                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay"></div>
-                  <span className="relative z-10 flex items-center text-white">
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                    Rejoindre le Groupe Officiel
-                  </span>
-                </a>
-              ) : (
-                <button className="relative group flex items-center justify-center w-full py-4 rounded-2xl font-bold tracking-wide transition-all overflow-hidden bg-gradient-to-br from-red-600 to-red-700 shadow-[0_0_30px_rgba(239,68,68,0.3)] active:scale-95 border border-red-500/50" onClick={onClose}>
-                  <span className="relative z-10 flex items-center text-white">
-                    Continuer
-                  </span>
-                </button>
-              )}
-              
-              <button onClick={onClose} className="w-full py-3.5 text-zinc-500 hover:text-zinc-300 font-bold transition-colors text-xs uppercase tracking-wider rounded-xl">
-                Accéder au tableau de bord
-              </button>
-            </div>
+        {/* Minimal Logo */}
+        <div className="w-16 h-16 mb-4 mt-2">
+            <img src="https://i.imgur.com/CDLHO6I.png" alt="App Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+        </div>
+        
+        <h2 className="text-xl font-bold text-white text-center mb-2">Bienvenue sur Fuel•Max</h2>
+        
+        <p className="text-zinc-400 text-center text-sm mb-6 leading-relaxed">
+          Intégrez notre <span className="text-red-500 font-semibold">communauté officielle</span> pour profiter des meilleurs conseils et du support prioritaire.
+        </p>
+        
+        <div className="w-full space-y-3">
+          {groupLink ? (
+            <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold transition-colors" onClick={onClose}>
+              <MessageCircle className="w-5 h-5 mr-2" />
+              Rejoindre le Groupe
+            </a>
+          ) : (
+            <button className="flex items-center justify-center w-full py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold transition-colors" onClick={onClose}>
+              Continuer
+            </button>
+          )}
+          
+          <button onClick={onClose} className="w-full py-3 text-zinc-500 hover:text-white font-medium text-sm transition-colors">
+            Plus tard
+          </button>
         </div>
       </div>
     </div>
