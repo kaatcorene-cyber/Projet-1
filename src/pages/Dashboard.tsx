@@ -8,6 +8,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () => void }) {
+  const [imgLoaded, setImgLoaded] = useState(false);
+
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = 'unset'; };
@@ -26,8 +28,17 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
         </button>
 
         {/* Minimal Logo */}
-        <div className="w-16 h-16 mb-4 mt-2">
-            <img src="https://i.imgur.com/CDLHO6I.png" alt="App Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+        <div className="w-16 h-16 mb-4 mt-2 relative">
+            {!imgLoaded && (
+              <div className="absolute inset-0 bg-zinc-800/50 rounded-2xl animate-pulse"></div>
+            )}
+            <img 
+              src="https://i.imgur.com/CDLHO6I.png" 
+              alt="App Logo" 
+              className={`w-full h-full object-contain transition-opacity duration-700 ease-in-out ${imgLoaded ? 'opacity-100' : 'opacity-0'}`} 
+              referrerPolicy="no-referrer"
+              onLoad={() => setImgLoaded(true)}
+            />
         </div>
         
         <h2 className="text-xl font-bold text-white text-center mb-2">Bienvenue sur Fuel•Max</h2>
