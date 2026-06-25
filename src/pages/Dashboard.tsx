@@ -324,7 +324,7 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-transparent pb-24 font-sans text-zinc-100">
-      {showWelcome && <WelcomeModal groupLink={groupLink} onClose={handleCloseWelcome} />}
+      {showWelcome && !isLoading && <WelcomeModal groupLink={groupLink} onClose={handleCloseWelcome} />}
       {showSupportModal && <SupportModal groupLink={groupLink} supportLink={supportLink} onClose={() => setShowSupportModal(false)} />}
       
       <div className="px-5 pt-12 pb-6">
