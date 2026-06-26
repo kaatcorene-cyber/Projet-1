@@ -589,7 +589,7 @@ export function Admin() {
             </div>
             <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-amber-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2">Dépôts validés</p>
-               <p className="text-xl font-black text-amber-600">{formatCurrency(transactions.filter(t => t.type === 'deposit' && t.status === 'approved').reduce((acc, t) => acc + (t.amount || 0), 0))}</p>
+               <p className="text-xl font-black text-amber-600">{formatCurrency(0)}</p>
             </div>
             <div className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-red-500/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2">Utilisateurs</p>
