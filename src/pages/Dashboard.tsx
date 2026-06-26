@@ -68,30 +68,6 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
   )
 }
 
-function SupportModal({ groupLink, supportLink, onClose }: { groupLink: string, supportLink: string, onClose: () => void }) {
-  return (
-    <>
-      <div className="fixed inset-0 z-[40] bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed bottom-24 right-5 z-[50] flex flex-col gap-4 items-end animate-in fade-in zoom-in-95 duration-200 origin-bottom-right">
-        <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 pr-2 pl-4 py-2 rounded-full border border-zinc-800 shadow-xl" onClick={onClose}>
-          <span className="text-sm font-bold text-zinc-200">Service client</span>
-          <div className="bg-red-600 p-3 rounded-full text-zinc-50">
-            <Headset className="w-5 h-5" />
-          </div>
-        </a>
-        {groupLink && (
-          <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 active:scale-95 transition-all bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 pr-2 pl-4 py-2 rounded-full border border-zinc-800 shadow-xl" onClick={onClose}>
-            <span className="text-sm font-bold text-zinc-200">Groupe officiel</span>
-            <div className="bg-orange-600 p-3 rounded-full text-zinc-50">
-              <MessageCircle className="w-5 h-5" />
-            </div>
-          </a>
-        )}
-      </div>
-    </>
-  )
-}
-
 export function Dashboard() {
   const { user, refreshUser, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -139,9 +115,7 @@ export function Dashboard() {
     }
   };
   const [groupLink, setGroupLink] = useState('');
-  const [supportLink, setSupportLink] = useState('');
   const [showWelcome, setShowWelcome] = useState(false);
-  const [showSupportModal, setShowSupportModal] = useState(false);
   
   const [isLoading, setIsLoading] = useState(!settingsCache || !investmentsCache);
 
@@ -185,18 +159,11 @@ export function Dashboard() {
   
   const applySettings = (data: any[]) => {
     const groupData = data.find(s => s.key === 'group_link');
-    const supportData = data.find(s => s.key === 'support_link');
 
     if (groupData?.value) {
-      setGroupLink(formatLink(groupData.value, 'https://chat.whatsapp.com/FKBDvzPKzCZISPyKvREZBr?s=cl&p=i&ilr=4'));
+      setGroupLink(formatLink(groupData.value, 'https://chat.whatsapp.com/HIpHQ5MyKKL7sfDeJerSg4?mode=gi_t'));
     } else {
-      setGroupLink('https://chat.whatsapp.com/FKBDvzPKzCZISPyKvREZBr?s=cl&p=i&ilr=4');
-    }
-    
-    if (supportData?.value) {
-      setSupportLink(formatLink(supportData.value, 'https://wa.me/918954151939'));
-    } else {
-      setSupportLink('https://wa.me/918954151939');
+      setGroupLink('https://chat.whatsapp.com/HIpHQ5MyKKL7sfDeJerSg4?mode=gi_t');
     }
   };
 
@@ -325,7 +292,6 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-transparent pb-24 font-sans text-zinc-100">
       {showWelcome && !isLoading && <WelcomeModal groupLink={groupLink} onClose={handleCloseWelcome} />}
-      {showSupportModal && <SupportModal groupLink={groupLink} supportLink={supportLink} onClose={() => setShowSupportModal(false)} />}
       
       <div className="px-5 pt-12 pb-6">
         <header className="flex justify-between items-center mb-8 shrink-0">
@@ -417,12 +383,12 @@ export function Dashboard() {
               <span className="text-[11px] font-bold text-zinc-400 group-hover:text-zinc-200">Caisse</span>
            </Link>
            
-           <button onClick={() => setShowSupportModal(true)} className="group bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl hover:border-red-500/30 hover:bg-zinc-800/80 transition-all shadow-lg shadow-black/20">
+           <a href={groupLink} target="_blank" rel="noopener noreferrer" className="group bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl hover:border-red-500/30 hover:bg-zinc-800/80 transition-all shadow-lg shadow-black/20">
               <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-500 group-hover:scale-110 group-hover:bg-red-500/10 transition-all shadow-inner">
-                 <Headset className="w-5 h-5" />
+                 <Users className="w-5 h-5" />
               </div>
-              <span className="text-[10px] leading-tight text-center font-bold text-zinc-400 group-hover:text-zinc-200 px-1">Service client / Groupe officiel</span>
-           </button>
+              <span className="text-[10px] leading-tight text-center font-bold text-zinc-400 group-hover:text-zinc-200 px-1">Groupe officiel</span>
+           </a>
         </div>
 
       </div>
