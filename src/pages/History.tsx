@@ -71,13 +71,25 @@ export function History() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`font-black tracking-tight ${
-                    tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
-                      ? 'text-emerald-400' 
-                      : 'text-zinc-50'
-                  }`}>
-                    {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? '+' : '-'}{formatCurrency(tx.amount)}
-                  </p>
+                  {tx.type === 'withdrawal' ? (
+                    <div className="flex flex-col items-end">
+                      <p className="font-black tracking-tight text-zinc-50">
+                        -{formatCurrency(tx.amount)}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1 mb-1">
+                        <span className="text-[10px] text-red-400/80 font-medium border border-red-500/20 px-1.5 py-0.5 rounded-md">Frais: {formatCurrency(tx.amount * 0.15)}</span>
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md">Reçu: {formatCurrency(tx.amount * 0.85)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className={`font-black tracking-tight ${
+                      tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus'
+                        ? 'text-emerald-400' 
+                        : 'text-zinc-50'
+                    }`}>
+                      {tx.type === 'deposit' || tx.type === 'daily_gain' || tx.type === 'signup_bonus' || tx.type === 'referral_bonus' ? '+' : '-'}{formatCurrency(tx.amount)}
+                    </p>
+                  )}
                   <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
                     tx.status === 'completed' || tx.status === 'approved' ? 'text-emerald-400' :
                     tx.status === 'pending' ? 'text-amber-500' : 'text-red-500'

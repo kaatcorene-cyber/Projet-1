@@ -810,7 +810,18 @@ export function Admin() {
               <div key={tx.id} className="bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <div>
+                    <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">Montant demandé</p>
                     <p className="font-bold text-zinc-50">{formatCurrency(tx.amount)}</p>
+                    <div className="flex items-center gap-2 mt-1 mb-2">
+                      <div className="bg-zinc-800/50 px-2 py-0.5 rounded-md border border-zinc-700/50">
+                        <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Frais (15%)</p>
+                        <p className="text-red-400 font-bold text-xs">-{formatCurrency(tx.amount * 0.15)}</p>
+                      </div>
+                      <div className="bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                        <p className="text-[9px] text-emerald-500/70 uppercase tracking-wider">Montant à envoyer</p>
+                        <p className="text-emerald-400 font-bold text-xs">{formatCurrency(tx.amount * 0.85)}</p>
+                      </div>
+                    </div>
                     <p className="text-xs text-zinc-400 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
                     <p className="text-xs text-zinc-500 mt-1">Ref/Numéro: {tx.reference}</p>
                     <p className="text-[10px] text-zinc-500 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
