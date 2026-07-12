@@ -37,22 +37,31 @@ export function Deposit() {
       }]);
       if (txError) throw txError;
       
-      const rawBaseUrl = config?.payment_link || 'https://payin.moneyfusion.net/payment/6a4cad8644eafb83a0614894';
+      const rawBaseUrl = config?.payment_link || 'https://my.moneyfusion.net/6a4cad8644eafb83a0614894';
       
-      // Extraction de l'ID de boutique (24 caractères hexadécimaux)
-      const shopIdMatch = rawBaseUrl.match(/([a-f0-9]{24})/i);
-      const baseUrl = shopIdMatch 
-        ? `https://payin.moneyfusion.net/payment/${shopIdMatch[1]}` 
-        : rawBaseUrl;
-
       // Nom: Limak (prénom) + user.first_name (qui stocke le pseudo)
       const fullName = `Limak ${user.first_name || 'User'}`;
       const email = 'limakpayement@gmail.com';
       
-      // Nettoyage de l'URL de base si elle se termine par un /
-      const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      let redirectUrl = rawBaseUrl;
       
-      window.location.href = `${cleanBaseUrl}/${amount}/${encodeURIComponent(fullName)}/${encodeURIComponent(email)}`;
+      if (rawBaseUrl.includes('payin.moneyfusion.net/payment')) {
+        // Format path parameters for payin.moneyfusion.net
+        const cleanBaseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
+        redirectUrl = `${cleanBaseUrl}/${amount}/${encodeURIComponent(fullName)}/${encodeURIComponent(email)}`;
+      } else {
+        // Format query parameters for my.moneyfusion.net and others
+        const url = new URL(rawBaseUrl);
+        url.searchParams.set('amount', amount.toString());
+        url.searchParams.set('firstName', fullName);
+        url.searchParams.set('email', email);
+        if (user.phone) {
+          url.searchParams.set('phone', user.phone);
+        }
+        redirectUrl = url.toString();
+      }
+      
+      window.location.href = redirectUrl;
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
