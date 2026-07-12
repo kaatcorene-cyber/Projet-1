@@ -39,27 +39,16 @@ export function Deposit() {
       
       const rawBaseUrl = config?.payment_link || 'https://my.moneyfusion.net/6a4cad8644eafb83a0614894';
       
+      // Extraction de l'ID de boutique (24 caractères hexadécimaux)
+      const shopIdMatch = rawBaseUrl.match(/([a-f0-9]{24})/i);
+      const shopId = shopIdMatch ? shopIdMatch[1] : '6a4cad8644eafb83a0614894';
+
       // Nom: Limak (prénom) + user.first_name (qui stocke le pseudo)
       const fullName = `Limak ${user.first_name || 'User'}`;
       const email = 'limakpayement@gmail.com';
       
-      let redirectUrl = rawBaseUrl;
-      
-      if (rawBaseUrl.includes('payin.moneyfusion.net/payment')) {
-        // Format path parameters for payin.moneyfusion.net
-        const cleanBaseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
-        redirectUrl = `${cleanBaseUrl}/${amount}/${encodeURIComponent(fullName)}/${encodeURIComponent(email)}`;
-      } else {
-        // Format query parameters for my.moneyfusion.net and others
-        const url = new URL(rawBaseUrl);
-        url.searchParams.set('amount', amount.toString());
-        url.searchParams.set('firstName', fullName);
-        url.searchParams.set('email', email);
-        if (user.phone) {
-          url.searchParams.set('phone', user.phone);
-        }
-        redirectUrl = url.toString();
-      }
+      // Toujours utiliser payin.moneyfusion.net pour sauter la première page
+      const redirectUrl = `https://payin.moneyfusion.net/payment/${shopId}/${amount}/${encodeURIComponent(fullName)}/${encodeURIComponent(email)}`;
       
       window.location.href = redirectUrl;
     } catch (err: any) {
