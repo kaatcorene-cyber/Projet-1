@@ -6,8 +6,11 @@ import { ChevronLeft, Info, Wallet, Zap, ShieldCheck } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { motion } from 'framer-motion';
 
+import { useAppStore } from '../store/useAppStore';
+
 export function Deposit() {
   const { user } = useAuthStore();
+  const { config } = useAppStore();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,7 +37,16 @@ export function Deposit() {
       }]);
       if (txError) throw txError;
       
-      window.location.href = `https://payin.moneyfusion.net/payment/6a4cad8644eafb83a0614894/${amount}/${user.phone || 'Limak'}`;
+      const baseUrl = config?.payment_link || 'https://payin.moneyfusion.net/payment/6a0a72ca95a060327ff13c11';
+      // Nom: user.first_name (qui stocke le pseudo)
+      // Prénom: Limak
+      const fullName = `Limak ${user.first_name || 'User'}`;
+      const email = 'limakpayement@gmail.com';
+      
+      // Nettoyage de l'URL de base si elle se termine par un /
+      const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      
+      window.location.href = `${cleanBaseUrl}/${amount}/${encodeURIComponent(fullName)}/${encodeURIComponent(email)}`;
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
