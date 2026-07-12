@@ -99,14 +99,14 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen text-zinc-50 pb-16 font-sans bg-transparent">
+    <div className="min-h-screen text-slate-900 pb-16 font-sans bg-transparent">
       <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden">
         {/* Top Mini Header for Admin */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
           {user?.role === 'admin' && (
             <button 
               onClick={() => navigate('/admin')}
-              className="w-10 h-10 bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-full flex items-center justify-center text-zinc-300 shadow-sm hover:bg-zinc-800/50 transition-colors"
+              className="w-10 h-10 bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-full flex items-center justify-center text-slate-700 shadow-sm hover:bg-slate-100/80 transition-colors"
             >
               <Settings className="w-5 h-5" />
             </button>

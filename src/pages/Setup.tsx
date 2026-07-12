@@ -107,7 +107,7 @@ ALTER TABLE deposit_verifications ADD COLUMN IF NOT EXISTS sender_number TEXT;
 INSERT INTO settings (key, value) VALUES ('payment_link', 'https://bkapay.com/merchant/20cf6268') ON CONFLICT DO NOTHING;
 
 INSERT INTO users (phone, country, first_name, last_name, password_hash, role, balance)
-VALUES ('0000000000', "Cote d'Ivoire", 'Admin', 'Fuel•Max', 'admin123', 'admin', 0)
+VALUES ('0000000000', "Cote d'Ivoire", 'Admin', 'Limak', 'admin123', 'admin', 0)
 ON CONFLICT (phone, country) DO NOTHING;
 `;
 
@@ -118,16 +118,16 @@ ON CONFLICT (phone, country) DO NOTHING;
   };
 
   if (isChecking) {
-    return <div className="min-h-screen bg-transparent flex items-center justify-center text-zinc-400">Vérification de la base de données...</div>;
+    return <div className="min-h-screen bg-transparent flex items-center justify-center text-slate-500">Vérification de la base de données...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-transparent text-zinc-50 p-6 flex flex-col items-center justify-center max-w-md mx-auto">
-      <div className="w-16 h-16 bg-red-500/100/10 rounded-full flex items-center justify-center mb-6">
-        <Database className="w-8 h-8 text-red-500" />
+    <div className="min-h-screen bg-transparent text-slate-900 p-6 flex flex-col items-center justify-center max-w-md mx-auto">
+      <div className="w-16 h-16 bg-blue-600/100/10 rounded-full flex items-center justify-center mb-6">
+        <Database className="w-8 h-8 text-blue-600" />
       </div>
       <h1 className="text-2xl font-bold mb-2 text-center">Configuration Requise</h1>
-      <p className="text-zinc-400 text-center mb-8">
+      <p className="text-slate-500 text-center mb-8">
         La base de données n'est pas encore configurée. Veuillez exécuter le script SQL suivant dans votre éditeur SQL Supabase.
       </p>
 
@@ -135,19 +135,19 @@ ON CONFLICT (phone, country) DO NOTHING;
         <div className="absolute right-2 top-2">
           <button 
             onClick={copyToClipboard}
-            className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-zinc-400 transition-colors"
+            className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors"
           >
-            {copied ? <CheckCircle className="w-4 h-4 text-red-500" /> : <Copy className="w-4 h-4" />}
+            {copied ? <CheckCircle className="w-4 h-4 text-blue-600" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
-        <pre className="bg-zinc-900 border-zinc-800/80 shadow-black/20 p-4 rounded-xl overflow-x-auto text-xs text-zinc-400 border border-zinc-800 h-64">
+        <pre className="bg-white border-slate-200/80 shadow-slate-200/50 p-4 rounded-xl overflow-x-auto text-xs text-slate-500 border border-slate-200 h-64">
           <code>{schema}</code>
         </pre>
       </div>
 
       <button 
         onClick={() => window.location.reload()}
-        className="mt-8 w-full py-3 bg-red-500/100 hover:bg-red-700 text-white rounded-xl font-medium transition-colors"
+        className="mt-8 w-full py-3 bg-blue-600/100 hover:bg-blue-800 text-slate-900 rounded-xl font-medium transition-colors"
       >
         J'ai exécuté le script
       </button>

@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase, checkDbSetup } from '../lib/supabase';
 import { COUNTRIES, CountryName, COUNTRY_NAMES } from '../constants';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ShieldCheck, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export function Register() {
   const [searchParams] = useSearchParams();
@@ -18,6 +19,18 @@ export function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
+  const [captchaValue, setCaptchaValue] = useState('');
+  const [userCaptcha, setUserCaptcha] = useState('');
+
+  // Generate a random 4-digit captcha on mount
+  useEffect(() => {
+    generateCaptcha();
+  }, []);
+
+  const generateCaptcha = () => {
+    const num = Math.floor(1000 + Math.random() * 9000);
+    setCaptchaValue(num.toString());
+  };
   const [loading, setLoading] = useState(false);
   const { setUser } = useAuthStore();
   const navigate = useNavigate();
@@ -42,28 +55,30 @@ export function Register() {
 
     const countryInfo = COUNTRIES[formData.country];
     if (formData.phone.length !== countryInfo.length) {
-      return setError(`Le numéro doit contenir exactement ${countryInfo.length} chiffres pour le pays ${formData.country}`);
+      return setError(`Le numéro doit contenir exactement ${countryInfo.length} chiffres pour ${formData.country}`);
     }
 
+    if (userCaptcha !== captchaValue) {
+      setError('Code de vérification incorrect.');
+      generateCaptcha();
+      setUserCaptcha('');
+      setLoading(false);
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       return setError('Les mots de passe ne correspondent pas');
     }
 
     setLoading(true);
-    const cleanPhone = formData.phone.replace(/\s/g, ''); // Clean spaces
+    const cleanPhone = formData.phone.replace(/\s/g, ''); 
 
     try {
-      // Check if phone exists gracefully
-      const { data: existingUser, error: existError } = await supabase
+      const { data: existingUser } = await supabase
         .from('users')
         .select('id')
         .eq('phone', cleanPhone)
         .eq('country', formData.country)
         .maybeSingle();
-
-      if (existError) {
-        console.warn("DB Check Warning:", existError);
-      }
 
       if (existingUser) {
         setError('Ce numéro est déjà utilisé dans ce pays');
@@ -71,7 +86,6 @@ export function Register() {
         return;
       }
 
-      // Generate a simple referral code based on pseudo
       let myReferralCode = formData.pseudo.replace(/\s+/g, '').toUpperCase();
       let codeUnique = false;
       let finalCode = myReferralCode;
@@ -93,24 +107,20 @@ export function Register() {
             last_name: '',
             phone: cleanPhone,
             country: formData.country,
-            password_hash: formData.password, // In a real app, hash this!
+            password_hash: formData.password, 
             referral_code: finalCode,
             referred_by: formData.referralCode ? formData.referralCode.trim().toUpperCase() : null,
-            balance: 0 // No signup bonus
+            balance: 0 
           }
         ])
         .select()
         .single();
 
       if (insertError || !data) {
-        console.error("Insert error:", insertError);
-        
         if (insertError?.message?.includes('Could not find the table') || insertError?.code === 'PGRST205') {
             navigate('/setup');
             return;
         }
-
-        // Specifically catch unique constraint errors safely
         if (insertError?.code === '23505') {
             setError('Ce numéro de téléphone est déjà pris.');
         } else {
@@ -119,164 +129,196 @@ export function Register() {
       } else {
         sessionStorage.removeItem('welcome_shown');
         setUser(data);
-        navigate('/dashboard');
+        navigate('/invest');
       }
     } catch (err: any) {
       console.error(err);
-      setError(`Erreur inattendue: ${err.message || String(err)}`);
+      setError('Erreur réseau. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedCountry = COUNTRIES[formData.country];
-
   return (
-    <div className="min-h-screen relative flex flex-col justify-center px-6 overflow-hidden text-zinc-50 bg-transparent">
-      <div className="relative z-10 w-full max-w-md mx-auto flex flex-col justify-center min-h-screen py-8">
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="h-8 w-8 rounded-xl object-cover shadow-sm bg-zinc-900 border border-zinc-800 p-0.5" referrerPolicy="no-referrer" />
-            <h1 className="text-2xl grotesk font-black tracking-tight text-zinc-50">Inscription</h1>
-          </div>
-          <p className="text-zinc-400 font-medium text-xs">Créez votre profil collaborateur.</p>
-        </div>
-
-        <div className="w-full flex flex-col gap-3">
-          <form onSubmit={handleRegister} className="space-y-3">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm text-center">
-              {error}
+    <div className="min-h-screen relative flex flex-col justify-center px-6 overflow-hidden bg-transparent py-10">
+      
+      <div className="relative z-10 w-full max-w-sm mx-auto flex flex-col justify-center">
+        
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full"
+        >
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <img src="https://i.imgur.com/20bDoyM.png" alt="Limak" className="w-12 h-12 object-contain drop-shadow-md" referrerPolicy="no-referrer" />
+              <h1 className="text-2xl grotesk font-black text-slate-900 tracking-tight">Inscription</h1>
             </div>
-          )}
-
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Pseudo</label>
-            <input
-              type="text"
-              name="pseudo"
-              value={formData.pseudo}
-              onChange={handleChange}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium placeholder:text-zinc-500 tracking-wide"
-              placeholder="Ex: Pablito"
-              required
-            />
+            <p className="text-slate-500 font-medium text-sm">Créez votre compte Limak</p>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Téléphone</label>
-            <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500/50 transition-all w-full">
-              <div className="relative flex items-center bg-transparent shrink-0">
-                <select
-                  name="country"
-                  value={formData.country}
-                  onChange={(e) => {
-                     setFormData({ ...formData, country: e.target.value as CountryName, phone: '' });
-                  }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none z-10"
-                >
-                  {COUNTRY_NAMES.map(c => (
-                    <option key={c} value={c}>{c} ({COUNTRIES[c].code})</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none flex items-center gap-1 pl-3 pr-2 py-3 text-zinc-400 font-bold">
-                  <span>{selectedCountry.code}</span>
-                  <svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20' className="w-4 h-4"><path stroke='#6b7280' strokeLinecap='round' strokeLinejoin='round' strokeWidth='1.5' d='M6 8l4 4 4-4'/></svg>
-                </div>
-              </div>
-              <div className="w-px bg-zinc-700 my-2"></div>
+                    <form onSubmit={handleRegister} className="space-y-4">
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm text-center font-medium shadow-sm"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest">Identifiant</label>
               <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
-                  if (val.length <= selectedCountry.length) {
-                    setFormData({ ...formData, phone: val });
-                  }
-                }}
-                className="flex-1 bg-transparent border-none px-3 py-3 text-zinc-50 focus:outline-none placeholder:text-zinc-500 font-medium tracking-wide w-full"
-                placeholder={selectedCountry.placeholder}
+                type="text"
+                name="pseudo"
+                value={formData.pseudo}
+                onChange={handleChange}
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3.5 text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal"
+                placeholder="Ex: Pablito"
                 required
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Mot de passe</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest">Mot de passe</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="********"
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium placeholder:text-zinc-500 tracking-wide pr-10"
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3.5 text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal pr-12"
+                  placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-blue-600 transition-colors bg-white rounded-lg shadow-sm border border-slate-100"
                 >
-                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
-  
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Confirmer</label>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest">Confirmer le mot de passe</label>
               <div className="relative">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  placeholder="********"
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium placeholder:text-zinc-500 tracking-wide pr-10"
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3.5 text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal pr-12"
+                  placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-blue-600 transition-colors bg-white rounded-lg shadow-sm border border-slate-100"
                 >
-                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-zinc-400 ml-1 uppercase tracking-wider">Code parrain (Optionnel)</label>
-            <input
-              type="text"
-              name="referralCode"
-              value={formData.referralCode}
-              onChange={handleChange}
-              readOnly={!!(searchParams.get('ref') && searchParams.get('ref') !== 'undefined')}
-              placeholder="Laissez vide si vous n'en avez pas"
-              className={`w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium placeholder:text-zinc-500 tracking-wide ${searchParams.get('ref') && searchParams.get('ref') !== 'undefined' ? 'opacity-75 cursor-not-allowed' : ''}`}
-            />
-          </div>
+            <div className="grid grid-cols-[110px_1fr] gap-2">
+               <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest">Pays</label>
+                  <select
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-2 py-3.5 text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-semibold text-sm appearance-none text-center"
+                    required
+                  >
+                    {COUNTRY_NAMES.map(c => (
+                      <option key={c} value={c}>{COUNTRIES[c].code}</option>
+                    ))}
+                  </select>
+               </div>
+               <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest">Numéro</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3.5 text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal"
+                    placeholder="Votre numéro"
+                    required
+                  />
+               </div>
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-red-600 text-white hover:bg-red-500 font-bold py-4 rounded-xl mt-6 transition-all shadow-lg active:scale-95 disabled:opacity-50"
-          >
-            {loading ? 'Inscription...' : 'S\'inscrire'}
-          </button>
-        </form>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest flex justify-between">
+                <span>Code d'invitation</span>
+                <span className="text-slate-400 font-normal">(Optionnel)</span>
+              </label>
+              <input
+                type="text"
+                name="referralCode"
+                value={formData.referralCode}
+                onChange={handleChange}
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3.5 text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal"
+                placeholder="Si vous avez été invité"
+              />
+            </div>
 
-        <p className="text-center text-zinc-400 text-sm mt-8">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest flex justify-between">
+                <span>Vérification</span>
+                
+              </label>
+              <div className="flex gap-2">
+                <div 
+                  className="w-24 shrink-0 flex items-center justify-center bg-slate-200 rounded-xl relative overflow-hidden select-none border-2 border-slate-300"
+                  style={{
+                    backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"%239C92AC\" fill-opacity=\"0.4\" fill-rule=\"evenodd\"%3E%3Ccircle cx=\"3\" cy=\"3\" r=\"3\"/>%3Ccircle cx=\"13\" cy=\"13\" r=\"3\"/>%3C/g%3E%3C/svg%3E")'
+                  }}
+                >
+                  <span className="text-xl font-black text-slate-600 tracking-[0.15em] italic transform skew-x-[-15deg] opacity-70 blur-[1px]" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.3)' }}>
+                    {captchaValue}
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent"></div>
+                  {/* Additional line crossing out for obfuscation */}
+                  <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-400/50 transform -translate-y-1/2 rotate-[-5deg]"></div>
+                </div>
+                <input
+                  type="text"
+                  value={userCaptcha}
+                  onChange={(e) => setUserCaptcha(e.target.value)}
+                  className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3.5 text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal text-center tracking-widest"
+                  placeholder="Code"
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-700 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-500 font-bold py-4 rounded-xl mt-6 transition-all shadow-lg shadow-blue-600/30 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2 group"
+            >
+              {loading ? 'Création en cours...' : (
+                 <>Créer mon compte <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
+              )}
+            </button>
+          </form>
+          
+        </motion.div>
+
+        <p className="text-center text-slate-500 text-sm mt-8 font-medium">
           Déjà un compte ?{' '}
-          <Link to="/login" className="text-red-700 hover:text-red-800 font-bold tracking-wide transition-colors">
+          <Link to="/login" className="text-blue-700 hover:text-blue-800 font-bold tracking-wide transition-colors">
             Se connecter
           </Link>
         </p>
-        </div>
+
       </div>
     </div>
   );

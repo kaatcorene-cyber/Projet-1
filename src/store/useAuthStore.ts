@@ -10,8 +10,11 @@ interface User {
   last_name: string;
   role: string;
   balance: number;
+  bank_balance?: number;
   referral_code: string;
   referred_by?: string;
+  investments?: any[];
+  transactions?: any[];
 }
 
 interface AuthState {
@@ -20,6 +23,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  fetchProfile: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -29,10 +33,15 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       logout: () => set({ user: null, isAuthenticated: false }),
+      fetchProfile: async () => {
+         const { user } = get();
+         if (!user) return;
+         await get().refreshUser();
+      },
       refreshUser: async () => {
         const { user } = get();
         if (!user) return;
-        const { data } = await supabase.from('users').select('*').eq('id', user.id).single();
+        const { data } = await supabase.from('users').select('*, investments(*), transactions(*)').eq('id', user.id).single();
         if (data) {
           if (!data.referral_code) {
             let myReferralCode = data.first_name ? data.first_name.replace(/\s+/g, '').toUpperCase() : 'USER';

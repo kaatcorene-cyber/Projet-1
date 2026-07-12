@@ -40,7 +40,7 @@ export default function App() {
           <Route path="/products" element={<Products />} />
         </Route>
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/invest" replace />} />
       </Routes>
     </BrowserRouter>
   );

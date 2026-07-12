@@ -3,7 +3,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { CheckCircle2, AlertCircle, Loader2, Gem, Coins } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Zap, ShieldCheck, TrendingUp } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const DEFAULT_PLANS: any[] = [];
 
@@ -20,13 +21,10 @@ export function Invest() {
       applyPlans(settingsCache);
     }
     fetchPlans();
-
-    // Polling to keep user balance updated (Reduced frequency to save database quota)
     const intervalId = setInterval(() => {
       refreshUser();
       fetchPlans();
-    }, 60000 * 2); // 2 minutes instead of 5 seconds
-
+    }, 60000 * 2);
     return () => clearInterval(intervalId);
   }, []);
 
@@ -58,128 +56,146 @@ export function Invest() {
 
   const handleInvest = async (plan: any, index: number) => {
     if (!user) return;
-    
     if (Number(user.balance) < plan.amount) {
       setMessage({ type: 'error', text: 'Solde insuffisant. Veuillez recharger votre compte.' });
       return;
     }
-
     setLoading(index);
     setMessage(null);
-
     try {
-      // 1. Deduct balance
       const newBalance = Number(user.balance) - plan.amount;
       const { error: updateError } = await supabase
         .from('users')
         .update({ balance: newBalance })
         .eq('id', user.id);
-
       if (updateError) throw updateError;
-
-      // 2. Create investment
-      const durationDays = plan.duration || 60;
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + durationDays);
-
-      const { error: invError } = await supabase
+      
+      const { error: investError } = await supabase
         .from('investments')
-        .insert([{
+        .insert({
           user_id: user.id,
-          plan_amount: plan.amount,
+          plan_name: `Contrat ${formatCurrency(plan.amount)}`,
+          amount: plan.amount,
           daily_yield: plan.daily,
-          end_date: endDate.toISOString()
-        }]);
-
-      if (invError) throw invError;
-
-      // 3. Record transaction
-      await supabase.from('transactions').insert([{
-        user_id: user.id,
-        type: 'investment',
-        amount: plan.amount,
-        status: 'completed'
-      }]);
-
+          total_yield: plan.total,
+          status: 'active',
+          end_date: new Date(Date.now() + (plan.duration || 60) * 24 * 60 * 60 * 1000).toISOString()
+        });
+      if (investError) throw investError;
+      
       await refreshUser();
-      setMessage({ type: 'success', text: 'Souscription réussie !' });
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Une erreur est survenue.' });
+      setMessage({ type: 'success', text: 'Contrat activé avec succès!' });
+    } catch (e: any) {
+      setMessage({ type: 'error', text: e.message });
     } finally {
       setLoading(null);
-      setTimeout(() => setMessage(null), 3000);
     }
   };
 
   return (
-    <div className="p-4 space-y-5 pt-6 pb-20 min-h-screen bg-transparent">
-      <header className="flex justify-between items-center gap-4 pb-4 border-b border-zinc-800/60">
-        <div>
-          <h1 className="text-3xl font-black text-zinc-50 tracking-tight">Contrats</h1>
-        </div>
-        <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="w-16 h-16 rounded-2xl object-cover shadow-sm border border-zinc-800 flex-shrink-0" referrerPolicy="no-referrer" />
-      </header>
+    <div className="px-5 pt-12 pb-32 min-h-screen bg-slate-50 max-w-lg mx-auto font-sans">
+      
+      <style>{`
+        @keyframes scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-100%); }
+        }
+        .animate-scroll {
+          display: inline-block;
+          padding-left: 100%;
+          animation: scroll 15s linear infinite;
+        }
+      `}</style>
+      
+      {/* Decorative Header (Marquee) */}
+      <div className="relative mb-8 overflow-hidden bg-gradient-to-r from-blue-700 to-cyan-600 rounded-2xl shadow-lg shadow-blue-600/20 py-3.5 flex items-center w-full border border-white/10">
+         <div className="whitespace-nowrap animate-scroll text-white font-medium tracking-wide text-sm flex items-center gap-3">
+           <span className="text-lg">👋</span>
+           <span className="font-bold">Bienvenue sur Limak, votre partenaire de confiance.</span>
+           <span className="w-1.5 h-1.5 rounded-full bg-cyan-300 opacity-80"></span>
+           <span>Nous vous proposons des contrats d'investissement sécurisés à haut rendement pour générer des revenus stables et performants au quotidien.</span>
+         </div>
+      </div>
 
       {message && (
-        <div className={`p-4 rounded-2xl flex items-center gap-3 shadow-sm ${
-          message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`p-4 rounded-2xl mb-6 flex items-center gap-3 border shadow-sm ${
+          message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-800 border-blue-100'
         }`}>
           {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
           <p className="text-sm font-semibold">{message.text}</p>
-        </div>
+        </motion.div>
       )}
 
-      <div className="space-y-4 animate-fade-in relative z-10 pb-6">
-          {activePlans.length === 0 ? (
-            <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 text-center shadow-md">
-              <p className="text-zinc-400 font-medium">Aucun plan disponible dans cette catégorie.</p>
-            </div>
-          ) : (
-            activePlans.map((plan, idx) => {              
-              return (
-                <div key={idx} className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl overflow-hidden shadow-lg hover:shadow-[0_0_20px_rgba(239,68,68,0.15)] hover:border-red-500/30 transition-all group relative">
-                  <div className={`absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-orange-400 to-red-600`}></div>
-                  <div className="p-4 flex gap-4 items-center">
-                    <div className="w-[4.5rem] h-[4.5rem] rounded-2xl overflow-hidden shrink-0 shadow-inner border border-zinc-800/50 bg-zinc-800/50">
-                      <img src={plan.image || 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=800'} alt="Plan" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0 pr-1">
-                      <div className="flex justify-between items-start mb-1">
-                        <p className="text-xl font-bold text-zinc-50 tracking-tight truncate">{formatCurrency(plan.amount)}</p>
-                        <span className={`text-[10px] font-bold rounded-full px-2.5 py-1 border text-red-400 bg-red-500/10 border-red-500/20 shadow-inner`}>
-                          {plan.duration || 60} Jours
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between text-sm mt-3.5">
-                        <div className="flex flex-col gap-0.5">
-                          <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Gain/Jour</p>
-                          <p className={`font-semibold text-sm text-orange-500 tracking-tight`}>{formatCurrency(plan.daily)}</p>
-                        </div>
-                        <div className="text-right flex flex-col gap-0.5">
-                          <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Total</p>
-                          <p className="font-semibold text-sm text-zinc-50 tracking-tight">{formatCurrency(plan.total)}</p>
-                        </div>
-                      </div>
-                    </div>
+      <div className="space-y-6 relative z-10">
+        {activePlans.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-3xl p-10 text-center shadow-sm">
+            <Zap className="w-10 h-10 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-500 font-medium">Aucun contrat disponible actuellement.</p>
+          </div>
+        ) : (
+          activePlans.map((plan, idx) => {
+            const hasInsufficientBalance = (user?.balance || 0) < plan.amount;
+            return (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              key={idx} 
+              className="bg-white rounded-[20px] p-4 flex flex-col gap-4 shadow-sm border border-slate-100 hover:shadow-md transition-all relative overflow-hidden group"
+            >
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="w-16 h-16 rounded-[14px] overflow-hidden shrink-0 shadow-sm bg-slate-100 relative">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10"></div>
+                  <img src={plan.image || '/logo.png'} alt="Plan" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start mb-1.5">
+                    <p className="text-xl font-black text-slate-900 truncate">{formatCurrency(plan.amount)}</p>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold uppercase tracking-wider shrink-0">
+                      <TrendingUp className="w-3 h-3" />
+                      {plan.duration || 60} Jours
+                    </span>
                   </div>
                   
-                  <div className="px-4 pb-4 pt-1">
-                    <button
-                      onClick={() => handleInvest(plan, idx)}
-                      disabled={loading === idx || (user?.balance || 0) < plan.amount}
-                      className="w-full py-3.5 rounded-2xl font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-white flex justify-center items-center bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-[0.98] border border-red-500/50"
-                    >
-                      {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Souscrire'}
-                    </button>
+                  <div className="flex items-center gap-3 text-xs font-medium bg-slate-50 rounded-xl p-2.5 border border-slate-100/50">
+                    <div className="flex flex-col flex-1">
+                      <span className="text-slate-400 text-[9px] uppercase tracking-wider font-bold">Gain Journalier</span>
+                      <span className="text-slate-800 font-black">{formatCurrency(plan.daily)}</span>
+                    </div>
+                    <div className="w-[1px] h-6 bg-slate-200"></div>
+                    <div className="flex flex-col flex-1 items-end">
+                      <span className="text-slate-400 text-[9px] uppercase tracking-wider font-bold">Total Estimé</span>
+                      <span className="text-cyan-600 font-black">{formatCurrency(plan.total)}</span>
+                    </div>
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
+              </div>
+              
+              <button
+                onClick={() => handleInvest(plan, idx)}
+                disabled={loading === idx || hasInsufficientBalance}
+                className={`w-full py-3 rounded-xl text-sm font-bold transition-all duration-300 active:scale-[0.98] flex justify-center items-center gap-2 shadow-sm ${
+                  hasInsufficientBalance 
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                    : 'text-white bg-slate-900 hover:bg-slate-800 group-hover:bg-gradient-to-r group-hover:from-blue-700 group-hover:to-cyan-600 shadow-slate-200'
+                }`}
+              >
+                {loading === idx ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : hasInsufficientBalance ? (
+                  'Solde insuffisant'
+                ) : (
+                  'Signer le contrat'
+                )}
+              </button>
+            </motion.div>
+          )})
+        )}
+      </div>
     </div>
   );
 }
-

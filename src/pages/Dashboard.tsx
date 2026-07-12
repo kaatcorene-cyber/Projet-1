@@ -1,394 +1,254 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
-import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { Banknote, PlusCircle, Wallet, Activity, Users, Headset, MessageCircle, Crown, Loader2, Briefcase, ChevronRight, X, Building2, PackageCheck, LogOut, Download, Layers, PiggyBank } from 'lucide-react';
+import { 
+  Camera,
+  LogOut, 
+  Download, 
+  PiggyBank, 
+  ArrowUpRight, 
+  ShieldCheck, 
+  Crown, 
+  User as UserIcon, 
+  Phone, 
+  MapPin, 
+  ChevronRight, 
+  Wallet,
+  ArrowDownLeft,
+  Users,
+  Briefcase,
+  Headphones
+} from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { motion } from 'framer-motion';
 
 function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () => void }) {
-  const [imgLoaded, setImgLoaded] = useState(false);
-
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = 'unset'; };
   }, []);
-
+  
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Soft Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}></div>
-      
-      {/* Clean, Simple Card */}
-      <div className="w-full max-w-[320px] bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl relative z-10 animate-in zoom-in-95 fade-in duration-300 p-6 flex flex-col items-center">
-        {/* Close Button */}
-        <button onClick={onClose} className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors">
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Minimal Logo */}
-        <div className="w-16 h-16 mb-4 mt-2 relative">
-            {!imgLoaded && (
-              <div className="absolute inset-0 bg-zinc-800/50 rounded-2xl animate-pulse"></div>
-            )}
-            <img 
-              src="https://i.imgur.com/CDLHO6I.png" 
-              alt="App Logo" 
-              className={`w-full h-full object-contain transition-opacity duration-700 ease-in-out ${imgLoaded ? 'opacity-100' : 'opacity-0'}`} 
-              referrerPolicy="no-referrer"
-              onLoad={() => setImgLoaded(true)}
-            />
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}></div>
+      <div className="w-full max-w-[340px] bg-white border border-slate-100 rounded-3xl shadow-2xl relative z-10 animate-in zoom-in-95 p-8 flex flex-col items-center">
+        <div className="w-20 h-20 mb-6 relative flex items-center justify-center rounded-3xl bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-100 shadow-inner">
+          <ShieldCheck className="w-10 h-10 text-blue-600" />
         </div>
-        
-        <h2 className="text-xl font-bold text-white text-center mb-2">Bienvenue sur Fuel•Max</h2>
-        
-        <p className="text-zinc-400 text-center text-sm mb-6 leading-relaxed">
-          Intégrez notre <span className="text-red-500 font-semibold">communauté officielle</span> pour profiter des meilleurs conseils et du support prioritaire.
+        <h2 className="text-2xl font-black text-slate-900 text-center mb-2 tracking-tight">Bienvenue</h2>
+        <p className="text-slate-500 text-center text-sm mb-8 leading-relaxed font-medium">
+          Rejoignez le canal officiel pour des opportunités exclusives.
         </p>
-        
         <div className="w-full space-y-3">
-          {groupLink ? (
-            <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold transition-colors" onClick={onClose}>
-              <MessageCircle className="w-5 h-5 mr-2" />
-              Rejoindre le Groupe
-            </a>
-          ) : (
-            <button className="flex items-center justify-center w-full py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold transition-colors" onClick={onClose}>
-              Continuer
-            </button>
-          )}
-          
-          <button onClick={onClose} className="w-full py-3 text-zinc-500 hover:text-white font-medium text-sm transition-colors">
-            Plus tard
+          <a href={groupLink} target="_blank" rel="noopener noreferrer" onClick={onClose} className="w-full bg-gradient-to-r from-blue-700 to-cyan-600 text-white rounded-xl py-3.5 font-bold text-sm transition-all flex justify-center items-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30">
+            <Users className="w-5 h-5" /> Rejoindre le Groupe
+          </a>
+          <button onClick={onClose} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl py-3.5 font-bold text-sm transition-all">
+            Continuer
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export function Dashboard() {
-  const { user, refreshUser, logout } = useAuthStore();
   const navigate = useNavigate();
-  const { settingsCache, setSettingsCache, investmentsCache, setInvestmentsCache } = useAppStore();
-  const { isInstallable, installPWA } = usePWAInstall();
+  const { user, logout, fetchProfile } = useAuthStore();
+  const { config, fetchConfig } = useAppStore();
+  const { installPWA } = usePWAInstall();
   
-  const [activeInvestments, setActiveInvestments] = useState<any[]>(investmentsCache || []);
-  const [dailyGain, setDailyGain] = useState(0);
-  const [todayGain, setTodayGain] = useState(0);
-  const [totalWithdrawn, setTotalWithdrawn] = useState(0);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [avatar, setAvatar] = useState<string>(
+    localStorage.getItem(`avatar_${user?.id}`) || 'https://i.imgur.com/20bDoyM.png'
+  );
 
-  const fetchUserData = async () => {
-    const currentUser = useAuthStore.getState().user;
-    if (!currentUser) return;
-    try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const [todayGainRes, withdrawRes] = await Promise.all([
-        supabase
-          .from('transactions')
-          .select('amount')
-          .eq('user_id', currentUser.id)
-          .eq('type', 'daily_gain')
-          .gte('created_at', today.toISOString()),
-        supabase
-          .from('transactions')
-          .select('amount')
-          .eq('user_id', currentUser.id)
-          .eq('type', 'withdrawal')
-          .eq('status', 'approved')
-      ]);
-      
-      if (todayGainRes.data && !todayGainRes.error) {
-        const total = todayGainRes.data.reduce((acc, curr) => acc + Number(curr.amount), 0);
-        setTodayGain(total);
-      }
-
-      if (withdrawRes.data && !withdrawRes.error) {
-        const totalW = withdrawRes.data.reduce((acc, curr) => acc + Number(curr.amount), 0);
-        setTotalWithdrawn(totalW);
-      }
-    } catch (err) {
-      console.error(err);
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setAvatar(base64String);
+        if (user?.id) {
+          localStorage.setItem(`avatar_${user.id}`, base64String);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
-  const [groupLink, setGroupLink] = useState('');
-  const [showWelcome, setShowWelcome] = useState(false);
-  
-  const [isLoading, setIsLoading] = useState(!settingsCache || !investmentsCache);
 
   useEffect(() => {
-    refreshUser();
-    
-    if (!sessionStorage.getItem('welcome_shown')) {
-      setShowWelcome(true);
-    }
-
-    if (investmentsCache) {
-      const totalDaily = investmentsCache.reduce((acc, curr) => acc + Number(curr.daily_yield), 0);
-      setDailyGain(totalDaily);
-    }
-    if (settingsCache) {
-      applySettings(settingsCache);
-    }
-
-    if (user) {
-      processDailyGains().then(() => fetchData());
-    } else {
-      fetchData();
-    }
-
-    const intervalId = setInterval(() => {
-      refreshUser();
-      const currentUser = useAuthStore.getState().user;
-      if (currentUser) processDailyGains();
-      fetchData();
-    }, 60000 * 5);
-
-    return () => clearInterval(intervalId);
-  }, [user?.id]);
-
-  const formatLink = (link: string, defaultLink: string) => {
-    if (!link) return defaultLink;
-    if (link.startsWith('@')) return `https://t.me/${link.substring(1)}`;
-    if (!link.startsWith('http')) return `https://${link}`;
-    return link;
-  };
-  
-  const applySettings = (data: any[]) => {
-    const groupData = data.find(s => s.key === 'group_link');
-
-    if (groupData?.value) {
-      setGroupLink(formatLink(groupData.value, 'https://chat.whatsapp.com/HIpHQ5MyKKL7sfDeJerSg4?mode=gi_t'));
-    } else {
-      setGroupLink('https://chat.whatsapp.com/HIpHQ5MyKKL7sfDeJerSg4?mode=gi_t');
-    }
-  };
-
-  const isProcessingGains = useRef(false);
-  
-  const processDailyGains = async () => {
-    const currentUser = useAuthStore.getState().user;
-    if (!currentUser || isProcessingGains.current) return;
-    isProcessingGains.current = true;
-    
-    try {
-      let hasGlobalChanges = false;
-      const now = new Date().getTime();
-      
-      const { data: invs } = await supabase.from('investments').select('*').eq('user_id', currentUser.id).eq('status', 'active');
-      if (!invs) return;
-      
-      for (const inv of invs) {
-        try {
-          const start = new Date(inv.start_date || inv.created_at).getTime();
-          const lastPaid = new Date(inv.last_paid_at || inv.created_at).getTime();
-          
-          const totalDaysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
-          const lastPaidDaysElapsed = Math.floor((lastPaid - start) / (24 * 60 * 60 * 1000));
-          const missingDays = totalDaysElapsed - lastPaidDaysElapsed;
-          
-          if (missingDays > 0) {
-            hasGlobalChanges = true;
-            
-            let newLastPaidTime = lastPaid + missingDays * 24 * 60 * 60 * 1000;
-            if (newLastPaidTime > now) newLastPaidTime = now; 
-            
-            const newLastPaid = new Date(newLastPaidTime).toISOString();
-            const amountToAdd = Number(inv.daily_yield) * missingDays;
-            
-            await supabase.from('investments').update({ last_paid_at: newLastPaid }).eq('id', inv.id);
-            
-            await supabase.from('transactions').insert({
-              user_id: currentUser.id,
-              type: 'daily_gain',
-              amount: amountToAdd,
-              status: 'completed',
-              reference: `Gain du plan (x${missingDays})`
-            });
-            
-            const { data: usr } = await supabase.from('users').select('balance').eq('id', currentUser.id).single();
-            if (usr) {
-              await supabase.from('users').update({ balance: Number(usr.balance) + amountToAdd }).eq('id', currentUser.id);
-            }
-          }
-          
-          if (inv.end_date) {
-             const endT = new Date(inv.end_date).getTime();
-             const totalExpectedDays = Math.round((endT - start) / (24 * 60 * 60 * 1000));
-             
-             const currentLastPaid = missingDays > 0 ? lastPaidDaysElapsed + missingDays : lastPaidDaysElapsed;
-             
-             if (currentLastPaid >= totalExpectedDays) {
-                 hasGlobalChanges = true;
-                 await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
-             }
-          }
-        } catch (innerErr) {
-          console.error("Error with inv:", inv.id, innerErr);
-        }
-      }
-      
-      if (hasGlobalChanges) {
-        await refreshUser();
-        fetchData();
-      }
-    } catch (err) {
-      console.error('Gain process error', err);
-    } finally {
-      isProcessingGains.current = false;
-    }
-  };
-
-  const fetchData = async () => {
-    const currentUser = useAuthStore.getState().user;
-    if (!currentUser) {
+    const init = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchProfile(), fetchConfig()]);
       setIsLoading(false);
-      return;
-    }
-
-    try {
-      const [invRes, settingsRes] = await Promise.all([
-        supabase.from('investments').select('*').eq('user_id', currentUser.id).eq('status', 'active'),
-        supabase.from('settings').select('*')
-      ]);
-
-      if (invRes.data) {
-        setActiveInvestments(invRes.data);
-        setInvestmentsCache(invRes.data);
-        const totalDaily = invRes.data.reduce((acc, curr) => acc + Number(curr.daily_yield), 0);
-        setDailyGain(totalDaily);
+      
+      if (!sessionStorage.getItem('welcome_shown')) {
+        setShowWelcome(true);
       }
+    };
+    init();
+  }, [fetchProfile, fetchConfig]);
 
-      if (settingsRes.data) {
-        setSettingsCache(settingsRes.data);
-        applySettings(settingsRes.data);
-      }
-      await fetchUserData();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (isLoading) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="w-12 h-12 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin"></div>
+    </div>
+  );
 
-  const getVipBadge = () => {
-    if (!user?.role || user.role === 'user' || user.role === 'admin') return null;
-    return (
-      <span className="ml-2 inline-flex items-center gap-1 bg-amber-500/10 text-amber-500 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border border-amber-500/20">
-        <Crown className="w-3 h-3" />
-        {user.role}
-      </span>
-    );
-  };
-
-  const handleCloseWelcome = () => {
-    sessionStorage.setItem('welcome_shown', 'true');
-    setShowWelcome(false);
-  };
+  const groupLink = config?.telegram_group_url || '#';
+  const supportLink = config?.customer_service_url || config?.telegram_group_url || '#';
+  const balance = Number(user?.balance) || 0;
+  const bankBalance = Number(user?.bank_balance) || 0;
 
   return (
-    <div className="min-h-screen bg-transparent pb-24 font-sans text-zinc-100">
-      {showWelcome && !isLoading && <WelcomeModal groupLink={groupLink} onClose={handleCloseWelcome} />}
+    <div className="min-h-screen bg-slate-50 pb-32 text-slate-900 font-sans selection:bg-blue-600/30">
+      {showWelcome && <WelcomeModal groupLink={groupLink} onClose={() => { sessionStorage.setItem('welcome_shown', 'true'); setShowWelcome(false); }} />}
       
-      <div className="px-5 pt-12 pb-6">
-        <header className="flex justify-between items-center mb-8 shrink-0">
-          <div className="flex items-center gap-3">
-             <img src="https://i.imgur.com/CDLHO6I.png" alt="Fuel•Max" className="w-12 h-12 object-cover rounded-2xl shadow-sm shadow-black/20 border border-zinc-800 shrink-0 bg-zinc-900" referrerPolicy="no-referrer" />
-             <div>
-               <p className="text-white text-xs font-medium uppercase tracking-wider mb-0.5">Identifiant</p>
-               <h1 className="text-lg font-black text-red-500 flex items-center gap-2">
-                 F•M-{user?.id?.substring(0, 6).toUpperCase()}
-                 {getVipBadge()}
-               </h1>
+      {/* Curved background header */}
+      <div className="absolute top-0 left-0 w-full h-[280px] bg-slate-900 rounded-b-[40px] shadow-lg overflow-hidden pointer-events-none">
+         <div className="absolute top-[-20%] right-[-10%] w-[300px] h-[300px] rounded-full bg-blue-700/20 blur-[80px]"></div>
+         <div className="absolute bottom-[-10%] left-[-10%] w-[200px] h-[200px] rounded-full bg-cyan-600/20 blur-[60px]"></div>
+      </div>
+
+      <div className="px-5 pt-8 pb-6 relative z-10 max-w-lg mx-auto">
+        <h1 className="text-center text-white/80 text-sm font-bold uppercase tracking-widest mb-6">Mon Profil</h1>
+        
+        {/* Header / Profile Info */}
+        <header className="flex flex-col items-center text-center mb-8">
+          <div className="relative mb-4">
+             <div className="w-24 h-24 bg-white rounded-full p-1.5 shadow-xl shadow-black/20 relative">
+                 <img src={avatar} alt="Profile" className="w-full h-full object-cover rounded-full bg-slate-50" />
+                 
+                 {/* Camera Button */}
+                 <label className="absolute -bottom-2 -right-2 bg-blue-600 text-white w-9 h-9 rounded-full flex items-center justify-center border-[3px] border-slate-900 shadow-md cursor-pointer hover:bg-blue-700 transition-colors z-10">
+                   <Camera className="w-4 h-4" />
+                   <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                 </label>
              </div>
+             
+             {user?.role === 'vip' && (
+               <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-amber-500 w-8 h-8 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-md z-10">
+                 <Crown className="w-4 h-4 text-white" />
+               </div>
+             )}
+          </div>
+          <h1 className="text-2xl text-white font-black tracking-tight">
+            {user?.first_name || 'Utilisateur'}
+          </h1>
+          <div className="flex items-center gap-3 mt-2 text-slate-300 text-sm font-medium">
+             <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {user?.phone}</span>
+             <span className="w-1 h-1 bg-slate-500 rounded-full"></span>
+             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {user?.country}</span>
           </div>
         </header>
 
-        {/* Main Red Glow Card */}
-        <div className="rounded-3xl p-6 relative overflow-hidden bg-zinc-900/80 backdrop-blur-xl border border-red-500/20 shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col justify-between" style={{ minHeight: '220px' }}>
-           <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/20 rounded-full blur-[80px] -mr-16 -mt-16 pointer-events-none"></div>
-           <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-500/10 rounded-full blur-[60px] -ml-16 -mb-16 pointer-events-none"></div>
-           
-           <div className="relative z-10">
-              <div className="flex justify-between items-start mb-6">
-                 <div>
-                    <h2 className="text-zinc-400 text-xs font-semibold uppercase tracking-widest mb-2 flex items-center gap-2">
-                      <Wallet className="w-4 h-4 text-red-500" />
-                      Solde Total
-                    </h2>
-                    <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-zinc-50 to-zinc-400 tracking-tight">
-                      {formatCurrency(Number(user?.balance) || 0)}
-                    </div>
-                 </div>
-                 <button onClick={() => { logout(); navigate('/login'); }} className="w-10 h-10 rounded-full bg-zinc-800/80 border border-zinc-700 flex items-center justify-center text-zinc-400 hover:text-red-400 hover:bg-zinc-700 transition-colors shadow-lg group">
-                    <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                 </button>
+        {/* Main Balance Card */}
+        <motion.div 
+           initial={{ y: 20, opacity: 0 }}
+           animate={{ y: 0, opacity: 1 }}
+           className="bg-white rounded-[32px] p-6 shadow-xl shadow-slate-200/50 border border-slate-100 mb-6 relative overflow-hidden"
+        >
+           {/* Balances */}
+           <div className="flex justify-between items-end mb-8">
+              <div>
+                 <p className="text-slate-500 text-[11px] font-bold uppercase tracking-widest mb-1.5">Solde Principal</p>
+                 <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                   {formatCurrency(balance)}
+                 </h2>
               </div>
-
-              <div className="grid grid-cols-2 gap-3 mt-4 mb-3">
-                  <Link to="/deposit" className="bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-zinc-50 transition-all py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-95 border border-red-500/50">
-                      <PlusCircle className="w-5 h-5" />
-                      Recharger
-                  </Link>
-                  <Link to="/withdraw" className="bg-zinc-800/80 backdrop-blur-sm hover:bg-zinc-700 text-zinc-50 transition-all py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-lg active:scale-95 border border-zinc-700">
-                      <Banknote className="w-5 h-5" />
-                      Retirer
-                  </Link>
-              </div>
-              <div className="flex items-center justify-between text-xs font-medium text-zinc-400 mt-1 px-1">
-                 <span>Total retiré :</span>
-                 <span className="text-zinc-200 font-bold">{formatCurrency(totalWithdrawn)}</span>
+              <div className="text-right">
+                 <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">Total retiré</p>
+                 <h3 className="text-lg font-bold text-slate-700">
+                   {formatCurrency(bankBalance)}
+                 </h3>
               </div>
            </div>
-        </div>
 
-        {/* Active Dashboard Summary */}
-        <div className="mt-8">
-           <div className="flex items-center justify-between mb-4 px-1">
-              <h2 className="text-zinc-100 font-bold text-sm tracking-wide">Résumé d'activité</h2>
+           {/* Quick Actions */}
+           <div className="flex gap-3">
+              <Link to="/deposit" className="flex-1 bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-2xl py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30">
+                <ArrowDownLeft className="w-5 h-5 text-emerald-300" />
+                <span className="font-bold text-sm">Dépôt</span>
+              </Link>
+              <Link to="/withdraw" className="flex-1 bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-2xl py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30">
+                <ArrowUpRight className="w-5 h-5 text-blue-200" />
+                <span className="font-bold text-sm">Retrait</span>
+              </Link>
            </div>
-           
-           <div className="grid grid-cols-3 gap-2">
-              <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-2xl p-3 shadow-lg flex flex-col items-center text-center justify-center hover:border-red-500/20 transition-all">
-                 <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1 leading-tight">Gain obtenu aujourd'hui</p>
-                 <p className="text-sm font-black text-zinc-100 tracking-tight">{formatCurrency(todayGain)}</p>
-              </div>
-              <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-2xl p-3 shadow-lg flex flex-col items-center text-center justify-center hover:border-orange-500/20 transition-all">
-                 <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1 leading-tight">Gain prévu par jour</p>
-                 <p className="text-sm font-black text-zinc-100 tracking-tight">{formatCurrency(dailyGain)}</p>
-              </div>
-              <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-2xl p-3 shadow-lg flex flex-col items-center text-center justify-center hover:border-amber-500/20 transition-all">
-                 <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1 leading-tight">Contrats actifs</p>
-                 <p className="text-lg font-black text-zinc-100 tracking-tight">{activeInvestments.length}</p>
-              </div>
-           </div>
-        </div>
+        </motion.div>
 
-        {/* Actions Grid */}
-        <div className="grid grid-cols-3 gap-3 mt-8">
-           <button onClick={() => installPWA()} className="group bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl hover:border-red-500/30 hover:bg-zinc-800/80 transition-all shadow-lg shadow-black/20">
-              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-500 group-hover:scale-110 group-hover:bg-red-500/10 transition-all shadow-inner">
-                 <Download className="w-5 h-5" />
-              </div>
-              <span className="text-[10px] leading-tight text-center font-bold text-zinc-400 group-hover:text-zinc-200 px-1">Télécharger l'application</span>
+        {/* Menu Grid */}
+        <div className="bg-white rounded-[32px] p-3 shadow-lg shadow-slate-200/40 border border-slate-100 mb-8">
+           <Link to="/products" className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group">
+             <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+               <Briefcase className="w-6 h-6" />
+             </div>
+             <div className="flex-1">
+               <p className="font-bold text-slate-900">Mes Contrats Actifs</p>
+               <p className="text-xs text-slate-500 font-medium">Gérer vos investissements en cours</p>
+             </div>
+             <ChevronRight className="w-5 h-5 text-slate-300" />
+           </Link>
+
+           <Link to="/bank" className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group">
+             <div className="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+               <PiggyBank className="w-6 h-6" />
+             </div>
+             <div className="flex-1">
+               <p className="font-bold text-slate-900">Compte de Retrait</p>
+               <p className="text-xs text-slate-500 font-medium">Épargner ou retirer du compte</p>
+             </div>
+             <ChevronRight className="w-5 h-5 text-slate-300" />
+           </Link>
+
+           <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group">
+             <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+               <Headphones className="w-6 h-6" />
+             </div>
+             <div className="flex-1">
+               <p className="font-bold text-slate-900">Service Client</p>
+               <p className="text-xs text-slate-500 font-medium">Assistance et support technique</p>
+             </div>
+             <ArrowUpRight className="w-5 h-5 text-slate-300" />
+           </a>
+
+           <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group">
+             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+               <Users className="w-6 h-6" />
+             </div>
+             <div className="flex-1">
+               <p className="font-bold text-slate-900">Canal Officiel</p>
+               <p className="text-xs text-slate-500 font-medium">Rejoindre la communauté</p>
+             </div>
+             <ArrowUpRight className="w-5 h-5 text-slate-300" />
+           </a>
+
+           <button onClick={() => installPWA()} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group text-left">
+             <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+               <Download className="w-6 h-6" />
+             </div>
+             <div className="flex-1">
+               <p className="font-bold text-slate-900">Installer l'application</p>
+               <p className="text-xs text-slate-500 font-medium">Pour un accès plus rapide</p>
+             </div>
+             <ChevronRight className="w-5 h-5 text-slate-300" />
            </button>
 
-           <Link to="/bank" className="group bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl hover:border-red-500/30 hover:bg-zinc-800/80 transition-all shadow-lg shadow-black/20">
-              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-orange-400 group-hover:scale-110 group-hover:bg-red-500/10 group-hover:text-red-500 transition-all shadow-inner">
-                 <PiggyBank className="w-5 h-5" />
-              </div>
-              <span className="text-[11px] font-bold text-zinc-400 group-hover:text-zinc-200">Caisse</span>
-           </Link>
-           
-           <a href={groupLink} target="_blank" rel="noopener noreferrer" className="group bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl hover:border-red-500/30 hover:bg-zinc-800/80 transition-all shadow-lg shadow-black/20">
-              <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-500 group-hover:scale-110 group-hover:bg-red-500/10 transition-all shadow-inner">
-                 <Users className="w-5 h-5" />
-              </div>
-              <span className="text-[10px] leading-tight text-center font-bold text-zinc-400 group-hover:text-zinc-200 px-1">Groupe officiel</span>
-           </a>
+           <div className="h-px bg-slate-100 mx-4 my-2"></div>
+
+           <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 transition-colors group text-left">
+             <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+               <LogOut className="w-6 h-6" />
+             </div>
+             <div className="flex-1">
+               <p className="font-bold text-red-600">Déconnexion</p>
+             </div>
+           </button>
         </div>
 
       </div>

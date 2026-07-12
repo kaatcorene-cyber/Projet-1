@@ -9,22 +9,22 @@ import { motion } from 'framer-motion';
 
 const ContractVisual: React.FC = () => {
   return (
-    <div className="relative w-24 h-24 flex items-center justify-center bg-zinc-800/80 rounded-2xl border border-zinc-700/50 overflow-hidden shrink-0 shadow-inner">
-      <div className={`absolute inset-0 opacity-20 blur-2xl bg-red-500`}></div>
+    <div className="relative w-24 h-24 flex items-center justify-center bg-slate-100/80 rounded-2xl border border-slate-300/50 overflow-hidden shrink-0 shadow-inner">
+      <div className={`absolute inset-0 opacity-20 blur-2xl bg-blue-600`}></div>
       
       <motion.div 
         className="absolute inset-0 flex items-center justify-center"
         animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
-        <div className={`w-14 h-14 rounded-full flex flex-col items-center justify-center border-4 border-zinc-800/50 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 shadow-md`}>
-           <Zap className="w-6 h-6 text-red-500" />
+        <div className={`w-14 h-14 rounded-full flex flex-col items-center justify-center border-4 border-slate-200/50 bg-white/80 backdrop-blur-xl border border-slate-200 shadow-md`}>
+           <Zap className="w-6 h-6 text-blue-600" />
         </div>
       </motion.div>
 
       <motion.div
         className="absolute inset-0 origin-center rounded-full border-2 border-dashed border-transparent"
-        style={{ borderTopColor: 'rgba(239, 68, 68, 0.4)' }}
+        style={{ borderTopColor: 'rgba(16, 185, 129, 0.4)' }}
         animate={{ rotate: 360 }}
         transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
       />
@@ -69,33 +69,33 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
   if (!timeLeft) return null;
 
   return (
-    <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 shadow-2xl rounded-3xl p-5 relative overflow-hidden flex items-center gap-5">
-      <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[40px] -mr-16 -mt-16 pointer-events-none bg-red-500/10`}></div>
+    <div className="bg-white/80 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-3xl p-5 relative overflow-hidden flex items-center gap-5">
+      <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[40px] -mr-16 -mt-16 pointer-events-none bg-blue-600/10`}></div>
       
       <ContractVisual />
 
       <div className="flex-1 z-10">
         <div className="flex items-center justify-between mb-1.5">
-          <p className="text-zinc-400 text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5">
+          <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5">
             Plan <span className="w-1 h-1 rounded-full bg-zinc-600"></span> {formatCurrency(inv.plan_amount || 0)}
           </p>
-          <div className="flex gap-1.5 items-center bg-red-500/10 px-2 py-1 rounded-lg border border-red-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-            <span className="text-[10px] text-red-500 font-bold uppercase tracking-wider">Actif</span>
+          <div className="flex gap-1.5 items-center bg-blue-600/10 px-2 py-1 rounded-lg border border-blue-600/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+            <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Actif</span>
           </div>
         </div>
         
-        <div className="font-mono text-3xl font-black text-zinc-50 tracking-widest flex items-baseline" style={{ fontVariantNumeric: 'tabular-nums' }}>
+        <div className="font-mono text-3xl font-black text-slate-900 tracking-widest flex items-baseline" style={{ fontVariantNumeric: 'tabular-nums' }}>
           <span>{String(timeLeft.h).padStart(2, '0')}</span>
           <span className="text-zinc-600 mx-1 mb-1">:</span>
           <span>{String(timeLeft.m).padStart(2, '0')}</span>
           <span className="text-zinc-600 mx-1 mb-1">:</span>
-          <span className="text-orange-500">{String(timeLeft.s).padStart(2, '0')}</span>
+          <span className="text-cyan-600">{String(timeLeft.s).padStart(2, '0')}</span>
         </div>
         
-        <div className="mt-4 w-full bg-zinc-800/80 rounded-full h-2 overflow-hidden border border-zinc-800">
+        <div className="mt-4 w-full bg-slate-100/80 rounded-full h-2 overflow-hidden border border-slate-200">
           <div 
-            className="h-full rounded-full transition-all duration-1000 ease-linear bg-gradient-to-r from-orange-600 to-red-500" 
+            className="h-full rounded-full transition-all duration-1000 ease-linear bg-gradient-to-r from-cyan-700 to-blue-600" 
             style={{ width: `${timeLeft.percent}%` }}
           ></div>
         </div>
@@ -135,36 +135,36 @@ export function Products() {
   }, [user]);
 
   return (
-    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans animate-fade-in text-zinc-50">
+    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans animate-fade-in text-slate-900">
       <header className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors shadow-sm shrink-0">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/80 backdrop-blur-xl border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
           <h1 className="text-2xl font-black tracking-tight">Contrats Actifs</h1>
-          <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mt-0.5">Vos investissements</p>
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Vos investissements</p>
         </div>
       </header>
 
       <div className="max-w-md mx-auto space-y-5">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-             <div className="w-10 h-10 rounded-full border-4 border-red-500/20 border-t-red-500 animate-spin"></div>
+             <div className="w-10 h-10 rounded-full border-4 border-blue-600/20 border-t-blue-600 animate-spin"></div>
           </div>
         ) : investments.length === 0 ? (
-          <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 border border-zinc-800 rounded-3xl p-10 text-center shadow-2xl relative overflow-hidden flex flex-col items-center">
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+          <div className="bg-white/80 backdrop-blur-xl border border-slate-200 border border-slate-200 rounded-3xl p-10 text-center shadow-2xl relative overflow-hidden flex flex-col items-center">
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/10 rounded-full blur-[40px] pointer-events-none"></div>
 
-            <div className="w-24 h-24 bg-zinc-800 border border-zinc-700/50 rounded-2xl flex items-center justify-center mb-8 shadow-inner relative z-10">
-              <Activity className="w-10 h-10 text-zinc-500" />
+            <div className="w-24 h-24 bg-slate-100 border border-slate-300/50 rounded-2xl flex items-center justify-center mb-8 shadow-inner relative z-10">
+              <Activity className="w-10 h-10 text-slate-500" />
             </div>
             
-            <h3 className="text-2xl font-black text-zinc-50 mb-3 relative z-10">Aucun contrat</h3>
-            <p className="text-zinc-400 text-sm mb-8 leading-relaxed relative z-10">Investissez dans un plan pour commencer à générer des revenus chaque jour.</p>
+            <h3 className="text-2xl font-black text-slate-900 mb-3 relative z-10">Aucun contrat</h3>
+            <p className="text-slate-500 text-sm mb-8 leading-relaxed relative z-10">Investissez dans un plan pour commencer à générer des revenus chaque jour.</p>
             
             <button 
               onClick={() => navigate('/invest')}
-              className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-bold shadow-lg shadow-red-900/20 active:scale-95 transition-all text-base flex items-center justify-center gap-2 relative z-10"
+              className="w-full py-4 bg-blue-700 hover:bg-blue-600 text-slate-900 rounded-2xl font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all text-base flex items-center justify-center gap-2 relative z-10"
             >
               <Zap className="w-5 h-5" />
               Voir les plans
