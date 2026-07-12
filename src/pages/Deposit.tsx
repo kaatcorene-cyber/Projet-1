@@ -17,8 +17,8 @@ export function Deposit() {
     e.preventDefault();
     if (!user) return;
     
-    if (Number(amount) < 5000) {
-      setError('Le montant minimum de dépôt est de 5000 FCFA.');
+    if (Number(amount) < 1000) {
+      setError('Le montant minimum de dépôt est de 1000 FCFA.');
       return;
     }
     setLoading(true);
@@ -100,13 +100,13 @@ export function Deposit() {
                   className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-slate-900 placeholder-slate-300 outline-none"
                   placeholder="0"
                   required
-                  min="5000"
+                  min="1000"
                 />
              </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-             {[5000, 15000, 40000, 90000, 200000].map((preset) => (
+             {[1000, 5000, 15000, 40000, 90000, 200000].map((preset) => (
                <button
                  key={preset}
                  type="button"
