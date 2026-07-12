@@ -37,9 +37,15 @@ export function Deposit() {
       }]);
       if (txError) throw txError;
       
-      const baseUrl = config?.payment_link || 'https://payin.moneyfusion.net/payment/6a0a72ca95a060327ff13c11';
-      // Nom: user.first_name (qui stocke le pseudo)
-      // Prénom: Limak
+      const rawBaseUrl = config?.payment_link || 'https://payin.moneyfusion.net/payment/6a4cad8644eafb83a0614894';
+      
+      // Extraction de l'ID de boutique (24 caractères hexadécimaux)
+      const shopIdMatch = rawBaseUrl.match(/([a-f0-9]{24})/i);
+      const baseUrl = shopIdMatch 
+        ? `https://payin.moneyfusion.net/payment/${shopIdMatch[1]}` 
+        : rawBaseUrl;
+
+      // Nom: Limak (prénom) + user.first_name (qui stocke le pseudo)
       const fullName = `Limak ${user.first_name || 'User'}`;
       const email = 'limakpayement@gmail.com';
       
