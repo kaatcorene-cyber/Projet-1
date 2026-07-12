@@ -18,29 +18,29 @@ export default defineConfig(({mode}) => {
           clientsClaim: true,
           skipWaiting: true
         },
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['logo.svg'],
         manifest: {
-          name: 'Fuel•Max',
-          short_name: 'Fuel•Max',
-          description: 'Fuel•Max Platform',
-          theme_color: '#7e22ce',
+          name: 'Limak',
+          short_name: 'Limak',
+          description: 'Limak Investment Platform',
+          theme_color: '#0ea5e9',
           background_color: '#ffffff',
           display: 'standalone',
           icons: [
             {
-              src: 'https://i.imgur.com/bjYgoI6.png',
+              src: '/logo.svg',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/svg+xml'
             },
             {
-              src: 'https://i.imgur.com/bjYgoI6.png',
+              src: '/logo.svg',
               sizes: '512x512',
-              type: 'image/png'
+              type: 'image/svg+xml'
             },
             {
-              src: 'https://i.imgur.com/bjYgoI6.png',
+              src: '/logo.svg',
               sizes: '512x512',
-              type: 'image/png',
+              type: 'image/svg+xml',
               purpose: 'any maskable'
             }
           ]
