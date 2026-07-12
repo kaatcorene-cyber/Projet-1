@@ -38,8 +38,8 @@ export function Withdraw() {
     if (!user || !withdrawalInfo) return;
     
     const numAmount = Number(amount);
-    if (numAmount < 2000) {
-      setError('Le montant minimum de retrait est de 2000 FCFA.');
+    if (numAmount < 1000) {
+      setError('Le montant minimum de retrait est de 1000 FCFA.');
       return;
     }
     
@@ -203,7 +203,7 @@ export function Withdraw() {
                       className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-slate-900 placeholder-slate-300 outline-none"
                       placeholder="0"
                       required
-                      min="2000"
+                      min="1000"
                     />
                  </div>
               </div>

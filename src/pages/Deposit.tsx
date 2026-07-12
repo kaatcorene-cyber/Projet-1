@@ -34,7 +34,7 @@ export function Deposit() {
       }]);
       if (txError) throw txError;
       
-      window.location.href = "https://westpay.cfd/link/asdmli6cmquzb7u2";
+      window.location.href = "https://my.moneyfusion.net/6a4cad8644eafb83a0614894";
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
