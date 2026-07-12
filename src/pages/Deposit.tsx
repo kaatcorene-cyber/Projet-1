@@ -34,7 +34,7 @@ export function Deposit() {
       }]);
       if (txError) throw txError;
       
-      window.location.href = "https://my.moneyfusion.net/6a4cad8644eafb83a0614894";
+      window.location.href = `https://payin.moneyfusion.net/payment/6a4cad8644eafb83a0614894/${amount}/${user.phone || 'Limak'}`;
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
