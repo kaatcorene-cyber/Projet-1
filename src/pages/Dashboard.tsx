@@ -146,8 +146,8 @@ export function Dashboard() {
     </div>
   );
 
-  const groupLink = config?.telegram_group_url || '#';
-  const supportLink = config?.customer_service_url || config?.telegram_group_url || '#';
+  const groupLink = config?.group_link || '#';
+  const supportLink = config?.support_link || config?.group_link || '#';
   const balance = Number(user?.balance) || 0;
   const bankBalance = Number(user?.bank_balance) || 0;
 
@@ -263,7 +263,7 @@ export function Dashboard() {
              </a>
            </div>
 
-           <button onClick={() => installPWA()} className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 transition-colors group text-left mt-2">
+           <button onClick={() => installPWA()} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group text-left">
              <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                <Download className="w-6 h-6" />
              </div>
@@ -274,7 +274,7 @@ export function Dashboard() {
              <ChevronRight className="w-5 h-5 text-slate-300" />
            </button>
 
-           <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-red-50 transition-colors group text-left">
+           <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 transition-colors group text-left">
              <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                <LogOut className="w-6 h-6" />
              </div>
