@@ -3,18 +3,21 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { CheckCircle2, AlertCircle, Loader2, Zap, ShieldCheck, TrendingUp } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { CheckCircle2, AlertCircle, Loader2, Zap, ShieldCheck, TrendingUp, Sparkles, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const DEFAULT_PLANS: any[] = [];
 
 export function Invest() {
   const { user, refreshUser } = useAuthStore();
   const { settingsCache, setSettingsCache } = useAppStore();
+  const navigate = useNavigate();
   
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState<number | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (settingsCache) {
@@ -75,7 +78,7 @@ export function Invest() {
         .insert({
           user_id: user.id,
           plan_name: `Contrat ${formatCurrency(plan.amount)}`,
-          amount: plan.amount,
+          plan_amount: plan.amount,
           daily_yield: plan.daily,
           total_yield: plan.total,
           status: 'active',
@@ -84,16 +87,56 @@ export function Invest() {
       if (investError) throw investError;
       
       await refreshUser();
-      setMessage({ type: 'success', text: 'Contrat activé avec succès!' });
+      setShowSuccess(true);
+      setTimeout(() => {
+        navigate('/products');
+      }, 3000);
     } catch (e: any) {
       setMessage({ type: 'error', text: e.message });
-    } finally {
       setLoading(null);
     }
   };
 
   return (
     <div className="px-5 pt-12 pb-32 min-h-screen bg-slate-50 max-w-lg mx-auto font-sans">
+      
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.8, y: 50, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.8, y: 20, opacity: 0 }}
+              transition={{ type: "spring", bounce: 0.5, duration: 0.6 }}
+              className="bg-white rounded-[32px] p-8 max-w-sm w-full flex flex-col items-center text-center shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+              
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", delay: 0.2, bounce: 0.5 }}
+                className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-6 relative"
+              >
+                <div className="absolute inset-0 bg-emerald-400/20 rounded-full animate-ping"></div>
+                <CheckCircle2 className="w-12 h-12 text-emerald-500 relative z-10" />
+              </motion.div>
+
+              <h3 className="text-2xl font-black text-slate-900 mb-2">Contrat Activé !</h3>
+              <p className="text-slate-500 font-medium mb-6">Votre investissement a été validé avec succès. Redirection vers vos contrats en cours...</p>
+
+              <div className="w-full flex justify-center">
+                <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       <style>{`
         @keyframes scroll {
