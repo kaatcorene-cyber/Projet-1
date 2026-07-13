@@ -77,8 +77,14 @@ export function Deposit() {
       if (!initData.statut || !initData.url) {
         throw new Error("Erreur avec la réponse de Fusion Money.");
       }
+
+      let finalUrl = initData.url;
+      // Remplacer le nom de la boutique par "Limak Pay"
+      if (finalUrl) {
+        finalUrl = finalUrl.replace(/assande(\s|%20)tanoa(\s|%20)grace(\s|%20)Deborat/ig, 'Limak%20Pay');
+      }
       
-      window.location.href = initData.url;
+      window.location.href = finalUrl;
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
