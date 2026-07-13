@@ -5,7 +5,7 @@ import { useAppStore } from '../store/useAppStore';
 import { Activity, ChevronLeft, Gem, Coins, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../lib/utils';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ContractVisual: React.FC = () => {
   return (
@@ -152,28 +152,23 @@ export function Products() {
              <div className="w-10 h-10 rounded-full border-4 border-blue-600/20 border-t-blue-600 animate-spin"></div>
           </div>
         ) : investments.length === 0 ? (
-          <div className="bg-white/80 backdrop-blur-xl border border-slate-200 border border-slate-200 rounded-3xl p-10 text-center shadow-2xl relative overflow-hidden flex flex-col items-center">
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/10 rounded-full blur-[40px] pointer-events-none"></div>
-
-            <div className="w-24 h-24 bg-slate-100 border border-slate-300/50 rounded-2xl flex items-center justify-center mb-8 shadow-inner relative z-10">
-              <Activity className="w-10 h-10 text-slate-500" />
-            </div>
-            
-            <h3 className="text-2xl font-black text-slate-900 mb-3 relative z-10">Aucun contrat</h3>
-            <p className="text-slate-500 text-sm mb-8 leading-relaxed relative z-10">Investissez dans un plan pour commencer à générer des revenus chaque jour.</p>
-            
-            <button 
-              onClick={() => navigate('/invest')}
-              className="w-full py-4 bg-blue-700 hover:bg-blue-600 text-slate-900 rounded-2xl font-bold shadow-lg shadow-blue-600/30 active:scale-95 transition-all text-base flex items-center justify-center gap-2 relative z-10"
-            >
-              <Zap className="w-5 h-5" />
-              Voir les plans
-            </button>
+          <div className="py-20 text-center">
+            <h3 className="text-xl font-bold text-slate-400">Aucun contrat</h3>
           </div>
         ) : (
-          investments.map(inv => (
-            <CountdownTimer key={inv.id} inv={inv} />
-          ))
+          <AnimatePresence mode="popLayout">
+            {investments.map((inv, index) => (
+              <motion.div
+                key={inv.id}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.5, delay: index * 0.1, type: "spring", bounce: 0.4 }}
+              >
+                <CountdownTimer inv={inv} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         )}
       </div>
     </div>

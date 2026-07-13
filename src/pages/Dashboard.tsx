@@ -17,7 +17,7 @@ import {
   Wallet,
   ArrowDownLeft,
   Users,
-  Briefcase,
+  FileSignature,
   Headphones
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -232,7 +232,7 @@ export function Dashboard() {
         <div className="bg-white rounded-[32px] p-3 shadow-lg shadow-slate-200/40 border border-slate-100 mb-8">
            <Link to="/products" className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group">
              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-               <Briefcase className="w-6 h-6" />
+               <FileSignature className="w-6 h-6" />
              </div>
              <div className="flex-1">
                <p className="font-bold text-slate-900">Mes Contrats Actifs</p>
@@ -263,7 +263,7 @@ export function Dashboard() {
              </a>
            </div>
 
-           <button onClick={() => installPWA()} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group text-left">
+           <button onClick={() => installPWA()} className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-slate-50 transition-colors group text-left mt-2">
              <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                <Download className="w-6 h-6" />
              </div>
@@ -274,9 +274,7 @@ export function Dashboard() {
              <ChevronRight className="w-5 h-5 text-slate-300" />
            </button>
 
-           <div className="h-px bg-slate-100 mx-4 my-2"></div>
-
-           <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 transition-colors group text-left">
+           <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-red-50 transition-colors group text-left">
              <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                <LogOut className="w-6 h-6" />
              </div>
