@@ -32,21 +32,71 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
   
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}></div>
-      <div className="w-full max-w-[340px] bg-white border border-slate-100 rounded-3xl shadow-2xl relative z-10 animate-in zoom-in-95 p-8 flex flex-col items-center">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}></div>
+      <div className="w-full max-w-[380px] bg-white border border-slate-100 rounded-[32px] shadow-2xl relative z-10 animate-in zoom-in-95 p-8 flex flex-col items-center overflow-hidden">
+        
+        {/* Decorative Top Accent */}
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 to-cyan-500"></div>
+
         <div className="w-20 h-20 mb-6 relative flex items-center justify-center rounded-3xl bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-100 shadow-inner">
           <ShieldCheck className="w-10 h-10 text-blue-600" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900 text-center mb-2 tracking-tight">Bienvenue</h2>
-        <p className="text-slate-500 text-center text-sm mb-8 leading-relaxed font-medium">
-          Rejoignez le canal officiel pour des opportunités exclusives.
-        </p>
+        
+        <h2 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">Annonce Importante</h2>
+        
+        <div className="w-full space-y-4 mb-8">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <p className="text-slate-600 text-sm font-medium leading-snug">
+              La plateforme d'investissement la plus fiable pour générer des revenus quotidiens.
+            </p>
+          </div>
+          
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <p className="text-slate-600 text-sm font-medium leading-snug">
+              Investissez dans vos contrats et percevez des revenus chaque jour.
+            </p>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <p className="text-slate-600 text-sm font-medium leading-snug">
+              Montant minimum de retrait : <span className="font-bold text-slate-900">2000 FCFA</span>.
+            </p>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <p className="text-slate-600 text-sm font-medium leading-snug">
+              Dépôts et retraits 24 h/24 et 7 j/7.
+            </p>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <p className="text-slate-600 text-sm font-medium leading-snug">
+              Gagnez des commissions en parrainant vos amis sur 3 niveaux.
+            </p>
+          </div>
+        </div>
+
         <div className="w-full space-y-3">
-          <a href={groupLink} target="_blank" rel="noopener noreferrer" onClick={onClose} className="w-full bg-gradient-to-r from-blue-700 to-cyan-600 text-white rounded-xl py-3.5 font-bold text-sm transition-all flex justify-center items-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30">
+          <a href={groupLink} target="_blank" rel="noopener noreferrer" onClick={onClose} className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white rounded-xl py-3.5 font-bold text-sm transition-all flex justify-center items-center gap-2 shadow-lg shadow-blue-500/25">
             <Users className="w-5 h-5" /> Rejoindre le Groupe
           </a>
           <button onClick={onClose} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl py-3.5 font-bold text-sm transition-all">
-            Continuer
+            Fermer
           </button>
         </div>
       </div>
