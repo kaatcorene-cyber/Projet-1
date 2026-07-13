@@ -77,10 +77,8 @@ export function Invest() {
         .from('investments')
         .insert({
           user_id: user.id,
-          plan_name: `Contrat ${formatCurrency(plan.amount)}`,
           plan_amount: plan.amount,
           daily_yield: plan.daily,
-          total_yield: plan.total,
           status: 'active',
           end_date: new Date(Date.now() + (plan.duration || 60) * 24 * 60 * 60 * 1000).toISOString()
         });
