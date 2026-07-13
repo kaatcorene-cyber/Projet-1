@@ -814,12 +814,12 @@ export function Admin() {
                     <p className="font-bold text-slate-900">{formatCurrency(tx.amount)}</p>
                     <div className="flex items-center gap-2 mt-1 mb-2">
                       <div className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-300/50">
-                        <p className="text-[9px] text-slate-500 uppercase tracking-wider">Frais (15%)</p>
-                        <p className="text-blue-500 font-bold text-xs">-{formatCurrency(tx.amount * 0.15)}</p>
+                        <p className="text-[9px] text-slate-500 uppercase tracking-wider">Frais (10%)</p>
+                        <p className="text-blue-500 font-bold text-xs">-{formatCurrency(tx.amount * 0.10)}</p>
                       </div>
                       <div className="bg-blue-600/10 px-2 py-0.5 rounded-md border border-blue-600/20">
                         <p className="text-[9px] text-blue-600/70 uppercase tracking-wider">Montant à envoyer</p>
-                        <p className="text-blue-500 font-bold text-xs">{formatCurrency(tx.amount * 0.85)}</p>
+                        <p className="text-blue-500 font-bold text-xs">{formatCurrency(tx.amount * 0.90)}</p>
                       </div>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
