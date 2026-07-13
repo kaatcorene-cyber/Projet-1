@@ -50,11 +50,35 @@ export function Deposit() {
       // Nom: Limak (prénom) + user.first_name (qui stocke le pseudo)
       const fullName = `Limak ${user.first_name || 'User'}`;
       const email = 'limakpayement@gmail.com';
+      const phone = user.phone || '00000000';
+      const formattedPhone = phone.startsWith('+') ? phone : `+225${phone.replace(/^0+/, '')}`;
       
-      // Toujours utiliser payin.moneyfusion.net pour sauter la première page
-      const redirectUrl = `https://payin.moneyfusion.net/payment/${shopId}/${amount}/${encodeURIComponent(fullName)}`;
+      const initResponse = await fetch('https://pay.moneyfusion.net/api/v2/links/init-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: shopId,
+          montant: amount,
+          name: fullName,
+          phone: formattedPhone,
+          customerEmail: email,
+          countryCode: "+225"
+        })
+      });
+
+      if (!initResponse.ok) {
+        throw new Error("Erreur réseau lors de l'initialisation du paiement.");
+      }
+
+      const initData = await initResponse.json();
       
-      window.location.href = redirectUrl;
+      if (!initData.statut || !initData.url) {
+        throw new Error("Erreur avec la réponse de Fusion Money.");
+      }
+      
+      window.location.href = initData.url;
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
