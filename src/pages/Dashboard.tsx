@@ -64,7 +64,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
               <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
             </div>
             <p className="text-slate-600 text-sm font-medium leading-snug">
-              Montant minimum de retrait : <span className="font-bold text-slate-900">2000 FCFA</span>.
+              Montant minimum de retrait : <span className="font-bold text-slate-900 whitespace-nowrap">2000 FCFA</span>.
             </p>
           </div>
 
