@@ -4,18 +4,22 @@ import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { PAYMENT_METHODS, CountryName } from '../constants';
 
 export function Bank() {
   const { user, refreshUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
   
-  const [paymentMethod, setPaymentMethod] = useState('wave');
+  const [paymentMethod, setPaymentMethod] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [accountHolder, setAccountHolder] = useState('');
   const [password, setPassword] = useState('');
   
   const [isSaved, setIsSaved] = useState(false);
+
+  const userCountry = user?.country as CountryName | undefined;
+  const availableMethods = userCountry ? (PAYMENT_METHODS[userCountry] || PAYMENT_METHODS["Côte d'Ivoire"]) : PAYMENT_METHODS["Côte d'Ivoire"];
 
   useEffect(() => { 
     refreshUser(); 
@@ -28,15 +32,17 @@ export function Bank() {
         try {
           const parsed = JSON.parse(savedInfo);
           if (parsed.accountNumber) {
-            setPaymentMethod(parsed.paymentMethod || 'wave');
+            setPaymentMethod(parsed.paymentMethod || availableMethods[0].id);
             setAccountNumber(parsed.accountNumber || '');
             setAccountHolder(parsed.accountHolder || '');
             setIsSaved(true);
           }
         } catch (e) {}
+      } else {
+        setPaymentMethod(availableMethods[0].id);
       }
     }
-  }, [user?.id]);
+  }, [user?.id, availableMethods]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,10 +130,9 @@ export function Bank() {
                disabled={isSaved}
                className={`w-full border-2 rounded-2xl px-4 py-4 text-slate-900 font-bold outline-none transition-all shadow-inner appearance-none ${isSaved ? 'bg-slate-100 border-slate-200 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50 border-slate-100 focus:border-cyan-600 focus:bg-white'}`}
              >
-               <option value="wave">Wave</option>
-               <option value="orange">Orange Money</option>
-               <option value="mtn">MTN Mobile Money</option>
-               <option value="moov">Moov Money</option>
+               {availableMethods.map(method => (
+                 <option key={method.id} value={method.id}>{method.name}</option>
+               ))}
              </select>
            </div>
 
