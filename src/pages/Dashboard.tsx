@@ -252,27 +252,16 @@ export function Dashboard() {
              <ChevronRight className="w-5 h-5 text-slate-300" />
            </Link>
 
-           <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group">
-             <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-               <Headphones className="w-6 h-6" />
-             </div>
-             <div className="flex-1">
-               <p className="font-bold text-slate-900">Service Client</p>
-               <p className="text-xs text-slate-500 font-medium">Assistance et support technique</p>
-             </div>
-             <ArrowUpRight className="w-5 h-5 text-slate-300" />
-           </a>
-
-           <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group">
-             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-               <Users className="w-6 h-6" />
-             </div>
-             <div className="flex-1">
-               <p className="font-bold text-slate-900">Canal Officiel</p>
-               <p className="text-xs text-slate-500 font-medium">Rejoindre la communauté</p>
-             </div>
-             <ArrowUpRight className="w-5 h-5 text-slate-300" />
-           </a>
+           <div className="grid grid-cols-2 gap-3">
+             <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 p-3.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors group">
+               <Headphones className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform" />
+               <span className="font-bold text-slate-900 text-xs">Support Client</span>
+             </a>
+             <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 p-3.5 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors group">
+               <Users className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform" />
+               <span className="font-bold text-slate-900 text-xs">Groupe Officiel</span>
+             </a>
+           </div>
 
            <button onClick={() => installPWA()} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group text-left">
              <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:scale-110 transition-transform">
