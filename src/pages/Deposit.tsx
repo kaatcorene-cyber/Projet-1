@@ -52,7 +52,7 @@ export function Deposit() {
       const email = 'limakpayement@gmail.com';
       
       // Toujours utiliser payin.moneyfusion.net pour sauter la première page
-      const redirectUrl = `https://payin.moneyfusion.net/payment/${shopId}/${amount}/${encodeURIComponent(fullName)}/${encodeURIComponent(email)}`;
+      const redirectUrl = `https://payin.moneyfusion.net/payment/${shopId}/${amount}/${encodeURIComponent(fullName)}`;
       
       window.location.href = redirectUrl;
     } catch (err: any) {
