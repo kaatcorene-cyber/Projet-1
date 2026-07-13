@@ -38,11 +38,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
         {/* Decorative Top Accent */}
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 to-cyan-500"></div>
 
-        <div className="w-20 h-20 mb-6 relative flex items-center justify-center rounded-3xl bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-100 shadow-inner">
-          <ShieldCheck className="w-10 h-10 text-blue-600" />
-        </div>
-        
-        <h2 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">Annonce Importante</h2>
+        <h2 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight mt-2">Informations</h2>
         
         <div className="w-full space-y-4 mb-8">
           <div className="flex items-start gap-3">
