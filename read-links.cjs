@@ -5,7 +5,7 @@ const supabase = createClient(
 );
 
 async function readLinks() {
-  const { data } = await supabase.from('settings').select('*');
+  const { data } = await supabase.from('settings').select('*').in('key', ['group_link', 'support_link']);
   console.log(data);
 }
 readLinks();
