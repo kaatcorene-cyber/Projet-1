@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { supabase, checkDbSetup } from '../lib/supabase';
 import { Droplet, Eye, EyeOff, ShieldCheck, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Logo } from "../components/Logo";
 
 export function Login() {
   const [pseudo, setPseudo] = useState('');
@@ -86,10 +87,10 @@ export function Login() {
         >
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-2">
-              <img src="https://i.imgur.com/20bDoyM.png" alt="Limak" className="w-12 h-12 object-contain drop-shadow-md" referrerPolicy="no-referrer" />
+              <Logo />
               <h1 className="text-2xl grotesk font-black text-slate-900 tracking-tight">Connexion</h1>
             </div>
-            <p className="text-slate-500 font-medium text-sm">Connectez-vous à votre compte Limak</p>
+            <p className="text-slate-500 font-medium text-sm">Connectez-vous à votre compte InvestAfrik</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -178,7 +179,7 @@ export function Login() {
         </motion.div>
 
         <p className="text-center text-slate-500 text-sm mt-8 font-medium">
-          Nouveau sur Limak ?{' '}
+          Nouveau sur InvestAfrik ?{' '}
           <Link to="/register" className="text-blue-700 hover:text-blue-800 font-bold tracking-wide transition-colors">
             Créer un compte
           </Link>
