@@ -109,7 +109,7 @@ export function Dashboard() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [avatar, setAvatar] = useState<string>(
-    localStorage.getItem(`avatar_${user?.id}`) || 'https://api.dicebear.com/7.x/initials/svg?seed=User'
+    localStorage.getItem(`avatar_${user?.id}`) || 'https://i.imgur.com/20bDoyM.png'
   );
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {

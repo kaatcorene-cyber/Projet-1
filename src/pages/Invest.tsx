@@ -152,7 +152,7 @@ export function Invest() {
       <div className="relative mb-8 overflow-hidden bg-gradient-to-r from-blue-700 to-cyan-600 rounded-2xl shadow-lg shadow-blue-600/20 py-3.5 flex items-center w-full border border-white/10">
          <div className="whitespace-nowrap animate-scroll text-white font-medium tracking-wide text-sm flex items-center gap-3">
            <span className="text-lg">👋</span>
-           <span className="font-bold">Bienvenue sur InvestAfrik, votre partenaire de confiance.</span>
+           <span className="font-bold">Bienvenue sur Limak, votre partenaire de confiance.</span>
            <span className="w-1.5 h-1.5 rounded-full bg-cyan-300 opacity-80"></span>
            <span>Nous vous proposons des contrats d'investissement sécurisés à haut rendement pour générer des revenus stables et performants au quotidien.</span>
          </div>

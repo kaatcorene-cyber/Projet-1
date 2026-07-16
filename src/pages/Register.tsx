@@ -4,7 +4,6 @@ import { useAuthStore } from '../store/useAuthStore';
 import { supabase, checkDbSetup } from '../lib/supabase';
 import { COUNTRIES, CountryName, COUNTRY_NAMES } from '../constants';
 import { Eye, EyeOff, ShieldCheck, ChevronRight } from 'lucide-react';
-import { Logo } from "../components/Logo";
 import { motion } from 'framer-motion';
 
 export function Register() {
@@ -152,10 +151,10 @@ export function Register() {
         >
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-2">
-              <Logo />
+              <img src="https://i.imgur.com/20bDoyM.png" alt="Limak" className="w-12 h-12 object-contain drop-shadow-md" referrerPolicy="no-referrer" />
               <h1 className="text-2xl grotesk font-black text-slate-900 tracking-tight">Inscription</h1>
             </div>
-            <p className="text-slate-500 font-medium text-sm">Créez votre compte InvestAfrik</p>
+            <p className="text-slate-500 font-medium text-sm">Créez votre compte Limak</p>
           </div>
 
                     <form onSubmit={handleRegister} className="space-y-4">

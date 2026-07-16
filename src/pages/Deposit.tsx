@@ -20,8 +20,8 @@ export function Deposit() {
     e.preventDefault();
     if (!user) return;
     
-    if (Number(amount) < 1100) {
-      setError('Le montant minimum de dépôt est de 1100 FCFA.');
+    if (Number(amount) < 2000) {
+      setError('Le montant minimum de dépôt est de 2000 FCFA.');
       return;
     }
     if (Number(amount) > 500000) {
@@ -36,7 +36,7 @@ export function Deposit() {
         user_id: user.id,
         type: 'deposit',
         amount: Number(amount),
-        reference: `InvestAfrik - ${user.phone}`,
+        reference: `WESTPAY - ${user.phone}`,
         status: 'pending'
       }]);
       if (txError) throw txError;
@@ -47,9 +47,9 @@ export function Deposit() {
       const shopIdMatch = rawBaseUrl.match(/([a-f0-9]{24})/i);
       const shopId = shopIdMatch ? shopIdMatch[1] : '6a4cad8644eafb83a0614894';
 
-      // Nom: InvestAfrik (prénom) + user.first_name (qui stocke le pseudo)
-      const fullName = `InvestAfrik ${user.first_name || 'User'}`;
-      const email = 'investafrikpayement@gmail.com';
+      // Nom: Limak (prénom) + user.first_name (qui stocke le pseudo)
+      const fullName = `Limak ${user.first_name || 'User'}`;
+      const email = 'limakpayement@gmail.com';
       const phone = user.phone || '00000000';
       const formattedPhone = phone.startsWith('+') ? phone : `+225${phone.replace(/^0+/, '')}`;
       
@@ -75,13 +75,13 @@ export function Deposit() {
       const initData = await initResponse.json();
       
       if (!initData.statut || !initData.url) {
-        throw new Error(initData.message || "Erreur avec la réponse de Fusion Money.");
+        throw new Error("Erreur avec la réponse de Fusion Money.");
       }
 
       let finalUrl = initData.url;
-      // Remplacer le nom de la boutique par "InvestAfrik Pay"
+      // Remplacer le nom de la boutique par "Limak Pay"
       if (finalUrl) {
-        finalUrl = finalUrl.replace(/Parfait(\s|%20)Shop/ig, 'InvestAfrik%20Pay');
+        finalUrl = finalUrl.replace(/assande(\s|%20)tanoa(\s|%20)grace(\s|%20)Deborat/ig, 'Limak%20Pay');
       }
       
       window.location.href = finalUrl;
@@ -150,14 +150,14 @@ export function Deposit() {
                   className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-slate-900 placeholder-slate-300 outline-none"
                   placeholder="0"
                   required
-                  min="1100"
+                  min="2000"
                   max="500000"
                 />
              </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-             {[1100, 5000, 15000, 40000, 90000, 200000].map((preset) => (
+             {[2000, 5000, 15000, 40000, 90000, 200000].map((preset) => (
                <button
                  key={preset}
                  type="button"
