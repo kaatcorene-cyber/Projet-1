@@ -112,6 +112,13 @@ export function Products() {
   const [isLoading, setIsLoading] = useState(!investmentsCache);
 
   useEffect(() => {
+    if (investmentsCache) {
+      setInvestments(investmentsCache);
+      setIsLoading(false);
+    }
+  }, [investmentsCache]);
+
+  useEffect(() => {
     if (user?.id) {
       const fetchProducts = async () => {
         const { data } = await supabase.from('investments').select('*').eq('user_id', user.id).eq('status', 'active');

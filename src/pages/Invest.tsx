@@ -11,7 +11,7 @@ const DEFAULT_PLANS: any[] = [];
 
 export function Invest() {
   const { user, refreshUser } = useAuthStore();
-  const { settingsCache, setSettingsCache } = useAppStore();
+  const { settingsCache, setSettingsCache, setInvestmentsCache } = useAppStore();
   const navigate = useNavigate();
   
   const [plans, setPlans] = useState<any[]>([]);
@@ -23,6 +23,9 @@ export function Invest() {
     if (settingsCache) {
       applyPlans(settingsCache);
     }
+  }, [settingsCache]);
+
+  useEffect(() => {
     fetchPlans();
     const intervalId = setInterval(() => {
       refreshUser();
@@ -84,11 +87,21 @@ export function Invest() {
         });
       if (investError) throw investError;
       
+      const { data: updatedInvestments } = await supabase
+        .from('investments')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+      
+      if (updatedInvestments) {
+        setInvestmentsCache(updatedInvestments);
+      }
+
       await refreshUser();
       setShowSuccess(true);
       setTimeout(() => {
         navigate('/products');
-      }, 3000);
+      }, 600);
     } catch (e: any) {
       setMessage({ type: 'error', text: e.message });
       setLoading(null);

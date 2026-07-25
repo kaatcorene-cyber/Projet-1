@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { useAppStore } from '../store/useAppStore';
 import { BottomNav } from './BottomNav';
 import { LogOut, Settings, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -8,16 +9,33 @@ import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export function Layout() {
   const { isAuthenticated, user, logout } = useAuthStore();
+  const { fetchConfig, setInvestmentsCache } = useAppStore();
   const navigate = useNavigate();
   const hasCheckedYields = useRef(false);
   const { isInstallable, installPWA } = usePWAInstall();
 
   useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  useEffect(() => {
     if (user?.id && !hasCheckedYields.current) {
       hasCheckedYields.current = true;
       processDailyYields(user.id);
+      preloadInvestments(user.id);
     }
   }, [user?.id]);
+
+  const preloadInvestments = async (userId: string) => {
+    try {
+      const { data } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
+      if (data) {
+        setInvestmentsCache(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const processDailyYields = async (userId: string) => {
     try {
