@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 
 interface AppState {
@@ -12,22 +13,29 @@ interface AppState {
   fetchConfig: () => Promise<void>;
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
-  settingsCache: null,
-  setSettingsCache: (settingsCache) => set({ settingsCache }),
-  investmentsCache: null,
-  setInvestmentsCache: (investmentsCache) => set({ investmentsCache }),
-  teamStatsCache: null,
-  setTeamStatsCache: (teamStatsCache) => set({ teamStatsCache }),
-  config: null,
-  fetchConfig: async () => {
-     const { data } = await supabase.from('settings').select('*');
-     if (data) {
-       const settingsObj: any = {};
-       data.forEach((item: any) => {
-         settingsObj[item.key] = item.value;
-       });
-       set({ config: settingsObj, settingsCache: data });
-     }
-  }
-}));
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      settingsCache: null,
+      setSettingsCache: (settingsCache) => set({ settingsCache }),
+      investmentsCache: null,
+      setInvestmentsCache: (investmentsCache) => set({ investmentsCache }),
+      teamStatsCache: null,
+      setTeamStatsCache: (teamStatsCache) => set({ teamStatsCache }),
+      config: null,
+      fetchConfig: async () => {
+         const { data } = await supabase.from('settings').select('*');
+         if (data) {
+           const settingsObj: any = {};
+           data.forEach((item: any) => {
+             settingsObj[item.key] = item.value;
+           });
+           set({ config: settingsObj, settingsCache: data });
+         }
+      }
+    }),
+    {
+      name: 'app-storage',
+    }
+  )
+);
