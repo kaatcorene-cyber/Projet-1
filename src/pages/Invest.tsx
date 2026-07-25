@@ -15,6 +15,7 @@ export function Invest() {
   const navigate = useNavigate();
   
   const [plans, setPlans] = useState<any[]>([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(!settingsCache);
   const [loading, setLoading] = useState<number | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -56,6 +57,7 @@ export function Invest() {
     } else if (!settingsCache) {
       setPlans(DEFAULT_PLANS);
     }
+    setIsLoadingPlans(false);
   };
 
   const activePlans = [...plans].sort((a, b) => a.amount - b.amount);
@@ -184,7 +186,11 @@ export function Invest() {
       )}
 
       <div className="space-y-6 relative z-10">
-        {activePlans.length === 0 ? (
+        {isLoadingPlans ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+             <div className="w-10 h-10 rounded-full border-4 border-blue-600/20 border-t-blue-600 animate-spin"></div>
+          </div>
+        ) : activePlans.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-3xl p-10 text-center shadow-sm">
             <Zap className="w-10 h-10 text-slate-300 mx-auto mb-4" />
             <p className="text-slate-500 font-medium">Aucun contrat disponible actuellement.</p>
