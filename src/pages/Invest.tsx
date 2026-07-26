@@ -14,8 +14,21 @@ export function Invest() {
   const { settingsCache, setSettingsCache, setInvestmentsCache } = useAppStore();
   const navigate = useNavigate();
   
-  const [plans, setPlans] = useState<any[]>([]);
-  const [isLoadingPlans, setIsLoadingPlans] = useState(!settingsCache);
+  const getInitialPlans = () => {
+    if (!settingsCache) return [];
+    const dbPlansStr = settingsCache.find(s => s.key === 'investment_plans');
+    if (dbPlansStr && dbPlansStr.value) {
+      try {
+        return JSON.parse(dbPlansStr.value);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  const [plans, setPlans] = useState<any[]>(getInitialPlans());
+  const [isLoadingPlans, setIsLoadingPlans] = useState(!settingsCache && plans.length === 0);
   const [loading, setLoading] = useState<number | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);

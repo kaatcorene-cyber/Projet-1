@@ -229,58 +229,35 @@ export function Dashboard() {
         </motion.div>
 
         {/* Menu Grid */}
-        <div className="bg-white rounded-[32px] p-3 shadow-lg shadow-slate-200/40 border border-slate-100 mb-8">
-           <Link to="/products" className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group">
-             <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-               <FileSignature className="w-6 h-6" />
-             </div>
-             <div className="flex-1">
-               <p className="font-bold text-slate-900">Mes Contrats Actifs</p>
-               <p className="text-xs text-slate-500 font-medium">Gérer vos investissements en cours</p>
-             </div>
-             <ChevronRight className="w-5 h-5 text-slate-300" />
+        <div className="grid grid-cols-2 gap-3 mb-8">
+           <Link to="/products" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <FileSignature className="w-7 h-7 text-emerald-300" />
+             <span className="font-bold text-sm">Contrats</span>
+           </Link>
+           
+           <Link to="/bank" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <PiggyBank className="w-7 h-7 text-emerald-300" />
+             <span className="font-bold text-sm">Retraits</span>
            </Link>
 
-           <Link to="/bank" className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group">
-             <div className="w-12 h-12 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-               <PiggyBank className="w-6 h-6" />
-             </div>
-             <div className="flex-1">
-               <p className="font-bold text-slate-900">Compte de Retrait</p>
-               <p className="text-xs text-slate-500 font-medium">Épargner ou retirer du compte</p>
-             </div>
-             <ChevronRight className="w-5 h-5 text-slate-300" />
-           </Link>
+           <a href={supportLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <Headphones className="w-7 h-7 text-emerald-300" />
+             <span className="font-bold text-sm">Support</span>
+           </a>
+           
+           <a href={groupLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <Users className="w-7 h-7 text-emerald-300" />
+             <span className="font-bold text-sm">Groupe</span>
+           </a>
 
-           <div className="grid grid-cols-2 gap-3">
-             <a href={supportLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 p-3.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors group">
-               <Headphones className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform" />
-               <span className="font-bold text-slate-900 text-xs">Support Client</span>
-             </a>
-             <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 p-3.5 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors group">
-               <Users className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform" />
-               <span className="font-bold text-slate-900 text-xs">Groupe Officiel</span>
-             </a>
-           </div>
-
-           <button onClick={() => installPWA()} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors group text-left">
-             <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-               <Download className="w-6 h-6" />
-             </div>
-             <div className="flex-1">
-               <p className="font-bold text-slate-900">Installer l'application</p>
-               <p className="text-xs text-slate-500 font-medium">Pour un accès plus rapide</p>
-             </div>
-             <ChevronRight className="w-5 h-5 text-slate-300" />
+           <button onClick={() => installPWA()} className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <Download className="w-7 h-7 text-emerald-300" />
+             <span className="font-bold text-sm">Installer App</span>
            </button>
-
-           <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-red-50 transition-colors group text-left">
-             <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-               <LogOut className="w-6 h-6" />
-             </div>
-             <div className="flex-1">
-               <p className="font-bold text-red-600">Déconnexion</p>
-             </div>
+           
+           <button onClick={() => { logout(); navigate('/login'); }} className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <LogOut className="w-7 h-7 text-red-300" />
+             <span className="font-bold text-sm">Déconnexion</span>
            </button>
         </div>
 
