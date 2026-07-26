@@ -234,11 +234,11 @@ export function Dashboard() {
            <div className="flex gap-3">
               <Link to="/deposit" className="flex-1 bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-2xl py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30">
                 <ArrowDownLeft className="w-5 h-5 text-emerald-300" />
-                <span className="font-bold text-sm">Dépôt</span>
+                <span className="font-bold text-sm">Déposer</span>
               </Link>
               <Link to="/withdraw" className="flex-1 bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-2xl py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30">
                 <ArrowUpRight className="w-5 h-5 text-blue-200" />
-                <span className="font-bold text-sm">Retrait</span>
+                <span className="font-bold text-sm">Retirer</span>
               </Link>
            </div>
         </motion.div>
