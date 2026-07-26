@@ -134,14 +134,14 @@ export function Withdraw() {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-[32px] p-8 text-center shadow-lg shadow-slate-200/50 border border-slate-100"
         >
-          <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-8 h-8 text-blue-500" />
+          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-8 h-8 text-emerald-500" />
           </div>
           <h2 className="text-2xl font-black text-slate-900 mb-3">Compte non configuré</h2>
           <p className="text-slate-500 font-medium mb-8 leading-relaxed">Veuillez renseigner vos informations de retrait dans la section "Compte de retrait" avant de pouvoir effectuer un retrait.</p>
           <button 
             onClick={() => navigate('/bank')}
-            className="w-full bg-cyan-600 text-white rounded-xl py-4 font-bold shadow-xl shadow-cyan-600/20 active:scale-[0.98] transition-all"
+            className="w-full bg-green-600 text-white rounded-xl py-4 font-bold shadow-xl shadow-green-600/20 active:scale-[0.98] transition-all"
           >
             Configurer mon compte
           </button>
@@ -153,13 +153,13 @@ export function Withdraw() {
           <motion.div 
              initial={{ opacity: 0, y: 10 }}
              animate={{ opacity: 1, y: 0 }}
-             className="bg-gradient-to-br from-blue-700 to-cyan-600 rounded-[32px] p-6 shadow-xl shadow-blue-600/20 border border-blue-600/30 relative overflow-hidden text-white"
+             className="bg-gradient-to-br from-emerald-700 to-green-600 rounded-[32px] p-6 shadow-xl shadow-emerald-600/20 border border-emerald-600/30 relative overflow-hidden text-white"
           >
              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-[30px] -mr-10 -mt-10 pointer-events-none"></div>
              
              <div className="flex items-start justify-between relative z-10">
                <div>
-                  <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Disponible</p>
+                  <p className="text-emerald-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Disponible</p>
                   <p className="text-3xl font-black">{formatCurrency(user?.balance || 0)}</p>
                </div>
                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md shadow-inner">
@@ -172,7 +172,7 @@ export function Withdraw() {
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-blue-700 text-sm font-medium flex items-start gap-3 shadow-sm"
+              className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-700 text-sm font-medium flex items-start gap-3 shadow-sm"
             >
               <Info className="w-5 h-5 shrink-0 mt-0.5" />
               <p>{error}</p>
@@ -187,14 +187,14 @@ export function Withdraw() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Compte de réception</p>
                   <p className="font-bold text-slate-900">{withdrawalInfo.paymentMethod.toUpperCase()} - {withdrawalInfo.accountNumber}</p>
                 </div>
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-cyan-600">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-green-600">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
               </div>
 
               <div className="space-y-2">
                  <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Montant à retirer</label>
-                 <div className="bg-slate-50 border-2 border-slate-100 focus-within:border-cyan-600 focus-within:bg-white rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
+                 <div className="bg-slate-50 border-2 border-slate-100 focus-within:border-green-600 focus-within:bg-white rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
                     <span className="text-slate-400 font-black text-2xl mr-3">FCFA</span>
                     <input
                       type="number"
@@ -220,7 +220,7 @@ export function Withdraw() {
                    type="password"
                    value={password}
                    onChange={(e) => setPassword(e.target.value)}
-                   className="w-full bg-slate-50 border-2 border-slate-100 focus:border-cyan-600 focus:bg-white rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-300 outline-none transition-all shadow-inner"
+                   className="w-full bg-slate-50 border-2 border-slate-100 focus:border-green-600 focus:bg-white rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-300 outline-none transition-all shadow-inner"
                    placeholder="••••••••"
                    required
                  />

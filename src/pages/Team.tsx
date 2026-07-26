@@ -106,7 +106,7 @@ export function Team() {
           <button
             onClick={copyLink}
             className={`w-12 h-12 flex items-center justify-center rounded-xl transition-all shadow-sm ${
-              copied ? 'bg-emerald-50 text-emerald-500 border border-emerald-100' : 'bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100'
+              copied ? 'bg-emerald-50 text-emerald-500 border border-emerald-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100'
             }`}
           >
             {copied ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -116,17 +116,17 @@ export function Team() {
         <div className="mt-5 pt-5 border-t border-slate-100 flex justify-between items-center px-1">
           <div className="text-center">
             <p className="text-slate-400 text-[9px] font-bold uppercase tracking-wider mb-1">Niveau 1</p>
-            <p className="text-blue-600 font-black text-sm">10%</p>
+            <p className="text-emerald-600 font-black text-sm">10%</p>
           </div>
           <div className="w-[1px] h-8 bg-slate-100"></div>
           <div className="text-center">
             <p className="text-slate-400 text-[9px] font-bold uppercase tracking-wider mb-1">Niveau 2</p>
-            <p className="text-blue-600 font-black text-sm">5%</p>
+            <p className="text-emerald-600 font-black text-sm">5%</p>
           </div>
           <div className="w-[1px] h-8 bg-slate-100"></div>
           <div className="text-center">
             <p className="text-slate-400 text-[9px] font-bold uppercase tracking-wider mb-1">Niveau 3</p>
-            <p className="text-blue-600 font-black text-sm">2.5%</p>
+            <p className="text-emerald-600 font-black text-sm">2.5%</p>
           </div>
         </div>
       </motion.div>
@@ -136,11 +136,11 @@ export function Team() {
            initial={{ opacity: 0, y: 10 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ delay: 0.1 }}
-           className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-5 shadow-lg shadow-blue-500/20 text-white relative overflow-hidden"
+           className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-2xl p-5 shadow-lg shadow-emerald-500/20 text-white relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-[20px] -mr-4 -mt-4"></div>
-          <UserPlus className="w-6 h-6 text-blue-200 mb-3" />
-          <p className="text-blue-100 text-[10px] font-bold uppercase tracking-widest mb-1">Total Membres</p>
+          <UserPlus className="w-6 h-6 text-emerald-200 mb-3" />
+          <p className="text-emerald-100 text-[10px] font-bold uppercase tracking-widest mb-1">Total Membres</p>
           <p className="text-3xl font-black">{getTotalMembers()}</p>
         </motion.div>
         
@@ -148,11 +148,11 @@ export function Team() {
            initial={{ opacity: 0, y: 10 }}
            animate={{ opacity: 1, y: 0 }}
            transition={{ delay: 0.2 }}
-           className="bg-gradient-to-br from-cyan-600 to-blue-600 rounded-2xl p-5 shadow-lg shadow-cyan-600/20 text-white relative overflow-hidden"
+           className="bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl p-5 shadow-lg shadow-green-600/20 text-white relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-[20px] -mr-4 -mt-4"></div>
-          <Gift className="w-6 h-6 text-cyan-200 mb-3" />
-          <p className="text-cyan-100 text-[10px] font-bold uppercase tracking-widest mb-1">Commissions</p>
+          <Gift className="w-6 h-6 text-green-200 mb-3" />
+          <p className="text-green-100 text-[10px] font-bold uppercase tracking-widest mb-1">Commissions</p>
           <p className="text-2xl font-black mt-1 truncate">{formatCurrency(totalCommissions)}</p>
         </motion.div>
       </div>
@@ -188,7 +188,7 @@ export function Team() {
               key={member.id} 
               className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm"
             >
-              <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
                 <User className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">

@@ -60,7 +60,7 @@ export function History() {
     if (type === 'referral_bonus') return 'bg-orange-50 text-orange-500';
     if (type === 'withdrawal' || type === 'investment') return 'bg-slate-100 text-slate-700';
     if (type === 'deposit') return 'bg-emerald-50 text-emerald-600';
-    return 'bg-blue-50 text-blue-600';
+    return 'bg-emerald-50 text-emerald-600';
   };
 
   const getStatusBadge = (status: string) => {
@@ -79,7 +79,7 @@ export function History() {
 
       {loading ? (
         <div className="flex justify-center p-8">
-          <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-slate-200 border-t-emerald-600 rounded-full animate-spin"></div>
         </div>
       ) : transactions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">

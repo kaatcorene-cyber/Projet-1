@@ -181,11 +181,11 @@ export function Invest() {
       `}</style>
       
       {/* Decorative Header (Marquee) */}
-      <div className="relative mb-8 overflow-hidden bg-gradient-to-r from-blue-700 to-cyan-600 rounded-2xl shadow-lg shadow-blue-600/20 py-3.5 flex items-center w-full border border-white/10">
+      <div className="relative mb-8 overflow-hidden bg-gradient-to-r from-emerald-700 to-green-600 rounded-2xl shadow-lg shadow-emerald-600/20 py-3.5 flex items-center w-full border border-white/10">
          <div className="whitespace-nowrap animate-scroll text-white font-medium tracking-wide text-sm flex items-center gap-3">
            <span className="text-lg">👋</span>
-           <span className="font-bold">Bienvenue sur Limak, votre partenaire de confiance.</span>
-           <span className="w-1.5 h-1.5 rounded-full bg-cyan-300 opacity-80"></span>
+           <span className="font-bold">Bienvenue sur OlamAgri, votre partenaire de confiance.</span>
+           <span className="w-1.5 h-1.5 rounded-full bg-green-300 opacity-80"></span>
            <span>Nous vous proposons des contrats d'investissement sécurisés à haut rendement pour générer des revenus stables et performants au quotidien.</span>
          </div>
       </div>
@@ -195,7 +195,7 @@ export function Invest() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className={`p-4 rounded-2xl mb-6 flex items-center gap-3 border shadow-sm ${
-          message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-blue-50 text-blue-800 border-blue-100'
+          message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-emerald-50 text-emerald-800 border-emerald-100'
         }`}>
           {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
           <p className="text-sm font-semibold">{message.text}</p>
@@ -205,7 +205,7 @@ export function Invest() {
       <div className="space-y-6 relative z-10">
         {isLoadingPlans ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-             <div className="w-10 h-10 rounded-full border-4 border-blue-600/20 border-t-blue-600 animate-spin"></div>
+             <div className="w-10 h-10 rounded-full border-4 border-emerald-600/20 border-t-emerald-600 animate-spin"></div>
           </div>
         ) : activePlans.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-3xl p-10 text-center shadow-sm">
@@ -232,7 +232,7 @@ export function Invest() {
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1.5">
                     <p className="text-xl font-black text-slate-900 truncate">{formatCurrency(plan.amount)}</p>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold uppercase tracking-wider shrink-0">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-bold uppercase tracking-wider shrink-0">
                       <TrendingUp className="w-3 h-3" />
                       {plan.duration || 60} Jours
                     </span>
@@ -246,7 +246,7 @@ export function Invest() {
                     <div className="w-[1px] h-6 bg-slate-200"></div>
                     <div className="flex flex-col flex-1 items-end">
                       <span className="text-slate-400 text-[9px] uppercase tracking-wider font-bold">Total Estimé</span>
-                      <span className="text-cyan-600 font-black">{formatCurrency(plan.total)}</span>
+                      <span className="text-green-600 font-black">{formatCurrency(plan.total)}</span>
                     </div>
                   </div>
                 </div>
@@ -258,7 +258,7 @@ export function Invest() {
                 className={`w-full py-3 rounded-xl text-sm font-bold transition-all duration-300 active:scale-[0.98] flex justify-center items-center gap-2 shadow-sm ${
                   hasInsufficientBalance 
                     ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                    : 'text-white bg-slate-900 hover:bg-slate-800 group-hover:bg-gradient-to-r group-hover:from-blue-700 group-hover:to-cyan-600 shadow-slate-200'
+                    : 'text-white bg-slate-900 hover:bg-slate-800 group-hover:bg-gradient-to-r group-hover:from-emerald-700 group-hover:to-green-600 shadow-slate-200'
                 }`}
               >
                 {loading === idx ? (
