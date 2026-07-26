@@ -28,7 +28,7 @@ export function Invest() {
   };
 
   const [plans, setPlans] = useState<any[]>(getInitialPlans());
-  const [isLoadingPlans, setIsLoadingPlans] = useState(!settingsCache && plans.length === 0);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(!settingsCache);
   const [loading, setLoading] = useState<number | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -36,6 +36,9 @@ export function Invest() {
   useEffect(() => {
     if (settingsCache) {
       applyPlans(settingsCache);
+      if (plans.length > 0) {
+        setIsLoadingPlans(false);
+      }
     }
   }, [settingsCache]);
 
@@ -54,6 +57,7 @@ export function Invest() {
       try {
         const parsed = JSON.parse(dbPlansStr.value);
         setPlans(parsed);
+        if (parsed.length > 0) setIsLoadingPlans(false);
       } catch (e) {
         setPlans(DEFAULT_PLANS);
       }

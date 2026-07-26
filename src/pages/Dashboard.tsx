@@ -107,7 +107,7 @@ export function Dashboard() {
   const { installPWA } = usePWAInstall();
   
   const [showWelcome, setShowWelcome] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!user || !config);
   const [avatar, setAvatar] = useState<string>(
     localStorage.getItem(`avatar_${user?.id}`) || 'https://i.imgur.com/20bDoyM.png'
   );
@@ -128,16 +128,31 @@ export function Dashboard() {
   };
 
   useEffect(() => {
+    let mounted = true;
     const init = async () => {
-      setIsLoading(true);
-      await Promise.all([fetchProfile(), fetchConfig()]);
-      setIsLoading(false);
+      // Fetch in background to ensure fresh data, but don't block if we already have it
+      const promises = [];
+      if (!user) promises.push(fetchProfile());
+      if (!config) promises.push(fetchConfig());
       
-      if (!sessionStorage.getItem('welcome_shown')) {
-        setShowWelcome(true);
+      if (promises.length > 0) {
+        setIsLoading(true);
+        await Promise.all(promises);
+      } else {
+        // Even if we have data, silently refresh
+        fetchProfile();
+        fetchConfig();
+      }
+      
+      if (mounted) {
+        setIsLoading(false);
+        if (!sessionStorage.getItem('welcome_shown')) {
+          setShowWelcome(true);
+        }
       }
     };
     init();
+    return () => { mounted = false; };
   }, [fetchProfile, fetchConfig]);
 
   if (isLoading) return (
