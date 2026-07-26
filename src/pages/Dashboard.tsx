@@ -230,34 +230,34 @@ export function Dashboard() {
 
         {/* Menu Grid */}
         <div className="grid grid-cols-2 gap-3 mb-8">
-           <Link to="/products" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
-             <FileSignature className="w-7 h-7 text-emerald-300" />
-             <span className="font-bold text-sm">Contrats</span>
+           <Link to="/products" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <FileSignature className="w-6 h-6 text-emerald-300" />
+             <span className="font-bold text-xs">Contrats Actifs</span>
            </Link>
            
-           <Link to="/bank" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
-             <PiggyBank className="w-7 h-7 text-emerald-300" />
-             <span className="font-bold text-sm">Retraits</span>
+           <Link to="/bank" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <PiggyBank className="w-6 h-6 text-emerald-300" />
+             <span className="font-bold text-xs">Compte Retrait</span>
            </Link>
 
-           <a href={supportLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
-             <Headphones className="w-7 h-7 text-emerald-300" />
-             <span className="font-bold text-sm">Support</span>
+           <a href={supportLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <Headphones className="w-6 h-6 text-emerald-300" />
+             <span className="font-bold text-xs">Support Client</span>
            </a>
            
-           <a href={groupLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
-             <Users className="w-7 h-7 text-emerald-300" />
-             <span className="font-bold text-sm">Groupe</span>
+           <a href={groupLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <Users className="w-6 h-6 text-emerald-300" />
+             <span className="font-bold text-xs">Groupe Officiel</span>
            </a>
 
-           <button onClick={() => installPWA()} className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
-             <Download className="w-7 h-7 text-emerald-300" />
-             <span className="font-bold text-sm">Installer App</span>
+           <button onClick={() => installPWA()} className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <Download className="w-6 h-6 text-emerald-300" />
+             <span className="font-bold text-xs">Installer l'app</span>
            </button>
            
-           <button onClick={() => { logout(); navigate('/login'); }} className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[24px] p-5 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
-             <LogOut className="w-7 h-7 text-red-300" />
-             <span className="font-bold text-sm">Déconnexion</span>
+           <button onClick={() => { logout(); navigate('/login'); }} className="bg-gradient-to-br from-blue-700 to-cyan-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30 transition-all active:scale-[0.98] border border-blue-600/30 text-center">
+             <LogOut className="w-6 h-6 text-red-300" />
+             <span className="font-bold text-xs">Déconnexion</span>
            </button>
         </div>
 
