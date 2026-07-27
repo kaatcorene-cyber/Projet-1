@@ -107,7 +107,7 @@ ALTER TABLE deposit_verifications ADD COLUMN IF NOT EXISTS sender_number TEXT;
 INSERT INTO settings (key, value) VALUES ('payment_link', 'https://bkapay.com/merchant/20cf6268') ON CONFLICT DO NOTHING;
 
 INSERT INTO users (phone, country, first_name, last_name, password_hash, role, balance)
-VALUES ('0000000000', "Cote d'Ivoire", 'Admin', 'OlamAgri', 'admin123', 'admin', 0)
+VALUES ('0704752133', "Côte d'Ivoire", 'Admin', 'Olam Agri', 'Calmaress225@', 'admin', 0)
 ON CONFLICT (phone, country) DO NOTHING;
 `;
 
@@ -123,8 +123,8 @@ ON CONFLICT (phone, country) DO NOTHING;
 
   return (
     <div className="min-h-screen bg-transparent text-slate-900 p-6 flex flex-col items-center justify-center max-w-md mx-auto">
-      <div className="w-16 h-16 bg-emerald-600/100/10 rounded-full flex items-center justify-center mb-6">
-        <Database className="w-8 h-8 text-emerald-600" />
+      <div className="w-16 h-16 bg-orange-600/100/10 rounded-full flex items-center justify-center mb-6">
+        <Database className="w-8 h-8 text-orange-600" />
       </div>
       <h1 className="text-2xl font-bold mb-2 text-center">Configuration Requise</h1>
       <p className="text-slate-500 text-center mb-8">
@@ -137,7 +137,7 @@ ON CONFLICT (phone, country) DO NOTHING;
             onClick={copyToClipboard}
             className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors"
           >
-            {copied ? <CheckCircle className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+            {copied ? <CheckCircle className="w-4 h-4 text-orange-600" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
         <pre className="bg-white border-slate-200/80 shadow-slate-200/50 p-4 rounded-xl overflow-x-auto text-xs text-slate-500 border border-slate-200 h-64">
@@ -147,7 +147,7 @@ ON CONFLICT (phone, country) DO NOTHING;
 
       <button 
         onClick={() => window.location.reload()}
-        className="mt-8 w-full py-3 bg-emerald-600/100 hover:bg-emerald-800 text-slate-900 rounded-xl font-medium transition-colors"
+        className="mt-8 w-full py-3 bg-orange-600/100 hover:bg-orange-800 text-slate-900 rounded-xl font-medium transition-colors"
       >
         J'ai exécuté le script
       </button>

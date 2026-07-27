@@ -10,7 +10,7 @@ export function Register() {
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     phone: '',
-    country: "Côte d'Ivoire" as CountryName,
+    country: "Bénin" as CountryName,
     password: '',
     referralCode: (searchParams.get('ref') && searchParams.get('ref') !== 'undefined') ? searchParams.get('ref') : ''
   });
@@ -49,13 +49,7 @@ export function Register() {
     setError('');
 
     
-    if (userCaptcha !== captchaValue) {
-      setError('Code de vérification incorrect.');
-      generateCaptcha();
-      setUserCaptcha('');
-      setLoading(false);
-      return;
-    }
+    
     
 
     setLoading(true);
@@ -129,42 +123,59 @@ export function Register() {
   };
 
   return (
-    <div className="h-[100dvh] relative flex flex-col justify-center px-6 overflow-hidden bg-transparent">
-      
-      <div className="relative z-10 w-full max-w-sm mx-auto flex flex-col justify-center">
-        
+    <div className="h-[100dvh] relative flex flex-col overflow-hidden bg-slate-50">
+      <div className="w-full h-48 sm:h-56 shrink-0 relative">
+        <img src="https://i.imgur.com/I2qt7oH.jpg" alt="Olam Agri Banner" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-slate-50"></div>
+      </div>
+      <div className="flex-1 relative z-10 w-full max-w-sm mx-auto flex flex-col px-6 pt-2 pb-8 overflow-y-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full"
         >
-          <div className="w-full h-24 mb-4 rounded-2xl overflow-hidden shadow-sm border border-slate-200">
-            <img src="https://i.imgur.com/u0FLYYs.png" alt="OlamAgri Banner" className="w-full h-full object-cover" />
-          </div>
-          
-
-                    <form onSubmit={handleRegister} className="space-y-3">
+          <form onSubmit={handleRegister} className="space-y-3">
             {error && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm text-center font-medium shadow-sm"
+                className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-orange-700 text-sm text-center font-medium shadow-sm"
               >
                 {error}
               </motion.div>
             )}
 
+            
+            
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest">Numéro de téléphone</label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal"
-                placeholder="Votre numéro"
-                required
-              />
+              <div className="flex gap-2">
+                <select
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  className="w-[120px] shrink-0 bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-bold text-sm"
+                >
+                  <option value="Bénin">Bénin</option>
+                  <option value="Togo">Togo</option>
+                  <option value="Burkina">Burkina Faso</option>
+                  <option value="Niger">Niger</option>
+                </select>
+                <div className="flex-1 relative flex items-center">
+                  <span className="absolute left-3 text-slate-500 font-bold pointer-events-none">
+                    {formData.country === 'Bénin' ? '+229' : formData.country === 'Togo' ? '+228' : formData.country === 'Burkina' ? '+226' : '+227'}
+                  </span>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-14 pr-4 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-bold placeholder:text-slate-400 placeholder:font-normal"
+                    placeholder="Votre numéro"
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -175,14 +186,14 @@ export function Register() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal pr-12"
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal pr-12"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-emerald-600 transition-colors bg-white rounded-lg shadow-sm border border-slate-100"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-orange-600 transition-colors bg-white rounded-lg shadow-sm border border-slate-100"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -192,52 +203,23 @@ export function Register() {
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest flex justify-between">
                 <span>Code d'invitation</span>
-                <span className="text-slate-400 font-normal">(Optionnel)</span>
               </label>
               <input
                 type="text"
                 name="referralCode"
                 value={formData.referralCode}
                 onChange={handleChange}
-                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal"
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal"
                 placeholder="Si vous avez été invité"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest flex justify-between">
-                <span>Vérification</span>
-                
-              </label>
-              <div className="flex gap-2">
-                <div 
-                  className="w-24 shrink-0 flex items-center justify-center bg-slate-200 rounded-xl relative overflow-hidden select-none border-2 border-slate-300"
-                  style={{
-                    backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"%239C92AC\" fill-opacity=\"0.4\" fill-rule=\"evenodd\"%3E%3Ccircle cx=\"3\" cy=\"3\" r=\"3\"/>%3Ccircle cx=\"13\" cy=\"13\" r=\"3\"/>%3C/g%3E%3C/svg%3E")'
-                  }}
-                >
-                  <span className="text-xl font-black text-slate-600 tracking-[0.15em] italic transform skew-x-[-15deg] opacity-70 blur-[1px]" style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.3)' }}>
-                    {captchaValue}
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent"></div>
-                  {/* Additional line crossing out for obfuscation */}
-                  <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-400/50 transform -translate-y-1/2 rotate-[-5deg]"></div>
-                </div>
-                <input
-                  type="text"
-                  value={userCaptcha}
-                  onChange={(e) => setUserCaptcha(e.target.value)}
-                  className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal text-center tracking-widest"
-                  placeholder="Code"
-                  required
-                />
-              </div>
-            </div>
+            
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-emerald-700 to-green-600 text-white hover:from-emerald-600 hover:to-green-500 font-bold py-3 rounded-xl mt-4 transition-all shadow-lg shadow-emerald-600/30 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2 group"
+              className="w-full bg-gradient-to-r from-orange-700 to-orange-600 text-white hover:from-orange-600 hover:to-orange-500 font-bold py-3 rounded-xl mt-4 transition-all shadow-lg shadow-orange-600/30 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2 group"
             >
               {loading ? 'Création en cours...' : (
                  <>Créer mon compte <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
@@ -249,7 +231,7 @@ export function Register() {
 
         <p className="text-center text-slate-500 text-sm mt-4 font-medium">
           Déjà un compte ?{' '}
-          <Link to="/login" className="text-emerald-700 hover:text-emerald-800 font-bold tracking-wide transition-colors">
+          <Link to="/login" className="text-orange-700 hover:text-orange-800 font-bold tracking-wide transition-colors">
             Se connecter
           </Link>
         </p>

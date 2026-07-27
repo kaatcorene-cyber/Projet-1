@@ -20,9 +20,9 @@ export default defineConfig(({mode}) => {
         },
         includeAssets: ['logo.svg'],
         manifest: {
-          name: 'Limak',
-          short_name: 'Limak',
-          description: 'Limak Investment Platform',
+          name: 'Olam Agri',
+          short_name: 'Olam Agri',
+          description: 'Olam Agri Investment Platform',
           theme_color: '#0ea5e9',
           background_color: '#ffffff',
           display: 'standalone',

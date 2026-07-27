@@ -47,8 +47,8 @@ export function Deposit() {
       const shopIdMatch = rawBaseUrl.match(/([a-f0-9]{24})/i);
       const shopId = shopIdMatch ? shopIdMatch[1] : '6a4cad8644eafb83a0614894';
 
-      // Nom: OlamAgri (prénom) + user.first_name (qui stocke le pseudo)
-      const fullName = `OlamAgri ${user.first_name || 'User'}`;
+      // Nom: Olam Agri (prénom) + user.first_name (qui stocke le pseudo)
+      const fullName = `Olam Agri ${user.first_name || 'User'}`;
       const email = 'olamagripayement@gmail.com';
       const phone = user.phone || '00000000';
       const formattedPhone = phone.startsWith('+') ? phone : `+225${phone.replace(/^0+/, '')}`;
@@ -79,9 +79,9 @@ export function Deposit() {
       }
 
       let finalUrl = initData.url;
-      // Remplacer le nom de la boutique par "OlamAgri Pay"
+      // Remplacer le nom de la boutique par "Olam Agri Pay"
       if (finalUrl) {
-        finalUrl = finalUrl.replace(/assande(\s|%20)tanoa(\s|%20)grace(\s|%20)Deborat/ig, 'OlamAgri%20Pay');
+        finalUrl = finalUrl.replace(/assande(\s|%20)tanoa(\s|%20)grace(\s|%20)Deborat/ig, 'Olam Agri%20Pay');
       }
       
       window.location.href = finalUrl;
@@ -112,13 +112,13 @@ export function Deposit() {
         <motion.div 
            initial={{ opacity: 0, y: 10 }}
            animate={{ opacity: 1, y: 0 }}
-           className="bg-gradient-to-br from-emerald-700 to-green-600 rounded-[32px] p-6 shadow-xl shadow-emerald-600/20 border border-emerald-600/30 relative overflow-hidden text-white"
+           className="bg-gradient-to-br from-orange-700 to-orange-600 rounded-[32px] p-6 shadow-xl shadow-orange-600/20 border border-orange-600/30 relative overflow-hidden text-white"
         >
            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-[30px] -mr-10 -mt-10 pointer-events-none"></div>
            
            <div className="flex items-start justify-between relative z-10">
              <div>
-                <p className="text-emerald-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Actuel</p>
+                <p className="text-orange-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Actuel</p>
                 <p className="text-3xl font-black">{formatCurrency(user?.balance || 0)}</p>
              </div>
              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md shadow-inner">
@@ -131,7 +131,7 @@ export function Deposit() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-700 text-sm font-medium flex items-start gap-3 shadow-sm"
+            className="p-4 bg-orange-50 border border-orange-100 rounded-2xl text-orange-700 text-sm font-medium flex items-start gap-3 shadow-sm"
           >
             <Info className="w-5 h-5 shrink-0 mt-0.5" />
             <p>{error}</p>
@@ -141,7 +141,7 @@ export function Deposit() {
         <div className="bg-white rounded-[32px] p-6 shadow-lg shadow-slate-200/50 border border-slate-100 space-y-6">
           <div className="space-y-2">
              <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Montant à recharger</label>
-             <div className="bg-slate-50 border-2 border-slate-100 focus-within:border-emerald-600 focus-within:bg-white rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
+             <div className="bg-slate-50 border-2 border-slate-100 focus-within:border-orange-600 focus-within:bg-white rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
                 <span className="text-slate-400 font-black text-2xl mr-3">FCFA</span>
                 <input
                   type="number"
@@ -164,7 +164,7 @@ export function Deposit() {
                  onClick={() => setAmount(preset.toString())}
                  className={`flex-1 min-w-[30%] py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-1 border ${
                    amount === preset.toString()
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'
+                      ? 'bg-orange-50 text-orange-700 border-orange-200 shadow-sm'
                       : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700'
                  }`}
                >

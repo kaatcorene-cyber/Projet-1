@@ -36,14 +36,14 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
       <div className="w-full max-w-[380px] bg-white border border-slate-100 rounded-[32px] shadow-2xl relative z-10 animate-in zoom-in-95 p-8 flex flex-col items-center overflow-hidden">
         
         {/* Decorative Top Accent */}
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-600 to-green-500"></div>
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-600 to-orange-500"></div>
 
         <h2 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight mt-2">Informations</h2>
         
         <div className="w-full space-y-4 mb-8">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <svg className="w-3.5 h-3.5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
             </div>
             <p className="text-slate-600 text-sm font-medium leading-snug">
               La plateforme d'investissement la plus fiable pour générer des revenus quotidiens.
@@ -52,7 +52,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
           
           <div className="flex items-start gap-3">
             <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <svg className="w-3.5 h-3.5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
             </div>
             <p className="text-slate-600 text-sm font-medium leading-snug">
               Investissez dans vos contrats et percevez des revenus chaque jour.
@@ -61,7 +61,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
 
           <div className="flex items-start gap-3">
             <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <svg className="w-3.5 h-3.5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
             </div>
             <p className="text-slate-600 text-sm font-medium leading-snug">
               Montant minimum de retrait : <span className="font-bold text-slate-900 whitespace-nowrap">2000 FCFA</span>.
@@ -70,7 +70,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
 
           <div className="flex items-start gap-3">
             <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <svg className="w-3.5 h-3.5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
             </div>
             <p className="text-slate-600 text-sm font-medium leading-snug">
               Dépôts et retraits 24 h/24 et 7 j/7.
@@ -79,7 +79,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
 
           <div className="flex items-start gap-3">
             <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <svg className="w-3.5 h-3.5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
             </div>
             <p className="text-slate-600 text-sm font-medium leading-snug">
               Gagnez des commissions en parrainant vos amis sur 3 niveaux.
@@ -88,7 +88,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
         </div>
 
         <div className="w-full space-y-3">
-          <a href={groupLink} target="_blank" rel="noopener noreferrer" onClick={onClose} className="w-full bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-700 hover:to-green-600 text-white rounded-xl py-3.5 font-bold text-sm transition-all flex justify-center items-center gap-2 shadow-lg shadow-emerald-500/25">
+          <a href={groupLink} target="_blank" rel="noopener noreferrer" onClick={onClose} className="w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white rounded-xl py-3.5 font-bold text-sm transition-all flex justify-center items-center gap-2 shadow-lg shadow-orange-500/25">
             <Users className="w-5 h-5" /> Rejoindre le Groupe
           </a>
           <button onClick={onClose} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl py-3.5 font-bold text-sm transition-all">
@@ -99,6 +99,15 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
     </div>
   );
 }
+
+const generateUserId = (uuid: string | undefined) => {
+  if (!uuid) return '000000';
+  let hash = 0;
+  for (let i = 0; i < uuid.length; i++) {
+    hash = uuid.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash).toString().substring(0, 6).padEnd(6, '0');
+};
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -157,7 +166,7 @@ export function Dashboard() {
 
   if (isLoading) return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-      <div className="w-12 h-12 border-4 border-emerald-600/20 border-t-emerald-600 rounded-full animate-spin"></div>
+      <div className="w-12 h-12 border-4 border-orange-600/20 border-t-orange-600 rounded-full animate-spin"></div>
     </div>
   );
 
@@ -167,17 +176,17 @@ export function Dashboard() {
   const bankBalance = Number(user?.bank_balance) || 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-32 text-slate-900 font-sans selection:bg-emerald-600/30">
+    <div className="min-h-screen bg-slate-50 pb-32 text-slate-900 font-sans selection:bg-orange-600/30">
       {showWelcome && <WelcomeModal groupLink={groupLink} onClose={() => { sessionStorage.setItem('welcome_shown', 'true'); setShowWelcome(false); }} />}
       
       {/* Curved background header */}
       <div className="absolute top-0 left-0 w-full h-[280px] bg-slate-900 rounded-b-[40px] shadow-lg overflow-hidden pointer-events-none">
-         <div className="absolute top-[-20%] right-[-10%] w-[300px] h-[300px] rounded-full bg-emerald-700/20 blur-[80px]"></div>
-         <div className="absolute bottom-[-10%] left-[-10%] w-[200px] h-[200px] rounded-full bg-green-600/20 blur-[60px]"></div>
+         <div className="absolute top-[-20%] right-[-10%] w-[300px] h-[300px] rounded-full bg-orange-700/20 blur-[80px]"></div>
+         <div className="absolute bottom-[-10%] left-[-10%] w-[200px] h-[200px] rounded-full bg-orange-600/20 blur-[60px]"></div>
       </div>
 
       <div className="px-5 pt-8 pb-6 relative z-10 max-w-lg mx-auto">
-        <h1 className="text-center text-white/80 text-sm font-bold uppercase tracking-widest mb-6">Mon Profil</h1>
+        <h1 className="text-center text-white/80 text-sm font-bold uppercase tracking-widest mb-6">Olam Agri</h1>
         
         {/* Header / Profile Info */}
         <header className="flex flex-col items-center text-center mb-8">
@@ -186,7 +195,7 @@ export function Dashboard() {
                  <img src={avatar} alt="Profile" className="w-full h-full object-cover rounded-full bg-slate-50" />
                  
                  {/* Camera Button */}
-                 <label className="absolute -bottom-2 -right-2 bg-emerald-600 text-white w-9 h-9 rounded-full flex items-center justify-center border-[3px] border-slate-900 shadow-md cursor-pointer hover:bg-emerald-700 transition-colors z-10">
+                 <label className="absolute -bottom-2 -right-2 bg-orange-600 text-white w-9 h-9 rounded-full flex items-center justify-center border-[3px] border-slate-900 shadow-md cursor-pointer hover:bg-orange-700 transition-colors z-10">
                    <Camera className="w-4 h-4" />
                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                  </label>
@@ -199,7 +208,7 @@ export function Dashboard() {
              )}
           </div>
           <h1 className="text-2xl text-white font-black tracking-tight">
-            {user?.first_name || 'Utilisateur'}
+            ID : {generateUserId(user?.id)}
           </h1>
           <div className="flex items-center gap-3 mt-2 text-slate-300 text-sm font-medium">
              <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" /> {user?.phone}</span>
@@ -232,12 +241,12 @@ export function Dashboard() {
 
            {/* Quick Actions */}
            <div className="flex gap-3">
-              <Link to="/deposit" className="flex-1 bg-gradient-to-br from-emerald-700 to-green-600 text-white rounded-2xl py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all active:scale-[0.98] border border-emerald-600/30">
-                <ArrowDownLeft className="w-5 h-5 text-emerald-300" />
+              <Link to="/deposit" className="flex-1 bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-2xl py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30">
+                <ArrowDownLeft className="w-5 h-5 text-orange-300" />
                 <span className="font-bold text-sm">Déposer</span>
               </Link>
-              <Link to="/withdraw" className="flex-1 bg-gradient-to-br from-emerald-700 to-green-600 text-white rounded-2xl py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all active:scale-[0.98] border border-emerald-600/30">
-                <ArrowUpRight className="w-5 h-5 text-emerald-200" />
+              <Link to="/withdraw" className="flex-1 bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-2xl py-3.5 flex items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30">
+                <ArrowUpRight className="w-5 h-5 text-orange-200" />
                 <span className="font-bold text-sm">Retirer</span>
               </Link>
            </div>
@@ -245,32 +254,32 @@ export function Dashboard() {
 
         {/* Menu Grid */}
         <div className="grid grid-cols-2 gap-3 mb-8">
-           <Link to="/products" className="bg-gradient-to-br from-emerald-700 to-green-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all active:scale-[0.98] border border-emerald-600/30 text-center">
-             <FileSignature className="w-6 h-6 text-emerald-300" />
+           <Link to="/products" className="bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30 text-center">
+             <FileSignature className="w-6 h-6 text-orange-300" />
              <span className="font-bold text-xs">Contrats Actifs</span>
            </Link>
            
-           <Link to="/bank" className="bg-gradient-to-br from-emerald-700 to-green-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all active:scale-[0.98] border border-emerald-600/30 text-center">
-             <PiggyBank className="w-6 h-6 text-emerald-300" />
+           <Link to="/bank" className="bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30 text-center">
+             <PiggyBank className="w-6 h-6 text-orange-300" />
              <span className="font-bold text-xs">Compte Retrait</span>
            </Link>
 
-           <a href={supportLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-emerald-700 to-green-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all active:scale-[0.98] border border-emerald-600/30 text-center">
-             <Headphones className="w-6 h-6 text-emerald-300" />
+           <a href={supportLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30 text-center">
+             <Headphones className="w-6 h-6 text-orange-300" />
              <span className="font-bold text-xs">Support Client</span>
            </a>
            
-           <a href={groupLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-emerald-700 to-green-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all active:scale-[0.98] border border-emerald-600/30 text-center">
-             <Users className="w-6 h-6 text-emerald-300" />
+           <a href={groupLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30 text-center">
+             <Users className="w-6 h-6 text-orange-300" />
              <span className="font-bold text-xs">Groupe Officiel</span>
            </a>
 
-           <button onClick={() => installPWA()} className="bg-gradient-to-br from-emerald-700 to-green-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all active:scale-[0.98] border border-emerald-600/30 text-center">
-             <Download className="w-6 h-6 text-emerald-300" />
+           <button onClick={() => installPWA()} className="bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30 text-center">
+             <Download className="w-6 h-6 text-orange-300" />
              <span className="font-bold text-xs">Installer l'app</span>
            </button>
            
-           <button onClick={() => { logout(); navigate('/login'); }} className="bg-gradient-to-br from-emerald-700 to-green-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all active:scale-[0.98] border border-emerald-600/30 text-center">
+           <button onClick={() => { logout(); navigate('/login'); }} className="bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30 text-center">
              <LogOut className="w-6 h-6 text-red-300" />
              <span className="font-bold text-xs">Déconnexion</span>
            </button>

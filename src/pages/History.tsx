@@ -59,13 +59,13 @@ export function History() {
   const getIconColor = (type: string) => {
     if (type === 'referral_bonus') return 'bg-orange-50 text-orange-500';
     if (type === 'withdrawal' || type === 'investment') return 'bg-slate-100 text-slate-700';
-    if (type === 'deposit') return 'bg-emerald-50 text-emerald-600';
-    return 'bg-emerald-50 text-emerald-600';
+    if (type === 'deposit') return 'bg-orange-50 text-orange-600';
+    return 'bg-orange-50 text-orange-600';
   };
 
   const getStatusBadge = (status: string) => {
     switch(status) {
-      case 'completed': return <span className="text-emerald-500 text-[11px] font-bold">Payé</span>;
+      case 'completed': return <span className="text-orange-500 text-[11px] font-bold">Payé</span>;
       case 'pending': return <span className="text-amber-500 text-[11px] font-bold">En attente</span>;
       case 'rejected': return <span className="text-red-500 text-[11px] font-bold">Rejeté</span>;
       default: return null;
@@ -79,7 +79,7 @@ export function History() {
 
       {loading ? (
         <div className="flex justify-center p-8">
-          <div className="w-8 h-8 border-4 border-slate-200 border-t-emerald-600 rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-slate-200 border-t-orange-600 rounded-full animate-spin"></div>
         </div>
       ) : transactions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">

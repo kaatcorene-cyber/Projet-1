@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const ContractVisual: React.FC = () => {
   return (
     <div className="relative w-24 h-24 flex items-center justify-center bg-slate-100/80 rounded-2xl border border-slate-300/50 overflow-hidden shrink-0 shadow-inner">
-      <div className={`absolute inset-0 opacity-20 blur-2xl bg-emerald-600`}></div>
+      <div className={`absolute inset-0 opacity-20 blur-2xl bg-orange-600`}></div>
       
       <motion.div 
         className="absolute inset-0 flex items-center justify-center"
@@ -18,7 +18,7 @@ const ContractVisual: React.FC = () => {
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       >
         <div className={`w-14 h-14 rounded-full flex flex-col items-center justify-center border-4 border-slate-200/50 bg-white/80 backdrop-blur-xl border border-slate-200 shadow-md`}>
-           <Zap className="w-6 h-6 text-emerald-600" />
+           <Zap className="w-6 h-6 text-orange-600" />
         </div>
       </motion.div>
 
@@ -70,7 +70,7 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
 
   return (
     <div className="bg-white/80 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-3xl p-5 relative overflow-hidden flex items-center gap-5">
-      <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[40px] -mr-16 -mt-16 pointer-events-none bg-emerald-600/10`}></div>
+      <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[40px] -mr-16 -mt-16 pointer-events-none bg-orange-600/10`}></div>
       
       <ContractVisual />
 
@@ -79,9 +79,9 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
           <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5">
             Plan <span className="w-1 h-1 rounded-full bg-zinc-600"></span> {formatCurrency(inv.plan_amount || 0)}
           </p>
-          <div className="flex gap-1.5 items-center bg-emerald-600/10 px-2 py-1 rounded-lg border border-emerald-600/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-            <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Actif</span>
+          <div className="flex gap-1.5 items-center bg-orange-600/10 px-2 py-1 rounded-lg border border-orange-600/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-600 animate-pulse"></span>
+            <span className="text-[10px] text-orange-600 font-bold uppercase tracking-wider">Actif</span>
           </div>
         </div>
         
@@ -90,12 +90,12 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
           <span className="text-zinc-600 mx-1 mb-1">:</span>
           <span>{String(timeLeft.m).padStart(2, '0')}</span>
           <span className="text-zinc-600 mx-1 mb-1">:</span>
-          <span className="text-green-600">{String(timeLeft.s).padStart(2, '0')}</span>
+          <span className="text-orange-600">{String(timeLeft.s).padStart(2, '0')}</span>
         </div>
         
         <div className="mt-4 w-full bg-slate-100/80 rounded-full h-2 overflow-hidden border border-slate-200">
           <div 
-            className="h-full rounded-full transition-all duration-1000 ease-linear bg-gradient-to-r from-green-700 to-emerald-600" 
+            className="h-full rounded-full transition-all duration-1000 ease-linear bg-gradient-to-r from-orange-700 to-orange-600" 
             style={{ width: `${timeLeft.percent}%` }}
           ></div>
         </div>
@@ -156,7 +156,7 @@ export function Products() {
       <div className="max-w-md mx-auto space-y-5">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-             <div className="w-10 h-10 rounded-full border-4 border-emerald-600/20 border-t-emerald-600 animate-spin"></div>
+             <div className="w-10 h-10 rounded-full border-4 border-orange-600/20 border-t-orange-600 animate-spin"></div>
           </div>
         ) : investments.length === 0 ? (
           <div className="py-20 text-center">
