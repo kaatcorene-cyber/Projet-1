@@ -28,17 +28,17 @@ export default defineConfig(({mode}) => {
           display: 'standalone',
           icons: [
             {
-              src: '/logo.svg',
+              src: '/logo.svg?v=2',
               sizes: '192x192',
               type: 'image/svg+xml'
             },
             {
-              src: '/logo.svg',
+              src: '/logo.svg?v=2',
               sizes: '512x512',
               type: 'image/svg+xml'
             },
             {
-              src: '/logo.svg',
+              src: '/logo.svg?v=2',
               sizes: '512x512',
               type: 'image/svg+xml',
               purpose: 'any maskable'
