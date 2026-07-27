@@ -69,18 +69,26 @@ export function Register() {
         return;
       }
 
-      let myReferralCode = 'USER' + Math.floor(Math.random() * 1000000);
+      
+      const generateRef = () => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz';
+        let res = '';
+        for (let i = 0; i < 6; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+        return res;
+      };
+      
+      let finalCode = generateRef();
       let codeUnique = false;
-      let finalCode = myReferralCode;
       
       while(!codeUnique) {
           const { data: existingRef } = await supabase.from('users').select('id').eq('referral_code', finalCode).maybeSingle();
           if (existingRef) {
-              finalCode = 'USER' + Math.floor(Math.random() * 1000000);
+              finalCode = generateRef();
           } else {
               codeUnique = true;
           }
       }
+
 
       const { data, error: insertError } = await supabase
         .from('users')

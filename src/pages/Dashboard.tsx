@@ -88,7 +88,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
         </div>
 
         <div className="w-full space-y-3">
-          <a href={groupLink} target="_blank" rel="noopener noreferrer" onClick={onClose} className="w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white rounded-xl py-3.5 font-bold text-sm transition-all flex justify-center items-center gap-2 shadow-lg shadow-orange-500/25">
+          <a href={getTgLink(groupLink)} target="_blank" rel="noopener noreferrer" onClick={onClose} className="w-full bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white rounded-xl py-3.5 font-bold text-sm transition-all flex justify-center items-center gap-2 shadow-lg shadow-orange-500/25">
             <Users className="w-5 h-5" /> Rejoindre le Groupe
           </a>
           <button onClick={onClose} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl py-3.5 font-bold text-sm transition-all">
@@ -109,6 +109,19 @@ const generateUserId = (uuid: string | undefined) => {
   return Math.abs(hash).toString().substring(0, 6).padEnd(6, '0');
 };
 
+
+const getTgLink = (url: string | undefined | null) => {
+  if (!url || url === '#') return '#';
+  if (url.startsWith('https://t.me/')) {
+    const path = url.replace('https://t.me/', '');
+    if (path.startsWith('+')) {
+      return `tg://join?invite=${path.substring(1)}`;
+    }
+    return `tg://resolve?domain=${path}`;
+  }
+  return url;
+};
+
 export function Dashboard() {
   const navigate = useNavigate();
   const { user, logout, fetchProfile } = useAuthStore();
@@ -117,9 +130,11 @@ export function Dashboard() {
   
   const [showWelcome, setShowWelcome] = useState(false);
   const [isLoading, setIsLoading] = useState(!user || !config);
-  const [avatar, setAvatar] = useState<string>(
-    localStorage.getItem(`avatar_${user?.id}`) || 'https://i.imgur.com/2QzGpuQ.png'
-  );
+  const [avatar, setAvatar] = useState<string>(() => {
+    const saved = localStorage.getItem(`avatar_${user?.id}`);
+    if (saved && saved.startsWith('http')) return '/logo.jpg';
+    return saved || '/logo.jpg';
+  });
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -264,7 +279,7 @@ export function Dashboard() {
              <span className="font-bold text-xs">Compte Retrait</span>
            </Link>
 
-           <a href={supportLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30 text-center">
+           <a href={getTgLink(supportLink)} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30 text-center">
              <Headphones className="w-6 h-6 text-orange-300" />
              <span className="font-bold text-xs">Support Client</span>
            </a>
