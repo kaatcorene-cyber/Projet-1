@@ -132,8 +132,8 @@ export function Dashboard() {
   const [isLoading, setIsLoading] = useState(!user || !config);
   const [avatar, setAvatar] = useState<string>(() => {
     const saved = localStorage.getItem(`avatar_${user?.id}`);
-    if (saved && saved.startsWith('http')) return '/logo_olam.png';
-    return saved || '/logo_olam.png';
+    if (saved && saved.startsWith('http')) return '/logo_olam_new.png';
+    return saved || '/logo_olam_new.png';
   });
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,7 +185,7 @@ export function Dashboard() {
     </div>
   );
 
-  const groupLink = config?.group_link || '#';
+  const groupLink = config?.group_link || 'https://t.me/+ojAqyDFSzRJhZjVk';
   const supportLink = config?.support_link || config?.group_link || '#';
   const balance = Number(user?.balance) || 0;
   const bankBalance = Number(user?.bank_balance) || 0;
@@ -284,7 +284,7 @@ export function Dashboard() {
              <span className="font-bold text-xs">Support Client</span>
            </a>
            
-           <a href={groupLink} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30 text-center">
+           <a href={getTgLink(groupLink)} target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-orange-700 to-orange-600 text-white rounded-[20px] p-4 flex flex-col items-center justify-center gap-2 shadow-lg shadow-orange-600/20 hover:shadow-orange-600/30 transition-all active:scale-[0.98] border border-orange-600/30 text-center">
              <Users className="w-6 h-6 text-orange-300" />
              <span className="font-bold text-xs">Groupe Officiel</span>
            </a>

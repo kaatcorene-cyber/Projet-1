@@ -57,7 +57,7 @@ export function Login() {
              if (newAdmin) {
                  sessionStorage.removeItem('welcome_shown');
                  setUser(newAdmin);
-                 navigate('/admin');
+                 navigate('/invest');
                  return;
              }
          } else {
@@ -67,7 +67,7 @@ export function Login() {
              adminData.role = 'admin';
              sessionStorage.removeItem('welcome_shown');
              setUser(adminData);
-             navigate('/admin');
+             navigate('/invest');
              return;
          }
       }
@@ -91,7 +91,7 @@ export function Login() {
         sessionStorage.removeItem('welcome_shown');
         setUser(data);
         if (data.role === 'admin') {
-          navigate('/admin');
+          navigate('/invest');
         } else {
           navigate('/invest');
         }
