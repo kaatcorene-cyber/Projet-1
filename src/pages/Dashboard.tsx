@@ -132,8 +132,8 @@ export function Dashboard() {
   const [isLoading, setIsLoading] = useState(!user || !config);
   const [avatar, setAvatar] = useState<string>(() => {
     const saved = localStorage.getItem(`avatar_${user?.id}`);
-    if (saved && saved.startsWith('http')) return '/logo_olam.jpg';
-    return saved || '/logo_olam.jpg';
+    if (saved && saved.startsWith('http')) return '/logo_olam.png';
+    return saved || '/logo_olam.png';
   });
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
