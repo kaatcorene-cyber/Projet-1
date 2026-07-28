@@ -232,10 +232,7 @@ export function Invest() {
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1.5">
                     <p className="text-xl font-black text-slate-900 truncate">{formatCurrency(plan.amount)}</p>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-50 text-orange-700 rounded-lg text-[10px] font-bold uppercase tracking-wider shrink-0">
-                      
-                      Quota 0/2
-                    </span>
+                    
                   </div>
                   
                   <div className="flex items-center gap-3 text-xs font-medium bg-slate-50 rounded-xl p-2.5 border border-slate-100/50">
