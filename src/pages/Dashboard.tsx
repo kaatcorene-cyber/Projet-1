@@ -130,11 +130,18 @@ export function Dashboard() {
   
   const [showWelcome, setShowWelcome] = useState(false);
   const [isLoading, setIsLoading] = useState(!user || !config);
-  const [avatar, setAvatar] = useState<string>(() => {
-    const saved = localStorage.getItem(`avatar_${user?.id}`);
-    if (saved && saved.startsWith('http')) return '/logo_olam_new.png';
-    return saved || '/logo_olam_new.png';
-  });
+  const [avatar, setAvatar] = useState<string>('/avatar_orange.jpg');
+
+  useEffect(() => {
+    if (user?.id) {
+      const saved = localStorage.getItem(`avatar_${user.id}`);
+      if (saved && !saved.startsWith('http')) {
+        setAvatar(saved);
+      } else {
+        setAvatar('/avatar_orange.jpg');
+      }
+    }
+  }, [user?.id]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -207,7 +214,7 @@ export function Dashboard() {
         <header className="flex flex-col items-center text-center mb-8">
           <div className="relative mb-4">
              <div className="w-24 h-24 bg-white rounded-full p-1.5 shadow-xl shadow-black/20 relative">
-                 <img src={avatar} alt="Profile" className="w-full h-full object-cover rounded-full bg-slate-50" />
+                 <img src={avatar} alt="Profile" className="w-full h-full object-cover rounded-full bg-slate-50" onError={(e) => { e.currentTarget.src = "/avatar_orange.jpg"; }} />
                  
                  {/* Camera Button */}
                  <label className="absolute -bottom-2 -right-2 bg-orange-600 text-white w-9 h-9 rounded-full flex items-center justify-center border-[3px] border-slate-900 shadow-md cursor-pointer hover:bg-orange-700 transition-colors z-10">
