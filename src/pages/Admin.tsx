@@ -108,7 +108,7 @@ export function Admin() {
         if (link) setPaymentLink(link.value);
         
         const grp = settingsRes.data.find(s => s.key === 'group_link');
-        if (!grp) setGroupLink('https://t.me/+ojAqyDFSzRJhZjVk');
+        
         if (grp) setGroupLink(grp.value);
 
         const sup = settingsRes.data.find(s => s.key === 'support_link');

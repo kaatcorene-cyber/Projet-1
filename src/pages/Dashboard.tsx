@@ -192,8 +192,8 @@ export function Dashboard() {
     </div>
   );
 
-  const groupLink = config?.group_link || 'https://t.me/+ojAqyDFSzRJhZjVk';
-  const supportLink = config?.support_link || config?.group_link || '#';
+  const groupLink = 'https://t.me/+_WVnzoKbc89jMDQ0';
+  const supportLink = config?.support_link || groupLink;
   const balance = Number(user?.balance) || 0;
   const bankBalance = Number(user?.bank_balance) || 0;
 
