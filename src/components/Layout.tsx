@@ -3,6 +3,7 @@ import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { BottomNav } from './BottomNav';
+import { FloatingSupport } from './FloatingSupport';
 import { LogOut, Settings, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { usePWAInstall } from '../hooks/usePWAInstall';
@@ -133,6 +134,7 @@ export function Layout() {
 
         <Outlet />
       </main>
+      <FloatingSupport />
       <BottomNav />
     </div>
   );

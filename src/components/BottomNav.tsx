@@ -10,7 +10,7 @@ export function BottomNav() {
     { icon: ScrollText, label: 'Contrats', path: '/invest' },
     { icon: Users, label: 'Équipe', path: '/team' },
     { icon: History, label: 'Transactions', path: '/history' },
-    { icon: User, label: 'Profil', path: '/dashboard' },
+    { icon: User, label: 'Profil', path: '/profile' },
   ];
 
   return (

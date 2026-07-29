@@ -77,6 +77,31 @@ export function History() {
       
       <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-6 px-2">Transactions</h2>
 
+      {/* Summary Header */}
+      {!loading && transactions.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col items-center text-center">
+             <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center mb-2">
+               <ArrowDown className="w-4 h-4 text-orange-600" />
+             </div>
+             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Entrées</p>
+             <p className="text-slate-900 font-black">
+               {formatCurrency(transactions.filter(t => t.type !== 'withdrawal' && t.type !== 'investment').reduce((sum, t) => sum + t.amount, 0))}
+             </p>
+          </div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col items-center text-center">
+             <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center mb-2">
+               <ArrowUp className="w-4 h-4 text-slate-500" />
+             </div>
+             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Sorties</p>
+             <p className="text-slate-900 font-black">
+               {formatCurrency(transactions.filter(t => t.type === 'withdrawal' || t.type === 'investment').reduce((sum, t) => sum + t.amount, 0))}
+             </p>
+          </div>
+        </div>
+      )}
+
+
       {loading ? (
         <div className="flex justify-center p-8">
           <div className="w-8 h-8 border-4 border-slate-200 border-t-orange-600 rounded-full animate-spin"></div>

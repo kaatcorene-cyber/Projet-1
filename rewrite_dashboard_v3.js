@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import fs from 'fs';
+
+const content = `import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { formatCurrency } from '../lib/utils';
 import { 
   Camera, LogOut, Download, PiggyBank, 
-  ArrowUpRight, Crown, Phone, ArrowDownLeft, MapPin, 
+  ArrowUpRight, Crown, Phone, ArrowDownLeft, 
   Users, Headphones, Wallet, Activity, FileSignature, 
   ChevronRight, Info, ShieldCheck, Bell
 } from 'lucide-react';
@@ -88,9 +90,9 @@ const getTgLink = (url: string | undefined | null) => {
   if (url.startsWith('https://t.me/')) {
     const path = url.replace('https://t.me/', '');
     if (path.startsWith('+')) {
-      return `tg://join?invite=${path.substring(1)}`;
+      return \`tg://join?invite=\${path.substring(1)}\`;
     }
-    return `tg://resolve?domain=${path}`;
+    return \`tg://resolve?domain=\${path}\`;
   }
   return url;
 };
@@ -103,15 +105,15 @@ export function Dashboard() {
   
   const [showWelcome, setShowWelcome] = useState(false);
   const [isLoading, setIsLoading] = useState(!user || !config);
-  const [avatar, setAvatar] = useState<string>('');
+  const [avatar, setAvatar] = useState<string>('/avatar_orange.jpg?v=2');
 
   useEffect(() => {
     if (user?.id) {
-      const saved = localStorage.getItem(`avatar_${user.id}`);
+      const saved = localStorage.getItem(\`avatar_\${user.id}\`);
       if (saved && saved.startsWith('data:image')) {
         setAvatar(saved);
       } else {
-        setAvatar(`https://ui-avatars.com/api/?name=${encodeURIComponent(user.phone || 'Olam')}&background=ea580c&color=fff&size=128&font-size=0.33`);
+        setAvatar('/avatar_orange.jpg?v=2');
       }
     }
   }, [user?.id]);
@@ -124,7 +126,7 @@ export function Dashboard() {
         const base64String = reader.result as string;
         setAvatar(base64String);
         if (user?.id) {
-          localStorage.setItem(`avatar_${user.id}`, base64String);
+          localStorage.setItem(\`avatar_\${user.id}\`, base64String);
         }
       };
       reader.readAsDataURL(file);
@@ -179,28 +181,25 @@ export function Dashboard() {
       {showWelcome && <WelcomeModal groupLink={groupLink} onClose={() => { sessionStorage.setItem('welcome_shown', 'true'); setShowWelcome(false); }} />}
       
       {/* Top Header Background */}
-      <div className="absolute top-0 left-0 w-full h-[280px] bg-orange-600 rounded-b-[40px] shadow-md overflow-hidden pointer-events-none"></div>
-      
-      <div className="max-w-md mx-auto pt-6 px-4 relative z-10">
+      <div className="absolute top-0 left-0 w-full h-[280px] bg-orange-600 rounded-b-[40px] shadow-md overflow-hidden pointer-events-none">
+         <div className="absolute top-[-20%] right-[-10%] w-[350px] h-[350px] rounded-full bg-orange-500/50 blur-[60px]"></div>
+         <div className="absolute bottom-[-10%] left-[-10%] w-[250px] h-[250px] rounded-full bg-orange-700/50 blur-[60px]"></div>
+      </div>
+
+      <div className="px-5 pt-8 pb-6 relative z-10 max-w-lg mx-auto">
         <div className="flex justify-between items-center mb-6">
-           <div className="flex items-center gap-3">
-             <img src="/olam_logo_final.png" alt="Logo" className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm object-cover bg-white" />
-             <h1 className="text-white text-xl font-black tracking-wide">Olam Agri</h1>
-           </div>
+           <h1 className="text-white text-xl font-black tracking-wide">Mon Profil</h1>
+           <button onClick={() => { logout(); navigate('/login'); }} className="w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center transition-colors">
+             <LogOut className="w-5 h-5 text-white" />
+           </button>
         </div>
+        
         {/* Profile Card */}
-        <div className="bg-white rounded-[28px] p-5 shadow-xl shadow-orange-900/5 mb-6 relative overflow-hidden border border-slate-100">
-           <div className="flex items-center gap-5 mb-5">
+        <div className="bg-white rounded-[28px] p-5 shadow-xl shadow-orange-900/5 mb-6 relative overflow-hidden">
+           <div className="flex items-center gap-5">
               <div className="relative shrink-0">
-                 <div className="w-20 h-20 bg-slate-50 rounded-full p-1 shadow-inner border border-slate-100 flex items-center justify-center overflow-hidden relative">
-                     <img 
-                        src={avatar} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover rounded-full z-10 relative bg-white" 
-                        onError={(e) => { 
-                           e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.phone || 'Olam')}&background=ea580c&color=fff&size=128&font-size=0.33`; 
-                        }} 
-                     />
+                 <div className="w-20 h-20 bg-slate-50 rounded-full p-1 shadow-inner border border-slate-100">
+                     <img src={avatar} alt="Profile" className="w-full h-full object-cover rounded-full" onError={(e) => { e.currentTarget.src = "/avatar_orange.jpg?v=2"; }} />
                  </div>
                  <label className="absolute -bottom-1 -right-1 bg-orange-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-orange-700 transition-colors border-2 border-white">
                    <Camera className="w-4 h-4" />
@@ -213,19 +212,11 @@ export function Dashboard() {
                  )}
               </div>
               <div className="flex-1 min-w-0">
-                 <h2 className="text-xl font-black text-slate-900 truncate mb-2">ID : {generateUserId(user?.id)}</h2>
-                 <div className="inline-flex items-center justify-center bg-green-50 text-green-600 border border-green-200/60 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider">
-                   Actif
+                 <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-0.5">ID Utilisateur</p>
+                 <h2 className="text-2xl font-black text-slate-900 truncate mb-1">{generateUserId(user?.id)}</h2>
+                 <div className="flex items-center gap-1.5 text-slate-500 text-sm font-semibold">
+                    <Phone className="w-3.5 h-3.5 text-orange-500" /> {user?.phone}
                  </div>
-              </div>
-           </div>
-           
-           <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-slate-600 text-sm font-medium">
-                 <Phone className="w-4 h-4 text-orange-500" /> {user?.phone}
-              </div>
-              <div className="flex items-center gap-2 text-slate-600 text-sm font-medium">
-                 <MapPin className="w-4 h-4 text-orange-500" /> {user?.country || 'Non spécifié'}
               </div>
            </div>
         </div>
@@ -237,14 +228,18 @@ export function Dashboard() {
            </div>
            
            <div className="flex flex-col gap-6 relative z-10">
-              <div className="flex justify-between items-end mb-2">
+              <div className="flex justify-between items-end">
                  <div>
                     <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5">Solde Principal</p>
                     <h2 className="text-4xl font-black tracking-tight">{formatCurrency(balance)}</h2>
                  </div>
+                 <div className="text-right">
+                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total retiré</p>
+                    <h3 className="text-lg font-bold text-slate-300">{formatCurrency(bankBalance)}</h3>
+                 </div>
               </div>
               
-              <div className="flex gap-3 mt-4">
+              <div className="flex gap-3">
                  <Link to="/deposit" className="flex-1 bg-orange-600 hover:bg-orange-500 text-white rounded-2xl py-3.5 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
                    <ArrowDownLeft className="w-5 h-5" />
                    <span className="font-bold text-sm">Déposer</span>
@@ -271,57 +266,56 @@ export function Dashboard() {
            </div>
         </div>
 
-        {/* Unified Menu List */}
-        <div className="flex flex-col gap-2">
-           <Link to="/products" className="flex items-center justify-between p-4 bg-white/60 hover:bg-white rounded-[24px] transition-colors group shadow-sm border border-slate-100/50">
-             <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-[16px] bg-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                 <FileSignature className="w-6 h-6 text-orange-600" />
+        {/* Menu List */}
+        <div className="bg-white rounded-[28px] p-2 shadow-sm border border-slate-100 mb-6">
+           {menuItems.map((item, idx) => (
+             <Link key={idx} to={item.path} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-[20px] transition-colors group">
+               <div className="flex items-center gap-4">
+                 <div className={`w-12 h-12 rounded-[16px] ${item.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                   <item.icon className={`w-6 h-6 ${item.color}`} />
+                 </div>
+                 <span className="font-bold text-slate-800 text-[15px]">{item.label}</span>
                </div>
-               <span className="font-bold text-slate-800 text-[15px]">Contrats Actifs</span>
+               <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-orange-600 transition-colors" />
+             </Link>
+           ))}
+        </div>
+        
+        {/* External Links List */}
+        <div className="bg-white rounded-[28px] p-2 shadow-sm border border-slate-100 mb-6">
+           <a href={getTgLink(supportLink)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-[20px] transition-colors group">
+             <div className="flex items-center gap-4">
+               <div className="w-12 h-12 rounded-[16px] bg-orange-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                 <Headphones className="w-6 h-6 text-orange-600" />
+               </div>
+               <span className="font-bold text-slate-800 text-[15px]">Support Client</span>
              </div>
              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-orange-600 transition-colors" />
-           </Link>
-           <Link to="/bank" className="flex items-center justify-between p-4 bg-white/60 hover:bg-white rounded-[24px] transition-colors group shadow-sm border border-slate-100/50">
+           </a>
+           <a href={getTgLink(groupLink)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-[20px] transition-colors group">
              <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-[16px] bg-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                 <PiggyBank className="w-6 h-6 text-orange-600" />
-               </div>
-               <span className="font-bold text-slate-800 text-[15px]">Compte Retrait</span>
-             </div>
-             <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-orange-600 transition-colors" />
-           </Link>
-           
-           <a href={getTgLink(groupLink)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 bg-white/60 hover:bg-white rounded-[24px] transition-colors group shadow-sm border border-slate-100/50">
-             <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-[16px] bg-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+               <div className="w-12 h-12 rounded-[16px] bg-orange-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                  <Users className="w-6 h-6 text-orange-600" />
                </div>
                <span className="font-bold text-slate-800 text-[15px]">Groupe Officiel</span>
              </div>
              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-orange-600 transition-colors" />
            </a>
-           <button onClick={() => installPWA()} className="w-full flex items-center justify-between p-4 bg-white/60 hover:bg-white rounded-[24px] transition-colors group shadow-sm border border-slate-100/50 text-left">
+           <button onClick={() => installPWA()} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 rounded-[20px] transition-colors group text-left">
              <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-[16px] bg-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+               <div className="w-12 h-12 rounded-[16px] bg-orange-50 flex items-center justify-center group-hover:scale-110 transition-transform">
                  <Download className="w-6 h-6 text-orange-600" />
                </div>
                <span className="font-bold text-slate-800 text-[15px]">Installer l'app</span>
              </div>
              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-orange-600 transition-colors" />
            </button>
-           
-           <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center justify-between p-4 bg-white/60 hover:bg-white rounded-[24px] transition-colors group shadow-sm border border-slate-100/50 text-left mt-2">
-             <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-[16px] bg-red-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                 <LogOut className="w-6 h-6 text-red-500" />
-               </div>
-               <span className="font-bold text-red-600 text-[15px]">Déconnexion</span>
-             </div>
-             <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-red-500 transition-colors" />
-           </button>
         </div>
+
       </div>
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/pages/Dashboard.tsx', content);

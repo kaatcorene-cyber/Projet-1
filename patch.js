@@ -1,21 +1,14 @@
 import fs from 'fs';
-
-function replaceInFile(file, search, replace) {
-  let content = fs.readFileSync(file, 'utf8');
-  content = content.replace(search, replace);
-  fs.writeFileSync(file, content);
-}
-
-replaceInFile('src/pages/Admin.tsx', /\/logo_olam\.jpg/g, '/logo_olam.png');
-replaceInFile('src/pages/Invest.tsx', /\/logo_olam\.jpg/g, '/logo_olam.png');
-replaceInFile('src/pages/Dashboard.tsx', /\/logo_olam\.jpg/g, '/logo_olam.png');
-
-let html = fs.readFileSync('index.html', 'utf8');
-html = html.replace(/\/logo_olam\.jpg/g, '/logo_olam.png');
-html = html.replace(/type="image\/jpeg"/g, 'type="image/png"');
-fs.writeFileSync('index.html', html);
-
-let vite = fs.readFileSync('vite.config.ts', 'utf8');
-vite = vite.replace(/logo_olam\.jpg/g, 'logo_olam.png');
-vite = vite.replace(/type: 'image\/jpeg'/g, "type: 'image/png'");
-fs.writeFileSync('vite.config.ts', vite);
+const lines = fs.readFileSync('src/pages/Dashboard.tsx', 'utf8').split('\n');
+const fixed = lines.slice(0, 182).join('\n') + `
+      <div className="absolute top-0 left-0 w-full h-[280px] bg-orange-600 rounded-b-[40px] shadow-md overflow-hidden pointer-events-none"></div>
+      
+      <div className="max-w-md mx-auto pt-6 px-4 relative z-10">
+        <div className="flex justify-between items-center mb-6">
+           <div className="flex items-center gap-3">
+             <img src="/olam_logo_final.png" alt="Logo" className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm object-cover bg-white" />
+             <h1 className="text-white text-xl font-black tracking-wide">Olam Agri</h1>
+           </div>
+        </div>
+` + lines.slice(190).join('\n');
+fs.writeFileSync('src/pages/Dashboard.tsx', fixed);
