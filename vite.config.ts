@@ -18,30 +18,25 @@ export default defineConfig(({mode}) => {
           clientsClaim: true,
           skipWaiting: true
         },
-        includeAssets: ['olam_icon.png'],
+        includeAssets: ['oa_icon.svg'],
         manifest: {
           name: 'Olam Agri',
           short_name: 'Olam Agri',
           description: 'Olam Agri Investment Platform',
-          theme_color: '#0ea5e9',
+          theme_color: '#ea580c',
           background_color: '#ffffff',
           display: 'standalone',
           icons: [
             {
-              src: '/olam_icon.png',
-              sizes: '192x192',
-              type: 'image/png'
+              src: '/oa_icon.svg',
+              sizes: 'any',
+              type: 'image/svg+xml'
             },
             {
-              src: '/olam_icon.png',
-              sizes: '512x512',
-              type: 'image/png'
-            },
-            {
-              src: '/olam_icon.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any maskable'
+              src: '/oa_icon.svg',
+              sizes: 'any',
+              type: 'image/svg+xml',
+              purpose: 'maskable'
             }
           ]
         }
