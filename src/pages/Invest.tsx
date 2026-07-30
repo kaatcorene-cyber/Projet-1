@@ -241,7 +241,7 @@ export function Invest() {
               <div className="flex items-center gap-4 relative z-10">
                 <div className="w-16 h-16 rounded-[14px] overflow-hidden shrink-0 shadow-sm bg-slate-100 relative">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10"></div>
-                  <img src={plan.image || 'https://i.imgur.com/XhQfAmw.png'} alt="Plan" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                  <img src={plan.image || '/olam_icon.png'} alt="Plan" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
                 </div>
                 
                 <div className="flex-1 min-w-0">
