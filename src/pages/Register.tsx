@@ -133,7 +133,7 @@ export function Register() {
   return (
     <div className="h-[100dvh] relative flex flex-col overflow-hidden bg-slate-50">
       <div className="w-full h-48 sm:h-56 shrink-0 relative">
-        <img src="/register_banner.jpg" alt="Olam Agri Banner" className="w-full h-full object-cover" />
+        <img src="https://i.imgur.com/I2qt7oHl.jpg" alt="Olam Agri Banner" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-slate-50"></div>
       </div>
       <div className="flex-1 relative z-10 w-full max-w-sm mx-auto flex flex-col px-6 pt-2 pb-8 overflow-y-auto">

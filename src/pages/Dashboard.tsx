@@ -104,7 +104,7 @@ export function Dashboard() {
   
   const [showWelcome, setShowWelcome] = useState(false);
   const [isLoading, setIsLoading] = useState(!user || !config);
-  const [avatar, setAvatar] = useState<string>('/olam_icon.png');
+  const [avatar, setAvatar] = useState<string>('https://i.imgur.com/XhQfAmw.png');
 
   useEffect(() => {
     if (user?.id) {
@@ -112,7 +112,7 @@ export function Dashboard() {
       if (saved && saved.startsWith('data:image')) {
         setAvatar(saved);
       } else {
-        setAvatar('/olam_icon.png');
+        setAvatar('https://i.imgur.com/XhQfAmw.png');
       }
     }
   }, [user?.id]);
@@ -181,13 +181,13 @@ export function Dashboard() {
       
       {/* Top Header Background */}
       <div className="absolute top-0 left-0 w-full h-[280px] bg-orange-600 rounded-b-[40px] shadow-md overflow-hidden pointer-events-none">
-        <img src="/olam_icon.png" alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30" />
+        <img src="https://i.imgur.com/XhQfAmw.png" alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30" />
       </div>
       
       <div className="max-w-md mx-auto pt-6 px-4 relative z-10">
         <div className="flex justify-between items-center mb-6">
            <div className="flex items-center gap-3">
-             <img src="/olam_icon.png" alt="Logo" className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm object-cover bg-white" />
+             <img src="https://i.imgur.com/XhQfAmw.png" alt="Logo" className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm object-cover bg-white" />
              <h1 className="text-white text-xl font-black tracking-wide">Olam Agri 🌱</h1>
            </div>
         </div>
@@ -201,7 +201,7 @@ export function Dashboard() {
                         alt="Profile" 
                         className="w-full h-full object-cover rounded-full z-10 relative bg-white" 
                         onError={(e) => { 
-                           e.currentTarget.src = '/olam_icon.png';
+                           e.currentTarget.src = 'https://i.imgur.com/XhQfAmw.png';
                         }} 
                      />
                  </div>
@@ -267,9 +267,13 @@ export function Dashboard() {
         <div className="bg-orange-100/50 rounded-2xl p-3 flex items-center gap-3 mb-6 border border-orange-200/50 shadow-sm overflow-hidden relative">
            <Bell className="w-5 h-5 text-orange-600 shrink-0 animate-pulse" />
            <div className="flex-1 overflow-hidden relative h-5">
-              <marquee className="whitespace-nowrap text-xs font-bold text-orange-900 mt-0.5" scrollamount="4">
+              <motion.div 
+                className="absolute whitespace-nowrap text-xs font-bold text-orange-900"
+                animate={{ x: ["100%", "-100%"] }}
+                transition={{ repeat: Infinity, duration: 15, ease: "linear" }}
+              >
                 Bienvenue sur notre plateforme. Invitez vos amis et gagnez des bonus exclusifs ! 🎉
-              </marquee>
+              </motion.div>
            </div>
         </div>
 
