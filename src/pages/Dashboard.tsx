@@ -243,7 +243,10 @@ export function Dashboard() {
               <div className="flex justify-between items-end mb-2">
                  <div>
                     <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5">Solde Principal</p>
-                    <h2 className="text-4xl font-black tracking-tight">{formatCurrency(balance)}</h2>
+                    <h2 className="text-4xl font-black tracking-tight flex items-baseline gap-1.5">
+                      {new Intl.NumberFormat('fr-FR').format(balance)}
+                      <span className="text-xl font-bold text-slate-300">FCFA</span>
+                    </h2>
                  </div>
               </div>
               

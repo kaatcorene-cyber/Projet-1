@@ -18,7 +18,7 @@ export default defineConfig(({mode}) => {
           clientsClaim: true,
           skipWaiting: true
         },
-        includeAssets: ['app_icon_orange.jpg', 'avatar_orange.jpg'],
+        includeAssets: ['olam_icon.png'],
         manifest: {
           name: 'Olam Agri',
           short_name: 'Olam Agri',
@@ -28,19 +28,19 @@ export default defineConfig(({mode}) => {
           display: 'standalone',
           icons: [
             {
-              src: '/app_icon_orange.jpg?v=2',
+              src: '/olam_icon.png',
               sizes: '192x192',
-              type: 'image/jpeg'
+              type: 'image/png'
             },
             {
-              src: '/app_icon_orange.jpg?v=2',
+              src: '/olam_icon.png',
               sizes: '512x512',
-              type: 'image/jpeg'
+              type: 'image/png'
             },
             {
-              src: '/app_icon_orange.jpg?v=2',
+              src: '/olam_icon.png',
               sizes: '512x512',
-              type: 'image/jpeg',
+              type: 'image/png',
               purpose: 'any maskable'
             }
           ]
