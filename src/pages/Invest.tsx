@@ -110,12 +110,13 @@ export function Invest() {
       
       const { error: txError } = await supabase
         .from('transactions')
-        .insert({
+        .insert([{
           user_id: user.id,
           amount: plan.amount,
           type: 'investment',
-          status: 'completed'
-        });
+          status: 'completed',
+          reference: `INVESTISSEMENT - ${plan.name}`
+        }]);
       
       if (txError) console.error("Error inserting transaction", txError);
 
