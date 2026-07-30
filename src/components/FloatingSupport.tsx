@@ -25,7 +25,7 @@ export function FloatingSupport() {
     >
       <div className="relative flex items-center justify-center w-full h-full pointer-events-none">
         <img 
-          src="/support_avatar.jpg" 
+          src="/support_avatar_v2.jpg" 
           alt="Support Client" 
           className="w-full h-full object-cover rounded-full p-0.5"
         />

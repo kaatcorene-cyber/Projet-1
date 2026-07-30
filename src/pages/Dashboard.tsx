@@ -62,7 +62,8 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
           </div>
         </div>
         <div className="w-full space-y-3">
-          <a href={getTgLink(groupLink)} target="_blank" rel="noopener noreferrer" onClick={onClose} className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-2xl py-3.5 font-bold text-sm transition-all flex justify-center items-center gap-2 shadow-lg shadow-orange-500/25">
+          
+           <a href={getTgLink(groupLink)} target="_blank" rel="noopener noreferrer" onClick={onClose} className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-2xl py-3.5 font-bold text-sm transition-all flex justify-center items-center gap-2 shadow-lg shadow-orange-500/25">
             <Users className="w-5 h-5" /> Rejoindre le Groupe
           </a>
           <button onClick={onClose} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl py-3.5 font-bold text-sm transition-all">
@@ -103,7 +104,7 @@ export function Dashboard() {
   
   const [showWelcome, setShowWelcome] = useState(false);
   const [isLoading, setIsLoading] = useState(!user || !config);
-  const [avatar, setAvatar] = useState<string>('');
+  const [avatar, setAvatar] = useState<string>('/avatar_orange_v2.jpg');
 
   useEffect(() => {
     if (user?.id) {
@@ -111,7 +112,7 @@ export function Dashboard() {
       if (saved && saved.startsWith('data:image')) {
         setAvatar(saved);
       } else {
-        setAvatar(`https://ui-avatars.com/api/?name=${encodeURIComponent(user.phone || 'Olam')}&background=ea580c&color=fff&size=128&font-size=0.33`);
+        setAvatar('/avatar_orange_v2.jpg');
       }
     }
   }, [user?.id]);
@@ -179,13 +180,15 @@ export function Dashboard() {
       {showWelcome && <WelcomeModal groupLink={groupLink} onClose={() => { sessionStorage.setItem('welcome_shown', 'true'); setShowWelcome(false); }} />}
       
       {/* Top Header Background */}
-      <div className="absolute top-0 left-0 w-full h-[280px] bg-orange-600 rounded-b-[40px] shadow-md overflow-hidden pointer-events-none"></div>
+      <div className="absolute top-0 left-0 w-full h-[280px] bg-orange-600 rounded-b-[40px] shadow-md overflow-hidden pointer-events-none">
+        <img src="/olam_logo_final_v2.png" alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30" />
+      </div>
       
       <div className="max-w-md mx-auto pt-6 px-4 relative z-10">
         <div className="flex justify-between items-center mb-6">
            <div className="flex items-center gap-3">
-             <img src="/olam_logo_final.png" alt="Logo" className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm object-cover bg-white" />
-             <h1 className="text-white text-xl font-black tracking-wide">Olam Agri</h1>
+             <img src="/olam_logo_final_v2.png" alt="Logo" className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm object-cover bg-white" />
+             <h1 className="text-white text-xl font-black tracking-wide">Olam Agri 🌱</h1>
            </div>
         </div>
         {/* Profile Card */}
@@ -198,7 +201,7 @@ export function Dashboard() {
                         alt="Profile" 
                         className="w-full h-full object-cover rounded-full z-10 relative bg-white" 
                         onError={(e) => { 
-                           e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.phone || 'Olam')}&background=ea580c&color=fff&size=128&font-size=0.33`; 
+                           e.currentTarget.src = '/avatar_orange_v2.jpg';
                         }} 
                      />
                  </div>
@@ -292,6 +295,8 @@ export function Dashboard() {
              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-orange-600 transition-colors" />
            </Link>
            
+           
+
            <a href={getTgLink(groupLink)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-4 bg-white/60 hover:bg-white rounded-[24px] transition-colors group shadow-sm border border-slate-100/50">
              <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-[16px] bg-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">

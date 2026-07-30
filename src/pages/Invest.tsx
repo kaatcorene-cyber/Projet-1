@@ -105,7 +105,20 @@ export function Invest() {
           status: 'active',
           end_date: new Date(Date.now() + (plan.duration || 60) * 24 * 60 * 60 * 1000).toISOString()
         });
+      
       if (investError) throw investError;
+      
+      const { error: txError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          amount: plan.amount,
+          type: 'investment',
+          status: 'completed'
+        });
+      
+      if (txError) console.error("Error inserting transaction", txError);
+
       
       const { data: updatedInvestments } = await supabase
         .from('investments')
