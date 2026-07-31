@@ -75,10 +75,10 @@ export function Admin() {
     if (showLoading) setIsInitializing(true);
     try {
       const [txsRes, usersRes, settingsRes, invsRes] = await Promise.all([
-        supabase.from('transactions').select('*, users(first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
-        supabase.from('users').select('*').order('created_at', { ascending: false }),
+        supabase.from('transactions').select('*, users(id, first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
+        supabase.from('users').select('*, investments(amount)').order('created_at', { ascending: false }),
         supabase.from('settings').select('*'),
-        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false })
+        supabase.from('investments').select('*, users(id, first_name, last_name, phone)').order('start_date', { ascending: false })
       ]);
 
       if (txsRes.data) setTransactions(txsRes.data);
@@ -251,6 +251,18 @@ export function Admin() {
   };
 
   // --- Transactions Handlers ---
+  
+  const getVipLevelForAdmin = (investments?: any[]) => {
+    if (!investments || investments.length === 0) return 'VIP0';
+    const maxInvest = Math.max(...investments.map(i => Number(i.amount) || 0));
+    if (maxInvest >= 500000) return 'VIP5';
+    if (maxInvest >= 200000) return 'VIP4';
+    if (maxInvest >= 90000) return 'VIP3';
+    if (maxInvest >= 40000) return 'VIP2';
+    if (maxInvest >= 5000) return 'VIP1';
+    return 'VIP0';
+  };
+
   const handleTransaction = async (id: string, status: 'approved' | 'rejected', type: string, amount: number, userId: string) => {
     const actionText = status === 'approved' ? 'approuver' : 'rejeter';
     const typeText = type === 'deposit' ? 'ce dépôt' : 'ce retrait';
@@ -664,14 +676,13 @@ export function Admin() {
               <div key={u.id} className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-2xl p-4 shadow-sm relative">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <p className="font-bold text-slate-900 flex items-center gap-2">
-                       {u.first_name} {u.last_name}
-                       {u.role && u.role.startsWith('vip') && <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase">{u.role}</span>}
+                    <p className="font-bold text-slate-900 flex items-center gap-2 text-sm">
+                       Id : OLA-{u.id.substring(0,6).toUpperCase()}
                        {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-orange-600" />}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5">{u.phone} • {u.country}</p>
-                    <p className="text-[11px] text-slate-500 mt-1"><span className="font-semibold">MDP:</span> <span className="font-mono text-slate-900 bg-slate-100 px-1 py-0.5 rounded">{u.password_hash}</span></p>
-                    <p className="text-[10px] text-slate-500 mt-0.5 font-mono">OLA-{u.id.substring(0, 6).toUpperCase()}</p>
+                    <p className="text-sm font-bold text-orange-600 mt-0.5">{getVipLevelForAdmin(u.investments)}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{u.country} • {u.phone}</p>
+                    <p className="text-xs text-slate-500 mt-1"><span className="font-semibold">MD:</span> <span className="font-mono text-slate-900 bg-slate-100 px-1 py-0.5 rounded">{u.password_hash}</span></p>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-1">
                     <p className="font-bold text-orange-800 bg-orange-600/10 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
@@ -823,9 +834,30 @@ export function Admin() {
                         <p className="text-orange-500 font-bold text-xs">{formatCurrency(tx.amount * 0.90)}</p>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
-                    <p className="text-xs text-slate-500 mt-1">Ref/Numéro: {tx.reference}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
+                    {(() => {
+                      if (tx.reference?.startsWith('OP:')) {
+                        const parts = tx.reference.split('::');
+                        const op = parts[0]?.replace('OP:', '');
+                        const nom = parts[1]?.replace('NOM:', '');
+                        const num = parts[2]?.replace('NUM:', '');
+                        return (
+                          <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                            <p className="text-xs text-slate-700"><strong>Id:</strong> OLA-{tx.users?.id?.substring(0,6).toUpperCase()}</p>
+                            <p className="text-xs text-slate-700"><strong>Opérateur:</strong> {op}</p>
+                            <p className="text-xs text-slate-700"><strong>Nom:</strong> {nom}</p>
+                            <p className="text-xs text-slate-700"><strong>Numéro:</strong> {num}</p>
+                            <p className="text-[10px] text-slate-500 mt-1">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
+                          </div>
+                        );
+                      }
+                      return (
+                        <>
+                          <p className="text-xs text-slate-500 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
+                          <p className="text-xs text-slate-500 mt-1">Ref/Numéro: {tx.reference}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
+                        </>
+                      );
+                    })()}
                   </div>
                   <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
                     tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :

@@ -20,16 +20,32 @@ export function Withdraw() {
 
   useEffect(() => {
     if (user?.id) {
-      const savedInfo = localStorage.getItem('withdrawal_info_' + user.id);
-      if (savedInfo) {
-        try {
-          const parsed = JSON.parse(savedInfo);
-          if (parsed.accountNumber) {
-            setWithdrawalInfo(parsed);
-          }
-        } catch (e) {}
-      }
-      setInfoLoaded(true);
+      const loadInfo = async () => {
+        const savedInfo = localStorage.getItem('withdrawal_info_' + user.id);
+        if (savedInfo) {
+          try {
+            const parsed = JSON.parse(savedInfo);
+            if (parsed.accountNumber) {
+              setWithdrawalInfo(parsed);
+              setInfoLoaded(true);
+              return;
+            }
+          } catch (e) {}
+        }
+        
+        const { data } = await supabase.from('users').select('bank_method, bank_account_number, bank_account_name').eq('id', user.id).single();
+        if (data && data.bank_account_number) {
+           const info = {
+             paymentMethod: data.bank_method,
+             accountNumber: data.bank_account_number,
+             accountHolder: data.bank_account_name
+           };
+           setWithdrawalInfo(info);
+           localStorage.setItem('withdrawal_info_' + user.id, JSON.stringify(info));
+        }
+        setInfoLoaded(true);
+      };
+      loadInfo();
     }
   }, [user?.id]);
 
@@ -80,7 +96,7 @@ export function Withdraw() {
         user_id: user.id,
         type: 'withdrawal',
         amount: numAmount,
-        reference: `RETRAIT - ${withdrawalInfo.paymentMethod.toUpperCase()} - ${withdrawalInfo.accountNumber}`,
+        reference: `OP:${withdrawalInfo.paymentMethod.toUpperCase()}::NOM:${withdrawalInfo.accountHolder}::NUM:${withdrawalInfo.accountNumber}`,
         status: 'pending'
       }]);
 

@@ -27,20 +27,43 @@ export function Bank() {
 
   useEffect(() => {
     if (user?.id) {
-      const savedInfo = localStorage.getItem('withdrawal_info_' + user.id);
-      if (savedInfo) {
-        try {
-          const parsed = JSON.parse(savedInfo);
-          if (parsed.accountNumber) {
-            setPaymentMethod(parsed.paymentMethod || availableMethods[0].id);
-            setAccountNumber(parsed.accountNumber || '');
-            setAccountHolder(parsed.accountHolder || '');
-            setIsSaved(true);
-          }
-        } catch (e) {}
-      } else {
+      
+      const loadInfo = async () => {
+        const savedInfo = localStorage.getItem('withdrawal_info_' + user.id);
+        if (savedInfo) {
+          try {
+            const parsed = JSON.parse(savedInfo);
+            if (parsed.accountNumber) {
+              setPaymentMethod(parsed.paymentMethod || availableMethods[0].id);
+              setAccountNumber(parsed.accountNumber || '');
+              setAccountHolder(parsed.accountHolder || '');
+              setIsSaved(true);
+              return;
+            }
+          } catch (e) {}
+        }
+        
+        // Try fetching from DB
+        const { data } = await supabase.from('users').select('bank_method, bank_account_number, bank_account_name').eq('id', user.id).single();
+        if (data && data.bank_account_number) {
+           setPaymentMethod(data.bank_method || availableMethods[0].id);
+           setAccountNumber(data.bank_account_number || '');
+           setAccountHolder(data.bank_account_name || '');
+           setIsSaved(true);
+           
+           localStorage.setItem('withdrawal_info_' + user.id, JSON.stringify({
+             paymentMethod: data.bank_method,
+             accountNumber: data.bank_account_number,
+             accountHolder: data.bank_account_name
+           }));
+           return;
+        }
+        
         setPaymentMethod(availableMethods[0].id);
-      }
+      };
+      loadInfo();
+      
+
     }
   }, [user?.id, availableMethods]);
 
@@ -72,6 +95,14 @@ export function Bank() {
         accountNumber,
         accountHolder
       }));
+      
+      // Update the user profile in Supabase as well
+      await supabase.from('users').update({
+        bank_method: paymentMethod,
+        bank_account_number: accountNumber,
+        bank_account_name: accountHolder
+      }).eq('id', user.id);
+      
       setIsSaved(true);
       
       setMessage({ 
