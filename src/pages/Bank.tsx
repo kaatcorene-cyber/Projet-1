@@ -44,19 +44,24 @@ export function Bank() {
         }
         
         // Try fetching from DB
-        const { data } = await supabase.from('users').select('bank_method, bank_account_number, bank_account_name').eq('id', user.id).single();
-        if (data && data.bank_account_number) {
-           setPaymentMethod(data.bank_method || availableMethods[0].id);
-           setAccountNumber(data.bank_account_number || '');
-           setAccountHolder(data.bank_account_name || '');
-           setIsSaved(true);
-           
-           localStorage.setItem('withdrawal_info_' + user.id, JSON.stringify({
-             paymentMethod: data.bank_method,
-             accountNumber: data.bank_account_number,
-             accountHolder: data.bank_account_name
-           }));
-           return;
+        const { data } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).maybeSingle();
+        if (data && data.value) {
+           try {
+             const parsed = JSON.parse(data.value);
+             if (parsed.bank_account_number) {
+               setPaymentMethod(parsed.bank_method || availableMethods[0].id);
+               setAccountNumber(parsed.bank_account_number || '');
+               setAccountHolder(parsed.bank_account_name || '');
+               setIsSaved(true);
+               
+               localStorage.setItem('withdrawal_info_' + user.id, JSON.stringify({
+                 paymentMethod: parsed.bank_method,
+                 accountNumber: parsed.bank_account_number,
+                 accountHolder: parsed.bank_account_name
+               }));
+               return;
+             }
+           } catch(e) {}
         }
         
         setPaymentMethod(availableMethods[0].id);
@@ -97,11 +102,14 @@ export function Bank() {
       }));
       
       // Update the user profile in Supabase as well
-      await supabase.from('users').update({
-        bank_method: paymentMethod,
-        bank_account_number: accountNumber,
-        bank_account_name: accountHolder
-      }).eq('id', user.id);
+      await supabase.from('settings').upsert({
+        key: 'bank_' + user.id,
+        value: JSON.stringify({
+           bank_method: paymentMethod,
+           bank_account_number: accountNumber,
+           bank_account_name: accountHolder
+        })
+      });
       
       setIsSaved(true);
       

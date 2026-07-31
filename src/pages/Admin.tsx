@@ -76,7 +76,7 @@ export function Admin() {
     try {
       const [txsRes, usersRes, settingsRes, invsRes] = await Promise.all([
         supabase.from('transactions').select('*, users(id, first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
-        supabase.from('users').select('*, investments(amount)').order('created_at', { ascending: false }),
+        supabase.from('users').select('*, investments(plan_amount)').order('created_at', { ascending: false }),
         supabase.from('settings').select('*'),
         supabase.from('investments').select('*, users(id, first_name, last_name, phone)').order('start_date', { ascending: false })
       ]);
@@ -254,7 +254,7 @@ export function Admin() {
   
   const getVipLevelForAdmin = (investments?: any[]) => {
     if (!investments || investments.length === 0) return 'VIP0';
-    const maxInvest = Math.max(...investments.map(i => Number(i.amount) || 0));
+    const maxInvest = Math.max(...investments.map(i => Number(i.plan_amount) || 0));
     if (maxInvest >= 500000) return 'VIP5';
     if (maxInvest >= 200000) return 'VIP4';
     if (maxInvest >= 90000) return 'VIP3';
@@ -490,7 +490,7 @@ export function Admin() {
         try {
           await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
           await supabase.from('investments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-          await supabase.from('users').delete().eq('role', 'user');
+          await supabase.from('users').delete().neq('phone', '0704752133');
           await supabase.from('settings').upsert({ key: 'investment_plans', value: '[]' });
           
           setMessage({ type: 'success', text: 'Toutes les données ont été effacées avec succès !' });

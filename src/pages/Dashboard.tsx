@@ -18,7 +18,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
     
   const getVipLevel = (investments?: any[]) => {
     if (!investments || investments.length === 0) return 'VIP0';
-    const maxInvest = Math.max(...investments.map(i => Number(i.amount) || 0));
+    const maxInvest = Math.max(...investments.map(i => Number(i.plan_amount) || 0));
     if (maxInvest >= 500000) return 'VIP5';
     if (maxInvest >= 200000) return 'VIP4';
     if (maxInvest >= 90000) return 'VIP3';
@@ -164,7 +164,7 @@ export function Dashboard() {
 
   const getVipLevel = (investments?: any[]) => {
     if (!investments || investments.length === 0) return 'VIP0';
-    const maxInvest = Math.max(...investments.map(i => Number(i.amount) || 0));
+    const maxInvest = Math.max(...investments.map(i => Number(i.plan_amount) || 0));
     if (maxInvest >= 500000) return 'VIP5';
     if (maxInvest >= 200000) return 'VIP4';
     if (maxInvest >= 90000) return 'VIP3';

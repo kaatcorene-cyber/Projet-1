@@ -33,15 +33,20 @@ export function Withdraw() {
           } catch (e) {}
         }
         
-        const { data } = await supabase.from('users').select('bank_method, bank_account_number, bank_account_name').eq('id', user.id).single();
-        if (data && data.bank_account_number) {
-           const info = {
-             paymentMethod: data.bank_method,
-             accountNumber: data.bank_account_number,
-             accountHolder: data.bank_account_name
-           };
-           setWithdrawalInfo(info);
-           localStorage.setItem('withdrawal_info_' + user.id, JSON.stringify(info));
+        const { data } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).maybeSingle();
+        if (data && data.value) {
+           try {
+             const parsed = JSON.parse(data.value);
+             if (parsed.bank_account_number) {
+               const info = {
+                 paymentMethod: parsed.bank_method,
+                 accountNumber: parsed.bank_account_number,
+                 accountHolder: parsed.bank_account_name
+               };
+               setWithdrawalInfo(info);
+               localStorage.setItem('withdrawal_info_' + user.id, JSON.stringify(info));
+             }
+           } catch(e) {}
         }
         setInfoLoaded(true);
       };
@@ -113,6 +118,21 @@ export function Withdraw() {
       setLoading(false);
     }
   };
+
+  if (infoLoaded && !withdrawalInfo) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-6 shadow-sm">
+          <Wallet className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-black text-slate-900 mb-2">Compte de retrait manquant</h2>
+        <p className="text-slate-500 mb-8 text-sm">Veuillez d'abord configurer vos informations de retrait avant de pouvoir retirer vos gains.</p>
+        <button onClick={() => navigate('/bank')} className="w-full bg-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-600/30 hover:bg-orange-700 transition-colors">
+          Configurer mon compte
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 p-5 pt-12 pb-24 font-sans text-slate-900 max-w-lg mx-auto">
