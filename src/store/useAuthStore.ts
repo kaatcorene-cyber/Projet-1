@@ -15,6 +15,7 @@ interface User {
   referred_by?: string;
   investments?: any[];
   transactions?: any[];
+  created_at?: string;
 }
 
 interface AuthState {

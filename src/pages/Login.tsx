@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 
 export function Login() {
   const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState('Bénin');
+  const [country, setCountry] = useState("Côte d'Ivoire");
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -140,15 +140,13 @@ export function Login() {
                   onChange={(e) => setCountry(e.target.value)}
                   className="w-[120px] shrink-0 bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-bold text-sm"
                 >
-                  <option value="Bénin">Bénin</option>
-                  <option value="Togo">Togo</option>
-                  <option value="Burkina">Burkina Faso</option>
-                  <option value="Niger">Niger</option>
                   <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+                  <option value="Niger">Niger</option>
+                  <option value="Cameroun">Cameroun</option>
                 </select>
                 <div className="flex-1 relative flex items-center">
                   <span className="absolute left-3 text-slate-500 font-bold pointer-events-none">
-                    {country === 'Bénin' ? '+229' : country === 'Togo' ? '+228' : country === 'Burkina' ? '+226' : country === 'Niger' ? '+227' : '+225'}
+                    {country === 'Niger' ? '+227' : country === 'Cameroun' ? '+237' : '+225'}
                   </span>
                   <input
                     type="tel"

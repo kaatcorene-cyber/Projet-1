@@ -15,7 +15,19 @@ import { motion } from 'framer-motion';
 function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () => void }) {
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = 'unset'; };
+    
+  const getVipLevel = (investments?: any[]) => {
+    if (!investments || investments.length === 0) return 'VIP0';
+    const maxInvest = Math.max(...investments.map(i => Number(i.amount) || 0));
+    if (maxInvest >= 500000) return 'VIP5';
+    if (maxInvest >= 200000) return 'VIP4';
+    if (maxInvest >= 90000) return 'VIP3';
+    if (maxInvest >= 40000) return 'VIP2';
+    if (maxInvest >= 5000) return 'VIP1';
+    return 'VIP0';
+  };
+
+  return () => { document.body.style.overflow = 'unset'; };
   }, []);
   
   return (
@@ -104,34 +116,9 @@ export function Dashboard() {
   
   const [showWelcome, setShowWelcome] = useState(false);
   const [isLoading, setIsLoading] = useState(!user || !config);
-  const [avatar, setAvatar] = useState<string>('https://i.imgur.com/XhQfAmw.png');
-
-  useEffect(() => {
-    if (user?.id) {
-      const saved = localStorage.getItem(`avatar_${user.id}`);
-      if (saved && saved.startsWith('data:image')) {
-        setAvatar(saved);
-      } else {
-        setAvatar('https://i.imgur.com/XhQfAmw.png');
-      }
-    }
-  }, [user?.id]);
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setAvatar(base64String);
-        if (user?.id) {
-          localStorage.setItem(`avatar_${user.id}`, base64String);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
+  
+  
+  
   useEffect(() => {
     let mounted = true;
     const init = async () => {
@@ -175,40 +162,42 @@ export function Dashboard() {
     { icon: Activity, label: 'Historique', path: '/history', color: 'text-orange-600', bg: 'bg-orange-50' },
   ];
 
+  const getVipLevel = (investments?: any[]) => {
+    if (!investments || investments.length === 0) return 'VIP0';
+    const maxInvest = Math.max(...investments.map(i => Number(i.amount) || 0));
+    if (maxInvest >= 500000) return 'VIP5';
+    if (maxInvest >= 200000) return 'VIP4';
+    if (maxInvest >= 90000) return 'VIP3';
+    if (maxInvest >= 40000) return 'VIP2';
+    if (maxInvest >= 5000) return 'VIP1';
+    return 'VIP0';
+  };
+
   return (
     <div className="min-h-screen bg-[#F4F6F8] pb-32 text-slate-900 font-sans">
       {showWelcome && <WelcomeModal groupLink={groupLink} onClose={() => { sessionStorage.setItem('welcome_shown', 'true'); setShowWelcome(false); }} />}
       
       {/* Top Header Background */}
-      <div className="absolute top-0 left-0 w-full h-[280px] bg-orange-600 rounded-b-[40px] shadow-md overflow-hidden pointer-events-none">
-        <img src="https://i.imgur.com/XhQfAmw.png" alt="" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30" />
+      <div className="absolute top-0 left-0 w-full h-[280px] bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 rounded-b-[40px] shadow-lg overflow-hidden pointer-events-none">
+         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[40px] -mr-20 -mt-20"></div>
+         <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-800/20 rounded-full blur-[30px] -ml-10 -mb-10"></div>
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)]"></div>
       </div>
       
       <div className="max-w-md mx-auto pt-6 px-4 relative z-10">
         <div className="flex justify-between items-center mb-6">
            <div className="flex items-center gap-3">
-             <img src="https://i.imgur.com/XhQfAmw.png" alt="Logo" className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm object-cover bg-white" />
-             <h1 className="text-white text-xl font-black tracking-wide">Olam Agri 🌱</h1>
+             <div className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm bg-white flex items-center justify-center text-xl pb-0.5">🍀</div>
+             <h1 className="text-white text-2xl font-black tracking-wide">Olam Agri</h1>
            </div>
         </div>
         {/* Profile Card */}
         <div className="bg-white rounded-[28px] p-5 shadow-xl shadow-orange-900/5 mb-6 relative overflow-hidden border border-slate-100">
            <div className="flex items-center gap-5 mb-5">
               <div className="relative shrink-0">
-                 <div className="w-20 h-20 bg-slate-50 rounded-full p-1 shadow-inner border border-slate-100 flex items-center justify-center overflow-hidden relative">
-                     <img 
-                        src={avatar} 
-                        alt="Profile" 
-                        className="w-full h-full object-cover rounded-full z-10 relative bg-white" 
-                        onError={(e) => { 
-                           e.currentTarget.src = 'https://i.imgur.com/XhQfAmw.png';
-                        }} 
-                     />
+                 <div className="w-20 h-20 bg-orange-50 rounded-full border-[3px] border-white shadow-md flex items-center justify-center overflow-hidden relative z-10">
+                     <img src="/avatar_orange.svg" alt="Avatar" className="w-full h-full object-cover" />
                  </div>
-                 <label className="absolute -bottom-1 -right-1 bg-orange-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-orange-700 transition-colors border-2 border-white">
-                   <Camera className="w-4 h-4" />
-                   <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
-                 </label>
                  {user?.role === 'vip' && (
                    <div className="absolute -top-1 -right-1 bg-gradient-to-r from-amber-400 to-yellow-500 w-7 h-7 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                      <Crown className="w-3.5 h-3.5 text-white" />
@@ -216,10 +205,36 @@ export function Dashboard() {
                  )}
               </div>
               <div className="flex-1 min-w-0">
-                 <h2 className="text-xl font-black text-slate-900 truncate mb-2">ID : {generateUserId(user?.id)}</h2>
-                 <div className="inline-flex items-center justify-center bg-green-50 text-green-600 border border-green-200/60 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider">
-                   Actif
+                 <div className="flex flex-wrap items-center gap-2 mb-2">
+                   <h2 className="text-xl font-black text-slate-900 truncate">ID : {generateUserId(user?.id)}</h2>
+                   <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm flex items-center gap-1">
+                     <Crown className="w-3 h-3" />
+                     {getVipLevel(user?.investments)}
+                   </div>
                  </div>
+                 {(() => {
+                   const hasRecharged = user?.transactions?.some(t => t.type === 'deposit' && t.status === 'approved');
+                   return (
+                     <div className="flex flex-col gap-1.5">
+                       <div>
+                         {hasRecharged ? (
+                           <div className="inline-flex items-center justify-center bg-green-50 text-green-600 border border-green-200/60 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider">
+                             Actif
+                           </div>
+                         ) : (
+                           <div className="inline-flex items-center justify-center bg-slate-100 text-slate-500 border border-slate-200/60 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider">
+                             Inactif
+                           </div>
+                         )}
+                       </div>
+                       {user?.created_at && (
+                         <div className="text-[10px] text-slate-400 font-medium">
+                           Membre depuis le {new Date(user.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })} à {new Date(user.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                         </div>
+                       )}
+                     </div>
+                   );
+                 })()}
               </div>
            </div>
            

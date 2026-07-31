@@ -10,7 +10,7 @@ export function Register() {
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     phone: '',
-    country: "Bénin" as CountryName,
+    country: "Côte d'Ivoire" as CountryName,
     password: '',
     referralCode: (searchParams.get('ref') && searchParams.get('ref') !== 'undefined') ? searchParams.get('ref') : ''
   });
@@ -164,14 +164,13 @@ export function Register() {
                   onChange={handleChange}
                   className="w-[120px] shrink-0 bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-bold text-sm"
                 >
-                  <option value="Bénin">Bénin</option>
-                  <option value="Togo">Togo</option>
-                  <option value="Burkina">Burkina Faso</option>
+                  <option value="Côte d'Ivoire">Côte d'Ivoire</option>
                   <option value="Niger">Niger</option>
+                  <option value="Cameroun">Cameroun</option>
                 </select>
                 <div className="flex-1 relative flex items-center">
                   <span className="absolute left-3 text-slate-500 font-bold pointer-events-none">
-                    {formData.country === 'Bénin' ? '+229' : formData.country === 'Togo' ? '+228' : formData.country === 'Burkina' ? '+226' : '+227'}
+                    {formData.country === 'Niger' ? '+227' : formData.country === 'Cameroun' ? '+237' : '+225'}
                   </span>
                   <input
                     type="tel"
