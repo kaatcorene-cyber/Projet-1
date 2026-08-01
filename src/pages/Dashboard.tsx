@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, generateUserId } from '../lib/utils';
 import { 
   Camera, LogOut, Download, PiggyBank, 
   ArrowUpRight, Crown, Phone, ArrowDownLeft, MapPin, 
@@ -16,9 +16,13 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     
-  const getVipLevel = (investments?: any[]) => {
+  const getVipLevel = (user: any) => {
+    if (user?.role && user.role.startsWith('vip')) {
+       return user.role.toUpperCase();
+    }
+    const investments = user?.investments;
     if (!investments || investments.length === 0) return 'VIP0';
-    const maxInvest = Math.max(...investments.map(i => Number(i.plan_amount) || 0));
+    const maxInvest = Math.max(...investments.map((i: any) => Number(i.plan_amount) || 0));
     if (maxInvest >= 500000) return 'VIP5';
     if (maxInvest >= 200000) return 'VIP4';
     if (maxInvest >= 90000) return 'VIP3';
@@ -61,7 +65,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
               <Wallet className="w-3.5 h-3.5 text-orange-600" />
             </div>
             <p className="text-slate-600 text-sm font-medium leading-snug">
-              Montant minimum de retrait : <span className="font-bold text-slate-900 whitespace-nowrap">2000 FCFA</span>.
+              Montant minimum de retrait : <span className="font-bold text-slate-900 whitespace-nowrap">1000 FCFA</span>.
             </p>
           </div>
           <div className="flex items-start gap-3">
@@ -87,14 +91,6 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
   );
 }
 
-const generateUserId = (uuid: string | undefined) => {
-  if (!uuid) return '000000';
-  let hash = 0;
-  for (let i = 0; i < uuid.length; i++) {
-    hash = uuid.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return Math.abs(hash).toString().substring(0, 6).padEnd(6, '0');
-};
 
 const getTgLink = (url: string | undefined | null) => {
   if (!url || url === '#') return '#';
@@ -162,9 +158,13 @@ export function Dashboard() {
     { icon: Activity, label: 'Historique', path: '/history', color: 'text-orange-600', bg: 'bg-orange-50' },
   ];
 
-  const getVipLevel = (investments?: any[]) => {
+  const getVipLevel = (user: any) => {
+    if (user?.role && user.role.startsWith('vip')) {
+       return user.role.toUpperCase();
+    }
+    const investments = user?.investments;
     if (!investments || investments.length === 0) return 'VIP0';
-    const maxInvest = Math.max(...investments.map(i => Number(i.plan_amount) || 0));
+    const maxInvest = Math.max(...investments.map((i: any) => Number(i.plan_amount) || 0));
     if (maxInvest >= 500000) return 'VIP5';
     if (maxInvest >= 200000) return 'VIP4';
     if (maxInvest >= 90000) return 'VIP3';
@@ -187,7 +187,9 @@ export function Dashboard() {
       <div className="max-w-md mx-auto pt-6 px-4 relative z-10">
         <div className="flex justify-between items-center mb-6">
            <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm bg-white flex items-center justify-center text-xl pb-0.5">🍀</div>
+             <div className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm bg-white flex items-center justify-center p-0.5 overflow-hidden">
+               <img src="/app_icon.png" alt="Olam Agri" className="w-full h-full object-cover rounded-full" />
+             </div>
              <h1 className="text-white text-2xl font-black tracking-wide">Olam Agri</h1>
            </div>
         </div>
@@ -209,7 +211,7 @@ export function Dashboard() {
                    <h2 className="text-xl font-black text-slate-900 truncate">ID : {generateUserId(user?.id)}</h2>
                    <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm flex items-center gap-1">
                      <Crown className="w-3 h-3" />
-                     {getVipLevel(user?.investments)}
+                     {getVipLevel(user)}
                    </div>
                  </div>
                  {(() => {

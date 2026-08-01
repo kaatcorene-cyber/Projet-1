@@ -191,7 +191,7 @@ export function Bank() {
 
            {/* Nom du titulaire */}
            <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Nom du titulaire (si différent)</label>
+             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Nom du titulaire</label>
              <input
                type="text"
                value={accountHolder}

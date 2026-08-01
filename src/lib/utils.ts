@@ -12,3 +12,12 @@ export function formatCurrency(amount: number) {
     minimumFractionDigits: 0,
   }).format(amount).replace('XOF', 'FCFA');
 }
+
+export function generateUserId(uuid: string | undefined) {
+  if (!uuid) return '000000';
+  let hash = 0;
+  for (let i = 0; i < uuid.length; i++) {
+    hash = uuid.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash).toString().substring(0, 6).padStart(6, '0');
+}

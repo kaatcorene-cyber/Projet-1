@@ -18,7 +18,7 @@ export default defineConfig(({mode}) => {
           clientsClaim: true,
           skipWaiting: true
         },
-        includeAssets: ['oa_icon.svg'],
+        includeAssets: ['app_icon.png'],
         manifest: {
           name: 'Olam Agri',
           short_name: 'Olam Agri',
@@ -28,12 +28,12 @@ export default defineConfig(({mode}) => {
           display: 'standalone',
           icons: [
             {
-              src: '/oa_icon.svg',
+              src: '/app_icon.png',
               sizes: 'any',
               type: 'image/svg+xml'
             },
             {
-              src: '/oa_icon.svg',
+              src: '/app_icon.png',
               sizes: 'any',
               type: 'image/svg+xml',
               purpose: 'maskable'

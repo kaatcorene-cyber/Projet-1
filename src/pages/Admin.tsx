@@ -4,7 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit, Bot, Search, AlertCircle } from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, generateUserId } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -61,7 +61,7 @@ export function Admin() {
       navigate('/dashboard');
       return;
     }
-    fetchData();
+    fetchData(true);
 
     // Polling for live admin updates (Reduced frequency to save database quota)
     const intervalId = setInterval(() => {
@@ -90,7 +90,7 @@ export function Admin() {
             if (bSet && bSet.value) {
               try {
                 const parsed = JSON.parse(bSet.value);
-                return { ...u, bank_method: parsed.bank_method, bank_account_name: parsed.bank_account_name };
+                return { ...u, bank_method: parsed.bank_method, bank_account_name: parsed.bank_account_name, bank_account_number: parsed.bank_account_number };
               } catch(e) {}
             }
             return u;
@@ -146,7 +146,7 @@ export function Admin() {
     setLoading(true);
     await supabase.from('users').update({ balance: Number(editBalance) }).eq('id', id);
     setEditingUserId(null);
-    fetchData();
+    fetchData(false);
     setLoading(false);
   
     } catch(err: any) {
@@ -158,8 +158,9 @@ export function Admin() {
   };
 
   const handleRoleChange = async (id: string, newRole: string) => {
+    setUsersList(prev => prev.map(u => u.id === id ? { ...u, role: newRole } : u));
     await supabase.from('users').update({ role: newRole }).eq('id', id);
-    fetchData();
+    fetchData(false);
   };
 
   const handleDeleteUser = async (id: string) => {
@@ -173,7 +174,8 @@ export function Admin() {
     await supabase.from('transactions').delete().eq('user_id', id);
     await supabase.from('investments').delete().eq('user_id', id);
     await supabase.from('users').delete().eq('id', id);
-    fetchData();
+    setUsersList(prev => prev.filter(u => u.id !== id));
+    fetchData(false);
     setLoading(false);
   
     } catch(err: any) {
@@ -193,14 +195,15 @@ export function Admin() {
     try {
       await supabase.from('users').update({ 
         bank_method: editBankMethod,
-        bank_account_name: packedName
+        bank_account_name: editBankAccountName,
+        bank_account_number: editBankAccountNumber
       }).eq('id', id);
     } catch(e) {}
     
     // Always save to settings
     const { error: settingsError } = await supabase.from('settings').upsert({
       key: 'bank_' + id,
-      value: JSON.stringify({ bank_method: editBankMethod, bank_account_name: packedName })
+      value: JSON.stringify({ bank_method: editBankMethod, bank_account_name: editBankAccountName, bank_account_number: editBankAccountNumber })
     });
     
     setLoading(false);
@@ -209,7 +212,7 @@ export function Admin() {
     } else {
       setMessage({ type: 'success', text: 'Coordonnées bancaires mises à jour !' });
       setEditingBankUserId(null);
-      fetchData();
+      fetchData(false);
     }
   };
 
@@ -230,7 +233,7 @@ export function Admin() {
         
         setLoading(false);
         setMessage({ type: 'success', text: 'Banque supprimée avec succès !' });
-        fetchData();
+        fetchData(false);
       }
     });
   };
@@ -244,7 +247,7 @@ export function Admin() {
     // removed confirm
     setLoading(true);
     await supabase.from('investments').delete().eq('id', id);
-    fetchData();
+    fetchData(false);
     setLoading(false);
       }
     });
@@ -252,9 +255,13 @@ export function Admin() {
 
   // --- Transactions Handlers ---
   
-  const getVipLevelForAdmin = (investments?: any[]) => {
+  const getVipLevelForAdmin = (u: any) => {
+    if (u?.role && u.role.startsWith('vip')) {
+       return u.role.toUpperCase();
+    }
+    const investments = u?.investments;
     if (!investments || investments.length === 0) return 'VIP0';
-    const maxInvest = Math.max(...investments.map(i => Number(i.plan_amount) || 0));
+    const maxInvest = Math.max(...investments.map((i: any) => Number(i.plan_amount) || 0));
     if (maxInvest >= 500000) return 'VIP5';
     if (maxInvest >= 200000) return 'VIP4';
     if (maxInvest >= 90000) return 'VIP3';
@@ -276,6 +283,8 @@ export function Admin() {
     
 
     setLoading(true);
+    // Optimistic update
+    setTransactions(prev => prev.map(t => t.id === id ? { ...t, status } : t));
     await supabase.from('transactions').update({ status }).eq('id', id);
 
     if (status === 'approved') {
@@ -297,14 +306,14 @@ export function Admin() {
             const { data: level1 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', userData.referred_by).maybeSingle();
             
             if (level1) {
-              const l1Bonus = amount * 0.20;
+              const l1Bonus = amount * 0.10;
               await supabase.from('users').update({ balance: level1.balance + l1Bonus }).eq('id', level1.id);
               await supabase.from('transactions').insert([{
                 user_id: level1.id,
                 type: 'referral_bonus',
                 amount: l1Bonus,
                 status: 'completed',
-                reference: 'Bonus 1er dépôt L1 (20%)'
+                reference: 'Bonus 1er dépôt L1 (10%)'
               }]);
 
               // Level 2 logic (3%)
@@ -312,14 +321,14 @@ export function Admin() {
                 const { data: level2 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', level1.referred_by).maybeSingle();
                 
                 if (level2) {
-                  const l2Bonus = amount * 0.03;
+                  const l2Bonus = amount * 0.05;
                   await supabase.from('users').update({ balance: level2.balance + l2Bonus }).eq('id', level2.id);
                   await supabase.from('transactions').insert([{
                     user_id: level2.id,
                     type: 'referral_bonus',
                     amount: l2Bonus,
                     status: 'completed',
-                    reference: 'Bonus 1er dépôt L2 (3%)'
+                    reference: 'Bonus 1er dépôt L2 (5%)'
                   }]);
 
                   // Level 3 logic (2%)
@@ -327,14 +336,14 @@ export function Admin() {
                     const { data: level3 } = await supabase.from('users').select('id, balance').eq('referral_code', level2.referred_by).maybeSingle();
                     
                     if (level3) {
-                      const l3Bonus = amount * 0.02;
+                      const l3Bonus = amount * 0.025;
                       await supabase.from('users').update({ balance: level3.balance + l3Bonus }).eq('id', level3.id);
                       await supabase.from('transactions').insert([{
                         user_id: level3.id,
                         type: 'referral_bonus',
                         amount: l3Bonus,
                         status: 'completed',
-                        reference: 'Bonus 1er dépôt L3 (2%)'
+                        reference: 'Bonus 1er dépôt L3 (2.5%)'
                       }]);
                     }
                   }
@@ -350,7 +359,7 @@ export function Admin() {
         await supabase.from('users').update({ balance: userData.balance + amount }).eq('id', userId);
       }
     }
-    fetchData();
+    fetchData(false);
     setLoading(false);
     } catch(err: any) {
       console.error(err);
@@ -560,6 +569,15 @@ export function Admin() {
       )}
 
       {/* Tabs Navigation */}
+      {isInitializing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+             <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
+             <p className="text-slate-500 font-medium">Chargement des données...</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex overflow-x-auto gap-2 pb-2 mb-2 scrollbar-hide">
         {tabs.map(t => (
           <button
@@ -672,15 +690,15 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-900 mb-2">Gestion des Utilisateurs ({usersList.length})</h2>
           <div className="space-y-3">
-            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} OLA-${u.id.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
+            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} ${generateUserId(u.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
               <div key={u.id} className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-2xl p-4 shadow-sm relative">
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <p className="font-bold text-slate-900 flex items-center gap-2 text-sm">
-                       Id : OLA-{u.id.substring(0,6).toUpperCase()}
+                       Id : {generateUserId(u.id)}
                        {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-orange-600" />}
                     </p>
-                    <p className="text-sm font-bold text-orange-600 mt-0.5">{getVipLevelForAdmin(u.investments)}</p>
+                    <p className="text-sm font-bold text-orange-600 mt-0.5">{getVipLevelForAdmin(u)}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{u.country} • {u.phone}</p>
                     <p className="text-xs text-slate-500 mt-1"><span className="font-semibold">MD:</span> <span className="font-mono text-slate-900 bg-slate-100 px-1 py-0.5 rounded">{u.password_hash}</span></p>
                   </div>
@@ -727,10 +745,9 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-900 mb-2">Gestion des Banques ({usersList.length})</h2>
           <div className="space-y-3">
-            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} ${u.bank_method} ${u.bank_account_name} OLA-${u.id.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => {
-              const bAccountNameRaw = (u as any)?.bank_account_name || '';
-              const bAccountName = bAccountNameRaw.split('|||')[0] || '';
-              const bAccountNumber = bAccountNameRaw.split('|||')[1] || '';
+            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} ${u.bank_method} ${u.bank_account_name} ${generateUserId(u.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => {
+              const bAccountName = (u as any)?.bank_account_name || '';
+              const bAccountNumber = (u as any)?.bank_account_number || '';
               const bMethod = (u as any)?.bank_method || 'Non défini';
 
               return (
@@ -738,8 +755,9 @@ export function Admin() {
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <p className="font-bold text-slate-900 flex items-center gap-2">
-                      {u.first_name} {u.last_name}
+                      Id : {generateUserId(u.id)}
                     </p>
+                    <p className="text-sm font-semibold text-slate-700 mt-1">{u.first_name} {u.last_name}</p>
                     <p className="text-[10px] text-slate-500 mt-1 font-mono">{u.phone}</p>
                     <div className="mt-2 bg-slate-100/80 rounded-lg p-2 inline-block space-y-0.5">
                       <p className="text-xs font-semibold text-slate-700">
@@ -777,8 +795,8 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-900 mb-2">Demandes de Dépôts</h2>
           <div className="space-y-3">
-            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} OLA-${t.users?.id?.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-slate-500 text-center py-4">Aucun dépôt.</p>}
-            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} OLA-${t.users?.id?.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
+            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} ${generateUserId(t.users?.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-slate-500 text-center py-4">Aucun dépôt.</p>}
+            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} ${generateUserId(t.users?.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
               <div key={tx.id} className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -817,8 +835,8 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-900 mb-2">Demandes de Retraits</h2>
           <div className="space-y-3">
-            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} OLA-${t.users?.id?.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-slate-500 text-center py-4">Aucun retrait.</p>}
-            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} OLA-${t.users?.id?.substring(0,6).toUpperCase()}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
+            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} ${generateUserId(t.users?.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-slate-500 text-center py-4">Aucun retrait.</p>}
+            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} ${generateUserId(t.users?.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
               <div key={tx.id} className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -842,7 +860,7 @@ export function Admin() {
                         const num = parts[2]?.replace('NUM:', '');
                         return (
                           <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                            <p className="text-xs text-slate-700"><strong>Id:</strong> OLA-{tx.users?.id?.substring(0,6).toUpperCase()}</p>
+                            <p className="text-xs text-slate-700"><strong>Id:</strong> {generateUserId(tx.users?.id)}</p>
                             <p className="text-xs text-slate-700"><strong>Opérateur:</strong> {op}</p>
                             <p className="text-xs text-slate-700"><strong>Nom:</strong> {nom}</p>
                             <p className="text-xs text-slate-700"><strong>Numéro:</strong> {num}</p>
@@ -1009,7 +1027,7 @@ export function Admin() {
               <div key={idx} className="flex items-center justify-between p-4 bg-white border-slate-200/80 shadow-slate-200/50 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-600/100"></div>
                 <div className="flex items-center gap-4 pl-2">
-                  <img src={p.image || '/oa_icon.svg'} className="w-12 h-12 rounded-xl object-cover bg-slate-100" alt="" referrerPolicy="no-referrer" />
+                  <img src={p.image || '/app_icon.png'} className="w-12 h-12 rounded-xl object-cover bg-slate-100" alt="" referrerPolicy="no-referrer" />
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
                        <p className="font-bold text-slate-900 text-sm leading-none">{formatCurrency(p.amount)}</p>
