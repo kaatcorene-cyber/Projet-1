@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export function Layout() {
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user, logout, refreshUser } = useAuthStore();
   const { fetchConfig, setInvestmentsCache } = useAppStore();
   const navigate = useNavigate();
   const hasCheckedYields = useRef(false);
@@ -20,10 +20,18 @@ export function Layout() {
   }, []);
 
   useEffect(() => {
-    if (user?.id && !hasCheckedYields.current) {
-      hasCheckedYields.current = true;
-      processDailyYields(user.id);
-      preloadInvestments(user.id);
+    if (user?.id) {
+      if (!hasCheckedYields.current) {
+        hasCheckedYields.current = true;
+        processDailyYields(user.id);
+        preloadInvestments(user.id);
+      }
+      
+      const interval = setInterval(() => {
+        processDailyYields(user.id);
+      }, 5000);
+      
+      return () => clearInterval(interval);
     }
   }, [user?.id]);
 
@@ -95,6 +103,7 @@ export function Layout() {
           if (userData) {
               await supabase.from('users').update({ balance: userData.balance + totalToAdd }).eq('id', userId);
           }
+          refreshUser();
       }
       
       if (completedInvestments.length > 0) {

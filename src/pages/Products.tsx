@@ -38,8 +38,10 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
   useEffect(() => {
     const calculateTimeLeft = () => {
       const now = new Date().getTime();
-      const lastPaid = new Date(inv.last_paid_at || inv.created_at).getTime();
-      const nextPay = lastPaid + (24 * 60 * 60 * 1000); // 24 hours later
+      const startDate = new Date(inv.start_date || inv.created_at).getTime();
+      const timeElapsed = Math.max(0, now - startDate);
+      const daysElapsed = Math.floor(timeElapsed / (24 * 60 * 60 * 1000));
+      const nextPay = startDate + (daysElapsed + 1) * (24 * 60 * 60 * 1000);
       
       const diff = nextPay - now;
       
@@ -53,7 +55,7 @@ const CountdownTimer: React.FC<{ inv: any }> = ({ inv }) => {
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       
       const totalDuration = 24 * 60 * 60 * 1000;
-      const elapsed = now - lastPaid;
+      const elapsed = timeElapsed % totalDuration;
       let pct = (elapsed / totalDuration) * 100;
       if (pct < 0) pct = 0;
       if (pct > 100) pct = 100;
