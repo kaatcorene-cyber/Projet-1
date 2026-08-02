@@ -65,7 +65,8 @@ export function History() {
 
   const getStatusBadge = (status: string) => {
     switch(status) {
-      case 'completed': return <span className="text-orange-500 text-[11px] font-bold">Payé</span>;
+      case 'completed': 
+      case 'approved': return <span className="text-orange-500 text-[11px] font-bold">Payé</span>;
       case 'pending': return <span className="text-amber-500 text-[11px] font-bold">En attente</span>;
       case 'rejected': return <span className="text-red-500 text-[11px] font-bold">Rejeté</span>;
       default: return null;

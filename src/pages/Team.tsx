@@ -20,13 +20,13 @@ export function Team() {
   }, [user]);
 
   const fetchTeam = async () => {
-    if (!user) return;
+    if (!user || !user.referral_code) return;
     try {
       // Niveau 1
       const { data: l1Data } = await supabase
         .from('users')
         .select('*')
-        .eq('referred_by', user.referral_code);
+        .eq('referred_by', user.referral_code?.toUpperCase());
             
       const l1 = l1Data || [];
       setLevel1(l1);

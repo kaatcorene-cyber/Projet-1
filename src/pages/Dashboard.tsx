@@ -187,8 +187,10 @@ export function Dashboard() {
       <div className="max-w-md mx-auto pt-6 px-4 relative z-10">
         <div className="flex justify-between items-center mb-6">
            <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm bg-white flex items-center justify-center text-xl pb-0.5">🍀</div>
-             <h1 className="text-white text-2xl font-black tracking-wide">Olam Agri</h1>
+             <div className="w-10 h-10 rounded-full border-2 border-white/20 shadow-sm bg-white flex items-center justify-center p-0.5 overflow-hidden text-lg">
+               🌿
+             </div>
+             <h1 className="text-white text-2xl font-black tracking-wide flex items-center gap-2">Olam Agri <span>🇨🇮</span></h1>
            </div>
         </div>
         {/* Profile Card */}

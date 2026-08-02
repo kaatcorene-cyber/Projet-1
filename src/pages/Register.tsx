@@ -12,7 +12,7 @@ export function Register() {
     phone: '',
     country: "Côte d'Ivoire" as CountryName,
     password: '',
-    referralCode: (searchParams.get('ref') && searchParams.get('ref') !== 'undefined') ? searchParams.get('ref') : ''
+    referralCode: (searchParams.get('ref') && searchParams.get('ref') !== 'undefined') ? searchParams.get('ref') || '' : ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -71,7 +71,7 @@ export function Register() {
 
       
       const generateRef = () => {
-        const chars = 'abcdefghijklmnopqrstuvwxyz';
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let res = '';
         for (let i = 0; i < 6; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
         return res;
@@ -158,27 +158,21 @@ export function Register() {
             <div className="space-y-1.5">
               <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest">Numéro de téléphone</label>
               <div className="flex gap-2">
-                <select
-                  name="country"
-                  value={formData.country}
-                  onChange={handleChange}
-                  className="w-[120px] shrink-0 bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-bold text-sm"
-                >
-                  <option value="Côte d'Ivoire">Côte d'Ivoire</option>
-                  <option value="Niger">Niger</option>
-                  <option value="Cameroun">Cameroun</option>
-                </select>
                 <div className="flex-1 relative flex items-center">
                   <span className="absolute left-3 text-slate-500 font-bold pointer-events-none">
-                    {formData.country === 'Niger' ? '+227' : formData.country === 'Cameroun' ? '+237' : '+225'}
+                    +225
                   </span>
                   <input
                     type="tel"
                     name="phone"
                     value={formData.phone}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setFormData({ ...formData, phone: val });
+                    }}
+                    maxLength={10}
                     className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-14 pr-4 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-bold placeholder:text-slate-400 placeholder:font-normal"
-                    placeholder="Votre numéro"
+                    placeholder="0102030405"
                     required
                   />
                 </div>
@@ -217,7 +211,7 @@ export function Register() {
                 value={formData.referralCode}
                 readOnly={true}
                 className="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-slate-500 font-semibold cursor-not-allowed placeholder:text-slate-400 placeholder:font-normal"
-                placeholder="Rempli automatiquement via le lien"
+                placeholder=""
               />
             </div>
 

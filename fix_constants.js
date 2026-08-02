@@ -1,4 +1,6 @@
-export const COUNTRIES = {
+import fs from 'fs';
+
+let content = `export const COUNTRIES = {
   "Côte d'Ivoire": { code: "+225", length: 10, placeholder: "0102030405" }
 } as const;
 
@@ -14,3 +16,6 @@ export const PAYMENT_METHODS: Record<CountryName, { id: string, name: string }[]
     { id: 'djamo', name: 'Djamo' }
   ]
 };
+`;
+
+fs.writeFileSync('src/constants.ts', content);
