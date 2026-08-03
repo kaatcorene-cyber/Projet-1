@@ -17,6 +17,7 @@ export function Withdraw() {
   
   const [withdrawalInfo, setWithdrawalInfo] = useState<{paymentMethod: string, accountNumber: string, accountHolder: string} | null>(null);
   const [infoLoaded, setInfoLoaded] = useState(false);
+  const [maxWithdrawable, setMaxWithdrawable] = useState<number | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -27,8 +28,7 @@ export function Withdraw() {
             const parsed = JSON.parse(savedInfo);
             if (parsed.accountNumber) {
               setWithdrawalInfo(parsed);
-              setInfoLoaded(true);
-              return;
+              // We don't early return here anymore because we need to calculate maxWithdrawable below
             }
           } catch (e) {}
         }
@@ -48,6 +48,21 @@ export function Withdraw() {
              }
            } catch(e) {}
         }
+        
+        // Fetch withdrawable max
+        const { data: txs } = await supabase.from('transactions').select('type, amount, status').eq('user_id', user.id);
+        let totalDeposits = 0;
+        let totalInvestments = 0;
+        if (txs) {
+            for (const tx of txs) {
+                if (tx.type === 'deposit' && tx.status === 'approved') totalDeposits += Number(tx.amount);
+                if (tx.type === 'investment' && tx.status === 'completed') totalInvestments += Number(tx.amount);
+            }
+        }
+        const uninvested = Math.max(0, totalDeposits - totalInvestments);
+        const withdrawable = Math.max(0, Number(user.balance) - uninvested);
+        setMaxWithdrawable(withdrawable);
+
         setInfoLoaded(true);
       };
       loadInfo();
@@ -70,6 +85,12 @@ export function Withdraw() {
       setError('Solde insuffisant pour ce retrait.');
       return;
     }
+
+    if (maxWithdrawable !== null && numAmount > maxWithdrawable) {
+      setError('Vous ne pouvez retirer que vos gains journaliers et bonus de parrainage. Veuillez investir vos recharges.');
+      return;
+    }
+
 
     if (!password) {
       setError('Veuillez entrer votre mot de passe.');
@@ -147,8 +168,10 @@ export function Withdraw() {
            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-[30px] -mr-10 -mt-10 pointer-events-none"></div>
            <div className="flex items-start justify-between relative z-10">
              <div>
-                <p className="text-orange-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Disponible</p>
-                <h2 className="text-3xl font-black tracking-tight">{formatCurrency(Number(user?.balance || 0))}</h2>
+                
+                <p className="text-orange-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Retirable</p>
+                <h2 className="text-3xl font-black tracking-tight">{formatCurrency(maxWithdrawable !== null ? maxWithdrawable : Number(user?.balance || 0))}</h2>
+
              </div>
              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md">
                 <ArrowDownToLine className="w-5 h-5 text-white" />
@@ -215,8 +238,10 @@ export function Withdraw() {
           
           <div className="flex items-start justify-between relative z-10">
             <div>
-               <p className="text-orange-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Actuel</p>
-               <p className="text-3xl font-black">{formatCurrency(Number(user?.balance || 0))}</p>
+               
+                <p className="text-orange-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Retirable</p>
+                <h2 className="text-3xl font-black tracking-tight">{formatCurrency(maxWithdrawable !== null ? maxWithdrawable : Number(user?.balance || 0))}</h2>
+
             </div>
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md shadow-inner">
                <Wallet className="w-6 h-6 text-white" />
