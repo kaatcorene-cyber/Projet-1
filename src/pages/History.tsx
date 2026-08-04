@@ -129,7 +129,9 @@ export function History() {
                   {getIcon(tx.type)}
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900 text-[15px] leading-tight">{tx.reference || getLabel(tx.type)}</p>
+                  <p className="font-bold text-slate-900 text-[15px] leading-tight">
+                    {tx.type === 'referral_bonus' && tx.reference ? tx.reference : getLabel(tx.type)}
+                  </p>
                   <p className="text-slate-400 text-[12px] font-medium mt-1">
                     {new Date(tx.created_at).toLocaleDateString('fr-FR', {
                       day: 'numeric', month: 'short'

@@ -490,6 +490,75 @@ export function Admin() {
     }
   };
 
+  const handlePayAllDailyGains = async () => {
+    setLoading(true);
+    try {
+      const { data: investments } = await supabase.from('investments').select('*').eq('status', 'active');
+      if (!investments || investments.length === 0) {
+        alert("Aucun investissement actif.");
+        return;
+      }
+      
+      let totalUsers = new Set();
+      let totalGainsCreated = 0;
+      
+      for (const inv of investments) {
+          const { data: gains } = await supabase.from('transactions')
+              .select('reference')
+              .eq('user_id', inv.user_id)
+              .eq('type', 'daily_gain');
+              
+          const startDate = new Date(inv.start_date || inv.created_at || Date.now()).getTime();
+          let effectiveNow = Date.now();
+          let isExpired = false;
+          if (inv.end_date) {
+            const endTimestamp = new Date(inv.end_date).getTime();
+            if (Date.now() >= endTimestamp) {
+              effectiveNow = endTimestamp;
+              isExpired = true;
+            }
+          }
+          const daysElapsed = Math.floor((effectiveNow - startDate) / (24 * 60 * 60 * 1000));
+          const paidCount = gains?.filter((g: any) => g.reference === inv.id).length || 0;
+          const missedDays = daysElapsed - paidCount;
+          
+          if (missedDays > 0) {
+              let totalToAdd = inv.daily_yield * missedDays;
+              const newTransactions = [];
+              for (let i = 0; i < missedDays; i++) {
+                  newTransactions.push({
+                      user_id: inv.user_id,
+                      type: 'daily_gain',
+                      amount: inv.daily_yield,
+                      status: 'completed',
+                      reference: inv.id
+                  });
+              }
+              
+              await supabase.from('transactions').insert(newTransactions);
+              const { data: userData } = await supabase.from('users').select('balance').eq('id', inv.user_id).single();
+              if (userData) {
+                  await supabase.from('users').update({ balance: userData.balance + totalToAdd }).eq('id', inv.user_id);
+              }
+              totalUsers.add(inv.user_id);
+              totalGainsCreated += missedDays;
+          }
+          
+          if (isExpired) {
+             await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
+          }
+      }
+      
+      alert(`Gains payés avec succès ! ${totalGainsCreated} jours de gains ajoutés pour ${totalUsers.size} utilisateurs.`);
+      
+    } catch (error) {
+      console.error(error);
+      alert("Erreur lors du paiement des gains journaliers.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleWipeData = async () => {
     setConfirmModal({
       isOpen: true,
@@ -1099,6 +1168,18 @@ export function Admin() {
               >
                 Sauvegarder les paramètres
               </button>
+
+              <div className="pt-6 mt-6 border-t border-slate-200">
+                <h3 className="text-slate-900 font-bold mb-3">Actions Globales</h3>
+                <button 
+                  onClick={handlePayAllDailyGains}
+                  disabled={loading}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 py-3 rounded-xl font-medium transition-colors shadow-sm cursor-pointer border border-slate-300"
+                >
+                  Payer tous les gains journaliers en attente
+                </button>
+                <p className="text-xs text-slate-500 text-center mt-2 mb-6">Vérifie et paie les gains journaliers de tous les utilisateurs actifs.</p>
+              </div>
 
               <div className="pt-6 mt-6 border-t border-orange-600/20">
                 <h3 className="text-orange-600 font-bold mb-3">Zone de Danger</h3>
