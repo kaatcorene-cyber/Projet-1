@@ -147,8 +147,8 @@ export function Dashboard() {
     </div>
   );
 
-  const groupLink = 'https://t.me/+_WVnzoKbc89jMDQ0';
-  const supportLink = config?.support_link || groupLink;
+  const groupLink = config?.group_link || 'https://t.me/+Xr9La2nZ2YAyNDc8';
+  const supportLink = config?.support_link || 'https://t.me/OlamAgri_Agt';
   const balance = Number(user?.balance) || 0;
   const bankBalance = Number(user?.bank_balance) || 0;
 

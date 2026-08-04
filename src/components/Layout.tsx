@@ -8,6 +8,8 @@ import { LogOut, Settings, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
+let isProcessingYields = false;
+
 export function Layout() {
   const { isAuthenticated, user, logout, refreshUser } = useAuthStore();
   const { fetchConfig, setInvestmentsCache } = useAppStore();
@@ -47,6 +49,8 @@ export function Layout() {
   };
 
   const processDailyYields = async (userId: string) => {
+    if (isProcessingYields) return;
+    isProcessingYields = true;
     try {
       const { data: investments } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
       if (!investments || investments.length === 0) return;
@@ -113,6 +117,8 @@ export function Layout() {
       }
     } catch (e) {
       console.error("Failed to process yields", e);
+    } finally {
+      isProcessingYields = false;
     }
   };
 

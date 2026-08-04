@@ -2,7 +2,7 @@ import { useAppStore } from '../store/useAppStore';
 
 export function FloatingSupport() {
   const { config } = useAppStore();
-  const supportLink = config?.support_link || 'https://t.me/+_WVnzoKbc89jMDQ0';
+  const supportLink = config?.support_link || 'https://t.me/OlamAgri_Agt';
 
   const getTgLink = (url: string | undefined | null) => {
     if (!url || url === '#') return '#';
