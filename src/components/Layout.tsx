@@ -55,12 +55,6 @@ export function Layout() {
       const { data: investments } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
       if (!investments || investments.length === 0) return;
 
-      // Optimize: Only fetch needed columns to reduce payload size drastically
-      const { data: gains } = await supabase.from('transactions')
-          .select('reference')
-          .eq('user_id', userId)
-          .eq('type', 'daily_gain');
-
       let totalToAdd = 0;
       const newTransactions: any[] = [];
       const completedInvestments: string[] = [];
@@ -78,17 +72,23 @@ export function Layout() {
             }
           }
 
+          const { count } = await supabase.from('transactions')
+              .select('*', { count: 'exact', head: true })
+              .eq('user_id', userId)
+              .eq('type', 'daily_gain')
+              .eq('reference', inv.id);
+
           const daysElapsed = Math.floor((effectiveNow - startDate) / (24 * 60 * 60 * 1000));
-          const paidCount = gains?.filter(g => g.reference === inv.id).length || 0;
+          const paidCount = count || 0;
           const missedDays = daysElapsed - paidCount;
 
           if (missedDays > 0) {
-              totalToAdd += (inv.daily_yield * missedDays);
+              totalToAdd += (Number(inv.daily_yield) * missedDays);
               for (let i = 0; i < missedDays; i++) {
                   newTransactions.push({
                       user_id: userId,
                       type: 'daily_gain',
-                      amount: inv.daily_yield,
+                      amount: Number(inv.daily_yield),
                       status: 'completed',
                       reference: inv.id
                   });
@@ -105,7 +105,7 @@ export function Layout() {
           
           const { data: userData } = await supabase.from('users').select('balance').eq('id', userId).single();
           if (userData) {
-              await supabase.from('users').update({ balance: userData.balance + totalToAdd }).eq('id', userId);
+              await supabase.from('users').update({ balance: Number(userData.balance || 0) + totalToAdd }).eq('id', userId);
           }
           refreshUser();
       }
