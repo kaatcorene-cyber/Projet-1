@@ -42,7 +42,7 @@ function TelegramModal({ onClose }: { onClose: () => void }) {
         
         <a 
           href="https://t.me/+Xr9La2nZ2YAyNDc8" 
-          target="_blank" 
+          target="_top" 
           rel="noopener noreferrer"
           className="bg-[#2AABEE] text-white font-bold py-3.5 px-8 rounded-xl w-full flex items-center justify-center gap-2 shadow-md shadow-[#2AABEE]/20 active:scale-[0.98] transition-transform"
         >
