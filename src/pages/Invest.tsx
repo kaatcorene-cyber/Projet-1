@@ -4,16 +4,67 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { CheckCircle2, AlertCircle, Loader2, Zap, ShieldCheck, TrendingUp, Sparkles, ChevronRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Zap, ShieldCheck, TrendingUp, Sparkles, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 const DEFAULT_PLANS: any[] = [];
 
+function TelegramModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose}></div>
+      <div className="w-full max-w-[380px] bg-white rounded-3xl shadow-2xl relative z-10 animate-in zoom-in-95 p-6 flex flex-col items-center overflow-hidden">
+        
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 mt-2 text-3xl">
+          👋
+        </div>
+        <h2 className="text-[19px] font-black text-slate-900 text-center mb-4 tracking-tight leading-snug">
+          𝐁𝐨𝐧𝐣𝐨𝐮𝐫 𝐜𝐡𝐞𝐫𝐬 𝐦𝐞𝐦𝐛𝐫𝐞𝐬 𝐝𝐞 𝐥𝐚 𝐜𝐨𝐦𝐦𝐮𝐧𝐚𝐮𝐭é 𝐎𝐥𝐚𝐦 𝐀𝐠𝐫𝐢.
+        </h2>
+        
+        <p className="text-[15px] text-slate-600 font-medium mb-6 text-center leading-relaxed">
+          𝐍𝐨𝐭𝐫𝐞 𝐚𝐧𝐜𝐢𝐞𝐧 𝐜𝐚𝐧𝐚𝐥 𝐚 𝐞́𝐭𝐞́ 𝐩𝐢𝐫𝐚𝐭𝐞́. 𝐕𝐞𝐮𝐢𝐥𝐥𝐞𝐳 𝐫𝐞𝐣𝐨𝐢𝐧𝐝𝐫𝐞 𝐧𝐨𝐭𝐫𝐞 𝐧𝐨𝐮𝐯𝐞𝐚𝐮 𝐜𝐚𝐧𝐚𝐥 𝐨𝐟𝐟𝐢𝐜𝐢𝐞𝐥 𝐩𝐨𝐮𝐫 𝐫𝐞𝐜𝐞𝐯𝐨𝐢𝐫 𝐥𝐞𝐬 𝐧𝐨𝐮𝐯𝐞𝐥𝐥𝐞𝐬 𝐦𝐢𝐬𝐞𝐬 à 𝐣𝐨𝐮𝐫.<br/><br/>
+          𝐌𝐞𝐫𝐜𝐢 𝐞𝐭 𝐛𝐨𝐧𝐧𝐞 𝐣𝐨𝐮𝐫𝐧é𝐞 !
+        </p>
+        
+        <a 
+          href="https://t.me/+Xr9La2nZ2YAyNDc8" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="bg-[#2AABEE] text-white font-bold py-3.5 px-8 rounded-xl w-full flex items-center justify-center gap-2 shadow-md shadow-[#2AABEE]/20 active:scale-[0.98] transition-transform"
+        >
+          <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.664 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+          Rejoindre le canal
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export function Invest() {
   const { user, refreshUser } = useAuthStore();
   const { settingsCache, setSettingsCache, setInvestmentsCache } = useAppStore();
   const navigate = useNavigate();
+  const [showTelegramModal, setShowTelegramModal] = useState(false);
+
+  useEffect(() => {
+    if (!sessionStorage.getItem('invest_telegram_shown')) {
+      setShowTelegramModal(true);
+    }
+  }, []);
   
   const getInitialPlans = () => {
     if (!settingsCache) return [];
@@ -144,6 +195,7 @@ export function Invest() {
 
   return (
     <div className="px-5 pt-12 pb-32 min-h-screen bg-slate-50 max-w-lg mx-auto font-sans">
+      {showTelegramModal && <TelegramModal onClose={() => { sessionStorage.setItem('invest_telegram_shown', 'true'); setShowTelegramModal(false); }} />}
       
       <AnimatePresence>
         {showSuccess && (
@@ -182,7 +234,7 @@ export function Invest() {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       <style>{`
         @keyframes scroll {
           0% { transform: translateX(0); }
