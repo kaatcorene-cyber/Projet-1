@@ -55,61 +55,16 @@ export function Layout() {
       const { data: investments } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
       if (!investments || investments.length === 0) return;
 
-      let totalToAdd = 0;
-      const newTransactions: any[] = [];
       const completedInvestments: string[] = [];
-
       for (const inv of investments) {
-          const startDate = new Date(inv.start_date || inv.created_at || Date.now()).getTime();
-          let effectiveNow = Date.now();
-          let isExpired = false;
-
           if (inv.end_date) {
             const endTimestamp = new Date(inv.end_date).getTime();
             if (Date.now() >= endTimestamp) {
-              effectiveNow = endTimestamp;
-              isExpired = true;
+              completedInvestments.push(inv.id);
             }
           }
-
-          const { count } = await supabase.from('transactions')
-              .select('*', { count: 'exact', head: true })
-              .eq('user_id', userId)
-              .eq('type', 'daily_gain')
-              .eq('reference', inv.id);
-
-          const daysElapsed = Math.floor((effectiveNow - startDate) / (24 * 60 * 60 * 1000));
-          const paidCount = count || 0;
-          const missedDays = daysElapsed - paidCount;
-
-          if (missedDays > 0) {
-              totalToAdd += (Number(inv.daily_yield) * missedDays);
-              for (let i = 0; i < missedDays; i++) {
-                  newTransactions.push({
-                      user_id: userId,
-                      type: 'daily_gain',
-                      amount: Number(inv.daily_yield),
-                      status: 'completed',
-                      reference: inv.id
-                  });
-              }
-          }
-          
-          if (isExpired) {
-             completedInvestments.push(inv.id);
-          }
       }
 
-      if (totalToAdd > 0 && newTransactions.length > 0) {
-          await supabase.from('transactions').insert(newTransactions);
-          
-          const { data: userData } = await supabase.from('users').select('balance').eq('id', userId).single();
-          if (userData) {
-              await supabase.from('users').update({ balance: Number(userData.balance || 0) + totalToAdd }).eq('id', userId);
-          }
-          refreshUser();
-      }
-      
       if (completedInvestments.length > 0) {
           for (const id of completedInvestments) {
               await supabase.from('investments').update({ status: 'completed' }).eq('id', id);

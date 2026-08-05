@@ -6,6 +6,7 @@ import { Activity, ChevronLeft, Gem, Coins, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 const ContractVisual: React.FC = () => {
   return (
@@ -174,7 +175,16 @@ export function Products() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.5, delay: index * 0.1, type: "spring", bounce: 0.4 }}
               >
-                <CountdownTimer inv={inv} />
+                <CountdownTimer inv={inv} onRefresh={() => {
+                  const fetchProducts = async () => {
+                    const { data } = await supabase.from('investments').select('*').eq('user_id', user?.id).eq('status', 'active');
+                    if (data) {
+                      setInvestments(data);
+                      setInvestmentsCache(data);
+                    }
+                  };
+                  fetchProducts();
+                }} />
               </motion.div>
             ))}
           </AnimatePresence>
