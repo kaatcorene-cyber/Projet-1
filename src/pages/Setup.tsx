@@ -20,13 +20,12 @@ export function Setup() {
   }, [navigate]);
 
   const schema = `-- Run this in your Supabase SQL Editor
-
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   phone TEXT NOT NULL,
-  country TEXT DEFAULT "Cote d'Ivoire",
+  country TEXT DEFAULT 'Côte d''Ivoire',
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
@@ -41,7 +40,7 @@ CREATE TABLE IF NOT EXISTS users (
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='country') THEN
-    ALTER TABLE users ADD COLUMN country TEXT DEFAULT 'Cote d''Ivoire';
+    ALTER TABLE users ADD COLUMN country TEXT DEFAULT 'Côte d''Ivoire';
     ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_key;
     ALTER TABLE users ADD CONSTRAINT users_phone_country_key UNIQUE (phone, country);
   END IF;
@@ -54,8 +53,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='bank_account_number') THEN
     ALTER TABLE users ADD COLUMN bank_account_number TEXT;
   END IF;
-END
-$$;
+END$$;
 
 -- IMPORTANT: Disable RLS for the prototype so API calls don't get blocked
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
@@ -102,12 +100,13 @@ ALTER TABLE investments DISABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE deposit_verifications DISABLE ROW LEVEL SECURITY;
+
 ALTER TABLE deposit_verifications ADD COLUMN IF NOT EXISTS sender_number TEXT;
 
 INSERT INTO settings (key, value) VALUES ('payment_link', 'https://bkapay.com/merchant/20cf6268') ON CONFLICT DO NOTHING;
 
 INSERT INTO users (phone, country, first_name, last_name, password_hash, role, balance)
-VALUES ('0704752133', "Côte d'Ivoire", 'Admin', 'Olam Agri', 'Calmaress225@', 'admin', 0)
+VALUES ('0704752133', 'Côte d''Ivoire', 'Admin', 'ElevFinAi', 'Calmaress225@', 'admin', 0)
 ON CONFLICT (phone, country) DO NOTHING;
 `;
 
@@ -118,36 +117,42 @@ ON CONFLICT (phone, country) DO NOTHING;
   };
 
   if (isChecking) {
-    return <div className="min-h-screen bg-transparent flex items-center justify-center text-slate-500">Vérification de la base de données...</div>;
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500">
+        <div className="w-8 h-8 border-2 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-transparent text-slate-900 p-6 flex flex-col items-center justify-center max-w-md mx-auto">
-      <div className="w-16 h-16 bg-orange-600/100/10 rounded-full flex items-center justify-center mb-6">
-        <Database className="w-8 h-8 text-orange-600" />
+    <div className="min-h-screen bg-slate-50 text-slate-900 p-6 flex flex-col items-center justify-center max-w-md mx-auto relative overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none"></div>
+
+      <div className="w-16 h-16 bg-emerald-500/20 border border-emerald-500/30 rounded-2xl flex items-center justify-center mb-6 relative z-10">
+        <Database className="w-8 h-8 text-emerald-400" />
       </div>
-      <h1 className="text-2xl font-bold mb-2 text-center">Configuration Requise</h1>
-      <p className="text-slate-500 text-center mb-8">
+      <h1 className="text-2xl font-black mb-2 text-center tracking-tight relative z-10">Configuration Requise</h1>
+      <p className="text-slate-500 text-center mb-8 text-sm relative z-10">
         La base de données n'est pas encore configurée. Veuillez exécuter le script SQL suivant dans votre éditeur SQL Supabase.
       </p>
 
-      <div className="w-full relative group">
+      <div className="w-full relative group z-10">
         <div className="absolute right-2 top-2">
           <button 
             onClick={copyToClipboard}
-            className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors"
+            className="p-2 bg-white hover:bg-slate-700 rounded-xl text-slate-500 transition-colors border border-slate-200"
           >
-            {copied ? <CheckCircle className="w-4 h-4 text-orange-600" /> : <Copy className="w-4 h-4" />}
+            {copied ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
-        <pre className="bg-white border-slate-200/80 shadow-slate-200/50 p-4 rounded-xl overflow-x-auto text-xs text-slate-500 border border-slate-200 h-64">
+        <pre className="bg-slate-50/80 backdrop-blur-xl border-slate-200 p-4 rounded-2xl overflow-x-auto text-xs text-slate-600 border h-64 shadow-inner">
           <code>{schema}</code>
         </pre>
       </div>
 
       <button 
         onClick={() => window.location.reload()}
-        className="mt-8 w-full py-3 bg-orange-600/100 hover:bg-orange-800 text-slate-900 rounded-xl font-medium transition-colors"
+        className="mt-8 w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-900 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] relative z-10"
       >
         J'ai exécuté le script
       </button>

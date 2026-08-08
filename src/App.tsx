@@ -7,9 +7,11 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
-import { Dashboard } from './pages/Dashboard';
-import { Invest } from './pages/Invest';
+import { Home } from './pages/Home';
+import { Profile } from './pages/Profile';
+import { Revenues } from './pages/Revenues';
 import { Team } from './pages/Team';
+import { Commissions } from './pages/Commissions';
 import { History } from './pages/History';
 import { Deposit } from './pages/Deposit';
 import { Withdraw } from './pages/Withdraw';
@@ -31,10 +33,12 @@ export default function App() {
         <Route path="/setup" element={<Setup />} />
         
         <Route element={<Layout />}>
-          <Route path="/dashboard" element={<Navigate to="/profile" replace />} />
-          <Route path="/profile" element={<Dashboard />} />
-          <Route path="/invest" element={<Invest />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/dashboard" element={<Home />} />
+          
+          <Route path="/revenues" element={<Revenues />} />
           <Route path="/team" element={<Team />} />
+          <Route path="/commissions" element={<Commissions />} />
           <Route path="/history" element={<History />} />
           <Route path="/deposit" element={<Deposit />} />
           <Route path="/withdraw" element={<Withdraw />} />
@@ -43,7 +47,7 @@ export default function App() {
           <Route path="/products" element={<Products />} />
         </Route>
 
-        <Route path="/" element={<Navigate to="/invest" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );

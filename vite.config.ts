@@ -20,9 +20,9 @@ export default defineConfig(({mode}) => {
         },
         includeAssets: ['app_icon.png'],
         manifest: {
-          name: 'Olam Agri',
-          short_name: 'Olam Agri',
-          description: 'Olam Agri Investment Platform',
+          name: 'ElevFinAi',
+          short_name: 'ElevFinAi',
+          description: 'ElevFinAi Investment Platform',
           theme_color: '#ea580c',
           background_color: '#ffffff',
           display: 'standalone',

@@ -66,7 +66,15 @@ export const useAuthStore = create<AuthState>()(
       }
     }),
     {
-      name: 'qualcomm-auth'
+      name: 'qualcomm-auth',
+      partialize: (state) => ({
+        isAuthenticated: state.isAuthenticated,
+        user: state.user ? {
+          ...state.user,
+          investments: undefined,
+          transactions: undefined
+        } : null
+      }),
     }
   )
 );

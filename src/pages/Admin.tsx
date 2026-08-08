@@ -621,7 +621,7 @@ export function Admin() {
                   setConfirmModal({...confirmModal, isOpen: false});
                   confirmModal.onConfirm();
                 }}
-                className="flex-1 py-3 px-4 bg-orange-700 hover:bg-orange-800 text-slate-900 rounded-xl font-bold transition-colors shadow-lg shadow-orange-200"
+                className="flex-1 py-3 px-4 bg-emerald-700 hover:bg-emerald-800 text-slate-900 rounded-xl font-bold transition-colors shadow-lg shadow-emerald-200"
                 disabled={loading}
               >
                 Confirmer
@@ -632,7 +632,7 @@ export function Admin() {
       )}
       
       {message && (
-        <div className={`p-4 rounded-xl text-sm font-medium ${message.type === 'error' ? 'bg-orange-600/10 text-orange-800 border border-orange-600/20' : 'bg-green-50 text-orange-700 border border-green-100'}`}>
+        <div className={`p-4 rounded-xl text-sm font-medium ${message.type === 'error' ? 'bg-emerald-600/10 text-emerald-800 border border-emerald-600/20' : 'bg-green-50 text-emerald-700 border border-green-100'}`}>
           {message.text}
         </div>
       )}
@@ -641,7 +641,7 @@ export function Admin() {
       {isInitializing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50/80 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-4">
-             <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
+             <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
              <p className="text-slate-500 font-medium">Chargement des données...</p>
           </div>
         </div>
@@ -653,7 +653,7 @@ export function Admin() {
             key={t.id}
             onClick={() => { setActiveTab(t.id); setSearchTerm(''); }}
             className={`px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium whitespace-nowrap transition-colors ${
-              activeTab === t.id ? 'bg-orange-600/100 text-slate-900 shadow-md shadow-orange-600/20' : 'bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 text-slate-500 hover:bg-slate-100/80'
+              activeTab === t.id ? 'bg-emerald-600/100 text-slate-900 shadow-md shadow-emerald-600/20' : 'bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 text-slate-500 hover:bg-slate-100/80'
             }`}
           >
             <t.icon className="w-4 h-4" />
@@ -679,21 +679,34 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-900 mb-2">Vue d'ensemble</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-orange-600/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-               <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Total des soldes</p>
-               <p className="text-xl font-black text-orange-800">{formatCurrency(usersList.reduce((acc, u) => acc + (u.balance || 0), 0))}</p>
+            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-emerald-600/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] col-span-2">
+               <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Retraits en attente (Net)</p>
+                    <p className="text-2xl font-black text-amber-600">{formatCurrency(transactions.filter(t => t.type === 'withdrawal' && t.status === 'pending').reduce((acc, t) => acc + (t.amount || 0) * 0.9, 0))}</p>
+                    <p className="text-xs text-slate-500 mt-1">{transactions.filter(t => t.type === 'withdrawal' && t.status === 'pending').length} demande(s) en cours</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-2">Brut (avant frais)</p>
+                    <p className="text-sm font-bold text-slate-600">{formatCurrency(transactions.filter(t => t.type === 'withdrawal' && t.status === 'pending').reduce((acc, t) => acc + (t.amount || 0), 0))}</p>
+                  </div>
+               </div>
             </div>
-            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-orange-600/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-emerald-600/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Total des soldes</p>
+               <p className="text-xl font-black text-emerald-800">{formatCurrency(usersList.reduce((acc, u) => acc + (u.balance || 0), 0))}</p>
+            </div>
+            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-emerald-600/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Retraits validés</p>
-               <p className="text-xl font-black text-orange-800">{formatCurrency(transactions.filter(t => t.type === 'withdrawal' && t.status === 'approved').reduce((acc, t) => acc + (t.amount || 0), 0))}</p>
+               <p className="text-xl font-black text-emerald-800">{formatCurrency(transactions.filter(t => t.type === 'withdrawal' && t.status === 'approved').reduce((acc, t) => acc + (t.amount || 0), 0))}</p>
             </div>
             <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-amber-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Dépôts validés</p>
                <p className="text-xl font-black text-amber-600">{formatCurrency(transactions.filter(t => t.type === 'deposit' && t.status === 'approved').reduce((acc, t) => acc + (t.amount || 0), 0))}</p>
             </div>
-            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-orange-600/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-emerald-600/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Utilisateurs</p>
-               <p className="text-xl font-black text-orange-700">{usersList.length}</p>
+               <p className="text-xl font-black text-emerald-700">{usersList.length}</p>
             </div>
           </div>
         </div>
@@ -711,21 +724,21 @@ export function Admin() {
                 
                 return (
                 <div key={inv.id} className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 bg-orange-600/100`}></div>
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 bg-emerald-600/100`}></div>
                   <div className="flex justify-between items-start mb-2 pl-2">
                     <div>
-                      <p className="font-bold text-slate-900 line-clamp-1">Contrat ({formatCurrency(inv.plan_amount || 0)})</p>
+                      <p className="font-bold text-slate-900 line-clamp-1">Pack ({formatCurrency(inv.plan_amount || 0)})</p>
                       <p className="text-xs text-slate-500 mt-0.5">
                         {inv.users?.first_name} {inv.users?.last_name} ({inv.users?.phone})
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
-                        inv.status === 'active' ? 'bg-orange-600/20 text-red-800' : 'bg-slate-100 text-slate-500'
+                        inv.status === 'active' ? 'bg-emerald-600/20 text-red-800' : 'bg-slate-100 text-slate-500'
                       }`}>
                         {inv.status}
                       </span>
-                      <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-orange-600 hover:bg-orange-600/10 p-1.5 rounded-lg transition-colors" title="Supprimer l'investissement">
+                      <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-emerald-600 hover:bg-emerald-600/10 p-1.5 rounded-lg transition-colors" title="Supprimer l'investissement">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -737,7 +750,7 @@ export function Admin() {
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] text-slate-500 uppercase tracking-wider">Gain Journalier</p>
-                      <p className={`font-bold text-orange-800`}>{formatCurrency(inv.daily_yield)}</p>
+                      <p className={`font-bold text-emerald-800`}>{formatCurrency(inv.daily_yield)}</p>
                     </div>
                   </div>
                   <p className="text-[10px] text-slate-500 mt-2 text-center">
@@ -765,14 +778,14 @@ export function Admin() {
                   <div>
                     <p className="font-bold text-slate-900 flex items-center gap-2 text-sm">
                        Id : {generateUserId(u.id)}
-                       {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-orange-600" />}
+                       {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-emerald-600" />}
                     </p>
-                    <p className="text-sm font-bold text-orange-600 mt-0.5">{getVipLevelForAdmin(u)}</p>
+                    <p className="text-sm font-bold text-emerald-600 mt-0.5">{getVipLevelForAdmin(u)}</p>
                     <p className="text-xs text-slate-500 mt-0.5">{u.country} • {u.phone}</p>
                     <p className="text-xs text-slate-500 mt-1"><span className="font-semibold">MD:</span> <span className="font-mono text-slate-900 bg-slate-100 px-1 py-0.5 rounded">{u.password_hash}</span></p>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                    <p className="font-bold text-orange-800 bg-orange-600/10 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
+                    <p className="font-bold text-emerald-800 bg-emerald-600/10 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
                     {u.role !== 'admin' && (
                        <select 
                          value={u.role || 'user'} 
@@ -787,8 +800,8 @@ export function Admin() {
 
                 {editingUserId === u.id ? (
                   <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200">
-                    <input type="number" className="flex-1 bg-slate-100/80 border border-slate-200 text-slate-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-orange-600 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
-                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-orange-600/100 hover:bg-orange-800 text-slate-900 font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
+                    <input type="number" className="flex-1 bg-slate-100/80 border border-slate-200 text-slate-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-600 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
+                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-emerald-600/100 hover:bg-emerald-800 text-slate-900 font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
                     <button onClick={() => setEditingUserId(null)} className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-sm transition-colors cursor-pointer">X</button>
                   </div>
                 ) : (
@@ -797,7 +810,7 @@ export function Admin() {
                       <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Solde
                     </button>
                     {u.role !== 'admin' && (
-                      <button onClick={() => handleDeleteUser(u.id)} className="p-2 bg-orange-600/10 text-orange-600 border border-orange-600/20 rounded-xl hover:bg-orange-600/20 transition-colors cursor-pointer">
+                      <button onClick={() => handleDeleteUser(u.id)} className="p-2 bg-emerald-600/10 text-emerald-600 border border-emerald-600/20 rounded-xl hover:bg-emerald-600/20 transition-colors cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
@@ -846,7 +859,7 @@ export function Admin() {
                   <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200">
                     <button 
                       onClick={() => handleClearUserBank(u.id)}
-                      className="flex-1 py-2 bg-orange-600/10 text-orange-600 rounded-xl flex items-center justify-center text-xs font-medium hover:bg-orange-600/20 transition-colors border border-orange-600/10 cursor-pointer"
+                      className="flex-1 py-2 bg-emerald-600/10 text-emerald-600 rounded-xl flex items-center justify-center text-xs font-medium hover:bg-emerald-600/20 transition-colors border border-emerald-600/10 cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4 mr-1.5" /> Supprimer ce compte bancaire
                     </button>
@@ -876,8 +889,8 @@ export function Admin() {
                   </div>
                   <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
                     tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                    tx.status === 'approved' ? 'bg-orange-600/10 text-orange-800 border border-orange-600/20' :
-                    'bg-orange-600/10 text-orange-700 border border-orange-600/20'
+                    tx.status === 'approved' ? 'bg-emerald-600/10 text-emerald-800 border border-emerald-600/20' :
+                    'bg-emerald-600/10 text-emerald-700 border border-emerald-600/20'
                   }`}>
                     {tx.status}
                   </div>
@@ -885,10 +898,10 @@ export function Admin() {
                 
                 {tx.status === 'pending' && (
                   <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-orange-600/10 hover:bg-orange-600/20 text-orange-800 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-800 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <CheckCircle className="w-4 h-4" /> Approuver
                     </button>
-                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-orange-600/10 hover:bg-orange-600/20 text-orange-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <XCircle className="w-4 h-4" /> Rejeter
                     </button>
                   </div>
@@ -914,11 +927,11 @@ export function Admin() {
                     <div className="flex items-center gap-2 mt-1 mb-2">
                       <div className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-300/50">
                         <p className="text-[9px] text-slate-500 uppercase tracking-wider">Frais (10%)</p>
-                        <p className="text-orange-500 font-bold text-xs">-{formatCurrency(tx.amount * 0.10)}</p>
+                        <p className="text-emerald-500 font-bold text-xs">-{formatCurrency(tx.amount * 0.10)}</p>
                       </div>
-                      <div className="bg-orange-600/10 px-2 py-0.5 rounded-md border border-orange-600/20">
-                        <p className="text-[9px] text-orange-600/70 uppercase tracking-wider">Montant à envoyer</p>
-                        <p className="text-orange-500 font-bold text-xs">{formatCurrency(tx.amount * 0.90)}</p>
+                      <div className="bg-emerald-600/10 px-2 py-0.5 rounded-md border border-emerald-600/20">
+                        <p className="text-[9px] text-emerald-600/70 uppercase tracking-wider">Montant à envoyer</p>
+                        <p className="text-emerald-500 font-bold text-xs">{formatCurrency(tx.amount * 0.90)}</p>
                       </div>
                     </div>
                     {(() => {
@@ -948,8 +961,8 @@ export function Admin() {
                   </div>
                   <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
                     tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                    tx.status === 'approved' ? 'bg-orange-600/10 text-orange-800 border border-orange-600/20' :
-                    'bg-orange-600/10 text-orange-700 border border-orange-600/20'
+                    tx.status === 'approved' ? 'bg-emerald-600/10 text-emerald-800 border border-emerald-600/20' :
+                    'bg-emerald-600/10 text-emerald-700 border border-emerald-600/20'
                   }`}>
                     {tx.status}
                   </div>
@@ -957,10 +970,10 @@ export function Admin() {
                 
                 {tx.status === 'pending' && (
                   <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-orange-600/10 hover:bg-orange-600/20 text-orange-800 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-800 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <CheckCircle className="w-4 h-4" /> Approuver
                     </button>
-                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-orange-600/10 hover:bg-orange-600/20 text-orange-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
                       <XCircle className="w-4 h-4" /> Rejeter
                     </button>
                   </div>
@@ -975,7 +988,7 @@ export function Admin() {
       {activeTab === 'plans' && (
         <div className="space-y-6">
           <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-3xl p-6 shadow-sm">
-             <h2 className="text-lg font-bold text-slate-900 mb-4">{editingPlanIndex !== null ? 'Modifier le contrat' : 'Créer un contrat'}</h2>
+             <h2 className="text-lg font-bold text-slate-900 mb-4">{editingPlanIndex !== null ? 'Modifier le pack' : 'Créer un pack'}</h2>
              <div className="space-y-4">
                <div className="grid grid-cols-2 gap-3">
                  <input 
@@ -995,7 +1008,7 @@ export function Admin() {
                         setNewPlanTotal('');
                      }
                    }} 
-                   className="col-span-2 bg-slate-100/80 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-orange-600 outline-none" 
+                   className="col-span-2 bg-slate-100/80 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-600 outline-none" 
                  />
                  <div className="flex flex-col gap-1">
                    <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Gain %</label>
@@ -1013,7 +1026,7 @@ export function Admin() {
                           setNewPlanTotal(total.toString());
                        }
                      }} 
-                     className="bg-slate-100/80 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-orange-600 outline-none" 
+                     className="bg-slate-100/80 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-600 outline-none" 
                    />
                  </div>
                  <div className="flex flex-col gap-1">
@@ -1032,16 +1045,16 @@ export function Admin() {
                           setNewPlanTotal(total.toString());
                        }
                      }} 
-                     className="bg-slate-100/80 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-orange-600 outline-none" 
+                     className="bg-slate-100/80 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-600 outline-none" 
                    />
                  </div>
                  <div className="flex flex-col gap-1">
                    <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Gain/Jour (FCFA)</label>
-                   <input type="number" placeholder="Gain journalier" value={newPlanDaily} readOnly className="bg-slate-100 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-orange-600 outline-none cursor-not-allowed opacity-80" />
+                   <input type="number" placeholder="Gain journalier" value={newPlanDaily} readOnly className="bg-slate-100 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-600 outline-none cursor-not-allowed opacity-80" />
                  </div>
                  <div className="flex flex-col gap-1">
                    <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Total (FCFA)</label>
-                   <input type="number" placeholder="Revenu Total" value={newPlanTotal} readOnly className="bg-slate-100 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-orange-600 outline-none cursor-not-allowed opacity-80" />
+                   <input type="number" placeholder="Revenu Total" value={newPlanTotal} readOnly className="bg-slate-100 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-600 outline-none cursor-not-allowed opacity-80" />
                  </div>
                </div>
 
@@ -1060,7 +1073,7 @@ export function Admin() {
                      <img src={newPlanImage} className="w-full h-32 object-cover rounded-lg shadow-sm" alt="Preview" />
                    ) : (
                      <>
-                       <div className="w-10 h-10 bg-orange-600/10 text-orange-600 rounded-full flex items-center justify-center">
+                       <div className="w-10 h-10 bg-emerald-600/10 text-emerald-600 rounded-full flex items-center justify-center">
                          <Upload className="w-5 h-5" />
                        </div>
                        <span className="text-sm font-medium text-slate-500">Ajouter une photo</span>
@@ -1071,7 +1084,7 @@ export function Admin() {
 
                {editingPlanIndex !== null ? (
                  <div className="flex gap-2">
-                   <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-orange-600/100 hover:bg-orange-800 disabled:opacity-50 text-slate-900 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                   <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-emerald-600/100 hover:bg-emerald-800 disabled:opacity-50 text-slate-900 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
                      <Save className="w-5 h-5" /> Sauvegarder
                    </button>
                    <button onClick={handleCancelEditPlan} className="flex-1 bg-slate-200 hover:bg-gray-300 text-slate-700 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
@@ -1079,7 +1092,7 @@ export function Admin() {
                    </button>
                  </div>
                ) : (
-                 <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-orange-600/100 hover:bg-orange-800 disabled:opacity-50 text-slate-900 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                 <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-emerald-600/100 hover:bg-emerald-800 disabled:opacity-50 text-slate-900 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
                    <Plus className="w-5 h-5" /> Ajouter à la liste
                  </button>
                )}
@@ -1090,11 +1103,11 @@ export function Admin() {
             <h3 className="text-slate-900 font-bold px-1">Plans actuels ({plans.length})</h3>
             {isInitializing ? (
                <div className="flex justify-center p-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-orange-600" />
+                  <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
                </div>
             ) : plans.map((p, idx) => (
               <div key={idx} className="flex items-center justify-between p-4 bg-white border-slate-200/80 shadow-slate-200/50 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-600/100"></div>
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-600/100"></div>
                 <div className="flex items-center gap-4 pl-2">
                   <img src={p.image || '/app_icon.png'} className="w-12 h-12 rounded-xl object-cover bg-slate-100" alt="" referrerPolicy="no-referrer" />
                   <div>
@@ -1108,10 +1121,10 @@ export function Admin() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => handleEditPlan(idx)} disabled={loading} className="p-2.5 text-orange-600 bg-orange-600/10 border border-orange-600/20 rounded-xl hover:bg-orange-600/20 transition-colors cursor-pointer">
+                  <button onClick={() => handleEditPlan(idx)} disabled={loading} className="p-2.5 text-emerald-600 bg-emerald-600/10 border border-emerald-600/20 rounded-xl hover:bg-emerald-600/20 transition-colors cursor-pointer">
                     <Edit className="w-5 h-5" />
                   </button>
-                  <button onClick={() => handleRemovePlan(idx)} disabled={loading} className="p-2.5 text-orange-600 bg-orange-600/10 border border-orange-600/20 rounded-xl hover:bg-orange-600/20 transition-colors cursor-pointer">
+                  <button onClick={() => handleRemovePlan(idx)} disabled={loading} className="p-2.5 text-emerald-600 bg-emerald-600/10 border border-emerald-600/20 rounded-xl hover:bg-emerald-600/20 transition-colors cursor-pointer">
                     <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
@@ -1134,7 +1147,7 @@ export function Admin() {
                   type="url"
                   value={paymentLink}
                   onChange={(e) => setPaymentLink(e.target.value)}
-                  className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-orange-600 transition-colors text-sm"
+                  className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-emerald-600 transition-colors text-sm"
                   placeholder="https://..."
                 />
               </div>
@@ -1145,7 +1158,7 @@ export function Admin() {
                   type="url"
                   value={groupLink}
                   onChange={(e) => setGroupLink(e.target.value)}
-                  className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-orange-600 transition-colors text-sm"
+                  className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-emerald-600 transition-colors text-sm"
                   placeholder="https://t.me/..."
                 />
               </div>
@@ -1156,7 +1169,7 @@ export function Admin() {
                   type="url"
                   value={supportLink}
                   onChange={(e) => setSupportLink(e.target.value)}
-                  className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-orange-600 transition-colors text-sm"
+                  className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-emerald-600 transition-colors text-sm"
                   placeholder="https://t.me/support..."
                 />
               </div>
@@ -1181,12 +1194,12 @@ export function Admin() {
                 <p className="text-xs text-slate-500 text-center mt-2 mb-6">Vérifie et paie les gains journaliers de tous les utilisateurs actifs.</p>
               </div>
 
-              <div className="pt-6 mt-6 border-t border-orange-600/20">
-                <h3 className="text-orange-600 font-bold mb-3">Zone de Danger</h3>
+              <div className="pt-6 mt-6 border-t border-emerald-600/20">
+                <h3 className="text-emerald-600 font-bold mb-3">Zone de Danger</h3>
                 <button 
                   onClick={handleWipeData}
                   disabled={loading}
-                  className="w-full bg-orange-700 hover:bg-orange-800 text-slate-900 py-4 rounded-xl font-bold transition-colors shadow-lg shadow-orange-600/30 cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full bg-emerald-700 hover:bg-emerald-800 text-slate-900 py-4 rounded-xl font-bold transition-colors shadow-lg shadow-emerald-600/30 cursor-pointer flex items-center justify-center gap-2"
                 >
                   <AlertCircle className="w-5 h-5" />
                   TOUT EFFACER (RÉINITIALISER)

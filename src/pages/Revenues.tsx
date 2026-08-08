@@ -3,8 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { ChevronLeft, Loader2, Clock, Zap } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Loader2, Clock, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -163,9 +162,8 @@ const CountdownTimer = ({ inv, plan, onRefresh }: { inv: any, plan: any, onRefre
   );
 };
 
-export function Products() {
+export function Revenues() {
   const { user } = useAuthStore();
-  const navigate = useNavigate();
   const { investmentsCache, setInvestmentsCache } = useAppStore();
   const [investments, setInvestments] = useState<any[]>(investmentsCache || []);
   const [plans, setPlans] = useState<any[]>([]);
@@ -209,16 +207,11 @@ export function Products() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-5 pt-12 pb-32 font-sans text-slate-900 relative">
-      <header className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/80 backdrop-blur-xl border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-700 transition-colors shadow-sm shrink-0">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-black tracking-tight">Packs Actifs</h1>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Vos investissements</p>
-        </div>
+      <header className="mb-8">
+        <h1 className="text-2xl font-black tracking-tight">Mes Packs Actifs</h1>
+        <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Collectez vos gains journaliers</p>
       </header>
-      
+
       <div className="max-w-md mx-auto space-y-4">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">

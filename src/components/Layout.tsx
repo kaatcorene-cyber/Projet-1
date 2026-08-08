@@ -31,7 +31,7 @@ export function Layout() {
       
       const interval = setInterval(() => {
         processDailyYields(user.id);
-      }, 5000);
+      }, 60000 * 5); // every 5 minutes instead of 5 seconds
       
       return () => clearInterval(interval);
     }
@@ -88,14 +88,14 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen text-slate-900 pb-16 font-sans bg-transparent">
-      <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden">
+    <div className="min-h-screen text-slate-900 pb-20 font-sans bg-slate-50">
+      <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden pb-8">
         {/* Top Mini Header for Admin */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
           {user?.role === 'admin' && (
             <button 
               onClick={() => navigate('/admin')}
-              className="w-10 h-10 bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-full flex items-center justify-center text-slate-700 shadow-sm hover:bg-slate-100/80 transition-colors"
+              className="w-10 h-10 bg-white/80 backdrop-blur-md border-emerald-500/50 shadow-emerald-500/20 border rounded-full flex items-center justify-center text-emerald-400 shadow-sm hover:bg-slate-700 transition-colors"
             >
               <Settings className="w-5 h-5" />
             </button>
@@ -104,6 +104,7 @@ export function Layout() {
 
         <Outlet />
       </main>
+
       <FloatingSupport />
       <BottomNav />
     </div>

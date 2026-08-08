@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { ArrowDown, ArrowUp, Clock, Plus, TrendingUp, Gift, CreditCard } from 'lucide-react';
+import { ArrowDown, ArrowUp, Clock, Plus, TrendingUp, Gift, CreditCard, ChevronLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 export function History() {
   const { user } = useAuthStore();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchTransactions();
@@ -57,82 +59,90 @@ export function History() {
   };
 
   const getIconColor = (type: string) => {
-    if (type === 'referral_bonus') return 'bg-orange-50 text-orange-500';
-    if (type === 'withdrawal' || type === 'investment') return 'bg-slate-100 text-slate-700';
-    if (type === 'deposit') return 'bg-orange-50 text-orange-600';
-    return 'bg-orange-50 text-orange-600';
+    if (type === 'referral_bonus') return 'bg-emerald-500/20 text-emerald-400';
+    if (type === 'withdrawal' || type === 'investment') return 'bg-slate-700/50 text-slate-500';
+    if (type === 'deposit') return 'bg-emerald-500/20 text-emerald-400';
+    return 'bg-emerald-500/20 text-emerald-400';
   };
 
   const getStatusBadge = (status: string) => {
     switch(status) {
       case 'completed': 
-      case 'approved': return <span className="text-orange-500 text-[11px] font-bold">Payé</span>;
-      case 'pending': return <span className="text-amber-500 text-[11px] font-bold">En attente</span>;
-      case 'rejected': return <span className="text-red-500 text-[11px] font-bold">Rejeté</span>;
+      case 'approved': return <span className="text-emerald-400 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">Payé</span>;
+      case 'pending': return <span className="text-amber-400 text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">En attente</span>;
+      case 'rejected': return <span className="text-red-400 text-[10px] font-bold uppercase tracking-wider bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20">Rejeté</span>;
       default: return null;
     }
   };
 
   return (
-    <div className="px-4 pt-8 pb-32 min-h-screen bg-slate-50 max-w-lg mx-auto font-sans">
+    <div className="px-5 pt-12 pb-32 min-h-[100dvh] bg-slate-50 max-w-lg mx-auto font-sans relative text-slate-900">
       
-      <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-6 px-2">Transactions</h2>
+      <header className="flex items-center gap-4 mb-8 relative z-10">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/80 backdrop-blur-xl border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-700 transition-colors shadow-sm shrink-0">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div>
+          <h1 className="text-2xl font-black tracking-tight">Historique</h1>
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Vos transactions</p>
+        </div>
+      </header>
 
       {/* Summary Header */}
       {!loading && transactions.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col items-center text-center">
-             <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center mb-2">
-               <ArrowDown className="w-4 h-4 text-orange-600" />
+        <div className="grid grid-cols-2 gap-3 mb-8 relative z-10">
+          <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-5 shadow-xl border border-slate-200/50 flex flex-col items-center text-center">
+             <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center mb-3">
+               <ArrowDown className="w-5 h-5 text-emerald-400" />
              </div>
-             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Entrées</p>
-             <p className="text-slate-900 font-black">
+             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Entrées</p>
+             <p className="text-slate-900 font-black text-lg">
                {formatCurrency(transactions.filter(t => t.type !== 'withdrawal' && t.type !== 'investment').reduce((sum, t) => sum + t.amount, 0))}
              </p>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col items-center text-center">
-             <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center mb-2">
-               <ArrowUp className="w-4 h-4 text-slate-500" />
+          
+          <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-5 shadow-xl border border-slate-200/50 flex flex-col items-center text-center">
+             <div className="w-10 h-10 rounded-full bg-slate-700/50 flex items-center justify-center mb-3">
+               <ArrowUp className="w-5 h-5 text-slate-500" />
              </div>
-             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Sorties</p>
-             <p className="text-slate-900 font-black">
+             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Sorties</p>
+             <p className="text-slate-900 font-black text-lg">
                {formatCurrency(transactions.filter(t => t.type === 'withdrawal' || t.type === 'investment').reduce((sum, t) => sum + t.amount, 0))}
              </p>
           </div>
         </div>
       )}
 
-
       {loading ? (
-        <div className="flex justify-center p-8">
-          <div className="w-8 h-8 border-4 border-slate-200 border-t-orange-600 rounded-full animate-spin"></div>
+        <div className="flex justify-center p-12">
+          <div className="w-10 h-10 border-4 border-slate-200 border-t-emerald-500 rounded-full animate-spin"></div>
         </div>
       ) : transactions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-            <Clock className="w-8 h-8 text-slate-300" />
+        <div className="flex flex-col items-center justify-center py-20 text-center bg-white/50 rounded-3xl border border-slate-200/50">
+          <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mb-4">
+            <Clock className="w-8 h-8 text-slate-500" />
           </div>
           <p className="text-slate-500 font-medium text-sm">Aucun mouvement pour le moment.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-[28px] shadow-sm border border-slate-100/60 overflow-hidden">
+        <div className="bg-white/60 backdrop-blur-sm rounded-[32px] shadow-xl border border-slate-200/50 overflow-hidden relative z-10">
           {transactions.map((tx, idx) => (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
               key={tx.id} 
-              className={`flex items-center justify-between p-4 ${idx !== transactions.length - 1 ? 'border-b border-slate-50' : ''}`}
+              className={`flex items-center justify-between p-5 hover:bg-slate-700/30 transition-colors ${idx !== transactions.length - 1 ? 'border-b border-slate-200/50' : ''}`}
             >
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-[18px] flex items-center justify-center shrink-0 ${getIconColor(tx.type)}`}>
+                <div className={`w-12 h-12 rounded-[16px] flex items-center justify-center shrink-0 ${getIconColor(tx.type)}`}>
                   {getIcon(tx.type)}
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900 text-[15px] leading-tight">
+                  <p className="font-bold text-slate-900 text-[15px] leading-tight mb-1">
                     {tx.type === 'referral_bonus' && tx.reference ? tx.reference : getLabel(tx.type)}
                   </p>
-                  <p className="text-slate-400 text-[12px] font-medium mt-1">
+                  <p className="text-slate-500 text-[11px] font-medium uppercase tracking-wider">
                     {new Date(tx.created_at).toLocaleDateString('fr-FR', {
                       day: 'numeric', month: 'short'
                     })} • {new Date(tx.created_at).toLocaleTimeString('fr-FR', {
@@ -143,10 +153,10 @@ export function History() {
               </div>
               
               <div className="text-right">
-                <p className={`font-black text-[15px] leading-tight text-slate-900`}>
+                <p className={`font-black text-[16px] leading-tight mb-1 ${tx.type === 'withdrawal' || tx.type === 'investment' ? 'text-slate-900' : 'text-emerald-400'}`}>
                   {tx.type === 'withdrawal' || tx.type === 'investment' ? '-' : '+'}{formatCurrency(tx.amount)}
                 </p>
-                <div className="mt-1">
+                <div className="flex justify-end">
                   {getStatusBadge(tx.status)}
                 </div>
               </div>

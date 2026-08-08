@@ -1,33 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
-import { formatCurrency } from '../lib/utils';
-import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ChevronLeft, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { PAYMENT_METHODS, CountryName } from '../constants';
+import { useNavigate } from 'react-router-dom';
 
 export function Bank() {
-  const { user, refreshUser } = useAuthStore();
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
-  
+  const { user } = useAuthStore();
   const [paymentMethod, setPaymentMethod] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [accountHolder, setAccountHolder] = useState('');
   const [password, setPassword] = useState('');
-  
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const navigate = useNavigate();
 
-  const userCountry = user?.country as CountryName | undefined;
-  const availableMethods = userCountry ? (PAYMENT_METHODS[userCountry] || PAYMENT_METHODS["Côte d'Ivoire"]) : PAYMENT_METHODS["Côte d'Ivoire"];
-
-  useEffect(() => { 
-    refreshUser(); 
-  }, []);
+  const availableMethods = [
+    { id: 'orange', name: 'Orange Money' },
+    { id: 'mtn', name: 'MTN Mobile Money' },
+    { id: 'moov', name: 'Moov Money' },
+    { id: 'wave', name: 'Wave' },
+    { id: 'bank', name: 'Virement Bancaire' },
+  ];
 
   useEffect(() => {
     if (user?.id) {
-      
       const loadInfo = async () => {
         const savedInfo = localStorage.getItem('withdrawal_info_' + user.id);
         if (savedInfo) {
@@ -43,8 +41,8 @@ export function Bank() {
           } catch (e) {}
         }
         
-        // Try fetching from DB
         const { data } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).maybeSingle();
+        
         if (data && data.value) {
            try {
              const parsed = JSON.parse(data.value);
@@ -66,9 +64,8 @@ export function Bank() {
         
         setPaymentMethod(availableMethods[0].id);
       };
-      loadInfo();
       
-
+      loadInfo();
     }
   }, [user?.id, availableMethods]);
 
@@ -77,7 +74,6 @@ export function Bank() {
     if (!user) return;
     
     if (isSaved) {
-      // Allow editing maybe? The prompt says "se verrouiller automatiquement", so we don't do anything if saved.
       return;
     }
 
@@ -101,7 +97,6 @@ export function Bank() {
         accountHolder
       }));
       
-      // Update the user profile in Supabase as well
       await supabase.from('settings').upsert({
         key: 'bank_' + user.id,
         value: JSON.stringify({
@@ -126,21 +121,26 @@ export function Bank() {
   };
 
   return (
-    <div className="px-5 pt-12 pb-32 min-h-screen bg-slate-50 max-w-lg mx-auto font-sans">
-      <div className="relative mb-10 text-center">
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-orange-600/10 rounded-full blur-[40px] pointer-events-none"></div>
-         <h1 className="text-3xl font-black text-slate-900 tracking-tight relative z-10">COMPTE DE RETRAIT</h1>
-      </div>
+    <div className="px-5 pt-12 pb-32 min-h-[100dvh] bg-slate-50 max-w-lg mx-auto font-sans relative text-slate-900">
+      <header className="flex items-center gap-4 mb-8 relative z-10">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/80 backdrop-blur-xl border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-700 transition-colors shadow-sm shrink-0">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div>
+          <h1 className="text-2xl font-black tracking-tight">Compte de Retrait</h1>
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Configurer</p>
+        </div>
+      </header>
 
       {message && (
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className={`p-4 rounded-2xl mb-6 flex items-center gap-3 border shadow-sm ${
-          message.type === 'success' ? 'bg-orange-50 text-orange-700 border-orange-100' : 'bg-orange-50 text-orange-800 border-orange-100'
+          className={`p-4 rounded-2xl mb-6 flex items-start gap-3 border shadow-sm backdrop-blur-sm ${
+          message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
         }`}>
-          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
-          <p className="text-sm font-semibold">{message.text}</p>
+          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />}
+          <p className="text-sm font-semibold leading-relaxed">{message.text}</p>
         </motion.div>
       )}
 
@@ -148,33 +148,33 @@ export function Bank() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="p-4 rounded-2xl mb-6 flex items-start gap-3 border shadow-sm bg-orange-50 text-orange-800 border-orange-100"
+          className="p-4 rounded-2xl mb-6 flex items-start gap-3 border shadow-sm bg-emerald-500/10 text-emerald-400 border-emerald-500/20 backdrop-blur-sm"
         >
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5 text-orange-600" />
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <p className="text-sm font-semibold leading-relaxed">
             Vos informations de retrait sont configurées et verrouillées. Vous pouvez maintenant effectuer vos retraits depuis la page de retrait.
           </p>
         </motion.div>
       )}
 
-      <form onSubmit={handleSave} className="bg-white rounded-[32px] p-6 shadow-lg shadow-slate-200/50 border border-slate-100 space-y-6">
+      <form onSubmit={handleSave} className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-2xl shadow-slate-200/50 border border-slate-200/50 space-y-6 relative z-10">
         
         <div className="space-y-4">
            {/* Moyen de paiement */}
            <div className="space-y-2">
              <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Moyen de paiement</label>
-             <select 
+             <select
                value={paymentMethod}
                onChange={(e) => setPaymentMethod(e.target.value)}
                disabled={isSaved}
-               className={`w-full border-2 rounded-2xl px-4 py-4 text-slate-900 font-bold outline-none transition-all shadow-inner appearance-none ${isSaved ? 'bg-slate-100 border-slate-200 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50 border-slate-100 focus:border-orange-600 focus:bg-white'}`}
+               className={`w-full border rounded-2xl px-4 py-4 text-slate-900 font-bold outline-none transition-all shadow-inner appearance-none ${isSaved ? 'bg-white/50 border-slate-200/50 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50/50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'}`}
              >
                {availableMethods.map(method => (
-                 <option key={method.id} value={method.id}>{method.name}</option>
+                 <option key={method.id} value={method.id} className="bg-white">{method.name}</option>
                ))}
              </select>
            </div>
-
+           
            {/* Numéro du compte de réception */}
            <div className="space-y-2">
              <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Numéro du compte de réception</label>
@@ -183,12 +183,12 @@ export function Bank() {
                value={accountNumber}
                onChange={(e) => setAccountNumber(e.target.value)}
                disabled={isSaved}
-               className={`w-full border-2 rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-300 outline-none transition-all shadow-inner ${isSaved ? 'bg-slate-100 border-slate-200 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50 border-slate-100 focus:border-orange-600 focus:bg-white'}`}
+               className={`w-full border rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-600 outline-none transition-all shadow-inner ${isSaved ? 'bg-white/50 border-slate-200/50 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50/50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'}`}
                placeholder="Ex: 0102030405"
                required
              />
            </div>
-
+           
            {/* Nom du titulaire */}
            <div className="space-y-2">
              <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Nom du titulaire</label>
@@ -197,11 +197,11 @@ export function Bank() {
                value={accountHolder}
                onChange={(e) => setAccountHolder(e.target.value)}
                disabled={isSaved}
-               className={`w-full border-2 rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-300 outline-none transition-all shadow-inner ${isSaved ? 'bg-slate-100 border-slate-200 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50 border-slate-100 focus:border-orange-600 focus:bg-white'}`}
+               className={`w-full border rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-600 outline-none transition-all shadow-inner ${isSaved ? 'bg-white/50 border-slate-200/50 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50/50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'}`}
                placeholder="Nom complet"
              />
            </div>
-
+           
            {/* Mot de passe */}
            {!isSaved && (
              <div className="space-y-2">
@@ -210,7 +210,7 @@ export function Bank() {
                  type="password"
                  value={password}
                  onChange={(e) => setPassword(e.target.value)}
-                 className="w-full bg-slate-50 border-2 border-slate-100 focus:border-orange-600 focus:bg-white rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-300 outline-none transition-all shadow-inner"
+                 className="w-full bg-slate-50/50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-600 outline-none transition-all shadow-inner tracking-widest"
                  placeholder="••••••••"
                  required
                />
@@ -222,9 +222,9 @@ export function Bank() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 rounded-xl font-bold transition-all duration-300 disabled:opacity-50 text-white bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-900/20 active:scale-[0.98] flex justify-center items-center gap-2 mt-6"
+            className="w-full py-4 rounded-xl font-bold transition-all duration-300 disabled:opacity-50 text-slate-900 bg-emerald-500 hover:bg-emerald-400 shadow-xl shadow-emerald-500/20 active:scale-[0.98] flex justify-center items-center gap-2 mt-6"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Enregistrer les informations'}
+            {loading ? <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" /> : 'Enregistrer les informations'}
           </button>
         )}
       </form>

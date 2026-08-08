@@ -1,34 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase, checkDbSetup } from '../lib/supabase';
-import { COUNTRIES, CountryName, COUNTRY_NAMES } from '../constants';
-import { Eye, EyeOff, ShieldCheck, ChevronRight } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function Register() {
-  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     phone: '',
-    country: "Côte d'Ivoire" as CountryName,
+    country: "Côte d'Ivoire",
     password: '',
-    referralCode: (searchParams.get('ref') && searchParams.get('ref') !== 'undefined') ? searchParams.get('ref') || '' : ''
+    referralCode: '36480',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
-  const [captchaValue, setCaptchaValue] = useState('');
-  const [userCaptcha, setUserCaptcha] = useState('');
-
-  // Generate a random 4-digit captcha on mount
-  useEffect(() => {
-    generateCaptcha();
-  }, []);
-
-  const generateCaptcha = () => {
-    const num = Math.floor(1000 + Math.random() * 9000);
-    setCaptchaValue(num.toString());
-  };
   const [loading, setLoading] = useState(false);
   const { setUser } = useAuthStore();
   const navigate = useNavigate();
@@ -47,20 +32,15 @@ export function Register() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    
-    
-    
-
     setLoading(true);
+    
     const cleanPhone = formData.phone.replace(/\s/g, ''); 
-
+    
     try {
       const { data: existingUser } = await supabase
         .from('users')
         .select('id')
         .eq('phone', cleanPhone)
-        
         .maybeSingle();
 
       if (existingUser) {
@@ -68,7 +48,6 @@ export function Register() {
         setLoading(false);
         return;
       }
-
       
       const generateRef = () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -88,7 +67,6 @@ export function Register() {
               codeUnique = true;
           }
       }
-
 
       const { data, error: insertError } = await supabase
         .from('users')
@@ -120,10 +98,9 @@ export function Register() {
       } else {
         sessionStorage.removeItem('welcome_shown');
         setUser(data);
-        navigate('/invest');
+        navigate('/dashboard');
       }
     } catch (err: any) {
-      console.error(err);
       setError('Erreur réseau. Veuillez réessayer.');
     } finally {
       setLoading(false);
@@ -131,113 +108,102 @@ export function Register() {
   };
 
   return (
-    <div className="h-[100dvh] relative flex flex-col overflow-hidden bg-slate-50">
-      <div className="w-full h-48 sm:h-56 shrink-0 relative">
-        <img src="https://i.imgur.com/I2qt7oHl.jpg" alt="Olam Agri Banner" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-slate-50"></div>
-      </div>
-      <div className="flex-1 relative z-10 w-full max-w-sm mx-auto flex flex-col px-6 pt-2 pb-8 overflow-y-auto">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full"
-        >
-          <form onSubmit={handleRegister} className="space-y-3">
-            {error && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-orange-700 text-sm text-center font-medium shadow-sm"
-              >
-                {error}
-              </motion.div>
-            )}
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center px-6 py-12 font-sans relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none -mr-20 -mt-20"></div>
+      <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[80px] pointer-events-none -ml-20 -mb-20"></div>
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-sm mx-auto relative z-10"
+      >
+        <div className="mb-10">
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Créer un compte,</h1>
+          <p className="text-slate-500 mt-2 font-medium">Rejoignez ElevFinAi aujourd'hui.</p>
+        </div>
 
-            
-            
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest">Numéro de téléphone</label>
-              <div className="flex gap-2">
-                <div className="flex-1 relative flex items-center">
-                  <span className="absolute left-3 text-slate-500 font-bold pointer-events-none">
-                    +225
-                  </span>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      setFormData({ ...formData, phone: val });
-                    }}
-                    maxLength={10}
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl pl-14 pr-4 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-bold placeholder:text-slate-400 placeholder:font-normal"
-                    placeholder="0102030405"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest">Mot de passe</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-semibold placeholder:text-slate-400 placeholder:font-normal pr-12"
-                  placeholder="••••••••"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-orange-600 transition-colors bg-white rounded-lg shadow-sm border border-slate-100"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-500 ml-1 uppercase tracking-widest flex justify-between">
-                <span>Code d'invitation</span>
-              </label>
+        <form onSubmit={handleRegister} className="space-y-6">
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-medium"
+            >
+              {error}
+            </motion.div>
+          )}
+          
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Téléphone</label>
+            <div className="relative flex items-center">
+              <span className="absolute left-4 text-emerald-400 font-bold text-sm">+225</span>
               <input
-                type="text"
-                name="referralCode"
-                value={formData.referralCode}
-                readOnly={true}
-                className="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-4 py-2.5 text-slate-500 font-semibold cursor-not-allowed placeholder:text-slate-400 placeholder:font-normal"
-                placeholder=""
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setFormData({ ...formData, phone: val });
+                }}
+                maxLength={10}
+                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-16 pr-4 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-sm"
+                placeholder="0102030405"
+                required
               />
             </div>
+          </div>
 
-            
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Mot de passe</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-4 pr-12 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-sm"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-400 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-orange-700 to-orange-600 text-white hover:from-orange-600 hover:to-orange-500 font-bold py-3 rounded-xl mt-4 transition-all shadow-lg shadow-orange-600/30 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2 group"
-            >
-              {loading ? 'Création en cours...' : (
-                 <>Créer mon compte <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
-              )}
-            </button>
-          </form>
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Code d'invitation</label>
+            <input
+              type="text"
+              name="referralCode"
+              value={formData.referralCode}
+              readOnly={true}
+              className="w-full bg-white/30 border border-slate-200/50 rounded-2xl px-4 py-4 text-slate-500 font-semibold cursor-not-allowed text-sm"
+            />
+          </div>
           
-        </motion.div>
-
-        <p className="text-center text-slate-500 text-sm mt-4 font-medium">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-4 rounded-2xl mt-4 transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
+          >
+            {loading ? 'Création...' : (
+              <>Créer mon compte <ArrowRight className="w-5 h-5" /></>
+            )}
+          </button>
+        </form>
+        
+        <p className="text-center text-slate-500 text-sm mt-8 font-medium">
           Déjà un compte ?{' '}
-          <Link to="/login" className="text-orange-700 hover:text-orange-800 font-bold tracking-wide transition-colors">
+          <Link to="/login" className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors">
             Se connecter
           </Link>
         </p>
-
-      </div>
+      </motion.div>
     </div>
   );
 }
