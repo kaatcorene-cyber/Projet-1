@@ -38,3 +38,14 @@
     display: none;
   }
 }
+
+@keyframes marquee-y {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+.animate-marquee-y {
+  animation: marquee-y 20s linear infinite;
+}
+.animate-marquee-y:hover {
+  animation-play-state: paused;
+}

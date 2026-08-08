@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+const fs = require('fs');
+
+const content = `import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -46,7 +48,7 @@ export function Proofs() {
 
   const maskPhone = (phone: string) => {
     if (!phone) return '00 00 ** ** 00';
-    const clean = phone.replace(/\s/g, '');
+    const clean = phone.replace(/\\s/g, '');
     if (clean.length < 8) return phone;
     return clean.substring(0, 4) + ' ** ** ' + clean.substring(clean.length - 2);
   };
@@ -57,11 +59,11 @@ export function Proofs() {
     const diff = Math.floor((now.getTime() - date.getTime()) / 60000); // minutes
     
     if (diff < 1) return "À l'instant";
-    if (diff < 60) return `Il y a ${diff} min`;
+    if (diff < 60) return \`Il y a \${diff} min\`;
     const hours = Math.floor(diff / 60);
-    if (hours < 24) return `Il y a ${hours} h`;
+    if (hours < 24) return \`Il y a \${hours} h\`;
     const days = Math.floor(hours / 24);
-    return `Il y a ${days} j`;
+    return \`Il y a \${days} j\`;
   };
 
   return (
@@ -82,23 +84,23 @@ export function Proofs() {
             <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : proofs.length > 0 ? (
-          <div className="absolute inset-0 overflow-y-auto hide-scrollbar pb-32">
-            <div className="space-y-3 flex flex-col animate-marquee-y">
-              {[...proofs, ...proofs].map((proof, idx) => {
+          <div className="absolute inset-0 overflow-y-auto no-scrollbar pb-32">
+            <div className="space-y-3 flex flex-col">
+              {proofs.map((proof, idx) => {
                 const network = proof.metadata?.paymentMethod || 'Mobile Money';
                 // user could be an array if relation is one-to-many, but usually it's an object for belongsTo
                 const phone = proof.users?.phone || proof.metadata?.accountNumber || '';
                 
                 return (
-                  <div
-                    key={`${proof.id}-${idx}`}
-                    
-                    
-                    
+                  <motion.div
+                    key={proof.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
                     className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between shrink-0"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getNetworkColor(network)}`}>
+                      <div className={\`w-10 h-10 rounded-full flex items-center justify-center \${getNetworkColor(network)}\`}>
                         <CheckCircle2 className="w-5 h-5" />
                       </div>
                       <div>
@@ -110,7 +112,7 @@ export function Proofs() {
                       <p className="font-black text-emerald-600 text-sm">{formatCurrency(proof.amount)}</p>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Succès</p>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -124,3 +126,6 @@ export function Proofs() {
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/pages/Proofs.tsx', content);
