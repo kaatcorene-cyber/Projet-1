@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle2, AlertCircle, Loader2, Info, ArrowDownToLine, Gift, Image as ImageIcon, Zap, Clock , Smartphone, Download, Package } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Info, ArrowDownToLine, Gift, Image as ImageIcon, Zap, Clock , Smartphone, Download, Package, ShieldCheck, TrendingUp, Leaf } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BANNER_IMAGES = [
@@ -107,10 +107,10 @@ export function Home() {
   };
 
   const quickLinks = [
-    { icon: Info, label: 'Info', path: '#info', color: 'bg-blue-500' },
+    { icon: ImageIcon, label: 'Preuves', path: '/preuves', color: 'bg-purple-500' },
     { icon: ArrowDownToLine, label: 'Recharger', path: '/deposit', color: 'bg-emerald-500' },
     { icon: Gift, label: 'Commissions', path: '/commissions', color: 'bg-orange-500' },
-    { icon: ImageIcon, label: 'Preuves', path: '#preuves', color: 'bg-purple-500' },
+    { icon: Clock, label: 'Historique', path: '/history', color: 'bg-blue-500' },
   ];
 
   return (
@@ -296,6 +296,8 @@ export function Home() {
           )})
         )}
       </div>
+
+
     </div>
   );
 }
