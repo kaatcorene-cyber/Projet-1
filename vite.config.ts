@@ -30,12 +30,12 @@ export default defineConfig(({mode}) => {
             {
               src: '/app_icon.png',
               sizes: 'any',
-              type: 'image/svg+xml'
+              type: 'image/png'
             },
             {
               src: '/app_icon.png',
               sizes: 'any',
-              type: 'image/svg+xml',
+              type: 'image/png',
               purpose: 'maskable'
             }
           ]
