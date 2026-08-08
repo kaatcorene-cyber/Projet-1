@@ -84,22 +84,29 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center px-6 py-12 font-sans relative overflow-hidden">
+    <div className="h-[100dvh] bg-slate-50 flex flex-col font-sans relative overflow-hidden touch-none">
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none -mr-20 -mt-20"></div>
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[80px] pointer-events-none -ml-20 -mb-20"></div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 15 }}
+      
+      <div className="w-full h-[40dvh] relative z-10 shadow-sm rounded-b-[40px] overflow-hidden flex-shrink-0">
+        <img src="https://i.imgur.com/pjehTuR.jpg" alt="Logo" className="w-full h-full object-cover" />
+      </div>
+      
+      <div className="px-6 flex-1 flex flex-col justify-center pb-4">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm mx-auto relative z-10"
       >
         
-        <div className="mb-10">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Bienvenue,</h1>
-          <p className="text-slate-500 mt-2 font-medium">Connectez-vous pour continuer.</p>
-        </div>
+                        
 
-        <form onSubmit={handleLogin} className="space-y-6">
+                <div className="mb-8">
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Connectez-vous</h1>
+          
+        </div>
+        <form onSubmit={handleLogin} className="space-y-4">
           {error && (
             <motion.div 
               initial={{ opacity: 0 }}
@@ -111,9 +118,9 @@ export function Login() {
           )}
           
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Téléphone</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Téléphone</label>
             <div className="relative flex items-center">
-              <span className="absolute left-4 text-emerald-400 font-bold text-sm">+225</span>
+              <span className="absolute left-4 text-emerald-400 font-bold text-base">+225</span>
               <input
                 type="tel"
                 value={phone}
@@ -122,7 +129,7 @@ export function Login() {
                   setPhone(val);
                 }}
                 maxLength={10}
-                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-16 pr-4 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-sm"
+                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-16 pr-4 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
                 placeholder="0102030405"
                 required
               />
@@ -130,13 +137,13 @@ export function Login() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Mot de passe</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Mot de passe</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-4 pr-12 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-sm"
+                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-4 pr-12 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
                 placeholder="••••••••"
                 required
               />
@@ -153,7 +160,7 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-4 rounded-2xl mt-4 transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
+            className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 rounded-2xl mt-2 transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
           >
             {loading ? 'Connexion...' : (
               <>Se connecter <ArrowRight className="w-5 h-5" /></>
@@ -161,13 +168,14 @@ export function Login() {
           </button>
         </form>
         
-        <p className="text-center text-slate-500 text-sm mt-8 font-medium">
+        <p className="text-center text-slate-500 text-sm mt-4 font-medium">
           Nouveau sur ElevFinAi ?{' '}
           <Link to="/register" className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors">
             Créer un compte
           </Link>
         </p>
       </motion.div>
+      </div>
     </div>
   );
 }
