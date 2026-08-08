@@ -42,7 +42,9 @@ const CountdownTimer = ({ inv, plan, onRefresh }: { inv: any, plan: any, onRefre
 
     calculateTimeLeft();
     const timer = setInterval(calculateTimeLeft, 1000);
-    return () => clearInterval(timer);
+    
+  
+  return () => clearInterval(timer);
   }, [inv]);
 
   const handleClaim = async () => {
@@ -110,7 +112,7 @@ const CountdownTimer = ({ inv, plan, onRefresh }: { inv: any, plan: any, onRefre
          <div className="flex-1">
            <div className="flex justify-between items-start">
              <div>
-               <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 block">Pack Élevage</span>
+               <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 block">{getPlanName(inv.plan_amount)}</span>
                <h3 className="text-xl font-black text-slate-900 leading-tight">{formatCurrency(inv.plan_amount)}</h3>
              </div>
              <div className="bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5">

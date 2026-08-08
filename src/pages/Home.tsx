@@ -19,21 +19,24 @@ export function Home() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [activePlans, setActivePlans] = useState<any[]>([]);
+    const [showJoinModal, setShowJoinModal] = useState(true);
+
+  const closeJoinModal = () => {
+    setShowJoinModal(false);
+  };
+
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const [showJoinModal, setShowJoinModal] = useState(() => !sessionStorage.getItem('hasSeenJoinGroup'));
-  const closeJoinModal = () => {
-    setShowJoinModal(false);
-    sessionStorage.setItem('hasSeenJoinGroup', 'true');
-  };
-
+    
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % BANNER_IMAGES.length);
     }, 4000);
-    return () => clearInterval(timer);
+    
+  
+  return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -101,6 +104,20 @@ export function Home() {
     }
   };
 
+  
+  const getPlanName = (amount: number) => {
+    const amt = Number(amount);
+    if (amt === 3000) return 'Héliciculture';
+    if (amt === 7000) return 'Pisciculture';
+    if (amt === 15000) return 'Aviculture';
+    if (amt === 31000) return 'Cuniculture';
+    if (amt === 63000) return 'Élevage porcin';
+    if (amt === 125000) return 'Élevage ovin';
+    if (amt === 249000) return 'Élevage caprin';
+    if (amt === 497000) return 'Élevage bovin';
+    return 'Pack Élevage';
+  };
+
   const formatCurrency = (amount: number | string) => {
     const num = typeof amount === 'string' ? Number(amount.replace(/\D/g, '')) : amount;
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num);
@@ -120,35 +137,39 @@ export function Home() {
         {showJoinModal && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/95 backdrop-blur-md p-4"
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-4"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="w-full max-w-md flex flex-col relative"
+              className="bg-white rounded-3xl overflow-hidden max-w-sm w-full flex flex-col shadow-2xl relative"
             >
-              <button 
-                onClick={closeJoinModal}
-                className="absolute -top-12 right-0 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors z-10"
-              >
-                <X className="w-6 h-6" />
-              </button>
-
-              <div className="w-full rounded-2xl overflow-hidden shadow-2xl relative bg-transparent flex items-center justify-center">
-                <img src="https://i.imgur.com/VD6ze7O.png" alt="Join us" className="w-full h-auto max-h-[70vh] object-contain rounded-2xl" />
+              <div className="p-8 flex flex-col items-center text-center">
+                <h2 className="text-2xl font-black text-slate-900 mb-4">Bienvenue sur ElevFinAi</h2>
+                <p className="text-slate-600 text-[15px] font-medium mb-8 leading-relaxed">
+                  Votre plateforme dédiée à l'investissement dans le secteur de l'élevage en Côte d'Ivoire. Découvrez nos différentes opportunités (Aviculture, Pisciculture, etc.) et participez activement au développement de l'agriculture locale tout en générant des revenus passifs sécurisés.
+                </p>
+                <div className="w-full flex flex-col gap-3">
+                  <a 
+                    href="https://t.me/+w9yTyaXn7AxjMzc0" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={closeJoinModal}
+                    className="w-full py-4 bg-[#0088cc] text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#0088cc]/20 active:scale-95 transition-transform"
+                  >
+                    Rejoindre notre communauté Telegram
+                  </a>
+                  <button 
+                    onClick={closeJoinModal}
+                    className="w-full py-4 bg-slate-50 text-slate-500 rounded-2xl font-bold text-sm hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition-colors"
+                  >
+                    Fermer
+                  </button>
+                </div>
               </div>
-
-              <a 
-                href="https://t.me/+w9yTyaXn7AxjMzc0" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                onClick={closeJoinModal}
-                className="mt-6 w-full py-4 bg-[#0088cc] text-white rounded-2xl font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-[#0088cc]/20 active:scale-95 transition-transform"
-              >
-                Rejoindre le groupe Telegram
-              </a>
             </motion.div>
           </motion.div>
         )}
+        
         {showSuccess && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -217,6 +238,9 @@ export function Home() {
         </div>
       </Link>
 
+      
+
+
       <div className="mb-6 flex items-center justify-between">
          <div>
              <h1 className="text-xl font-black text-slate-900 tracking-tight">Packs Disponibles</h1>
@@ -248,7 +272,7 @@ export function Home() {
                  <div className="flex-1">
                    <div className="flex justify-between items-start gap-2">
                      <div>
-                       <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 block">Pack Élevage</span>
+                       <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 block">{getPlanName(plan.amount)}</span>
                        <h3 className="text-xl font-black text-slate-900 leading-tight">{formatCurrency(plan.amount)}</h3>
                      </div>
                      <div className="bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 flex items-center gap-1 whitespace-nowrap flex-shrink-0">
