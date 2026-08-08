@@ -23,7 +23,7 @@ export default defineConfig(({mode}) => {
           name: 'ElevFinAi',
           short_name: 'ElevFinAi',
           description: 'ElevFinAi Investment Platform',
-          theme_color: '#ea580c',
+          theme_color: '#10b981',
           background_color: '#ffffff',
           display: 'standalone',
           icons: [
