@@ -128,12 +128,12 @@ export function Team() {
             <div className="w-[1px] h-6 bg-emerald-400/30"></div>
             <div className="text-center">
               <p className="text-emerald-200 text-[9px] font-bold uppercase tracking-wider mb-1">Niveau 2</p>
-              <p className="font-black text-sm">5%</p>
+              <p className="font-black text-sm">3%</p>
             </div>
             <div className="w-[1px] h-6 bg-emerald-400/30"></div>
             <div className="text-center">
               <p className="text-emerald-200 text-[9px] font-bold uppercase tracking-wider mb-1">Niveau 3</p>
-              <p className="font-black text-sm">2.5%</p>
+              <p className="font-black text-sm">2%</p>
             </div>
           </div>
         </div>

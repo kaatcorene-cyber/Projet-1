@@ -302,7 +302,7 @@ export function Admin() {
             .eq('status', 'approved');
 
           if (count === 1 && userData.referred_by) {
-            // Level 1 logic (20%)
+            // Level 1 logic (10%)
             const { data: level1 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', userData.referred_by).maybeSingle();
             
             if (level1) {
@@ -321,14 +321,14 @@ export function Admin() {
                 const { data: level2 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', level1.referred_by).maybeSingle();
                 
                 if (level2) {
-                  const l2Bonus = amount * 0.05;
+                  const l2Bonus = amount * 0.03;
                   await supabase.from('users').update({ balance: level2.balance + l2Bonus }).eq('id', level2.id);
                   await supabase.from('transactions').insert([{
                     user_id: level2.id,
                     type: 'referral_bonus',
                     amount: l2Bonus,
                     status: 'completed',
-                    reference: 'Bonus 1er dépôt L2 (5%)'
+                    reference: 'Bonus 1er dépôt L2 (3%)'
                   }]);
 
                   // Level 3 logic (2%)
@@ -336,14 +336,14 @@ export function Admin() {
                     const { data: level3 } = await supabase.from('users').select('id, balance').eq('referral_code', level2.referred_by).maybeSingle();
                     
                     if (level3) {
-                      const l3Bonus = amount * 0.025;
+                      const l3Bonus = amount * 0.02;
                       await supabase.from('users').update({ balance: level3.balance + l3Bonus }).eq('id', level3.id);
                       await supabase.from('transactions').insert([{
                         user_id: level3.id,
                         type: 'referral_bonus',
                         amount: l3Bonus,
                         status: 'completed',
-                        reference: 'Bonus 1er dépôt L3 (2.5%)'
+                        reference: 'Bonus 1er dépôt L3 (2%)'
                       }]);
                     }
                   }
