@@ -4,7 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Wallet, ArrowDownLeft, ArrowUpRight, 
-  LogOut, ChevronRight, Download, PiggyBank,
+  LogOut, ChevronRight, Download, Landmark,
   User as UserIcon, Phone, MapPin, ShieldCheck,
   Bell, Gift, Users, Apple, Share, PlusSquare, X
 } from 'lucide-react';
@@ -75,6 +75,10 @@ export function Profile() {
            </div>
         </div>
 
+        <div className="bg-white rounded-2xl p-3 flex justify-center items-center border border-slate-200 shadow-sm">
+           <span className="font-black text-slate-800 text-base tracking-wide">🆔 : <span className="text-emerald-600">{user?.phone}</span></span>
+        </div>
+
         {/* Balance Card */}
         <div className="bg-emerald-500 rounded-3xl p-6 text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden">
            <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -111,44 +115,19 @@ export function Profile() {
         <div className="space-y-3">
            <Link to="/bank" className="flex items-center p-4 bg-white hover:bg-slate-50 rounded-2xl transition-colors group shadow-sm border border-slate-200">
              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 mr-4 shrink-0">
-               <PiggyBank className="w-5 h-5" />
+               <Landmark className="w-5 h-5" />
              </div>
-             <span className="font-bold text-slate-900 flex-1 text-sm">Compte Retrait</span>
+             <span className="font-bold text-slate-900 flex-1 text-sm">Lier un compte de retrait</span>
              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
            </Link>
            
-           <Link to="/team" className="flex items-center p-4 bg-white hover:bg-slate-50 rounded-2xl transition-colors group shadow-sm border border-slate-200">
-             <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-500 mr-4 shrink-0">
+                      <a href="https://t.me/+w9yTyaXn7AxjMzc0" target="_blank" rel="noopener noreferrer" className="flex items-center p-4 bg-white hover:bg-slate-50 rounded-2xl transition-colors group shadow-sm border border-slate-200">
+             <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 mr-4 shrink-0">
                <Users className="w-5 h-5" />
              </div>
-             <span className="font-bold text-slate-900 flex-1 text-sm">Mon Équipe</span>
-             <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
-           </Link>
-
-           <Link to="/commissions" className="flex items-center p-4 bg-white hover:bg-slate-50 rounded-2xl transition-colors group shadow-sm border border-slate-200">
-             <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500 mr-4 shrink-0">
-               <Gift className="w-5 h-5" />
-             </div>
-             <span className="font-bold text-slate-900 flex-1 text-sm">Commissions</span>
-             <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-orange-500 transition-colors" />
-           </Link>
-           
-           <button 
-             onClick={() => {
-               if (isIOS) {
-                 setShowIOSOverlay(true);
-               } else {
-                 installPWA();
-               }
-             }}
-             className="w-full flex items-center p-4 bg-white hover:bg-slate-50 rounded-2xl transition-colors group shadow-sm border border-slate-200 text-left"
-           >
-             <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500 mr-4 shrink-0">
-               <Download className="w-5 h-5" />
-             </div>
-             <span className="font-bold text-slate-900 flex-1 text-sm">Installer l'app</span>
-             <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-purple-500 transition-colors" />
-           </button>
+             <span className="font-bold text-slate-900 flex-1 text-sm">Groupe officiel</span>
+             <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+           </a>
            
            <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center p-4 bg-white hover:bg-red-50 rounded-2xl transition-colors group shadow-sm border border-slate-200 text-left">
              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500 mr-4 shrink-0">
