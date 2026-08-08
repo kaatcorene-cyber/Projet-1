@@ -111,6 +111,9 @@ export function Register() {
     <div className="h-[100dvh] bg-slate-50 flex flex-col font-sans relative overflow-hidden touch-none">
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none -mr-20 -mt-20"></div>
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[80px] pointer-events-none -ml-20 -mb-20"></div>
+      <div className="w-full h-[40dvh] relative z-10 shadow-sm rounded-b-[40px] overflow-hidden flex-shrink-0">
+        <img src="https://i.imgur.com/wbWGRVN.jpeg" alt="Logo" className="w-full h-full object-cover object-center" />
+      </div>
       
       
       
@@ -123,11 +126,11 @@ export function Register() {
       >
                         
 
-                <div className="mb-8">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Créer un compte,</h1>
-          <p className="text-slate-500 mt-2 font-medium">Rejoignez ElevFinAi aujourd'hui.</p>
+                <div className="mb-2">
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Créer un compte</h1>
+          
         </div>
-        <form onSubmit={handleRegister} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-2">
           {error && (
             <motion.div 
               initial={{ opacity: 0 }}
@@ -151,7 +154,7 @@ export function Register() {
                   setFormData({ ...formData, phone: val });
                 }}
                 maxLength={10}
-                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-16 pr-4 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
+                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-16 pr-4 py-3 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
                 placeholder="0102030405"
                 required
               />
@@ -166,7 +169,7 @@ export function Register() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-4 pr-12 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
+                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-4 pr-12 py-3 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
                 placeholder="••••••••"
                 required
               />
@@ -187,7 +190,7 @@ export function Register() {
               name="referralCode"
               value={formData.referralCode}
               readOnly={true}
-              className="w-full bg-white/30 border border-slate-200/50 rounded-2xl px-4 py-4 text-slate-500 font-semibold cursor-not-allowed text-base"
+              className="w-full bg-white/30 border border-slate-200/50 rounded-2xl px-4 py-3 text-slate-500 font-semibold cursor-not-allowed text-base"
             />
           </div>
           
