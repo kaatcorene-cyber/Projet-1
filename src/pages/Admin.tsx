@@ -1152,27 +1152,9 @@ export function Admin() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Lien du Groupe (ex: Telegram/WhatsApp)</label>
-                <input
-                  type="url"
-                  value={groupLink}
-                  onChange={(e) => setGroupLink(e.target.value)}
-                  className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-emerald-600 transition-colors text-sm"
-                  placeholder="https://t.me/..."
-                />
-              </div>
+              
 
-              <div>
-                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Lien du Service Client</label>
-                <input
-                  type="url"
-                  value={supportLink}
-                  onChange={(e) => setSupportLink(e.target.value)}
-                  className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-emerald-600 transition-colors text-sm"
-                  placeholder="https://t.me/support..."
-                />
-              </div>
+              
 
               <button 
                 onClick={handleUpdateSettings}
