@@ -121,7 +121,13 @@ export function Profile() {
              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
            </Link>
            
-                      
+                      <a href="https://t.me/+w9yTyaXn7AxjMzc0" target="_blank" rel="noopener noreferrer" className="flex items-center p-4 bg-white hover:bg-slate-50 rounded-2xl transition-colors group shadow-sm border border-slate-200">
+             <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 mr-4 shrink-0">
+               <Users className="w-5 h-5" />
+             </div>
+             <span className="font-bold text-slate-900 flex-1 text-sm">Groupe officiel</span>
+             <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+           </a>
            
            <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center p-4 bg-white hover:bg-red-50 rounded-2xl transition-colors group shadow-sm border border-slate-200 text-left">
              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500 mr-4 shrink-0">
