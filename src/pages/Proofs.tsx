@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { CheckCircle2, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -17,7 +16,7 @@ export function Proofs() {
           .eq('status', 'approved')
           .order('created_at', { ascending: false })
           .limit(50);
-          
+        
         if (data) {
           setProofs(data);
         }
@@ -27,6 +26,7 @@ export function Proofs() {
         setLoading(false);
       }
     };
+
     fetchProofs();
   }, []);
 
@@ -101,22 +101,19 @@ export function Proofs() {
           </div>
         ) : proofs.length > 0 ? (
           <div className="absolute inset-0 overflow-y-auto hide-scrollbar pb-32">
-            <div className="space-y-3 flex flex-col animate-marquee-y">
-              {[...proofs, ...proofs].map((proof, idx) => {
+            <div className="space-y-3 flex flex-col">
+              {proofs.map((proof, idx) => {
                 let network = 'Mobile Money';
                 if (proof.reference && proof.reference.includes('orange')) network = 'Orange Money';
                 else if (proof.reference && proof.reference.includes('mtn')) network = 'MTN Mobile Money';
                 else if (proof.reference && proof.reference.includes('moov')) network = 'Moov Money';
                 else if (proof.reference && proof.reference.includes('wave')) network = 'Wave';
-                // user could be an array if relation is one-to-many, but usually it's an object for belongsTo
+                
                 const phone = proof.users?.phone || '';
                 
                 return (
                   <div
                     key={`${proof.id}-${idx}`}
-                    
-                    
-                    
                     className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between shrink-0"
                   >
                     <div className="flex items-center gap-3">
@@ -138,8 +135,12 @@ export function Proofs() {
             </div>
           </div>
         ) : (
-          <div className="text-center text-slate-500 mt-10">
-            Aucun retrait validé pour le moment.
+          <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <ImageIcon className="w-16 h-16 text-slate-200 mb-4" />
+            <h2 className="text-lg font-bold text-slate-900 mb-2">Aucune preuve pour le moment</h2>
+            <p className="text-slate-500 text-sm">
+              Les preuves de paiement apparaîtront ici.
+            </p>
           </div>
         )}
       </div>
