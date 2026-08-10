@@ -4,7 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle2, AlertCircle, Loader2, Info, ArrowDownToLine, Gift, Image as ImageIcon, Zap, Clock , Smartphone, Download, Package, ShieldCheck, TrendingUp, Leaf, X , Share , PlusSquare , Apple , X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Info, ArrowDownToLine, Gift, Image as ImageIcon, Zap, Clock , Smartphone, Download, Package, ShieldCheck, TrendingUp, Leaf, X , Share , PlusSquare , Apple } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BANNER_IMAGES = [
