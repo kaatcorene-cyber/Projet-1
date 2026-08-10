@@ -34,6 +34,7 @@ export function Withdraw() {
   const [withdrawalInfo, setWithdrawalInfo] = useState<{paymentMethod: string, accountNumber: string, accountHolder: string} | null>(null);
   const [infoLoaded, setInfoLoaded] = useState(false);
   const [maxWithdrawable, setMaxWithdrawable] = useState<number | null>(null);
+  const [hasActivePack, setHasActivePack] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -90,6 +91,11 @@ export function Withdraw() {
         const available = Math.max(0, totalEarnings - pendingWithdrawals);
         
         setMaxWithdrawable(Math.min(available, Number(user.balance)));
+
+        // Check for active pack
+        const { data: invData } = await supabase.from('investments').select('id').eq('user_id', user.id);
+        setHasActivePack(invData && invData.length > 0);
+
         setInfoLoaded(true);
       };
       loadInfo();
@@ -105,10 +111,12 @@ export function Withdraw() {
       return;
     }
     
-    if (maxWithdrawable !== null && Number(amount) > maxWithdrawable) {
-       setError(`Vous ne pouvez pas retirer plus que vos revenus validés (${formatCurrency(maxWithdrawable)}). Les dépôts récents et retraits en attente sont exclus.`);
+    if (hasActivePack === false) {
+       setError('Vous devez avoir acheté au moins un pack actif avant de pouvoir retirer vos gains.');
        return;
     }
+
+    // removed maxWithdrawable check
 
     if (Number(amount) > Number(user.balance)) {
       setError('Solde insuffisant.');
@@ -197,6 +205,32 @@ export function Withdraw() {
     );
   }
 
+  if (hasActivePack === false) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+        <header className="mb-6 flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">Retrait bloqué</h1>
+          </div>
+        </header>
+
+        <div className="max-w-md mx-auto bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-200">
+          <div className="w-16 h-16 bg-red-50 border border-red-200 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-black text-slate-900 mb-2">Achat de pack requis</h2>
+          <p className="text-slate-500 mb-8 text-sm">Vous devez avoir acheté au moins un pack actif avant de pouvoir retirer vos gains.</p>
+          <button onClick={() => navigate('/products')} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all">
+            Voir les packs
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
       <header className="mb-6 flex items-center gap-3">
@@ -241,7 +275,7 @@ export function Withdraw() {
           <div className="flex items-start justify-between relative z-10">
             <div>
                <p className="text-emerald-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Retirable</p>
-               <h2 className="text-3xl font-black tracking-tight">{formatCurrency(maxWithdrawable !== null ? maxWithdrawable : Number(user?.balance || 0))}</h2>
+               <h2 className="text-3xl font-black tracking-tight">{formatCurrency(Number(user?.balance || 0))}</h2>
             </div>
             <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner shrink-0">
                <Wallet className="w-6 h-6 text-white" />
