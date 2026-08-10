@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle2, AlertCircle, Loader2, Info, ArrowDownToLine, Gift, Image as ImageIcon, Zap, Clock , Smartphone, Download, Package, ShieldCheck, TrendingUp, Leaf, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Info, ArrowDownToLine, Gift, Image as ImageIcon, Zap, Clock , Smartphone, Download, Package, ShieldCheck, TrendingUp, Leaf, X , Share , PlusSquare , Apple , X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BANNER_IMAGES = [
@@ -14,6 +15,8 @@ const BANNER_IMAGES = [
 
 export function Home() {
   const navigate = useNavigate();
+  const { installPWA, isIOS } = usePWAInstall();
+  const [showIOSOverlay, setShowIOSOverlay] = useState(false);
   const { user, setUser } = useAuthStore();
   const [loading, setLoading] = useState<number | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -223,7 +226,7 @@ export function Home() {
         ))}
       </div>
 
-      <Link to="/app" className="flex items-center justify-between bg-emerald-500 text-white rounded-3xl p-4 mb-8 shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform">
+      <button onClick={() => { if (isIOS) setShowIOSOverlay(true); else installPWA(); }} className="w-full flex items-center justify-between bg-emerald-500 text-white rounded-3xl p-4 mb-8 shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform text-left">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
             <Smartphone className="w-6 h-6 text-white" />
@@ -236,7 +239,7 @@ export function Home() {
         <div className="bg-white text-emerald-600 text-xs font-black px-4 py-2.5 rounded-full shadow-sm">
           Installer
         </div>
-      </Link>
+      </button>
 
       
 
@@ -315,6 +318,63 @@ export function Home() {
       </div>
 
 
-    </div>
+    
+      {/* Full Screen iOS Install Overlay */}
+      <AnimatePresence>
+        {showIOSOverlay && (
+          <motion.div
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-0 z-[100] bg-slate-50 flex flex-col p-6"
+          >
+            <div className="flex justify-end mb-8">
+              <button 
+                onClick={() => setShowIOSOverlay(false)}
+                className="w-10 h-10 bg-white rounded-full shadow-sm border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
+              <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-900 mb-6 shadow-sm border border-slate-200 self-center">
+                <Apple className="w-10 h-10" />
+              </div>
+              
+              <h2 className="text-2xl font-black tracking-tight text-center mb-2">Installation sur iOS</h2>
+              <p className="text-slate-500 text-center mb-10 text-sm">Installez l'application sur votre iPhone pour une expérience plus rapide et en plein écran.</p>
+              
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 font-bold flex items-center justify-center shrink-0">1</div>
+                  <div>
+                    <p className="text-slate-900 font-bold mb-1">Appuyez sur Partager</p>
+                    <p className="text-slate-500 text-sm">Appuyez sur l'icône <Share className="w-4 h-4 inline-block mx-1" /> dans la barre de navigation Safari en bas de votre écran.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 font-bold flex items-center justify-center shrink-0">2</div>
+                  <div>
+                    <p className="text-slate-900 font-bold mb-1">Ajouter à l'écran d'accueil</p>
+                    <p className="text-slate-500 text-sm">Faites défiler le menu et sélectionnez l'option <strong>"Sur l'écran d'accueil"</strong> <PlusSquare className="w-4 h-4 inline-block mx-1" />.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 font-bold flex items-center justify-center shrink-0">3</div>
+                  <div>
+                    <p className="text-slate-900 font-bold mb-1">Confirmer l'ajout</p>
+                    <p className="text-slate-500 text-sm">Appuyez sur <strong>Ajouter</strong> en haut à droite de votre écran.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+</div>
   );
 }
