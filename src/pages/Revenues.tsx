@@ -159,9 +159,9 @@ const CountdownTimer = ({ inv, plan, onRefresh }: { inv: any, plan: any, onRefre
 
 export function Revenues() {
   const { user } = useAuthStore();
-  const { investmentsCache, setInvestmentsCache } = useAppStore();
+  const { investmentsCache, setInvestmentsCache, config } = useAppStore();
   const [investments, setInvestments] = useState<any[]>(investmentsCache || []);
-  const [plans, setPlans] = useState<any[]>([]);
+  const plans = config?.investment_plans ? (typeof config.investment_plans === 'string' ? JSON.parse(config.investment_plans) : config.investment_plans) : [];
   const [isLoading, setIsLoading] = useState(!investmentsCache);
 
   useEffect(() => {
@@ -171,11 +171,6 @@ export function Revenues() {
     }
   }, [investmentsCache]);
 
-  useEffect(() => {
-    supabase.from('settings').select('value').eq('key', 'investment_plans').single().then(({ data }) => {
-      if (data && data.value) setPlans(JSON.parse(data.value));
-    });
-  }, []);
 
   useEffect(() => {
     if (user?.id) {

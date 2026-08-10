@@ -81,7 +81,7 @@ export function Home() {
       if (userError) throw userError;
 
       const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 30);
+      endDate.setDate(endDate.getDate() + (plan.duration || 60));
 
       const { error: investError } = await supabase.from('investments').insert([{
         user_id: user.id, plan_amount: planAmount, daily_yield: planDaily, end_date: endDate.toISOString(), status: 'active'
