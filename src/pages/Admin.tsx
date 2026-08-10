@@ -667,7 +667,7 @@ export function Admin() {
         ))}
       </div>
 
-      {['users', 'deposits', 'withdrawals'].includes(activeTab) && (
+      {['users', 'deposits', 'withdrawals', 'banks'].includes(activeTab) && (
         <div className="bg-white border-slate-200/80 shadow-slate-200/50 px-4 py-3 border border-slate-200 rounded-xl shadow-sm mb-4">
           <input
             type="text"

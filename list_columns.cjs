@@ -4,11 +4,11 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function run() {
-  const { data, error } = await supabase.from('users').update({
-    bank_method: null,
-  }).neq('id', 'dummy');
-  
-  if (error) console.error("Error updating users:", error);
-  else console.log("Successfully cleared bank_method from users table.");
+  const { data, error } = await supabase.from('users').select('*').limit(1);
+  if (data && data.length > 0) {
+    console.log(Object.keys(data[0]));
+  } else {
+    console.log("No data or error:", error);
+  }
 }
 run();
