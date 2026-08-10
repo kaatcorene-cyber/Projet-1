@@ -32,7 +32,7 @@ export function Withdraw() {
     if (user?.id) {
       const loadInfo = async () => {
         let hasLocalData = false;
-        const savedInfo = localStorage.getItem('withdrawal_info_' + user.id);
+        const savedInfo = localStorage.getItem('withdrawal_info_v2_' + user.id);
         if (savedInfo) {
           try {
             const parsed = JSON.parse(savedInfo);
@@ -47,17 +47,7 @@ export function Withdraw() {
         }
         
         if (!hasLocalData) {
-          const { data: userData } = await supabase.from('users').select('bank_method, bank_account_number, bank_account_name').eq('id', user.id).single();
-          if (userData && userData.bank_account_number) {
-            setWithdrawalInfo({
-              paymentMethod: userData.bank_method || 'orange',
-              accountNumber: userData.bank_account_number,
-              accountHolder: userData.bank_account_name || user.first_name || ''
-            });
-            hasLocalData = true; // Mark as loaded
-          } else {
-            // Fallback to settings
-            const { data } = await supabase.from('settings').select('value').eq('key', `bank_${user.id}`).maybeSingle();
+          const { data } = await supabase.from('settings').select('value').eq('key', `bank_${user.id}`).maybeSingle();
             if (data && data.value) {
               try {
                 const parsed = JSON.parse(data.value);
@@ -70,7 +60,6 @@ export function Withdraw() {
                 }
               } catch(e) {}
             }
-          }
         }
 
         const { data: txData } = await supabase

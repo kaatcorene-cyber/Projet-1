@@ -30,7 +30,7 @@ export function Bank() {
   useEffect(() => {
     if (user?.id) {
       const loadInfo = async () => {
-        const savedInfo = localStorage.getItem('withdrawal_info_' + user.id);
+        const savedInfo = localStorage.getItem('withdrawal_info_v2_' + user.id);
         if (savedInfo) {
           try {
             const parsed = JSON.parse(savedInfo);
@@ -44,19 +44,7 @@ export function Bank() {
           } catch (e) {}
         }
         
-        const { data: userData } = await supabase.from('users').select('bank_method, bank_account_number, bank_account_name').eq('id', user.id).single();
-        if (userData && userData.bank_account_number) {
-            setPaymentMethod(userData.bank_method || availableMethods[0].id);
-            setAccountNumber(userData.bank_account_number || '');
-            setAccountHolder(userData.bank_account_name || '');
-            setIsSaved(true);
-            localStorage.setItem('withdrawal_info_' + user.id, JSON.stringify({
-              paymentMethod: userData.bank_method,
-              accountNumber: userData.bank_account_number,
-              accountHolder: userData.bank_account_name
-            }));
-            return;
-        }
+        
         
         const { data } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).maybeSingle();
         
@@ -69,7 +57,7 @@ export function Bank() {
                setAccountHolder(parsed.bank_account_name || '');
                setIsSaved(true);
                
-               localStorage.setItem('withdrawal_info_' + user.id, JSON.stringify({
+               localStorage.setItem('withdrawal_info_v2_' + user.id, JSON.stringify({
                  paymentMethod: parsed.bank_method || parsed.paymentMethod || parsed.bank_name,
                  accountNumber: parsed.bank_account_number,
                  accountHolder: parsed.bank_account_name
@@ -108,19 +96,13 @@ export function Bank() {
         throw new Error('Mot de passe incorrect.');
       }
       
-      localStorage.setItem('withdrawal_info_' + user.id, JSON.stringify({
+      localStorage.setItem('withdrawal_info_v2_' + user.id, JSON.stringify({
         paymentMethod,
         accountNumber,
         accountHolder
       }));
       
-      await supabase.from('users').update({
-        bank_method: paymentMethod,
-        bank_account_number: accountNumber,
-        bank_account_name: accountHolder
-      }).eq('id', user.id);
       
-      // Also try to save to settings just in case
       await supabase.from('settings').upsert({
         key: 'bank_' + user.id,
         value: JSON.stringify({ 

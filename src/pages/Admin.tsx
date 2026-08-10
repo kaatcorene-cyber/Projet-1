@@ -203,13 +203,7 @@ export function Admin() {
       ? `${editBankAccountName}|||${editBankAccountNumber}`
       : '';
       
-    try {
-      await supabase.from('users').update({ 
-        bank_method: editBankMethod,
-        bank_account_name: editBankAccountName,
-        bank_account_number: editBankAccountNumber
-      }).eq('id', id);
-    } catch(e) {}
+
     
     // Always save to settings
     const { error: settingsError } = await supabase.from('settings').upsert({
