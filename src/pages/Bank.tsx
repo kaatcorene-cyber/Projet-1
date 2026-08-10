@@ -5,6 +5,15 @@ import { CheckCircle2, AlertCircle, ChevronLeft, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
+const availableMethods = [
+  { id: 'orange', name: 'Orange Money' },
+  { id: 'mtn', name: 'MTN Mobile Money' },
+  { id: 'moov', name: 'Moov Money' },
+  { id: 'wave', name: 'Wave' },
+  { id: 'bank', name: 'Virement Bancaire' },
+  { id: 'crypto', name: 'Cryptomonnaie' },
+];
+
 export function Bank() {
   const { user } = useAuthStore();
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -16,13 +25,7 @@ export function Bank() {
   const [isSaved, setIsSaved] = useState(false);
   const navigate = useNavigate();
 
-  const availableMethods = [
-    { id: 'orange', name: 'Orange Money' },
-    { id: 'mtn', name: 'MTN Mobile Money' },
-    { id: 'moov', name: 'Moov Money' },
-    { id: 'wave', name: 'Wave' },
-    { id: 'bank', name: 'Virement Bancaire' },
-  ];
+
 
   useEffect(() => {
     if (user?.id) {
@@ -67,7 +70,7 @@ export function Bank() {
       
       loadInfo();
     }
-  }, [user?.id, availableMethods]);
+  }, [user?.id]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
