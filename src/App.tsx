@@ -20,6 +20,7 @@ import { Admin } from './pages/Admin';
 import { Setup } from './pages/Setup';
 import { Bank } from './pages/Bank';
 import { Products } from './pages/Products';
+import { About } from './pages/About';
 import { AnimatedBackground } from './components/AnimatedBackground';
 import { Toaster } from 'react-hot-toast';
 
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/admin" element={<Admin />} />
           <Route path="/bank" element={<Bank />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/about" element={<About />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
