@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase, checkDbSetup } from '../lib/supabase';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function Register() {
-  const searchParams = new URLSearchParams(window.location.search);
-  const refCodeFromUrl = searchParams.get('ref') || '36480';
+  const [searchParams] = useSearchParams();
+  const refCodeFromUrl = searchParams.get('ref') || '';
 
   const [formData, setFormData] = useState({
     phone: '',
@@ -20,6 +20,12 @@ export function Register() {
   const [loading, setLoading] = useState(false);
   const { setUser } = useAuthStore();
   const navigate = useNavigate();
+  useEffect(() => {
+    const code = searchParams.get('ref');
+    if (code) {
+      setFormData(prev => ({ ...prev, referralCode: code }));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     checkDbSetup().then(setup => {
@@ -81,7 +87,7 @@ export function Register() {
             country: formData.country,
             password_hash: formData.password, 
             referral_code: finalCode,
-            referred_by: formData.referralCode ? (formData.referralCode.trim().toUpperCase() === '36480' ? 'ADMIN' : formData.referralCode.trim().toUpperCase()) : null,
+            referred_by: formData.referralCode ? formData.referralCode.trim().toUpperCase() : null,
             balance: 0 
           }
         ])
