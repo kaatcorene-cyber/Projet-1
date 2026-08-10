@@ -6,11 +6,14 @@ import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function Register() {
+  const searchParams = new URLSearchParams(window.location.search);
+  const refCodeFromUrl = searchParams.get('ref') || '36480';
+
   const [formData, setFormData] = useState({
     phone: '',
     country: "Côte d'Ivoire",
     password: '',
-    referralCode: '36480',
+    referralCode: refCodeFromUrl,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
