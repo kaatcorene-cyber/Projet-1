@@ -832,7 +832,7 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-900 mb-2">Gestion des Banques ({usersList.length})</h2>
           <div className="space-y-3">
-            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} ${u.bank_method} ${u.bank_account_name} ${generateUserId(u.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => {
+            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} ${u.bank_method} ${u.bank_account_name} ${(u as any)?.bank_account_number} ${generateUserId(u.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => {
               const bAccountName = (u as any)?.bank_account_name || '';
               const bAccountNumber = (u as any)?.bank_account_number || '';
               const bMethod = (u as any)?.bank_method ? (paymentMethodNames[(u as any)?.bank_method] || (u as any)?.bank_method) : 'Non défini';

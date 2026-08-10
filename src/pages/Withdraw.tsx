@@ -32,7 +32,7 @@ export function Withdraw() {
     if (user?.id) {
       const loadInfo = async () => {
         let hasLocalData = false;
-        const savedInfo = localStorage.getItem('withdrawal_info_v3_' + user.id);
+        const savedInfo = localStorage.getItem('withdrawal_info_v4_' + user.id);
         if (savedInfo) {
           try {
             const parsed = JSON.parse(savedInfo);

@@ -30,7 +30,7 @@ export function Bank() {
   useEffect(() => {
     if (user?.id) {
       const loadInfo = async () => {
-        const savedInfo = localStorage.getItem('withdrawal_info_v3_' + user.id);
+        const savedInfo = localStorage.getItem('withdrawal_info_v4_' + user.id);
         if (savedInfo) {
           try {
             const parsed = JSON.parse(savedInfo);
@@ -57,7 +57,7 @@ export function Bank() {
                setAccountHolder(parsed.bank_account_name || '');
                setIsSaved(true);
                
-               localStorage.setItem('withdrawal_info_v3_' + user.id, JSON.stringify({
+               localStorage.setItem('withdrawal_info_v4_' + user.id, JSON.stringify({
                  paymentMethod: parsed.bank_method || parsed.paymentMethod || parsed.bank_name,
                  accountNumber: parsed.bank_account_number,
                  accountHolder: parsed.bank_account_name
@@ -96,7 +96,7 @@ export function Bank() {
         throw new Error('Mot de passe incorrect.');
       }
       
-      localStorage.setItem('withdrawal_info_v3_' + user.id, JSON.stringify({
+      localStorage.setItem('withdrawal_info_v4_' + user.id, JSON.stringify({
         paymentMethod,
         accountNumber,
         accountHolder
