@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, generateUserId } from '../lib/utils';
 import { COUNTRIES, CountryName } from '../constants';
 import { Users, User, Copy, CheckCircle2, UserPlus, Gift, ChevronLeft, Link as LinkIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,19 +23,26 @@ export function Team() {
   }, [user]);
 
   const fetchTeam = async () => {
-    if (!user || !user.referral_code) return;
+    if (!user) return;
     try {
+      const refCode = user.referral_code?.toUpperCase();
+      const legacyRefCode = generateUserId(user.id);
+      
+      let orConds = [];
+      if (refCode) orConds.push(`referred_by.eq.${refCode}`);
+      if (legacyRefCode) orConds.push(`referred_by.eq.${legacyRefCode}`);
+      
       const { data: l1Data } = await supabase
         .from('users')
         .select('*')
-        .eq('referred_by', user.referral_code?.toUpperCase());
+        .or(orConds.join(','));
         
       const l1 = l1Data || [];
       setLevel1(l1);
 
       let l2: any[] = [];
       if (l1.length > 0) {
-        const l1Codes = l1.map(u => u.referral_code).filter(Boolean);
+        const l1Codes = l1.flatMap(u => [u.referral_code, generateUserId(u.id)]).filter(Boolean);
         if (l1Codes.length > 0) {
           const { data: l2Data } = await supabase
             .from('users')
@@ -48,7 +55,7 @@ export function Team() {
 
       let l3: any[] = [];
       if (l2.length > 0) {
-        const l2Codes = l2.map(u => u.referral_code).filter(Boolean);
+        const l2Codes = l2.flatMap(u => [u.referral_code, generateUserId(u.id)]).filter(Boolean);
         if (l2Codes.length > 0) {
           const { data: l3Data } = await supabase
             .from('users')
@@ -73,7 +80,7 @@ export function Team() {
     }
   };
 
-  const referralLink = `${window.location.origin}/register?ref=${user?.referral_code}`;
+  const referralLink = `${window.location.origin}/register?ref=${user?.referral_code || generateUserId(user?.id)}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(referralLink);

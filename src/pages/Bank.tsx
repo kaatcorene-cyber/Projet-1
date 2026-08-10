@@ -22,6 +22,13 @@ export function Bank() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
   const [isSaved, setIsSaved] = useState(false);
   const navigate = useNavigate();
 
@@ -143,7 +150,7 @@ export function Bank() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className={`p-4 rounded-2xl mb-6 flex items-start gap-3 border shadow-sm backdrop-blur-sm ${
-          message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
+          message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'
         }`}>
           {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />}
           <p className="text-sm font-semibold leading-relaxed">{message.text}</p>
@@ -154,7 +161,7 @@ export function Bank() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="p-4 rounded-2xl mb-6 flex items-start gap-3 border shadow-sm bg-emerald-500/10 text-emerald-400 border-emerald-500/20 backdrop-blur-sm"
+          className="p-4 rounded-2xl mb-6 flex items-start gap-3 border shadow-sm bg-emerald-50 text-emerald-700 border-emerald-200"
         >
           <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div className="flex-1">

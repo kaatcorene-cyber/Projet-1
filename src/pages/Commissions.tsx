@@ -32,13 +32,20 @@ export function Commissions() {
   }, [user]);
 
   const fetchData = async () => {
-    if (!user || !user.referral_code) return;
+    if (!user) return;
     try {
+      const refCode = user.referral_code?.toUpperCase();
+      const legacyRefCode = parseInt(user.id.replace(/[^0-9]/g, '').slice(0, 6)).toString();
+      
+      let orConds = [];
+      if (refCode) orConds.push(`referred_by.eq.${refCode}`);
+      if (legacyRefCode) orConds.push(`referred_by.eq.${legacyRefCode}`);
+      
       const { data: l1Data } = await supabase
         .from('users')
         .select('id')
-        .eq('referred_by', user.referral_code.toUpperCase());
-      
+        .or(orConds.join(','));
+            
       const l1Ids = l1Data?.map(u => u.id) || [];
       if (l1Ids.length > 0) {
         const { data: deposits } = await supabase

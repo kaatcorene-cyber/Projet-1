@@ -66,6 +66,13 @@ export function Admin() {
   const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, message: string, onConfirm: () => void} | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
 
   useEffect(() => {
     if (user?.role !== 'admin') {
@@ -637,8 +644,10 @@ export function Admin() {
       )}
       
       {message && (
-        <div className={`p-4 rounded-xl text-sm font-medium ${message.type === 'error' ? 'bg-emerald-600/10 text-emerald-800 border border-emerald-600/20' : 'bg-green-50 text-emerald-700 border border-green-100'}`}>
-          {message.text}
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md">
+          <div className={`p-4 rounded-xl text-sm font-bold shadow-2xl flex items-center gap-3 ${message.type === 'error' ? 'bg-red-50 text-red-700 border-2 border-red-200' : 'bg-emerald-50 text-emerald-700 border-2 border-emerald-200'}`}>
+            {message.text}
+          </div>
         </div>
       )}
 

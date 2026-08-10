@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
+import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { Link, useNavigate } from 'react-router-dom';
@@ -18,8 +19,16 @@ export function Home() {
   const { installPWA, isIOS } = usePWAInstall();
   const [showIOSOverlay, setShowIOSOverlay] = useState(false);
   const { user, setUser } = useAuthStore();
+  const { config } = useAppStore();
   const [loading, setLoading] = useState<number | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [activePlans, setActivePlans] = useState<any[]>([]);
     const [showJoinModal, setShowJoinModal] = useState(true);
@@ -153,7 +162,7 @@ export function Home() {
                 </p>
                 <div className="w-full flex flex-col gap-3">
                   <a 
-                    href="https://t.me/+6Po4wpvKD-QzYWVk" 
+                    href={config?.group_link || "https://t.me/+6Po4wpvKD-QzYWVk"} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     onClick={closeJoinModal}

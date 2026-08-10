@@ -6,13 +6,6 @@ export function FloatingSupport() {
 
   const getTgLink = (url: string | undefined | null) => {
     if (!url || url === '#') return '#';
-    if (url.startsWith('https://t.me/')) {
-      const path = url.replace('https://t.me/', '');
-      if (path.startsWith('+')) {
-        return `tg://join?invite=${path.substring(1)}`;
-      }
-      return `tg://resolve?domain=${path}`;
-    }
     return url;
   };
 
