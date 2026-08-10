@@ -12,7 +12,7 @@ export function Proofs() {
       try {
         const { data } = await supabase
           .from('transactions')
-          .select('id, amount, created_at, metadata, users(phone)')
+          .select('id, amount, created_at, reference, users(phone)')
           .eq('type', 'withdrawal')
           .eq('status', 'approved')
           .order('created_at', { ascending: false })
@@ -85,9 +85,13 @@ export function Proofs() {
           <div className="absolute inset-0 overflow-y-auto hide-scrollbar pb-32">
             <div className="space-y-3 flex flex-col animate-marquee-y">
               {[...proofs, ...proofs].map((proof, idx) => {
-                const network = proof.metadata?.paymentMethod || 'Mobile Money';
+                let network = 'Mobile Money';
+                if (proof.reference && proof.reference.includes('orange')) network = 'Orange Money';
+                else if (proof.reference && proof.reference.includes('mtn')) network = 'MTN Mobile Money';
+                else if (proof.reference && proof.reference.includes('moov')) network = 'Moov Money';
+                else if (proof.reference && proof.reference.includes('wave')) network = 'Wave';
                 // user could be an array if relation is one-to-many, but usually it's an object for belongsTo
-                const phone = proof.users?.phone || proof.metadata?.accountNumber || '';
+                const phone = proof.users?.phone || '';
                 
                 return (
                   <div

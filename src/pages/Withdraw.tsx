@@ -146,12 +146,7 @@ export function Withdraw() {
         type: 'withdrawal',
         amount: Number(amount),
         status: 'pending',
-        reference: `Retrait vers ${withdrawalInfo.paymentMethod} (${withdrawalInfo.accountNumber})`,
-        metadata: {
-          ...withdrawalInfo,
-          fee: Number(amount) * 0.15,
-          net_amount: Number(amount) * 0.85
-        }
+        reference: `Retrait vers ${withdrawalInfo.paymentMethod} (${withdrawalInfo.accountNumber})`
       }]);
 
       if (txError) throw txError;
