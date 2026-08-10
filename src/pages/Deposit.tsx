@@ -24,6 +24,7 @@ export function Deposit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (!user) return;
     
     if (Number(amount) < 2000) {

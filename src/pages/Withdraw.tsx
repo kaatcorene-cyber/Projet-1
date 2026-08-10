@@ -104,6 +104,7 @@ export function Withdraw() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (!user || !withdrawalInfo) return;
 
     if (!amount || Number(amount) < 1000) {
