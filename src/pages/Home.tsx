@@ -150,7 +150,7 @@ export function Home() {
                 </p>
                 <div className="w-full flex flex-col gap-3">
                   <a 
-                    href="https://t.me/+w9yTyaXn7AxjMzc0" 
+                    href="https://t.me/+6Po4wpvKD-QzYWVk" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     onClick={closeJoinModal}
