@@ -35,7 +35,7 @@ export function Bank() {
           try {
             const parsed = JSON.parse(savedInfo);
             if (parsed.accountNumber) {
-              setPaymentMethod(parsed.paymentMethod || availableMethods[0].id);
+              setPaymentMethod(parsed.paymentMethod || parsed.bank_method || parsed.bank_name || availableMethods[0].id);
               setAccountNumber(parsed.accountNumber || '');
               setAccountHolder(parsed.accountHolder || '');
               setIsSaved(true);
@@ -50,13 +50,13 @@ export function Bank() {
            try {
              const parsed = JSON.parse(data.value);
              if (parsed.bank_account_number) {
-               setPaymentMethod(parsed.bank_method || availableMethods[0].id);
+               setPaymentMethod(parsed.bank_method || parsed.paymentMethod || parsed.bank_name || availableMethods[0].id);
                setAccountNumber(parsed.bank_account_number || '');
                setAccountHolder(parsed.bank_account_name || '');
                setIsSaved(true);
                
                localStorage.setItem('withdrawal_info_' + user.id, JSON.stringify({
-                 paymentMethod: parsed.bank_method,
+                 paymentMethod: parsed.bank_method || parsed.paymentMethod || parsed.bank_name,
                  accountNumber: parsed.bank_account_number,
                  accountHolder: parsed.bank_account_name
                }));
@@ -154,9 +154,17 @@ export function Bank() {
           className="p-4 rounded-2xl mb-6 flex items-start gap-3 border shadow-sm bg-emerald-500/10 text-emerald-400 border-emerald-500/20 backdrop-blur-sm"
         >
           <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <p className="text-sm font-semibold leading-relaxed">
-            Vos informations de retrait sont configurées et verrouillées. Vous pouvez maintenant effectuer vos retraits depuis la page de retrait.
-          </p>
+          <div className="flex-1">
+            <p className="text-sm font-semibold leading-relaxed mb-3">
+              Vos informations de retrait sont configurées et verrouillées. Vous pouvez maintenant effectuer vos retraits depuis la page de retrait.
+            </p>
+            <button
+              onClick={() => setIsSaved(false)}
+              className="text-xs font-bold bg-white text-emerald-600 px-4 py-2 rounded-xl shadow-sm border border-emerald-500/20 active:scale-95 transition-transform"
+            >
+              Modifier mes informations
+            </button>
+          </div>
         </motion.div>
       )}
 

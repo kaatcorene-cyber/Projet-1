@@ -6,6 +6,15 @@ import { ChevronLeft, Info, Wallet, Lock, CheckCircle2, ShieldCheck } from 'luci
 import { formatCurrency } from '../lib/utils';
 import { motion } from 'framer-motion';
 
+const availableMethods = [
+  { id: 'orange', name: 'Orange Money' },
+  { id: 'mtn', name: 'MTN Mobile Money' },
+  { id: 'moov', name: 'Moov Money' },
+  { id: 'wave', name: 'Wave' },
+  { id: 'bank', name: 'Virement Bancaire' },
+  { id: 'crypto', name: 'Cryptomonnaie' },
+];
+
 export function Withdraw() {
   const { user, refreshUser } = useAuthStore();
   const navigate = useNavigate();
@@ -32,14 +41,14 @@ export function Withdraw() {
           } catch (e) {}
         }
         
-        const { data } = await supabase.from('settings').select('value').eq('key', `bank_info_${user.id}`).maybeSingle();
+        const { data } = await supabase.from('settings').select('value').eq('key', `bank_${user.id}`).maybeSingle();
         
         if (data && data.value) {
            try {
              const parsed = JSON.parse(data.value);
              if (parsed.bank_account_number) {
                setWithdrawalInfo({
-                 paymentMethod: parsed.bank_name || 'Bank',
+                 paymentMethod: parsed.bank_method || 'Bank',
                  accountNumber: parsed.bank_account_number,
                  accountHolder: parsed.bank_account_name || user.first_name || ''
                });
@@ -243,7 +252,7 @@ export function Withdraw() {
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between mb-2">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Compte de réception</p>
-              <p className="font-black text-slate-900 text-sm">{withdrawalInfo.paymentMethod.toUpperCase()}</p>
+              <p className="font-black text-slate-900 text-sm">{availableMethods.find(m => m.id === withdrawalInfo.paymentMethod)?.name.toUpperCase() || withdrawalInfo.paymentMethod.toUpperCase()}</p>
               <p className="text-xs text-slate-500 font-mono mt-0.5">{withdrawalInfo.accountNumber}</p>
             </div>
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-slate-400 border border-slate-200 shrink-0">

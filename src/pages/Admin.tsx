@@ -12,6 +12,17 @@ const DEFAULT_PLANS: any[] = [];
 
 const VIP_LEVELS = ['user', 'vip1', 'vip2', 'vip3', 'vip4', 'vip5'];
 
+
+const paymentMethodNames: Record<string, string> = {
+  'orange': 'Orange Money',
+  'mtn': 'MTN Mobile Money',
+  'moov': 'Moov Money',
+  'wave': 'Wave',
+  'bank': 'Virement Bancaire',
+  'crypto': 'Cryptomonnaie'
+};
+
+
 export function Admin() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -830,7 +841,7 @@ export function Admin() {
             {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} ${u.bank_method} ${u.bank_account_name} ${generateUserId(u.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => {
               const bAccountName = (u as any)?.bank_account_name || '';
               const bAccountNumber = (u as any)?.bank_account_number || '';
-              const bMethod = (u as any)?.bank_method || 'Non défini';
+              const bMethod = (u as any)?.bank_method ? (paymentMethodNames[(u as any)?.bank_method] || (u as any)?.bank_method) : 'Non défini';
 
               return (
               <div key={u.id} className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl p-4 shadow-sm relative">
