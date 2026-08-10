@@ -31,29 +31,46 @@ export function Withdraw() {
   useEffect(() => {
     if (user?.id) {
       const loadInfo = async () => {
+        let hasLocalData = false;
         const savedInfo = localStorage.getItem('withdrawal_info_' + user.id);
         if (savedInfo) {
           try {
             const parsed = JSON.parse(savedInfo);
             if (parsed.accountNumber) {
-              setWithdrawalInfo(parsed);
+              setWithdrawalInfo({
+                ...parsed,
+                paymentMethod: parsed.paymentMethod || parsed.bank_method || parsed.bank_name || 'orange'
+              });
+              hasLocalData = true;
             }
           } catch (e) {}
         }
         
-        const { data } = await supabase.from('settings').select('value').eq('key', `bank_${user.id}`).maybeSingle();
-        
-        if (data && data.value) {
-           try {
-             const parsed = JSON.parse(data.value);
-             if (parsed.bank_account_number) {
-               setWithdrawalInfo({
-                 paymentMethod: parsed.bank_method || 'Bank',
-                 accountNumber: parsed.bank_account_number,
-                 accountHolder: parsed.bank_account_name || user.first_name || ''
-               });
-             }
-           } catch(e) {}
+        if (!hasLocalData) {
+          const { data: userData } = await supabase.from('users').select('bank_method, bank_account_number, bank_account_name').eq('id', user.id).single();
+          if (userData && userData.bank_account_number) {
+            setWithdrawalInfo({
+              paymentMethod: userData.bank_method || 'orange',
+              accountNumber: userData.bank_account_number,
+              accountHolder: userData.bank_account_name || user.first_name || ''
+            });
+            hasLocalData = true; // Mark as loaded
+          } else {
+            // Fallback to settings
+            const { data } = await supabase.from('settings').select('value').eq('key', `bank_${user.id}`).maybeSingle();
+            if (data && data.value) {
+              try {
+                const parsed = JSON.parse(data.value);
+                if (parsed.bank_account_number) {
+                  setWithdrawalInfo({
+                    paymentMethod: parsed.bank_method || parsed.paymentMethod || parsed.bank_name || 'orange',
+                    accountNumber: parsed.bank_account_number,
+                    accountHolder: parsed.bank_account_name || user.first_name || ''
+                  });
+                }
+              } catch(e) {}
+            }
+          }
         }
 
         const { data: txData } = await supabase

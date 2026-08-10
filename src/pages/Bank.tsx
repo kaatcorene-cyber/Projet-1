@@ -16,7 +16,7 @@ const availableMethods = [
 
 export function Bank() {
   const { user } = useAuthStore();
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState(availableMethods[0].id);
   const [accountNumber, setAccountNumber] = useState('');
   const [accountHolder, setAccountHolder] = useState('');
   const [password, setPassword] = useState('');
@@ -42,6 +42,20 @@ export function Bank() {
               return;
             }
           } catch (e) {}
+        }
+        
+        const { data: userData } = await supabase.from('users').select('bank_method, bank_account_number, bank_account_name').eq('id', user.id).single();
+        if (userData && userData.bank_account_number) {
+            setPaymentMethod(userData.bank_method || availableMethods[0].id);
+            setAccountNumber(userData.bank_account_number || '');
+            setAccountHolder(userData.bank_account_name || '');
+            setIsSaved(true);
+            localStorage.setItem('withdrawal_info_' + user.id, JSON.stringify({
+              paymentMethod: userData.bank_method,
+              accountNumber: userData.bank_account_number,
+              accountHolder: userData.bank_account_name
+            }));
+            return;
         }
         
         const { data } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).maybeSingle();
@@ -100,9 +114,16 @@ export function Bank() {
         accountHolder
       }));
       
+      await supabase.from('users').update({
+        bank_method: paymentMethod,
+        bank_account_number: accountNumber,
+        bank_account_name: accountHolder
+      }).eq('id', user.id);
+      
+      // Also try to save to settings just in case
       await supabase.from('settings').upsert({
         key: 'bank_' + user.id,
-        value: JSON.stringify({
+        value: JSON.stringify({ 
            bank_method: paymentMethod,
            bank_account_number: accountNumber,
            bank_account_name: accountHolder
