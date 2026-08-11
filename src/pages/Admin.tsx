@@ -1084,7 +1084,7 @@ export function Admin() {
                  />
                  <label htmlFor="plan-image" className="cursor-pointer flex flex-col items-center gap-2">
                    {newPlanImage ? (
-                     <img src={newPlanImage} className="w-full h-32 object-cover rounded-lg shadow-sm" alt="Preview" />
+                     <img referrerPolicy="no-referrer" src={newPlanImage} className="w-full h-32 object-cover rounded-lg shadow-sm" alt="Preview" />
                    ) : (
                      <>
                        <div className="w-10 h-10 bg-emerald-600/10 text-emerald-600 rounded-full flex items-center justify-center">
@@ -1123,7 +1123,7 @@ export function Admin() {
               <div key={idx} className="flex items-center justify-between p-4 bg-white border-slate-200/80 shadow-slate-200/50 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-600/100"></div>
                 <div className="flex items-center gap-4 pl-2">
-                  <img src={p.image || '/app_icon.png'} className="w-12 h-12 rounded-xl object-cover bg-slate-100" alt="" referrerPolicy="no-referrer" />
+                  <img referrerPolicy="no-referrer" src={p.image || '/app_icon.png'} className="w-12 h-12 rounded-xl object-cover bg-slate-100" alt=""/>
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
                        <p className="font-bold text-slate-900 text-sm leading-none">{formatCurrency(p.amount)}</p>

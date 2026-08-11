@@ -121,7 +121,7 @@ export function Register() {
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none -mr-20 -mt-20"></div>
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[80px] pointer-events-none -ml-20 -mb-20"></div>
       <div className="w-full relative z-10 shadow-sm overflow-hidden flex-shrink-0">
-        <img 
+        <img referrerPolicy="no-referrer" 
           src="https://i.imgur.com/p57Jiot.jpeg" 
           alt="ElevFinAi"
           className="w-full h-auto object-contain"

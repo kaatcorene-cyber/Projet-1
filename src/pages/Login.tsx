@@ -90,7 +90,7 @@ export function Login() {
 
       
       <div className="w-full relative z-10 shadow-sm overflow-hidden flex-shrink-0">
-        <img 
+        <img referrerPolicy="no-referrer" 
           src="https://i.imgur.com/X88pNGU.jpeg" 
           alt="ElevFinAi"
           className="w-full h-auto object-contain"
