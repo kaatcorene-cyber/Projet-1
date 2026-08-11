@@ -97,85 +97,79 @@ export function Login() {
         />
       </div>
       
-      <div className="px-6 flex-1 flex flex-col justify-start pt-2 pb-4">
+      <div className="px-6 flex-1 flex flex-col justify-start -mt-8 pb-4">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm mx-auto relative z-10"
-      >
-        
-                        
-
-                
-        <form onSubmit={handleLogin} className="space-y-4">
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-medium"
-            >
-              {error}
-            </motion.div>
-          )}
-          
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Téléphone</label>
-            <div className="relative flex items-center">
-              <span className="absolute left-4 text-emerald-400 font-bold text-base">+225</span>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                  setPhone(val);
-                }}
-                maxLength={10}
-                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-16 pr-4 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
-                placeholder="0102030405"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Mot de passe</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-4 pr-12 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
-                placeholder="••••••••"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-400 transition-colors"
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-sm mx-auto relative z-10"
+        >
+          <form onSubmit={handleLogin} className="space-y-4">
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-medium"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 rounded-2xl mt-2 transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
-          >
-            {loading ? 'Connexion...' : (
-              <>Se connecter <ArrowRight className="w-5 h-5" /></>
+                {error}
+              </motion.div>
             )}
-          </button>
-        </form>
-        
-        <p className="text-center text-slate-500 text-sm mt-4 font-medium">
-          Nouveau sur ElevFinAi ?{' '}
-          <Link to="/register" className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors">
-            Créer un compte
-          </Link>
-        </p>
-      </motion.div>
+            
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Téléphone</label>
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-emerald-400 font-bold text-base">+225</span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setPhone(val);
+                  }}
+                  maxLength={10}
+                  className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-16 pr-4 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
+                  placeholder="0102030405"
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Mot de passe</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-4 pr-12 py-4 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-400 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 rounded-2xl mt-2 transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
+            >
+              {loading ? 'Connexion...' : (
+                <>Se connecter <ArrowRight className="w-5 h-5" /></>
+              )}
+            </button>
+          </form>
+          
+          <p className="text-center text-slate-500 text-sm mt-4 font-medium">
+            Nouveau sur ElevFinAi ?{' '}
+            <Link to="/register" className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors">
+              Créer un compte
+            </Link>
+          </p>
+        </motion.div>
       </div>
     </div>
   );

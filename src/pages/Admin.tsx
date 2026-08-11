@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit, Bot, Search, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Image as ImageIcon, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit, Bot, Search, AlertCircle } from 'lucide-react';
 import { formatCurrency, generateUserId } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -32,6 +32,10 @@ export function Admin() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [investmentsList, setInvestmentsList] = useState<any[]>([]);
+  const [proofsList, setProofsList] = useState<any[]>([]);
+  const [newProofImageUrl, setNewProofImageUrl] = useState("");
+  const [newProofTestimonial, setNewProofTestimonial] = useState("");
+  const [isAddingProof, setIsAddingProof] = useState(false);
   
   // Settings
   const [paymentLink, setPaymentLink] = useState('');
@@ -98,8 +102,10 @@ export function Admin() {
         supabase.from('settings').select('*'),
         supabase.from('investments').select('*, users(id, first_name, last_name, phone)').order('start_date', { ascending: false })
       ]);
+      let proofsData: any[] = []; try { const res = await supabase.from("proofs").select("*").order("created_at", { ascending: false }); if (res.data) proofsData = res.data; } catch (e) {}
 
       if (txsRes.data) setTransactions(txsRes.data);
+      setProofsList(proofsData);
       if (usersRes.data) {
         let uData = usersRes.data;
         if (settingsRes.data) {
@@ -484,6 +490,35 @@ export function Admin() {
   };
 
   // --- Settings Handlers ---
+
+  const handleAddProof = async (e: any) => {
+    e.preventDefault();
+    if (!newProofImageUrl) return;
+    setIsAddingProof(true);
+    try {
+      await supabase.from('proofs').insert({
+        image_url: newProofImageUrl,
+        testimonial: newProofTestimonial
+      });
+      setNewProofImageUrl("");
+      setNewProofTestimonial("");
+      fetchData(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsAddingProof(false);
+    }
+  };
+
+  const handleDeleteProof = async (id: string) => {
+    if (!window.confirm("Supprimer cette preuve ?")) return;
+    try {
+      await supabase.from('proofs').delete().eq('id', id);
+      fetchData(false);
+    } catch(err) {
+      console.error(err);
+    }
+  };
   const handleUpdateSettings = async () => {
     setLoading(true);
     const { error } = await supabase.from('settings').upsert([
@@ -604,6 +639,7 @@ export function Admin() {
     { id: 'banks', label: 'Banque', icon: CreditCard },
     { id: 'plans', label: 'Plans VIP', icon: LayoutList },
     { id: 'settings', label: 'Paramètres', icon: SettingsIcon },
+    { id: 'proofs', label: 'Preuves', icon: ImageIcon },
   ];
 
   return (
@@ -1144,6 +1180,62 @@ export function Admin() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* CONTENT: PROOFS */}
+      {activeTab === 'proofs' && (
+        <div className="space-y-6">
+          <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900 mb-4">Ajouter une Preuve</h2>
+            <form onSubmit={handleAddProof} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">URL de l'image (requis)</label>
+                <input
+                  type="url"
+                  value={newProofImageUrl}
+                  onChange={e => setNewProofImageUrl(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"
+                  placeholder="https://..."
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Témoignage (optionnel)</label>
+                <textarea
+                  value={newProofTestimonial}
+                  onChange={e => setNewProofTestimonial(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 min-h-[80px]"
+                  placeholder="Super plateforme, retrait rapide..."
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isAddingProof}
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 rounded-2xl transition-all flex items-center justify-center"
+              >
+                {isAddingProof ? 'Ajout...' : 'Ajouter la preuve'}
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900 mb-4">Preuves existantes ({proofsList.length})</h2>
+            <div className="space-y-4">
+              {proofsList.map(proof => (
+                <div key={proof.id} className="flex gap-4 border border-slate-100 rounded-2xl p-4">
+                  <img src={proof.image_url} alt="Preuve" className="w-20 h-20 object-cover rounded-xl" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-700 italic">{proof.testimonial || 'Sans témoignage'}</p>
+                    <p className="text-xs text-slate-400 mt-1">{new Date(proof.created_at).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                  <button onClick={() => handleDeleteProof(proof.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-xl h-fit">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
