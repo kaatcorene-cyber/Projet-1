@@ -14,7 +14,7 @@ import { Revenues } from './pages/Revenues';
 import { Team } from './pages/Team';
 import { Commissions } from './pages/Commissions';
 import { History } from './pages/History';
-import { Proofs } from './pages/Proofs';
+import { Vault } from './pages/Vault';
 import { Deposit } from './pages/Deposit';
 import { Withdraw } from './pages/Withdraw';
 import { Admin } from './pages/Admin';
@@ -44,7 +44,7 @@ export default function App() {
           <Route path="/team" element={<Team />} />
           <Route path="/commissions" element={<Commissions />} />
           <Route path="/history" element={<History />} />
-          <Route path="/preuves" element={<Proofs />} />
+          <Route path="/coffre" element={<Vault />} />
           <Route path="/deposit" element={<Deposit />} />
           <Route path="/withdraw" element={<Withdraw />} />
           <Route path="/admin" element={<Admin />} />

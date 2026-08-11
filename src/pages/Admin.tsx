@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Image as ImageIcon, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit, Bot, Search, AlertCircle } from 'lucide-react';
+import { Key, ChevronLeft, Image as ImageIcon, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit, Bot, Search, AlertCircle } from 'lucide-react';
 import { formatCurrency, generateUserId } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -32,10 +32,10 @@ export function Admin() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [investmentsList, setInvestmentsList] = useState<any[]>([]);
-  const [proofsList, setProofsList] = useState<any[]>([]);
-  const [newProofImageUrl, setNewProofImageUrl] = useState("");
-  const [newProofTestimonial, setNewProofTestimonial] = useState("");
-  const [isAddingProof, setIsAddingProof] = useState(false);
+  const [vaultList, setVaultList] = useState<any[]>([]);
+  const [newVaultCode, setNewVaultCode] = useState("");
+  const [newVaultAmount, setNewVaultAmount] = useState("");
+  const [isAddingVault, setIsAddingVault] = useState(false);
   
   // Settings
   const [paymentLink, setPaymentLink] = useState('');
@@ -102,10 +102,10 @@ export function Admin() {
         supabase.from('settings').select('*'),
         supabase.from('investments').select('*, users(id, first_name, last_name, phone)').order('start_date', { ascending: false })
       ]);
-      let proofsData: any[] = []; try { const res = await supabase.from("proofs").select("*").order("created_at", { ascending: false }); if (res.data) proofsData = res.data; } catch (e) {}
+      
 
       if (txsRes.data) setTransactions(txsRes.data);
-      setProofsList(proofsData);
+      
       if (usersRes.data) {
         let uData = usersRes.data;
         if (settingsRes.data) {
@@ -121,6 +121,10 @@ export function Admin() {
           });
         }
         setUsersList(uData);
+      }
+      if (settingsRes.data) {
+        const v = settingsRes.data.filter(s => s.key.startsWith('vault_')).map(s => { try { return JSON.parse(s.value); } catch { return null; } }).filter(Boolean);
+        setVaultList(v.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       }
 
       if (invsRes.data) {
@@ -491,30 +495,41 @@ export function Admin() {
 
   // --- Settings Handlers ---
 
-  const handleAddProof = async (e: any) => {
+  const handleAddVault = async (e: any) => {
     e.preventDefault();
-    if (!newProofImageUrl || !newProofTestimonial) return;
-    setIsAddingProof(true);
+    if (!newVaultCode || !newVaultAmount) return;
+    setIsAddingVault(true);
     try {
-      const text = `${newProofImageUrl} vient de retirer ${new Intl.NumberFormat("fr-FR").format(Number(newProofTestimonial))} FCFA avec succès !`;
-      await supabase.from('proofs').insert({
-        image_url: 'text_only',
-        testimonial: text
+      const code = newVaultCode.trim().toUpperCase();
+      const amount = Number(newVaultAmount);
+      
+      const vaultData = {
+        code,
+        total_amount: amount,
+        remaining_amount: amount,
+        created_at: new Date().toISOString(),
+        claimed_by: []
+      };
+      
+      await supabase.from('settings').upsert({
+        key: 'vault_' + code,
+        value: JSON.stringify(vaultData)
       });
-      setNewProofImageUrl("");
-      setNewProofTestimonial("");
+      
+      setNewVaultCode("");
+      setNewVaultAmount("");
       fetchData(false);
     } catch (err) {
       console.error(err);
     } finally {
-      setIsAddingProof(false);
+      setIsAddingVault(false);
     }
   };
 
-  const handleDeleteProof = async (id: string) => {
-    if (!window.confirm("Supprimer cette preuve ?")) return;
+  const handleDeleteVault = async (code: string) => {
+    if (!window.confirm("Supprimer ce coffre ?")) return;
     try {
-      await supabase.from('proofs').delete().eq('id', id);
+      await supabase.from('settings').delete().eq('key', 'vault_' + code);
       fetchData(false);
     } catch(err) {
       console.error(err);
@@ -640,7 +655,7 @@ export function Admin() {
     { id: 'banks', label: 'Banque', icon: CreditCard },
     { id: 'plans', label: 'Plans VIP', icon: LayoutList },
     { id: 'settings', label: 'Paramètres', icon: SettingsIcon },
-    { id: 'proofs', label: 'Preuves', icon: ImageIcon },
+    { id: 'vault', label: 'Coffre', icon: Key },
   ];
 
   return (
@@ -1186,54 +1201,57 @@ export function Admin() {
       )}
 
       {/* CONTENT: PROOFS */}
-      {activeTab === 'proofs' && (
+      {activeTab === 'vault' && (
         <div className="space-y-6">
           <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Ajouter une Preuve</h2>
-            <form onSubmit={handleAddProof} className="space-y-4">
+            <h2 className="text-lg font-bold text-slate-900 mb-4">Créer un Coffre (Code)</h2>
+            <form onSubmit={handleAddVault} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Numéro de téléphone</label>
+                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Code Unique</label>
                 <input
                   type="text"
-                  value={newProofImageUrl}
-                  onChange={e => setNewProofImageUrl(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"
-                  placeholder="0102030405"
+                  value={newVaultCode}
+                  onChange={e => setNewVaultCode(e.target.value.toUpperCase())}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-bold tracking-widest uppercase"
+                  placeholder="EX: CADEAU1000"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Montant retiré (FCFA)</label>
+                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Montant Total à Distribuer (FCFA)</label>
                 <input
                   type="number"
-                  value={newProofTestimonial}
-                  onChange={e => setNewProofTestimonial(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"
-                  placeholder="50000"
+                  value={newVaultAmount}
+                  onChange={e => setNewVaultAmount(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500"
+                  placeholder="1000"
                   required
                 />
               </div>
               <button
                 type="submit"
-                disabled={isAddingProof}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 rounded-2xl transition-all flex items-center justify-center"
+                disabled={isAddingVault}
+                className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-2xl transition-all flex items-center justify-center"
               >
-                {isAddingProof ? 'Ajout...' : 'Ajouter la preuve'}
+                {isAddingVault ? 'Création...' : 'Créer le coffre'}
               </button>
             </form>
           </div>
 
           <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Preuves existantes ({proofsList.length})</h2>
+            <h2 className="text-lg font-bold text-slate-900 mb-4">Coffres existants ({vaultList.length})</h2>
             <div className="space-y-4">
-              {proofsList.map(proof => (
-                <div key={proof.id} className="flex gap-4 border border-slate-100 rounded-2xl p-4">
-                  {proof.image_url !== "text_only" && <img src={proof.image_url} alt="Preuve" className="w-20 h-20 object-cover rounded-xl" />}
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-700 italic">{proof.testimonial || 'Sans témoignage'}</p>
-                    <p className="text-xs text-slate-400 mt-1">{new Date(proof.created_at).toLocaleDateString('fr-FR')}</p>
+              {vaultList.map((vault, i) => (
+                <div key={i} className="flex gap-4 border border-slate-100 rounded-2xl p-4 items-center">
+                  <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                    <Key className="w-6 h-6" />
                   </div>
-                  <button onClick={() => handleDeleteProof(proof.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-xl h-fit">
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-slate-900 tracking-wider uppercase">{vault.code}</p>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">Restant: <span className="text-emerald-600 font-bold">{new Intl.NumberFormat('fr-FR').format(vault.remaining_amount)}</span> / {new Intl.NumberFormat('fr-FR').format(vault.total_amount)} FCFA</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{vault.claimed_by?.length || 0} réclamations</p>
+                  </div>
+                  <button onClick={() => handleDeleteVault(vault.code)} className="text-red-500 hover:bg-red-50 p-2 rounded-xl h-fit">
                     <Trash2 className="w-5 h-5" />
                   </button>
                 </div>

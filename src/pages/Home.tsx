@@ -4,7 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle2, AlertCircle, Loader2, Info, ArrowDownToLine, Gift, Image as ImageIcon, Zap, Clock , Smartphone, Download, Package, ShieldCheck, TrendingUp, Leaf, X , Share , PlusSquare , Apple } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Info, ArrowDownToLine, Gift, Key, Zap, Clock , Smartphone, Download, Package, ShieldCheck, TrendingUp, Leaf, X , Share , PlusSquare , Apple } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BANNER_IMAGES = [
@@ -136,7 +136,7 @@ export function Home() {
   };
 
   const quickLinks = [
-    { icon: ImageIcon, label: 'Preuves', path: '/preuves', color: 'bg-purple-500' },
+    { icon: null, image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&q=80&w=400', label: 'Coffre', path: '/coffre', color: 'bg-purple-500' },
     { icon: ArrowDownToLine, label: 'Recharger', path: '/deposit', color: 'bg-emerald-500' },
     { icon: Gift, label: 'Commissions', path: '/commissions', color: 'bg-orange-500' },
     { icon: Clock, label: 'Historique', path: '/history', color: 'bg-blue-500' },
@@ -227,8 +227,12 @@ export function Home() {
       <div className="grid grid-cols-4 gap-3 mb-6">
         {quickLinks.map((link, i) => (
           <Link key={i} to={link.path} className="flex flex-col items-center gap-2 group">
-            <div className={`w-14 h-14 rounded-2xl ${link.color} flex items-center justify-center text-white shadow-lg shadow-slate-200/50 group-hover:scale-105 transition-transform`}>
-               <link.icon className="w-6 h-6" />
+            <div className={`w-14 h-14 rounded-2xl ${link.color} flex items-center justify-center text-white shadow-lg shadow-slate-200/50 group-hover:scale-105 transition-transform overflow-hidden`}>
+              {link.image ? (
+                <img src={link.image} alt={link.label} className="w-full h-full object-cover" />
+              ) : (
+                link.icon && <link.icon className="w-6 h-6" />
+              )}
             </div>
             <span className="text-[11px] font-bold text-slate-700">{link.label}</span>
           </Link>
