@@ -89,8 +89,12 @@ export function Login() {
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[80px] pointer-events-none -ml-20 -mb-20"></div>
 
       
-      <div className="w-full h-[40dvh] relative z-10 shadow-sm rounded-b-[40px] overflow-hidden flex-shrink-0">
-        <img src="https://i.imgur.com/pjehTuR.jpg" alt="Logo" className="w-full h-full object-cover" />
+      <div className="w-full relative z-10 shadow-sm overflow-hidden flex-shrink-0">
+        <img 
+          src="https://i.imgur.com/X88pNGU.jpeg" 
+          alt="ElevFinAi"
+          className="w-full h-auto object-contain"
+        />
       </div>
       
       <div className="px-6 flex-1 flex flex-col justify-center pb-4">
@@ -102,10 +106,7 @@ export function Login() {
         
                         
 
-                <div className="mb-8">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Connectez-vous</h1>
-          
-        </div>
+                
         <form onSubmit={handleLogin} className="space-y-4">
           {error && (
             <motion.div 

@@ -23,13 +23,7 @@ export function About() {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col"
       >
-        <div className="relative mb-8 rounded-[24px] overflow-hidden shadow-sm border border-slate-200">
-          <img 
-            src="https://i.imgur.com/z5i8qwM.jpeg" 
-            alt="À propos ElevFinAi" 
-            className="w-full h-auto object-cover bg-slate-100"
-          />
-        </div>
+        
         <div className="px-2">
           <h3 className="text-xl font-black text-slate-900 mb-6 text-center">𝐄𝐋𝐄𝐕𝐅𝐈𝐍𝐀𝐈 𝐂Ô𝐓𝐄 𝐃’𝐈𝐕𝐎𝐈𝐑𝐄 🇨🇮</h3>
           <div className="space-y-4 text-slate-600 text-[15px] font-medium leading-relaxed">
@@ -50,13 +44,7 @@ export function About() {
             </p>
           </div>
           
-          <div className="relative mt-8 mb-8 rounded-[24px] overflow-hidden shadow-sm border border-slate-200">
-            <img 
-              src="https://i.imgur.com/HtWKvzv.jpeg" 
-              alt="Conditions ElevFinAi" 
-              className="w-full h-auto object-cover bg-slate-100"
-            />
-          </div>
+          
           
           <div className="space-y-6 text-slate-600 text-[15px] font-medium leading-relaxed border-t border-slate-100 pt-8">
             <h4 className="text-lg font-black text-slate-900 text-center mb-4">🇨🇮 𝐂𝐎𝐍𝐃𝐈𝐓𝐈𝐎𝐍𝐒 𝐄𝐋𝐄𝐕𝐅𝐈𝐍𝐀𝐈</h4>

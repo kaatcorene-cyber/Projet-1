@@ -120,56 +120,51 @@ export function Register() {
     <div className="h-[100dvh] bg-slate-50 flex flex-col font-sans relative overflow-hidden touch-none">
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none -mr-20 -mt-20"></div>
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[80px] pointer-events-none -ml-20 -mb-20"></div>
-      <div className="w-full h-[40dvh] relative z-10 shadow-sm rounded-b-[40px] overflow-hidden flex-shrink-0">
-        <img src="https://i.imgur.com/wbWGRVN.jpeg" alt="Logo" className="w-full h-full object-cover object-center" />
+      <div className="w-full relative z-10 shadow-sm overflow-hidden flex-shrink-0">
+        <img 
+          src="https://i.imgur.com/p57Jiot.jpeg" 
+          alt="ElevFinAi"
+          className="w-full h-auto object-contain"
+        />
       </div>
-      
-      
-      
-      
+                              
       <div className="px-6 flex-1 flex flex-col justify-center pb-4">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm mx-auto relative z-10"
-      >
-                        
-
-                <div className="mb-2">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Créer un compte</h1>
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-sm mx-auto relative z-10"
+        >
           
-        </div>
-        <form onSubmit={handleRegister} className="space-y-2">
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-medium"
-            >
-              {error}
-            </motion.div>
-          )}
-          
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Téléphone</label>
-            <div className="relative flex items-center">
-              <span className="absolute left-4 text-emerald-400 font-bold text-base">+225</span>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                  setFormData({ ...formData, phone: val });
-                }}
-                maxLength={10}
-                className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-16 pr-4 py-3 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
-                placeholder="0102030405"
-                required
-              />
+          <form onSubmit={handleRegister} className="space-y-2">
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-medium"
+              >
+                {error}
+              </motion.div>
+            )}
+            
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Téléphone</label>
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-emerald-400 font-bold text-base">+225</span>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setFormData({ ...formData, phone: val });
+                  }}
+                  maxLength={10}
+                  className="w-full bg-white/50 border border-slate-200 rounded-2xl pl-16 pr-4 py-3 text-slate-900 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-semibold placeholder:text-slate-600 text-base"
+                  placeholder="0102030405"
+                  required
+                />
+              </div>
             </div>
-          </div>
-
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Mot de passe</label>
             <div className="relative">

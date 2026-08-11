@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 
 export function Proofs() {
   return (
@@ -14,22 +14,12 @@ export function Proofs() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm mb-6 shrink-0">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-50 text-emerald-500">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="font-bold text-slate-900 text-sm">0709789499</p>
-            <p className="text-slate-500 text-[11px] font-medium">Témoignage</p>
-          </div>
-        </div>
-        <p className="text-slate-700 text-sm font-medium italic mb-3">
-          "J'ai reçu mon dépôt et je pense que cette plateforme est là meilleure."
+      <div className="flex-1 relative flex flex-col items-center justify-center text-center p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <ImageIcon className="w-16 h-16 text-slate-200 mb-4" />
+        <h2 className="text-lg font-bold text-slate-900 mb-2">Aucune preuve pour le moment</h2>
+        <p className="text-slate-500 text-sm">
+          Les preuves de paiement apparaîtront ici.
         </p>
-        <div className="rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center">
-          <img src="https://i.imgur.com/XeHMi9O.jpeg" alt="Preuve de dépôt" className="w-full h-auto object-cover max-h-64 rounded-xl" />
-        </div>
       </div>
     </div>
   );
