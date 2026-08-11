@@ -4,16 +4,18 @@ import puppeteer from 'puppeteer';
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
   
-  page.on('console', msg => console.log('PAGE LOG:', msg.text()));
-  page.on('pageerror', error => console.log('PAGE ERROR:', error.message));
-  page.on('response', response => {
-    if (response.status() >= 400) {
-      console.log('FAILED RESOURCE:', response.url(), response.status());
-    }
-  });
-  
   await page.goto('http://127.0.0.1:3000/login');
   await new Promise(r => setTimeout(r, 2000));
+  
+  const rect = await page.evaluate(() => {
+    const img = document.querySelector('img');
+    const form = document.querySelector('form');
+    return {
+      img: img ? img.getBoundingClientRect() : null,
+      form: form ? form.getBoundingClientRect() : null,
+    };
+  });
+  console.log(JSON.stringify(rect, null, 2));
   
   await browser.close();
 })();
