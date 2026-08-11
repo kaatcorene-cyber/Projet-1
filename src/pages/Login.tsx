@@ -97,7 +97,7 @@ export function Login() {
         />
       </div>
       
-      <div className="px-6 flex-1 flex flex-col justify-start -mt-8 pb-4">
+      <div className="px-6 flex-1 flex flex-col justify-start pt-2 pb-4">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
