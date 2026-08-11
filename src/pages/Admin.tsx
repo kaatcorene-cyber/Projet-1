@@ -493,12 +493,13 @@ export function Admin() {
 
   const handleAddProof = async (e: any) => {
     e.preventDefault();
-    if (!newProofImageUrl) return;
+    if (!newProofImageUrl || !newProofTestimonial) return;
     setIsAddingProof(true);
     try {
+      const text = `${newProofImageUrl} vient de retirer ${new Intl.NumberFormat("fr-FR").format(Number(newProofTestimonial))} FCFA avec succès !`;
       await supabase.from('proofs').insert({
-        image_url: newProofImageUrl,
-        testimonial: newProofTestimonial
+        image_url: 'text_only',
+        testimonial: text
       });
       setNewProofImageUrl("");
       setNewProofTestimonial("");
@@ -1191,23 +1192,25 @@ export function Admin() {
             <h2 className="text-lg font-bold text-slate-900 mb-4">Ajouter une Preuve</h2>
             <form onSubmit={handleAddProof} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">URL de l'image (requis)</label>
+                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Numéro de téléphone</label>
                 <input
-                  type="url"
+                  type="text"
                   value={newProofImageUrl}
                   onChange={e => setNewProofImageUrl(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"
-                  placeholder="https://..."
+                  placeholder="0102030405"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Témoignage (optionnel)</label>
-                <textarea
+                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Montant retiré (FCFA)</label>
+                <input
+                  type="number"
                   value={newProofTestimonial}
                   onChange={e => setNewProofTestimonial(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 min-h-[80px]"
-                  placeholder="Super plateforme, retrait rapide..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"
+                  placeholder="50000"
+                  required
                 />
               </div>
               <button
@@ -1225,7 +1228,7 @@ export function Admin() {
             <div className="space-y-4">
               {proofsList.map(proof => (
                 <div key={proof.id} className="flex gap-4 border border-slate-100 rounded-2xl p-4">
-                  <img src={proof.image_url} alt="Preuve" className="w-20 h-20 object-cover rounded-xl" />
+                  {proof.image_url !== "text_only" && <img src={proof.image_url} alt="Preuve" className="w-20 h-20 object-cover rounded-xl" />}
                   <div className="flex-1">
                     <p className="text-sm font-medium text-slate-700 italic">{proof.testimonial || 'Sans témoignage'}</p>
                     <p className="text-xs text-slate-400 mt-1">{new Date(proof.created_at).toLocaleDateString('fr-FR')}</p>
