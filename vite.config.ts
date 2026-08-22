@@ -20,25 +20,25 @@ export default defineConfig(({mode}) => {
         },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
-          name: 'Fuel•Max',
-          short_name: 'Fuel•Max',
-          description: 'Fuel•Max Platform',
+          name: 'Fusion Money',
+          short_name: 'Fusion Money',
+          description: 'Fusion Money Platform',
           theme_color: '#7e22ce',
           background_color: '#ffffff',
           display: 'standalone',
           icons: [
             {
-              src: 'https://i.imgur.com/bjYgoI6.png',
+              src: 'https://i.imgur.com/qRUc5aF.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'https://i.imgur.com/bjYgoI6.png',
+              src: 'https://i.imgur.com/qRUc5aF.png',
               sizes: '512x512',
               type: 'image/png'
             },
             {
-              src: 'https://i.imgur.com/bjYgoI6.png',
+              src: 'https://i.imgur.com/qRUc5aF.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'

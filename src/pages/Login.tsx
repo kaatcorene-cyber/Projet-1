@@ -66,7 +66,7 @@ export function Login() {
       <div className="relative z-10 w-full max-w-md mx-auto flex flex-col justify-center min-h-screen py-8">
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <img src="https://i.imgur.com/qRUc5aF.png" alt="Fuel•Max" className="h-8 w-8 rounded-xl object-cover shadow-sm bg-zinc-900 border border-zinc-800 p-0.5" referrerPolicy="no-referrer" />
+            <img src="https://i.imgur.com/qRUc5aF.png" alt="Fusion Money" className="h-8 w-8 rounded-xl object-cover shadow-sm bg-zinc-900 border border-zinc-800 p-0.5" referrerPolicy="no-referrer" />
             <h1 className="text-2xl grotesk font-black tracking-tight text-zinc-50">Connexion</h1>
           </div>
           <p className="text-zinc-400 font-medium text-xs">Identifiez-vous sur l'espace collaborateur.</p>
@@ -104,6 +104,7 @@ export function Login() {
               <div className="w-px bg-zinc-700 my-2"></div>
               <input
                 type="tel"
+                autoComplete="tel"
                 value={phone}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, '');
@@ -123,6 +124,7 @@ export function Login() {
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-zinc-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium placeholder:text-zinc-500 tracking-wide pr-10"

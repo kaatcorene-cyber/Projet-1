@@ -18,11 +18,13 @@ import { Setup } from './pages/Setup';
 import { Bank } from './pages/Bank';
 import { Products } from './pages/Products';
 import { AnimatedBackground } from './components/AnimatedBackground';
+import { SupportButton } from './components/SupportButton';
 
 export default function App() {
   return (
     <BrowserRouter>
       <AnimatedBackground />
+      <SupportButton />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
