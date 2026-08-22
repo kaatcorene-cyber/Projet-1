@@ -41,7 +41,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
             />
         </div>
         
-        <h2 className="text-xl font-bold text-white text-center mb-2">Bienvenue sur Fusion Money</h2>
+        <h2 className="text-xl font-bold text-white text-center mb-2">Bienvenue sur Fuel•Max</h2>
         
         <p className="text-zinc-400 text-center text-sm mb-6 leading-relaxed">
           Intégrez notre <span className="text-red-500 font-semibold">communauté officielle</span> pour profiter des meilleurs conseils et du support prioritaire.
@@ -296,7 +296,7 @@ export function Dashboard() {
       <div className="px-5 pt-12 pb-6">
         <header className="flex justify-between items-center mb-8 shrink-0">
           <div className="flex items-center gap-3">
-             <img src="https://i.imgur.com/qRUc5aF.png" alt="Fusion Money" className="w-12 h-12 object-cover rounded-2xl shadow-sm shadow-black/20 border border-zinc-800 shrink-0 bg-zinc-900" referrerPolicy="no-referrer" />
+             <img src="https://i.imgur.com/qRUc5aF.png" alt="Fuel•Max" className="w-12 h-12 object-cover rounded-2xl shadow-sm shadow-black/20 border border-zinc-800 shrink-0 bg-zinc-900" referrerPolicy="no-referrer" />
              <div>
                <p className="text-white text-xs font-medium uppercase tracking-wider mb-0.5">Identifiant</p>
                <h1 className="text-lg font-black text-red-500 flex items-center gap-2">

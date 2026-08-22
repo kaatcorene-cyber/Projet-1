@@ -20,9 +20,9 @@ export default defineConfig(({mode}) => {
         },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
-          name: 'Fusion Money',
-          short_name: 'Fusion Money',
-          description: 'Fusion Money Platform',
+          name: 'Fuel•Max',
+          short_name: 'Fuel•Max',
+          description: 'Fuel•Max Platform',
           theme_color: '#7e22ce',
           background_color: '#ffffff',
           display: 'standalone',

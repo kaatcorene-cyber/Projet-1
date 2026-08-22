@@ -43,7 +43,7 @@ export function History() {
           <h1 className="text-3xl font-black text-zinc-50 tracking-tight">Historique</h1>
           <p className="text-zinc-400 text-xs font-semibold mt-1">VOS TRANSACTIONS</p>
         </div>
-        <img src="https://i.imgur.com/qRUc5aF.png" alt="Fusion Money" className="w-14 h-14 rounded-2xl object-cover shadow-sm border border-zinc-800 flex-shrink-0" referrerPolicy="no-referrer" />
+        <img src="https://i.imgur.com/qRUc5aF.png" alt="Fuel•Max" className="w-14 h-14 rounded-2xl object-cover shadow-sm border border-zinc-800 flex-shrink-0" referrerPolicy="no-referrer" />
       </header>
 
       <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 shadow-xl rounded-3xl overflow-hidden mb-8">

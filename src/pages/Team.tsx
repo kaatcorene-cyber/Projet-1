@@ -169,7 +169,7 @@ export function Team() {
           <h1 className="text-3xl font-black text-zinc-50 tracking-tight">Mon Équipe</h1>
           <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mt-1">Gagnez jusqu'à 25% (20% - 3% - 2%)</p>
         </div>
-        <img src="https://i.imgur.com/qRUc5aF.png" alt="Fusion Money" className="w-20 h-20 rounded-2xl object-cover shadow-[0_4px_12px_rgba(0,0,0,0.1)] border-2 border-white flex-shrink-0" referrerPolicy="no-referrer" />
+        <img src="https://i.imgur.com/qRUc5aF.png" alt="Fuel•Max" className="w-20 h-20 rounded-2xl object-cover shadow-[0_4px_12px_rgba(0,0,0,0.1)] border-2 border-white flex-shrink-0" referrerPolicy="no-referrer" />
       </header>
 
       <div className="animate-fade-in relative z-10 pb-6">

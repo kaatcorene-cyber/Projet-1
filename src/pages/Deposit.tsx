@@ -38,7 +38,21 @@ export function Deposit() {
       const { data: settingsData } = await supabase.from('settings').select('value').eq('key', 'payment_link').single();
       const paymentLink = settingsData?.value || "https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96";
 
-      window.location.href = paymentLink;
+      
+      let finalPaymentLink = paymentLink;
+      try {
+        const url = new URL(paymentLink);
+        url.searchParams.set('amount', amount.toString());
+        url.searchParams.set('montant', amount.toString());
+        url.searchParams.set('price', amount.toString());
+        url.searchParams.set('name', `${user.first_name || ''} ${user.last_name || ''}`.trim());
+        url.searchParams.set('phone', user.phone || '');
+        finalPaymentLink = url.toString();
+      } catch (e) {
+        finalPaymentLink = `${paymentLink}?amount=${amount}&montant=${amount}&price=${amount}&name=${encodeURIComponent(`${user.first_name || ''} ${user.last_name || ''}`.trim())}&phone=${user.phone || ''}`;
+      }
+      window.location.href = finalPaymentLink;
+
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
