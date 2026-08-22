@@ -45,11 +45,13 @@ export function Deposit() {
         url.searchParams.set('amount', amount.toString());
         url.searchParams.set('montant', amount.toString());
         url.searchParams.set('price', amount.toString());
-        url.searchParams.set('name', `${user.first_name || ''} ${user.last_name || ''}`.trim());
+        url.searchParams.set('name', `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Client');
+        url.searchParams.set('customerEmail', `${user.phone || 'client'}@fuelmax.com`);
+        url.searchParams.set('email', `${user.phone || 'client'}@fuelmax.com`);
         url.searchParams.set('phone', user.phone || '');
         finalPaymentLink = url.toString();
       } catch (e) {
-        finalPaymentLink = `${paymentLink}?amount=${amount}&montant=${amount}&price=${amount}&name=${encodeURIComponent(`${user.first_name || ''} ${user.last_name || ''}`.trim())}&phone=${user.phone || ''}`;
+        finalPaymentLink = `${paymentLink}?amount=${amount}&montant=${amount}&price=${amount}&name=${encodeURIComponent(`${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Client')}&customerEmail=${user.phone || 'client'}@fuelmax.com&email=${user.phone || 'client'}@fuelmax.com&phone=${user.phone || ''}`;
       }
       window.location.href = finalPaymentLink;
 
