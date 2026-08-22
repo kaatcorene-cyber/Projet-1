@@ -3,10 +3,9 @@
 
 @layer base {
   body {
-    @apply text-slate-900 bg-slate-50;
+    @apply text-zinc-100 bg-[#080d1e];
     font-family: 'Outfit', sans-serif;
   }
-  
   h1, h2, h3, h4, h5, h6, .grotesk {
     font-family: 'Outfit', sans-serif;
   }
@@ -18,6 +17,7 @@
 }
 
 @theme {
+  /* Theme settings for the dark tech platform */
   --font-sans: 'Outfit', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   --animate-fade-in: fade-in 0.35s ease-out forwards;
@@ -27,25 +27,4 @@
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
-}
-
-@layer utilities {
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-@keyframes marquee-y {
-  from { transform: translateY(0); }
-  to { transform: translateY(-50%); }
-}
-.animate-marquee-y {
-  animation: marquee-y 20s linear infinite;
-}
-.animate-marquee-y:hover {
-  animation-play-state: paused;
 }

@@ -3,14 +3,5 @@ export const COUNTRIES = {
 } as const;
 
 export type CountryName = keyof typeof COUNTRIES;
-export const COUNTRY_NAMES = Object.keys(COUNTRIES) as CountryName[];
 
-export const PAYMENT_METHODS: Record<CountryName, { id: string, name: string }[]> = {
-  "Côte d'Ivoire": [
-    { id: 'wave', name: 'Wave' },
-    { id: 'orange', name: 'Orange Money' },
-    { id: 'mtn', name: 'MTN Mobile Money' },
-    { id: 'moov', name: 'Moov Money' },
-    { id: 'djamo', name: 'Djamo' }
-  ]
-};
+export const COUNTRY_NAMES = Object.keys(COUNTRIES) as CountryName[];

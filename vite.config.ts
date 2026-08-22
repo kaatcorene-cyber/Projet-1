@@ -18,25 +18,30 @@ export default defineConfig(({mode}) => {
           clientsClaim: true,
           skipWaiting: true
         },
-        includeAssets: ['app_icon.png'],
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
-          name: 'ElevFinAi',
-          short_name: 'ElevFinAi',
-          description: 'ElevFinAi Investment Platform',
-          theme_color: '#10b981',
+          name: 'Fuel•Max',
+          short_name: 'Fuel•Max',
+          description: 'Fuel•Max Platform',
+          theme_color: '#7e22ce',
           background_color: '#ffffff',
           display: 'standalone',
           icons: [
             {
-              src: '/app_icon.png',
-              sizes: 'any',
+              src: 'https://i.imgur.com/bjYgoI6.png',
+              sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: '/app_icon.png',
-              sizes: 'any',
+              src: 'https://i.imgur.com/bjYgoI6.png',
+              sizes: '512x512',
+              type: 'image/png'
+            },
+            {
+              src: 'https://i.imgur.com/bjYgoI6.png',
+              sizes: '512x512',
               type: 'image/png',
-              purpose: 'maskable'
+              purpose: 'any maskable'
             }
           ]
         }

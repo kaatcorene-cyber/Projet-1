@@ -1,70 +1,83 @@
 import { useEffect, useRef } from 'react';
 import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { useAppStore } from '../store/useAppStore';
 import { BottomNav } from './BottomNav';
-import { FloatingSupport } from './FloatingSupport';
 import { LogOut, Settings, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
-let isProcessingYields = false;
-
 export function Layout() {
-  const { isAuthenticated, user, logout, refreshUser } = useAuthStore();
-  const { fetchConfig, setInvestmentsCache } = useAppStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
   const hasCheckedYields = useRef(false);
   const { isInstallable, installPWA } = usePWAInstall();
 
   useEffect(() => {
-    fetchConfig();
-  }, []);
-
-  useEffect(() => {
-    if (user?.id) {
-      if (!hasCheckedYields.current) {
-        hasCheckedYields.current = true;
-        processDailyYields(user.id);
-        preloadInvestments(user.id);
-      }
-      
-      const interval = setInterval(() => {
-        processDailyYields(user.id);
-      }, 60000 * 5); // every 5 minutes instead of 5 seconds
-      
-      return () => clearInterval(interval);
+    if (user?.id && !hasCheckedYields.current) {
+      hasCheckedYields.current = true;
+      processDailyYields(user.id);
     }
   }, [user?.id]);
 
-  const preloadInvestments = async (userId: string) => {
-    try {
-      const { data } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
-      if (data) {
-        setInvestmentsCache(data);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const processDailyYields = async (userId: string) => {
-    if (isProcessingYields) return;
-    isProcessingYields = true;
     try {
       const { data: investments } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
       if (!investments || investments.length === 0) return;
 
+      // Optimize: Only fetch needed columns to reduce payload size drastically
+      const { data: gains } = await supabase.from('transactions')
+          .select('reference')
+          .eq('user_id', userId)
+          .eq('type', 'daily_gain');
+
+      let totalToAdd = 0;
+      const newTransactions: any[] = [];
       const completedInvestments: string[] = [];
+
       for (const inv of investments) {
+          const startDate = new Date(inv.start_date || inv.created_at || Date.now()).getTime();
+          let effectiveNow = Date.now();
+          let isExpired = false;
+
           if (inv.end_date) {
             const endTimestamp = new Date(inv.end_date).getTime();
             if (Date.now() >= endTimestamp) {
-              completedInvestments.push(inv.id);
+              effectiveNow = endTimestamp;
+              isExpired = true;
             }
+          }
+
+          const daysElapsed = Math.floor((effectiveNow - startDate) / (24 * 60 * 60 * 1000));
+          const paidCount = gains?.filter(g => g.reference === inv.id).length || 0;
+          const missedDays = daysElapsed - paidCount;
+
+          if (missedDays > 0) {
+              totalToAdd += (inv.daily_yield * missedDays);
+              for (let i = 0; i < missedDays; i++) {
+                  newTransactions.push({
+                      user_id: userId,
+                      type: 'daily_gain',
+                      amount: inv.daily_yield,
+                      status: 'completed',
+                      reference: inv.id
+                  });
+              }
+          }
+          
+          if (isExpired) {
+             completedInvestments.push(inv.id);
           }
       }
 
+      if (totalToAdd > 0 && newTransactions.length > 0) {
+          await supabase.from('transactions').insert(newTransactions);
+          
+          const { data: userData } = await supabase.from('users').select('balance').eq('id', userId).single();
+          if (userData) {
+              await supabase.from('users').update({ balance: userData.balance + totalToAdd }).eq('id', userId);
+          }
+      }
+      
       if (completedInvestments.length > 0) {
           for (const id of completedInvestments) {
               await supabase.from('investments').update({ status: 'completed' }).eq('id', id);
@@ -72,8 +85,6 @@ export function Layout() {
       }
     } catch (e) {
       console.error("Failed to process yields", e);
-    } finally {
-      isProcessingYields = false;
     }
   };
 
@@ -88,14 +99,14 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen text-slate-900 pb-20 font-sans bg-slate-50">
-      <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden pb-8">
+    <div className="min-h-screen text-zinc-50 pb-16 font-sans bg-transparent">
+      <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden">
         {/* Top Mini Header for Admin */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
           {user?.role === 'admin' && (
             <button 
               onClick={() => navigate('/admin')}
-              className="w-10 h-10 bg-white/80 backdrop-blur-md border-emerald-500/50 shadow-emerald-500/20 border rounded-full flex items-center justify-center text-emerald-400 shadow-sm hover:bg-slate-700 transition-colors"
+              className="w-10 h-10 bg-zinc-900 border-zinc-800/80 shadow-black/20 border border-zinc-800 rounded-full flex items-center justify-center text-zinc-300 shadow-sm hover:bg-zinc-800/50 transition-colors"
             >
               <Settings className="w-5 h-5" />
             </button>
@@ -104,8 +115,6 @@ export function Layout() {
 
         <Outlet />
       </main>
-
-      <FloatingSupport />
       <BottomNav />
     </div>
   );

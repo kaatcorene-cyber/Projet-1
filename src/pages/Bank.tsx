@@ -1,254 +1,309 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
-import { CheckCircle2, AlertCircle, ChevronLeft, Wallet } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-
-const availableMethods = [
-  { id: 'orange', name: 'Orange Money' },
-  { id: 'mtn', name: 'MTN Mobile Money' },
-  { id: 'moov', name: 'Moov Money' },
-  { id: 'wave', name: 'Wave' },
-  { id: 'bank', name: 'Virement Bancaire' },
-  { id: 'crypto', name: 'Cryptomonnaie' },
-];
+import { useAuthStore } from '../store/useAuthStore';
+import { PiggyBank, Save, CreditCard, ChevronLeft } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 export function Bank() {
-  const { user } = useAuthStore();
-  const [paymentMethod, setPaymentMethod] = useState(availableMethods[0].id);
-  const [accountNumber, setAccountNumber] = useState('');
-  const [accountHolder, setAccountHolder] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-  const [isSaved, setIsSaved] = useState(false);
+  const { user, refreshUser } = useAuthStore();
   const navigate = useNavigate();
-
-
+  
+  const [method, setMethod] = useState((user as any)?.bank_method || '');
+  const [accountName, setAccountName] = useState(() => {
+    let name = '';
+    const bAccountName = (user as any)?.bank_account_name;
+    if (bAccountName) {
+      name = bAccountName.split('|||')[0] || '';
+    }
+    return name;
+  });
+  const [accountNumber, setAccountNumber] = useState(() => {
+    let num = '';
+    const bAccountName = (user as any)?.bank_account_name;
+    if (bAccountName) {
+      const parts = bAccountName.split('|||');
+      if (parts.length > 1) {
+        num = parts[1] || '';
+      }
+    }
+    return num;
+  });
+  const [password, setPassword] = useState('');
+  
+  const [isLinked, setIsLinked] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<{type: 'error' | 'success', text: string} | null>(null);
+  const [isBankLoaded, setIsBankLoaded] = useState(false);
 
   useEffect(() => {
-    if (user?.id) {
-      const loadInfo = async () => {
-        const savedInfo = localStorage.getItem('withdrawal_info_v4_' + user.id);
-        if (savedInfo) {
-          try {
-            const parsed = JSON.parse(savedInfo);
-            if (parsed.accountNumber) {
-              setPaymentMethod(parsed.paymentMethod || parsed.bank_method || parsed.bank_name || availableMethods[0].id);
-              setAccountNumber(parsed.accountNumber || '');
-              setAccountHolder(parsed.accountHolder || '');
-              setIsSaved(true);
-              return;
-            }
-          } catch (e) {}
-        }
-        
-        
-        
-        const { data } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).maybeSingle();
-        
-        if (data && data.value) {
-           try {
-             const parsed = JSON.parse(data.value);
-             if (parsed.bank_account_number) {
-               setPaymentMethod(parsed.bank_method || parsed.paymentMethod || parsed.bank_name || availableMethods[0].id);
-               setAccountNumber(parsed.bank_account_number || '');
-               setAccountHolder(parsed.bank_account_name || '');
-               setIsSaved(true);
-               
-               localStorage.setItem('withdrawal_info_v4_' + user.id, JSON.stringify({
-                 paymentMethod: parsed.bank_method || parsed.paymentMethod || parsed.bank_name,
-                 accountNumber: parsed.bank_account_number,
-                 accountHolder: parsed.bank_account_name
-               }));
-               return;
-             }
-           } catch(e) {}
-        }
-        
-        setPaymentMethod(availableMethods[0].id);
-      };
+    const loadBankInfo = async () => {
+      if (!user?.id) {
+        setIsBankLoaded(true);
+        return;
+      }
       
-      loadInfo();
-    }
+      try {
+        let finalMethod = (user as any)?.bank_method;
+        let finalAccountName = (user as any)?.bank_account_name;
+        
+        if (!finalMethod || !finalAccountName) {
+          // Fetch from settings as fallback
+          const { data: settingData } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).maybeSingle();
+          if (settingData?.value) {
+            try {
+              const parsed = JSON.parse(settingData.value);
+              finalMethod = parsed.bank_method;
+              finalAccountName = parsed.bank_account_name;
+            } catch(e) {}
+          }
+        }
+        
+        if (finalMethod) {
+          setMethod(finalMethod);
+        }
+        
+        if (finalAccountName && typeof finalAccountName === 'string') {
+          setAccountName(finalAccountName.split('|||')[0] || '');
+          if (finalAccountName.includes('|||')) {
+             setAccountNumber(finalAccountName.split('|||')[1] || '');
+          }
+        }
+        
+        if (finalMethod && finalAccountName && typeof finalAccountName === 'string' && finalAccountName.includes('|||')) {
+          setIsLinked(true);
+        }
+      } catch (err) {
+        console.error("Error loading bank setup:", err);
+      } finally {
+        setIsBankLoaded(true);
+      }
+    };
+    
+    loadBankInfo();
   }, [user?.id]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
-    
-    if (isSaved) {
+    if (!method || !accountNumber || !password) {
+      setMessage({ type: 'error', text: 'Veuillez remplir tous les champs.' });
       return;
     }
 
-    setLoading(true);
+    setIsSaving(true);
     setMessage(null);
-    
+
     try {
-      const { data: userDoc, error: userError } = await supabase
-        .from('users')
-        .select('password_hash')
-        .eq('id', user.id)
-        .single();
-        
-      if (userError || !userDoc || userDoc.password_hash !== password) {
-        throw new Error('Mot de passe incorrect.');
+      // Very basic password verify against current user's hash
+      // A better way is server-side but we are in a pure client flow right now.
+      const { data: userData } = await supabase.from('users').select('password_hash').eq('id', user?.id).single();
+      
+      if (userData?.password_hash !== password) {
+        setMessage({ type: 'error', text: 'Mot de passe incorrect.' });
+        setIsSaving(false);
+        return;
       }
       
-      localStorage.setItem('withdrawal_info_v4_' + user.id, JSON.stringify({
-        paymentMethod,
-        accountNumber,
-        accountHolder
-      }));
+      const packedName = `${accountName || 'Client'}|||${accountNumber}`;
+
+      try {
+        await supabase.from('users').update({ 
+          bank_method: method, 
+          bank_account_name: packedName
+        }).eq('id', user?.id);
+      } catch(e) {}
+      
+      // Save to Settings as fallback for Admin
+      try {
+        await supabase.from('settings').upsert({
+          key: 'bank_' + user?.id,
+          value: JSON.stringify({ bank_method: method, bank_account_name: packedName })
+        });
+      } catch(e) {}
       
       
-      await supabase.from('settings').upsert({
-        key: 'bank_' + user.id,
-        value: JSON.stringify({ 
-           bank_method: paymentMethod,
-           bank_account_number: accountNumber,
-           bank_account_name: accountHolder
-        })
-      });
-      
-      setIsSaved(true);
-      
-      setMessage({ 
-        type: 'success', 
-        text: 'Vos informations de retrait ont été enregistrées avec succès.' 
-      });
+      setIsLinked(true);
+      setMessage({ type: 'success', text: 'Vos informations bancaires ont été enregistrées avec succès.' });
       setPassword('');
-    } catch (e: any) {
-      setMessage({ type: 'error', text: e.message });
+      refreshUser();
+    } catch (err: any) {
+       console.error("Save bank mode error", err);
+       setMessage({ type: 'error', text: err.message || 'Une erreur est survenue lors de la sauvegarde.' });
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="px-5 pt-12 pb-32 min-h-[100dvh] bg-slate-50 max-w-lg mx-auto font-sans relative text-slate-900">
-      <header className="flex items-center gap-4 mb-8 relative z-10">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/80 backdrop-blur-xl border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-700 transition-colors shadow-sm shrink-0">
+    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans text-zinc-50">
+      <header className="flex items-center gap-4 mb-8">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-transparent flex items-center justify-center text-zinc-400 hover:text-zinc-50 transition-colors shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-black tracking-tight">Compte de Retrait</h1>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Configurer</p>
+          <h1 className="text-2xl font-black tracking-tight">Caisse</h1>
+          <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mt-0.5">Gérer vos paiements</p>
         </div>
       </header>
 
-      {message && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className={`p-4 rounded-2xl mb-6 flex items-start gap-3 border shadow-sm backdrop-blur-sm ${
-          message.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'
-        }`}>
-          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />}
-          <p className="text-sm font-semibold leading-relaxed">{message.text}</p>
-        </motion.div>
-      )}
+      <div className="max-w-md mx-auto">
+        {message && (
+          <div className={`mb-6 p-4 rounded-2xl text-sm font-bold flex items-start gap-3 ${message.type === 'error' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-green-500/10 text-green-500 border border-green-500/20'}`}>
+             {message.text}
+          </div>
+        )}
 
-      {isSaved && !message && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="p-4 rounded-2xl mb-6 flex items-start gap-3 border shadow-sm bg-emerald-50 text-emerald-700 border-emerald-200"
-        >
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold leading-relaxed mb-3">
-              Vos informations de retrait sont configurées et verrouillées. Vous pouvez maintenant effectuer vos retraits depuis la page de retrait.
+        {!isBankLoaded ? (
+          <div className="flex justify-center p-8"><div className="w-8 h-8 rounded-full border-4 border-zinc-800 border-t-red-500 animate-spin"></div></div>
+        ) : isLinked ? (
+          <div className="text-center relative pt-8">
+            <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4 relative z-10">
+              <PiggyBank className="w-10 h-10 text-red-500" />
+            </div>
+            
+            <h2 className="text-xl font-black text-zinc-50 mb-3 relative z-10">Compte lié</h2>
+            <p className="text-zinc-400 text-sm mb-8 leading-relaxed relative z-10">
+              Vos informations pour vos retraits ont été déjà configurées.
             </p>
+            
+            <div className="text-left mb-8 relative z-10 space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-zinc-800/50">
+                 <span className="text-zinc-500 font-medium text-sm">Opérateur</span>
+                 <span className="text-zinc-50 font-bold text-sm">{method}</span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b border-zinc-800/50">
+                 <span className="text-zinc-500 font-medium text-sm">Numéro</span>
+                 <span className="text-zinc-50 font-black text-sm tracking-widest">{accountNumber}</span>
+              </div>
+            </div>
+            
             <button
-              onClick={() => setIsSaved(false)}
-              className="text-xs font-bold bg-white text-emerald-600 px-4 py-2 rounded-xl shadow-sm border border-emerald-500/20 active:scale-95 transition-transform"
+              onClick={() => navigate(-1)}
+              className="w-full mt-4 py-4 border border-zinc-700 bg-transparent hover:text-zinc-50 text-zinc-300 rounded-xl font-bold transition-all"
             >
-              Modifier mes informations
+              Retour
             </button>
           </div>
-        </motion.div>
-      )}
+        ) : (
+          <form onSubmit={handleSave} className="space-y-6 relative z-10">
+            <div className="space-y-4 relative z-10">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 px-1">
+                  Moyen de Paiement
+                </label>
+                <div className="bg-zinc-900/80 border border-zinc-800 focus-within:border-red-500 rounded-2xl transition-all duration-300 shadow-sm">
+                  <select
+                    value={method}
+                    onChange={(e) => setMethod(e.target.value)}
+                    className="w-full bg-transparent border-none px-4 py-3.5 text-zinc-50 font-black tracking-wider focus:ring-0 outline-none appearance-none"
+                  >
+                    <option value="" className="bg-zinc-900 text-zinc-400">Sélectionnez un moyen</option>
+                      {(user?.country === "Cote d'Ivoire" || user?.country === "Côte d'Ivoire") && (
+                        <>
+                          <option value="ORANGE" className="bg-zinc-900">Orange Money</option>
+                          <option value="MTN" className="bg-zinc-900">MTN Mobile Money</option>
+                          <option value="MOOV" className="bg-zinc-900">Moov Money</option>
+                          <option value="WAVE" className="bg-zinc-900">Wave</option>
+                        </>
+                      )}
+                      {user?.country === "Togo" && (
+                        <>
+                          <option value="TMONEY" className="bg-zinc-900">TMoney</option>
+                          <option value="MOOV" className="bg-zinc-900">Moov Money</option>
+                        </>
+                      )}
+                      {(user?.country === "Bénin" || user?.country === "Benin") && (
+                        <>
+                          <option value="MTN" className="bg-zinc-900">MTN Mobile Money</option>
+                          <option value="MOOV" className="bg-zinc-900">Moov Money</option>
+                          <option value="CELTIIS" className="bg-zinc-900">Celtiis Cash</option>
+                        </>
+                      )}
+                      {(user?.country === "Burkina" || user?.country === "Burkina Faso") && (
+                        <>
+                          <option value="ORANGE" className="bg-zinc-900">Orange Money</option>
+                          <option value="MOOV" className="bg-zinc-900">Moov Money</option>
+                        </>
+                      )}
+                      {user?.country === "Cameroun" && (
+                        <>
+                          <option value="ORANGE" className="bg-zinc-900">Orange Money</option>
+                          <option value="MTN" className="bg-zinc-900">MTN Mobile Money</option>
+                        </>
+                      )}
+                      {user?.country === "Niger" && (
+                        <>
+                          <option value="AIRTEL" className="bg-zinc-900">Airtel Money</option>
+                          <option value="MOOV" className="bg-zinc-900">Moov Money</option>
+                          <option value="ZAMANI" className="bg-zinc-900">Zamani Cash</option>
+                          <option value="AL_IZZA" className="bg-zinc-900">Al Izza</option>
+                          <option value="NITA" className="bg-zinc-900">Nita</option>
+                          <option value="MYNITA" className="bg-zinc-900">MyNita</option>
+                          <option value="AMANATA" className="bg-zinc-900">Amanata</option>
+                        </>
+                      )}
+                    </select>
+                </div>
+              </div>
 
-      <form onSubmit={handleSave} className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-2xl shadow-slate-200/50 border border-slate-200/50 space-y-6 relative z-10">
-        
-        <div className="space-y-4">
-           {/* Moyen de paiement */}
-           <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Moyen de paiement</label>
-             <select
-               value={paymentMethod}
-               onChange={(e) => setPaymentMethod(e.target.value)}
-               disabled={isSaved}
-               className={`w-full border rounded-2xl px-4 py-4 text-slate-900 font-bold outline-none transition-all shadow-inner appearance-none ${isSaved ? 'bg-white/50 border-slate-200/50 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50/50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'}`}
-             >
-               {availableMethods.map(method => (
-                 <option key={method.id} value={method.id} className="bg-white">{method.name}</option>
-               ))}
-             </select>
-           </div>
-           
-           {/* Numéro du compte de réception */}
-           <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Numéro du compte de réception</label>
-             <input
-               type="tel"
-               value={accountNumber}
-               onChange={(e) => setAccountNumber(e.target.value)}
-               disabled={isSaved}
-               className={`w-full border rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-600 outline-none transition-all shadow-inner ${isSaved ? 'bg-white/50 border-slate-200/50 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50/50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'}`}
-               placeholder="Ex: 0102030405"
-               required
-             />
-           </div>
-           
-           {/* Nom du titulaire */}
-           <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Nom du titulaire</label>
-             <input
-               type="text"
-               value={accountHolder}
-               onChange={(e) => setAccountHolder(e.target.value)}
-               disabled={isSaved}
-               className={`w-full border rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-600 outline-none transition-all shadow-inner ${isSaved ? 'bg-white/50 border-slate-200/50 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50/50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500'}`}
-               placeholder="Nom complet"
-             />
-           </div>
-           
-           {/* Mot de passe */}
-           {!isSaved && (
-             <div className="space-y-2">
-               <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Mot de passe de confirmation</label>
-               <input
-                 type="password"
-                 value={password}
-                 onChange={(e) => setPassword(e.target.value)}
-                 className="w-full bg-slate-50/50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-600 outline-none transition-all shadow-inner tracking-widest"
-                 placeholder="••••••••"
-                 required
-               />
-             </div>
-           )}
-        </div>
+              <div className="space-y-2 pt-1">
+                 <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 px-1">
+                    Numéro de compte / mobile
+                 </label>
+                 <div className="relative bg-zinc-900/80 border border-zinc-800 focus-within:border-red-500 rounded-2xl transition-all duration-300 shadow-sm">
+                    <input
+                      type="text"
+                      value={accountNumber}
+                      onChange={(e) => setAccountNumber(e.target.value)}
+                      placeholder="Ex: 0102030405"
+                      className="w-full bg-transparent border-none px-4 py-3.5 text-zinc-50 font-black tracking-wider focus:ring-0 outline-none placeholder-zinc-700"
+                      required
+                    />
+                 </div>
+              </div>
 
-        {!isSaved && (
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 rounded-xl font-bold transition-all duration-300 disabled:opacity-50 text-slate-900 bg-emerald-500 hover:bg-emerald-400 shadow-xl shadow-emerald-500/20 active:scale-[0.98] flex justify-center items-center gap-2 mt-6"
-          >
-            {loading ? <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" /> : 'Enregistrer les informations'}
-          </button>
+              <div className="space-y-2 pt-1">
+                 <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 px-1">
+                    Nom sur le compte
+                 </label>
+                 <div className="bg-zinc-900/80 border border-zinc-800 focus-within:border-red-500 rounded-2xl transition-all duration-300 shadow-sm">
+                    <input
+                      type="text"
+                      value={accountName}
+                      onChange={(e) => setAccountName(e.target.value)}
+                      placeholder="Ex: Jean Dupont"
+                      className="w-full bg-transparent border-none px-4 py-3.5 text-zinc-50 font-black tracking-wider focus:ring-0 outline-none placeholder-zinc-700"
+                      required
+                    />
+                 </div>
+              </div>
+            </div>
+            
+            <div className="pt-4 relative z-10">
+               <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500 px-1 mb-2">
+                  Sécurité requise
+               </label>
+               <div className="bg-zinc-900/80 border border-zinc-800 focus-within:border-red-500 rounded-2xl transition-all duration-300 shadow-sm">
+                 <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-transparent border-none px-4 py-3.5 text-zinc-50 font-black focus:ring-0 outline-none placeholder-zinc-700 tracking-widest"
+                 />
+               </div>
+               <p className="text-zinc-600 text-[11px] mt-2 font-medium px-1 leading-relaxed">Entrez le mot de passe de votre compte pour confirmer.</p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSaving || !method || !accountNumber || !password}
+              className="w-full mt-4 bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-zinc-50 transition-all py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-95 border border-red-500/50 disabled:opacity-50 disabled:active:scale-100"
+            >
+              {isSaving ? "En cours..." : "Confirmer"}
+            </button>
+          </form>
         )}
-      </form>
+      </div>
     </div>
   );
 }
