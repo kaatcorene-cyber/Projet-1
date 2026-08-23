@@ -42,17 +42,33 @@ export function Deposit() {
       let finalPaymentLink = paymentLink;
       try {
         const url = new URL(paymentLink);
+        
         url.searchParams.set('amount', amount.toString());
         url.searchParams.set('montant', amount.toString());
         url.searchParams.set('price', amount.toString());
-        url.searchParams.set('name', `FuelMax ${user.phone || ''}`.trim());
-        url.searchParams.set('customerEmail', 'fuelmaxacte2@gmail.com');
+        
+        const fullName = `FuelMax ${user.phone || ''}`.trim();
+        url.searchParams.set('name', fullName);
+        url.searchParams.set('nom', 'FuelMax');
+        url.searchParams.set('prenom', user.phone || '');
+        url.searchParams.set('first_name', 'FuelMax');
+        url.searchParams.set('last_name', user.phone || '');
+        url.searchParams.set('customer_name', fullName);
+        url.searchParams.set('customerName', fullName);
+        
         url.searchParams.set('email', 'fuelmaxacte2@gmail.com');
+        url.searchParams.set('customer_email', 'fuelmaxacte2@gmail.com');
+        url.searchParams.set('customerEmail', 'fuelmaxacte2@gmail.com');
+        
         url.searchParams.set('phone', user.phone || '');
+        url.searchParams.set('telephone', user.phone || '');
+        url.searchParams.set('customer_phone', user.phone || '');
+        url.searchParams.set('customerPhone', user.phone || '');
+
         finalPaymentLink = url.toString();
       } catch (e) {
         const separator = paymentLink.includes('?') ? '&' : '?';
-        finalPaymentLink = `${paymentLink}${separator}amount=${amount}&montant=${amount}&price=${amount}&name=${encodeURIComponent(`FuelMax ${user.phone || ''}`.trim())}&customerEmail=fuelmaxacte2@gmail.com&email=fuelmaxacte2@gmail.com&phone=${user.phone || ''}`;
+        finalPaymentLink = `${paymentLink}${separator}amount=${amount}&montant=${amount}&name=${encodeURIComponent('FuelMax '+user.phone)}&email=fuelmaxacte2@gmail.com&phone=${user.phone || ''}`;
       }
       window.location.href = finalPaymentLink;
 
