@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, getDeepLink } from '../lib/utils';
 import { Banknote, PlusCircle, Wallet, Activity, Users, Headset, MessageCircle, Crown, Loader2, Briefcase, ChevronRight, X, Building2, PackageCheck, LogOut, Download, Layers, PiggyBank } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePWAInstall } from '../hooks/usePWAInstall';
@@ -49,7 +49,7 @@ function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () =
         
         <div className="w-full space-y-3">
           {groupLink ? (
-            <a href={groupLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold transition-colors" onClick={onClose}>
+            <a href={getDeepLink(groupLink)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold transition-colors" onClick={onClose}>
               <MessageCircle className="w-5 h-5 mr-2" />
               Rejoindre le Groupe
             </a>
@@ -383,7 +383,7 @@ export function Dashboard() {
               <span className="text-[11px] font-bold text-zinc-400 group-hover:text-zinc-200">Caisse</span>
            </Link>
            
-           <a href={groupLink} target="_blank" rel="noopener noreferrer" className="group bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl hover:border-red-500/30 hover:bg-zinc-800/80 transition-all shadow-lg shadow-black/20">
+           <a href={getDeepLink(groupLink)} target="_blank" rel="noopener noreferrer" className="group bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 flex flex-col items-center justify-center gap-2 py-4 rounded-2xl hover:border-red-500/30 hover:bg-zinc-800/80 transition-all shadow-lg shadow-black/20">
               <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-red-500 group-hover:scale-110 group-hover:bg-red-500/10 transition-all shadow-inner">
                  <Users className="w-5 h-5" />
               </div>

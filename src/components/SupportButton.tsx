@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useLocation } from 'react-router-dom';
+import { getDeepLink } from '../lib/utils';
 
 export function SupportButton() {
   const [supportLink, setSupportLink] = useState('https://t.me/GraceRaphaelle');
@@ -23,7 +24,7 @@ export function SupportButton() {
 
   return (
     <a 
-      href={supportLink} 
+      href={getDeepLink(supportLink)} 
       target="_blank" 
       rel="noopener noreferrer"
       className="fixed bottom-24 right-5 w-14 h-14 bg-red-600 hover:bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-red-600/30 transition-transform active:scale-95 z-50 border-2 border-zinc-900"

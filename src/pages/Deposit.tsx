@@ -36,7 +36,7 @@ export function Deposit() {
       if (txError) throw txError;
       
       const { data: settingsData } = await supabase.from('settings').select('value').eq('key', 'payment_link').single();
-      const paymentLink = settingsData?.value || "https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96";
+      const paymentLink = settingsData?.value || "https://payin.moneyfusion.net";
 
       
       let finalPaymentLink = paymentLink;
