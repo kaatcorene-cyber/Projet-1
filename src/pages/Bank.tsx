@@ -205,40 +205,21 @@ export function Bank() {
                           <option value="WAVE" className="bg-zinc-900">Wave</option>
                         </>
                       )}
-                      {user?.country === "Togo" && (
-                        <>
-                          <option value="TMONEY" className="bg-zinc-900">TMoney</option>
-                          <option value="MOOV" className="bg-zinc-900">Moov Money</option>
-                        </>
-                      )}
-                      {(user?.country === "Bénin" || user?.country === "Benin") && (
-                        <>
-                          <option value="MTN" className="bg-zinc-900">MTN Mobile Money</option>
-                          <option value="MOOV" className="bg-zinc-900">Moov Money</option>
-                          <option value="CELTIIS" className="bg-zinc-900">Celtiis Cash</option>
-                        </>
-                      )}
-                      {(user?.country === "Burkina" || user?.country === "Burkina Faso") && (
-                        <>
-                          <option value="ORANGE" className="bg-zinc-900">Orange Money</option>
-                          <option value="MOOV" className="bg-zinc-900">Moov Money</option>
-                        </>
-                      )}
                       {user?.country === "Cameroun" && (
                         <>
                           <option value="ORANGE" className="bg-zinc-900">Orange Money</option>
                           <option value="MTN" className="bg-zinc-900">MTN Mobile Money</option>
                         </>
                       )}
+                      {user?.country === "Mali" && (
+                        <>
+                          <option value="ORANGE" className="bg-zinc-900">Orange Money</option>
+                        </>
+                      )}
                       {user?.country === "Niger" && (
                         <>
-                          <option value="AIRTEL" className="bg-zinc-900">Airtel Money</option>
-                          <option value="MOOV" className="bg-zinc-900">Moov Money</option>
-                          <option value="ZAMANI" className="bg-zinc-900">Zamani Cash</option>
-                          <option value="AL_IZZA" className="bg-zinc-900">Al Izza</option>
-                          <option value="NITA" className="bg-zinc-900">Nita</option>
                           <option value="MYNITA" className="bg-zinc-900">MyNita</option>
-                          <option value="AMANATA" className="bg-zinc-900">Amanata</option>
+                          <option value="AMANA" className="bg-zinc-900">Amana</option>
                         </>
                       )}
                     </select>
