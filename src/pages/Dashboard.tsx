@@ -161,9 +161,9 @@ export function Dashboard() {
     const groupData = data.find(s => s.key === 'group_link');
 
     if (groupData?.value) {
-      setGroupLink(formatLink(groupData.value, 'https://chat.whatsapp.com/HIpHQ5MyKKL7sfDeJerSg4?mode=gi_t'));
+      setGroupLink(formatLink(groupData.value, 'https://t.me/+TjOOMskz4qMyZjlk'));
     } else {
-      setGroupLink('https://chat.whatsapp.com/HIpHQ5MyKKL7sfDeJerSg4?mode=gi_t');
+      setGroupLink('https://t.me/+TjOOMskz4qMyZjlk');
     }
   };
 
