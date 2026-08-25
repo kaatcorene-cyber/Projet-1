@@ -74,17 +74,19 @@ export function Withdraw() {
     setMessage(null);
 
     try {
-      // Verify password
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', user.id)
-        .eq('password_hash', password)
-        .single();
+      // Verify password only if bank is not configured yet
+      if (!hasBankConfigured) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', user.id)
+          .eq('password_hash', password)
+          .single();
 
-      if (!userData) {
-        setLoading(false);
-        return setMessage({ type: 'error', text: 'Mot de passe incorrect.' });
+        if (!userData) {
+          setLoading(false);
+          return setMessage({ type: 'error', text: 'Mot de passe incorrect.' });
+        }
       }
 
       // Deduct balance immediately (pending state)
@@ -227,28 +229,30 @@ export function Withdraw() {
               </div>
             )}
             
-            {/* Password Input */}
-            <div className="bg-zinc-900/80 backdrop-blur-xl border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300">
-              <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 mb-2 px-1">
-                <Lock className="w-3.5 h-3.5" />
-                Code secret
-              </label>
-              <div className="px-1">
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-2xl font-black text-zinc-50 placeholder-zinc-700 outline-none tracking-widest"
-                  placeholder="••••••••"
-                  required
-                />
+            {/* Password Input (only if no bank configured) */}
+            {!hasBankConfigured && (
+              <div className="bg-zinc-900/80 backdrop-blur-xl border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 mb-2 px-1">
+                  <Lock className="w-3.5 h-3.5" />
+                  Code secret
+                </label>
+                <div className="px-1">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-2xl font-black text-zinc-50 placeholder-zinc-700 outline-none tracking-widest"
+                    placeholder="••••••••"
+                    required={!hasBankConfigured}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={loading || !amount || !password}
+            disabled={loading || !amount || (!hasBankConfigured && !password)}
             className="w-full bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-4 rounded-2xl transition-all duration-300 disabled:opacity-50 shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-[0.98] border border-red-500/50 flex items-center justify-center gap-2 mt-4"
           >
             {loading ? (

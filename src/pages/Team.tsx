@@ -167,7 +167,7 @@ export function Team() {
       <header className="flex justify-between items-center gap-4 pb-4 border-b border-zinc-800/60 mb-6">
         <div>
           <h1 className="text-3xl font-black text-zinc-50 tracking-tight">Mon Équipe</h1>
-          <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mt-1">Gagnez jusqu'à 25% (20% - 3% - 2%)</p>
+          <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mt-1">Gagnez jusqu'à 20% (15% - 3% - 2%)</p>
         </div>
         <img src="https://i.imgur.com/qRUc5aF.png" alt="Fuel•Max" className="w-20 h-20 rounded-2xl object-cover shadow-[0_4px_12px_rgba(0,0,0,0.1)] border-2 border-white flex-shrink-0" referrerPolicy="no-referrer" />
       </header>
@@ -232,7 +232,7 @@ export function Team() {
                 </span>
               </div>
               <span className={`text-[10px] ${expandedLevel === level ? 'text-red-400' : 'text-zinc-600'}`}>
-                {level === 1 ? '20%' : level === 2 ? '3%' : '2%'}
+                {level === 1 ? '15%' : level === 2 ? '3%' : '2%'}
               </span>
             </button>
           ))}

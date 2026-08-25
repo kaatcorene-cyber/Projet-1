@@ -280,18 +280,18 @@ export function Admin() {
             .eq('status', 'approved');
 
           if (count === 1 && userData.referred_by) {
-            // Level 1 logic (20%)
+            // Level 1 logic (15%)
             const { data: level1 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', userData.referred_by).maybeSingle();
             
             if (level1) {
-              const l1Bonus = amount * 0.20;
+              const l1Bonus = amount * 0.15;
               await supabase.from('users').update({ balance: level1.balance + l1Bonus }).eq('id', level1.id);
               await supabase.from('transactions').insert([{
                 user_id: level1.id,
                 type: 'referral_bonus',
                 amount: l1Bonus,
                 status: 'completed',
-                reference: 'Bonus 1er dépôt L1 (20%)'
+                reference: 'Bonus 1er dépôt L1 (15%)'
               }]);
 
               // Level 2 logic (3%)
