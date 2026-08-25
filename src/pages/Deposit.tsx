@@ -54,10 +54,10 @@ export function Deposit() {
       const payload = {
         id: linkId,
         montant: amount,
-        name: `FuelMax ${user.phone || ''}`.trim(),
-        merchantName: "FuelMax",
-        shopName: "FuelMax",
-        title: "Rechargement FuelMax",
+        name: `FuelMax Payement ${user.phone || ''}`.trim(),
+        merchantName: "FuelMax Payement",
+        shopName: "FuelMax Payement",
+        title: "FuelMax Payement",
         description: "Rechargement de compte FuelMax",
         customerEmail: "fuelmaxacte2@gmail.com",
         phone: user.phone || '',
@@ -140,7 +140,7 @@ export function Deposit() {
           </div>
 
            <div className="flex flex-wrap gap-3">
-             {[5000, 15000, 40000, 90000, 200000].map((preset) => (
+             {[5000, 40000, 90000, 200000, 450000, 700000].map((preset) => (
                <button
                  key={preset}
                  type="button"
