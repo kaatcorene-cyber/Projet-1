@@ -151,8 +151,7 @@ export function Deposit() {
                      : 'bg-zinc-900/80 backdrop-blur-xl text-zinc-400 border border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300'
                  }`}
                >
-                 {preset >= 100000 ? <Zap className="w-3.5 h-3.5" /> : null}
-                 {preset >= 1000 ? `${preset / 1000}k` : preset}
+                 {preset.toLocaleString('fr-FR')} F
                </button>
              ))}
           </div>
