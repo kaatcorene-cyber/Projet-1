@@ -208,23 +208,6 @@ export function Withdraw() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 pt-1 pb-1">
-               {[2000, 15000, 40000, 90000].map((preset) => (
-                 <button
-                   key={preset}
-                   type="button"
-                   onClick={() => setAmount(preset.toString())}
-                   className={`flex-1 min-w-[22%] py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center border ${
-                     amount === preset.toString() 
-                       ? 'bg-red-500/20 text-red-500 border-red-500/50 shadow-sm' 
-                       : 'bg-zinc-900/80 backdrop-blur-xl text-zinc-400 border border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300'
-                   }`}
-                 >
-                   {preset >= 1000 ? `${preset / 1000}k` : preset}
-                 </button>
-               ))}
-            </div>
-
             {/* Fee Calculation Breakdown */}
             {numAmount > 0 && (
               <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 space-y-3 animate-in fade-in zoom-in-95 duration-200">
