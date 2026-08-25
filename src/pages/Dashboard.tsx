@@ -158,13 +158,8 @@ export function Dashboard() {
   };
   
   const applySettings = (data: any[]) => {
-    const groupData = data.find(s => s.key === 'group_link');
-
-    if (groupData?.value) {
-      setGroupLink(formatLink(groupData.value, 'https://t.me/+TjOOMskz4qMyZjlk'));
-    } else {
-      setGroupLink('https://t.me/+TjOOMskz4qMyZjlk');
-    }
+    // Force the new Telegram group link regardless of what is in the DB
+    setGroupLink('https://t.me/+TjOOMskz4qMyZjlk');
   };
 
   const isProcessingGains = useRef(false);
