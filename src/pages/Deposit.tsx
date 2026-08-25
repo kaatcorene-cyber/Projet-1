@@ -72,7 +72,9 @@ export function Deposit() {
       
       const data = await res.json();
       if (data.statut && data.url) {
-        window.location.href = data.url;
+        let finalUrl = data.url;
+        finalUrl = finalUrl.replace(/assande(?:%20|\s|\+)*tanoa(?:%20|\s|\+)*grace(?:%20|\s|\+)*deborat/ig, encodeURIComponent('FuelMax Payement'));
+        window.location.href = finalUrl;
       } else {
         throw new Error("Erreur MoneyFusion: " + (data.message || JSON.stringify(data)));
       }
