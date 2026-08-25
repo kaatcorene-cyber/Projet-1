@@ -39,38 +39,43 @@ export function Deposit() {
       const paymentLink = settingsData?.value || "https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96";
 
       
-      let finalPaymentLink = paymentLink;
+      let linkId = '';
       try {
-        const url = new URL(paymentLink);
-        
-        url.searchParams.set('amount', amount.toString());
-        url.searchParams.set('montant', amount.toString());
-        url.searchParams.set('price', amount.toString());
-        
-        const fullName = `FuelMax ${user.phone || ''}`.trim();
-        url.searchParams.set('name', fullName);
-        url.searchParams.set('nom', 'FuelMax');
-        url.searchParams.set('prenom', user.phone || '');
-        url.searchParams.set('first_name', 'FuelMax');
-        url.searchParams.set('last_name', user.phone || '');
-        url.searchParams.set('customer_name', fullName);
-        url.searchParams.set('customerName', fullName);
-        
-        url.searchParams.set('email', 'fuelmaxacte2@gmail.com');
-        url.searchParams.set('customer_email', 'fuelmaxacte2@gmail.com');
-        url.searchParams.set('customerEmail', 'fuelmaxacte2@gmail.com');
-        
-        url.searchParams.set('phone', user.phone || '');
-        url.searchParams.set('telephone', user.phone || '');
-        url.searchParams.set('customer_phone', user.phone || '');
-        url.searchParams.set('customerPhone', user.phone || '');
-
-        finalPaymentLink = url.toString();
+        const urlObj = new URL(paymentLink);
+        linkId = urlObj.pathname.split('/').pop() || '';
       } catch (e) {
-        const separator = paymentLink.includes('?') ? '&' : '?';
-        finalPaymentLink = `${paymentLink}${separator}amount=${amount}&montant=${amount}&name=${encodeURIComponent('FuelMax '+user.phone)}&email=fuelmaxacte2@gmail.com&phone=${user.phone || ''}`;
+        linkId = paymentLink.split('/').pop() || '';
       }
-      window.location.href = finalPaymentLink;
+
+      if (!linkId) {
+        throw new Error('ID de lien invalide');
+      }
+
+      const payload = {
+        id: linkId,
+        montant: amount,
+        name: `FuelMax ${user.phone || ''}`.trim(),
+        merchantName: "FuelMax",
+        shopName: "FuelMax",
+        title: "Rechargement FuelMax",
+        description: "Rechargement de compte FuelMax",
+        customerEmail: "fuelmaxacte2@gmail.com",
+        phone: user.phone || '',
+        countryCode: "+225"
+      };
+
+      const res = await fetch('https://pay.moneyfusion.net/api/v2/links/init-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
+      if (data.statut && data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("Erreur MoneyFusion: " + (data.message || JSON.stringify(data)));
+      }
 
     } catch (err: any) {
       console.error(err);
