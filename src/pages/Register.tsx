@@ -134,6 +134,10 @@ export function Register() {
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-sm mx-auto relative z-10"
         >
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-black text-white tracking-tight mb-2">Créer un compte</h1>
+            <p className="text-blue-200/80 text-sm font-medium">Veuillez créer votre compte pour commencer.</p>
+          </div>
           <form onSubmit={handleRegister} className="space-y-4">
             {error && (
               <motion.div 

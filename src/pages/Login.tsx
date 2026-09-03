@@ -103,6 +103,10 @@ export function Login() {
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-sm mx-auto relative z-10"
         >
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-black text-white tracking-tight mb-2">Bon retour !</h1>
+            <p className="text-blue-200/80 text-sm font-medium">Veuillez vous connecter à votre compte.</p>
+          </div>
           <form onSubmit={handleLogin} className="space-y-4">
             {error && (
               <motion.div 
