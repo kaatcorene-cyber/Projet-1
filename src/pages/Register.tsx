@@ -117,7 +117,7 @@ export function Register() {
   };
 
   return (
-    <div className="h-[100dvh] bg-[#022870] flex flex-col font-sans relative overflow-hidden touch-none">
+    <div className="h-[100dvh] bg-[#03296c] flex flex-col font-sans relative overflow-hidden touch-none">
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-500/10 rounded-full blur-[100px] pointer-events-none -mr-20 -mt-20"></div>
       <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-brand-500/5 rounded-full blur-[80px] pointer-events-none -ml-20 -mb-20"></div>
       <div className="w-full relative z-10 shadow-sm overflow-hidden flex-shrink-0">
@@ -128,7 +128,7 @@ export function Register() {
         />
       </div>
                               
-      <div className="px-6 flex-1 flex flex-col justify-start -mt-4 pb-4">
+      <div className="px-6 flex-1 flex flex-col justify-start mt-4 pb-4">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
