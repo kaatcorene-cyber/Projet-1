@@ -1,252 +1,187 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
-import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
-import { Copy, CheckCircle2, Users, TrendingUp, AlertCircle, HandCoins, Loader2 } from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { formatCurrency, generateUserId } from '../lib/utils';
+import { COUNTRIES, CountryName } from '../constants';
+import { Users, User, Copy, CheckCircle2, UserPlus, Gift, ChevronLeft, Link as LinkIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 export function Team() {
-  const { user, refreshUser } = useAuthStore();
-  const { teamStatsCache, setTeamStatsCache } = useAppStore();
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const { user } = useAuthStore();
+  const [level1, setLevel1] = useState<any[]>([]);
+  const [level2, setLevel2] = useState<any[]>([]);
+  const [level3, setLevel3] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState(1);
+  const [copied, setCopied] = useState(false);
+  const [totalCommissions, setTotalCommissions] = useState(0);
   
-  const [teamStats, setTeamStats] = useState({
-    level1: teamStatsCache?.level1 || ([] as any[]),
-    level2: teamStatsCache?.level2 || ([] as any[]),
-    level3: teamStatsCache?.level3 || ([] as any[]),
-    totalBonus: teamStatsCache?.totalBonus || 0
-  });
-  
-  const [expandedLevel, setExpandedLevel] = useState<number | null>(1);
-
-  // Auto-correct the domain for sharing so outside users don't hit the private AI Studio dev wall
-  let baseLink = window.location.origin;
-  if (baseLink.includes('ais-dev-')) {
-    baseLink = baseLink.replace('ais-dev-', 'ais-pre-');
-  }
-  const referralLink = `${baseLink}/register?ref=${user?.referral_code}`;
+    const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
-      fetchTeamStats();
-    }
+    fetchTeam();
   }, [user]);
 
-  const fetchTeamStats = async () => {
+  const fetchTeam = async () => {
     if (!user) return;
-
     try {
-      // 1. Fetch bonuses
-      const { data: bonusesRes } = await supabase.from('transactions').select('amount').eq('user_id', user.id).eq('type', 'referral_bonus');
-      const totalBonus = bonusesRes?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0;
-
-      // 2. Fetch Level 1
-      const { data: l1Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at, investments(plan_amount)').eq('referred_by', user.referral_code).order('created_at', { ascending: false });
-      const l1 = l1Data || [];
-      const l1Codes = l1.map(u => u.referral_code).filter(Boolean);
-
-      // 3. Fetch Level 2
-      let l2: any[] = [];
-      let l2Codes: string[] = [];
-      if (l1Codes.length > 0) {
-        const { data: l2Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at, investments(plan_amount)').in('referred_by', l1Codes).order('created_at', { ascending: false });
-        l2 = l2Data || [];
-        l2Codes = l2.map(u => u.referral_code).filter(Boolean);
-      }
-
-      // 4. Fetch Level 3
-      let l3: any[] = [];
-      if (l2Codes.length > 0) {
-        const { data: l3Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at, investments(plan_amount)').in('referred_by', l2Codes).order('created_at', { ascending: false });
-        l3 = l3Data || [];
-      }
-
-      const newStats = {
-        level1: l1,
-        level2: l2,
-        level3: l3,
-        totalBonus
-      };
+      const refCode = user.referral_code?.toUpperCase();
+      const legacyRefCode = generateUserId(user.id);
       
-      setTeamStats(newStats);
-      setTeamStatsCache(newStats);
+      let orConds = [];
+      if (refCode) orConds.push(`referred_by.eq.${refCode}`);
+      if (legacyRefCode) orConds.push(`referred_by.eq.${legacyRefCode}`);
+      
+      const { data: l1Data } = await supabase
+        .from('users')
+        .select('*')
+        .or(orConds.join(','));
+        
+      const l1 = l1Data || [];
+      setLevel1(l1);
+
+      let l2: any[] = [];
+      if (l1.length > 0) {
+        const l1Codes = l1.flatMap(u => [u.referral_code, generateUserId(u.id)]).filter(Boolean);
+        if (l1Codes.length > 0) {
+          const { data: l2Data } = await supabase
+            .from('users')
+            .select('*')
+            .in('referred_by', l1Codes);
+          l2 = l2Data || [];
+        }
+      }
+      setLevel2(l2);
+
+      let l3: any[] = [];
+      if (l2.length > 0) {
+        const l2Codes = l2.flatMap(u => [u.referral_code, generateUserId(u.id)]).filter(Boolean);
+        if (l2Codes.length > 0) {
+          const { data: l3Data } = await supabase
+            .from('users')
+            .select('*')
+            .in('referred_by', l2Codes);
+          l3 = l3Data || [];
+        }
+      }
+      setLevel3(l3);
+
+            const { data: commissions } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('type', 'referral_bonus');
+        
+      if (commissions) {
+        setTotalCommissions(commissions.reduce((acc, curr) => acc + Number(curr.amount), 0));
+      }
     } catch (e) {
       console.error(e);
     }
   };
 
-  const copyCode = async () => {
-    if (!user?.referral_code) return;
-    
-    try {
-      // 1. Modern Clipboard API
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(referralLink);
-        setCopyStatus('success');
-        setTimeout(() => setCopyStatus('idle'), 3000);
-        return;
-      }
-      throw new Error("Clipboard API not available");
-    } catch (err) {
-      // 2. Fallback
-      try {
-        const textArea = document.createElement("textarea");
-        textArea.value = referralLink;
-        textArea.style.position = 'fixed';
-        textArea.style.top = '0';
-        textArea.style.left = '0';
-        textArea.style.opacity = '0';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
-        const success = document.execCommand('copy');
-        document.body.removeChild(textArea);
-        
-        if (success) {
-          setCopyStatus('success');
-        } else {
-          throw new Error("execCommand failed");
-        }
-      } catch (fallbackErr) {
-        // 3. ABSOLUTE FINAL FALLBACK: Native Prompt (100% reliable even in locked iframes)
-        window.prompt("Copiez votre lien de parrainage ci-dessous :", referralLink);
-        setCopyStatus('success'); // Assume success if they saw the prompt
-      }
-      setTimeout(() => setCopyStatus('idle'), 3000);
-    }
+  const referralLink = `${window.location.origin}/register?ref=${user?.referral_code || generateUserId(user?.id)}`;
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  const totalMembers = teamStats.level1.length + teamStats.level2.length + teamStats.level3.length;
-
-  const renderMemberList = (members: any[]) => {
-    if (members.length === 0) {
-      return (
-        <div className="text-center py-8 text-zinc-500 text-sm font-semibold">
-          Aucun membre à ce niveau
-        </div>
-      );
-    }
-    return (
-      <div className="space-y-3">
-        {members.map(member => {
-          const firstInvestment = member.investments?.[0]?.plan_amount;
-          const investedAmount = firstInvestment ? Number(firstInvestment) : 0;
-          
-          return (
-            <div key={member.id} className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-xl border border-zinc-800">
-              <div>
-                <p className="font-bold text-zinc-50 text-sm tracking-tight">{member.phone}</p>
-                <p className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider mt-0.5">
-                  {format(new Date(member.created_at), 'dd MMM yyyy', { locale: fr })}
-                </p>
-              </div>
-              <div className="text-right">
-                {investedAmount > 0 ? (
-                  <>
-                    <p className="text-sm font-bold text-red-600">{formatCurrency(investedAmount)}</p>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Dépôt</p>
-                  </>
-                ) : (
-                  <p className="text-[10px] font-semibold text-zinc-500 bg-zinc-800 px-2 py-1 rounded inline-block border border-zinc-800">
-                    Aucun
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
+    const getTotalMembers = () => level1.length + level2.length + level3.length;
+  
+  const getActiveLevelData = () => {
+    if (activeTab === 1) return level1;
+    if (activeTab === 2) return level2;
+    return level3;
   };
 
   return (
-    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans">
-      <header className="flex justify-between items-center gap-4 pb-4 border-b border-zinc-800/60 mb-6">
+    <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+      <header className="mb-6 flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
         <div>
-          <h1 className="text-3xl font-black text-zinc-50 tracking-tight">Mon Équipe</h1>
-          <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mt-1">Gagnez jusqu'à 20% (15% - 3% - 2%)</p>
+          <h1 className="text-2xl font-black tracking-tight">Mon Équipe</h1>
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Parrainage</p>
         </div>
-        <img src="https://i.imgur.com/qRUc5aF.png" alt="Fuel•Max" className="w-20 h-20 rounded-2xl object-cover shadow-[0_4px_12px_rgba(0,0,0,0.1)] border-2 border-white flex-shrink-0" referrerPolicy="no-referrer" />
       </header>
-
-      <div className="animate-fade-in relative z-10 pb-6">
-        <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl p-4 shadow-xl mb-6 relative overflow-hidden">
-          <div className="absolute -top-16 -right-16 w-32 h-32 bg-red-500/10 rounded-full blur-[30px] pointer-events-none"></div>
-          <div className="flex justify-between items-center mb-4 relative z-10">
-            <div>
-              <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-0.5">Gains d'équipe</p>
-              <h2 className="text-2xl font-black text-zinc-50 tracking-tight">{formatCurrency(teamStats.totalBonus)}</h2>
-            </div>
-            <div className="flex bg-red-500/10 text-red-500 px-3 py-1.5 rounded-xl text-sm font-bold items-center gap-1.5 border border-red-500/20 shadow-inner">
-              <Users className="w-4 h-4" />
-              {totalMembers}
-            </div>
-          </div>
-
-          <div className="flex gap-2 relative z-10">
-            <input 
-              readOnly
-              type="text"
-              value={referralLink}
-              onClick={(e) => (e.target as HTMLInputElement).select()}
-              className="flex-1 w-0 bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-3 py-2 text-zinc-300 text-xs font-mono truncate focus:outline-none focus:border-red-500/50 transition-colors shadow-inner"
-            />
-            <button 
-              onClick={copyCode}
-              className="px-4 py-2 bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-xl flex items-center justify-center text-white transition-colors cursor-pointer shrink-0 shadow-[0_0_15px_rgba(239,68,68,0.2)]"
-            >
-              {copyStatus === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            </button>
-          </div>
-
-          {copyStatus === 'error' && (
-            <div className="mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-left">
-              <p className="text-amber-500 text-[10px] font-medium flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> 
-                <span>Cliquez sur le lien, maintenez appuyé, puis "Copier".</span>
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="flex bg-zinc-900/60 backdrop-blur-xl border border-zinc-800 rounded-2xl p-1.5 gap-1.5 mb-4 shadow-inner">
-          {[1, 2, 3].map((level) => (
-            <button
-              key={level}
-              onClick={() => setExpandedLevel(level)}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all duration-300 flex flex-col items-center justify-center gap-0.5 ${
-                expandedLevel === level 
-                  ? 'bg-zinc-800 text-zinc-50 shadow-md border border-zinc-700/50' 
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
-              }`}
-            >
-              <div className="flex items-center gap-1">
-                Niv. {level}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${expandedLevel === level ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-zinc-800/50 border border-zinc-700/50 text-zinc-500'}`}>
-                  {level === 1 ? teamStats.level1.length : 
-                   level === 2 ? teamStats.level2.length : 
-                   teamStats.level3.length}
-                </span>
+      
+      <div className="bg-brand-500 rounded-3xl p-6 text-white shadow-xl shadow-brand-500/20 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+        <div className="relative z-10 flex flex-col gap-4">
+          <div>
+            <p className="text-brand-100 text-[10px] font-bold uppercase tracking-widest mb-1.5">Lien d'invitation</p>
+            <div className="flex items-center gap-2">
+              <div className="bg-brand-600/50 border border-brand-400/30 px-3.5 py-2.5 rounded-xl flex-1 text-sm font-medium truncate shadow-inner flex items-center gap-2">
+                <LinkIcon className="w-4 h-4 text-brand-200 shrink-0" />
+                <span className="truncate text-brand-50">{referralLink}</span>
               </div>
-              <span className={`text-[10px] ${expandedLevel === level ? 'text-red-400' : 'text-zinc-600'}`}>
-                {level === 1 ? '15%' : level === 2 ? '3%' : '2%'}
-              </span>
-            </button>
-          ))}
-        </div>
+              <button
+                onClick={copyLink}
+                className="w-10 h-10 bg-white text-brand-600 flex items-center justify-center rounded-xl shadow-sm hover:bg-brand-50 transition-colors shrink-0 active:scale-95"
+              >
+                {copied ? <CheckCircle2 className="w-5 h-5 text-brand-500" /> : <Copy className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
 
-        <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-3xl overflow-hidden min-h-[200px] shadow-xl">
-          <div className="p-4">
-            {renderMemberList(
-              expandedLevel === 1 ? teamStats.level1 :
-              expandedLevel === 2 ? teamStats.level2 :
-              teamStats.level3
-            )}
+          <div className="pt-4 border-t border-brand-400/30 flex justify-around items-center">
+            <div className="text-center">
+              <p className="text-brand-200 text-[9px] font-bold uppercase tracking-wider mb-1">Total Membres</p>
+              <p className="font-black text-lg">{getTotalMembers()}</p>
+            </div>
+            <div className="w-[1px] h-10 bg-brand-400/30"></div>
+            <div className="text-center">
+              <p className="text-brand-200 text-[9px] font-bold uppercase tracking-wider mb-1">Commissions</p>
+              <p className="font-black text-lg">{formatCurrency(totalCommissions)}</p>
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="flex bg-slate-200/50 p-1 rounded-xl mb-6">
+        {[1, 2, 3].map((level) => (
+          <button
+            key={level}
+            onClick={() => setActiveTab(level)}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+              activeTab === level
+                  ? 'bg-white text-brand-600 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Niveau {level}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-3">
+        {getActiveLevelData().length === 0 ? (
+          <div className="text-center py-10 bg-white border border-slate-200 rounded-2xl">
+            <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-slate-500 text-sm font-medium">Aucun membre au niveau {activeTab}.</p>
+          </div>
+        ) : (
+          getActiveLevelData().map((member, idx) => (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              key={member.id} 
+              className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4"
+            >
+              <div className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 shrink-0">
+                <User className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-slate-900 truncate text-sm">{member.country && COUNTRIES[member.country as CountryName] ? COUNTRIES[member.country as CountryName].code : ""} {member.phone || (member.first_name + " " + member.last_name)}</p>
+                <p className="text-slate-400 text-[10px] font-bold tracking-wider mt-1">REJOINT LE {new Date(member.created_at).toLocaleDateString('fr-FR')}</p>
+              </div>
+            </motion.div>
+          ))
+        )}
       </div>
     </div>
   );

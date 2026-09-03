@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
-import { useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, AlertCircle, Building2, CreditCard, Lock, ArrowRight, ArrowDownRight, Wallet } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, Info, Wallet, Lock, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
+import { motion } from 'framer-motion';
+
+const availableMethods = [
+  { id: 'orange', name: 'Orange Money' },
+  { id: 'mtn', name: 'MTN Mobile Money' },
+  { id: 'moov', name: 'Moov Money' },
+  { id: 'wave', name: 'Wave' },
+  { id: 'bank', name: 'Virement Bancaire' },
+  { id: 'crypto', name: 'Cryptomonnaie' },
+];
 
 export function Withdraw() {
   const { user, refreshUser } = useAuthStore();
@@ -11,262 +21,343 @@ export function Withdraw() {
   const [amount, setAmount] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
-
-  const [bankMethod, setBankMethod] = useState('');
-  const [rawAccountName, setRawAccountName] = useState('');
-  const [isBankLoaded, setIsBankLoaded] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    refreshUser();
-  },[]);
-
-  useEffect(() => {
-    const loadBank = async () => {
-      if (!user?.id) return;
-      try {
-        let method = (user as any)?.bank_method;
-        let accountName = (user as any)?.bank_account_name;
-        
-        if (!method || !accountName) {
-          const { data: settingData } = await supabase.from('settings').select('value').eq('key', 'bank_' + user.id).maybeSingle();
-          if (settingData?.value) {
-            try {
-              const parsed = JSON.parse(settingData.value);
-              method = parsed.bank_method;
-              accountName = parsed.bank_account_name;
-            } catch(e) {}
-          }
-        }
-        setBankMethod(method || '');
-        setRawAccountName(accountName || '');
-      } catch (err) {
-        console.error("Error loading bank settings:", err);
-      } finally {
-        setIsBankLoaded(true);
-      }
-    };
-    loadBank();
-  }, [user]);
-
-  const bankAccountName = rawAccountName.split('|||')[0] || '';
-  const bankAccountNumber = rawAccountName.split('|||')[1] || (user as any)?.phone;
+    if (error) {
+      const timer = setTimeout(() => setError(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+  const [success, setSuccess] = useState(false);
   
-  const hasBankConfigured = !!bankMethod && rawAccountName.includes('|||');
+  const [withdrawalInfo, setWithdrawalInfo] = useState<{paymentMethod: string, accountNumber: string, accountHolder: string} | null>(null);
+  const [infoLoaded, setInfoLoaded] = useState(false);
+  const [maxWithdrawable, setMaxWithdrawable] = useState<number | null>(null);
+  const [hasActivePack, setHasActivePack] = useState<boolean | null>(null);
 
-  const numAmount = Number(amount);
-  const feeAmount = numAmount > 0 ? numAmount * 0.15 : 0;
-  const netAmount = numAmount > 0 ? numAmount - feeAmount : 0;
+  useEffect(() => {
+    if (user?.id) {
+      const loadInfo = async () => {
+        let hasLocalData = false;
+        const savedInfo = localStorage.getItem('withdrawal_info_v4_' + user.id);
+        if (savedInfo) {
+          try {
+            const parsed = JSON.parse(savedInfo);
+            if (parsed.accountNumber) {
+              setWithdrawalInfo({
+                ...parsed,
+                paymentMethod: parsed.paymentMethod || parsed.bank_method || parsed.bank_name || 'orange'
+              });
+              hasLocalData = true;
+            }
+          } catch (e) {}
+        }
+        
+        if (!hasLocalData) {
+          const { data } = await supabase.from('settings').select('value').eq('key', `bank_${user.id}`).maybeSingle();
+            if (data && data.value) {
+              try {
+                const parsed = JSON.parse(data.value);
+                if (parsed.bank_account_number) {
+                  setWithdrawalInfo({
+                    paymentMethod: parsed.bank_method || parsed.paymentMethod || parsed.bank_name || 'orange',
+                    accountNumber: parsed.bank_account_number,
+                    accountHolder: parsed.bank_account_name || user.first_name || ''
+                  });
+                }
+              } catch(e) {}
+            }
+        }
+
+        const { data: txData } = await supabase
+          .from('transactions')
+          .select('amount, status, type')
+          .eq('user_id', user.id);
+
+        let totalEarnings = 0;
+        let pendingWithdrawals = 0;
+
+        if (txData) {
+           txData.forEach(tx => {
+             if (tx.status === 'approved' && (tx.type === 'daily_revenue' || tx.type === 'referral_bonus' || tx.type === 'admin_bonus')) {
+               totalEarnings += Number(tx.amount);
+             }
+             if (tx.type === 'withdrawal' && tx.status === 'pending') {
+               pendingWithdrawals += Number(tx.amount);
+             }
+           });
+        }
+        const available = Math.max(0, totalEarnings - pendingWithdrawals);
+        
+        setMaxWithdrawable(Math.min(available, Number(user.balance)));
+
+        // Check for active pack
+        const { data: invData } = await supabase.from('investments').select('id').eq('user_id', user.id);
+        setHasActivePack(invData && invData.length > 0);
+
+        setInfoLoaded(true);
+      };
+      loadInfo();
+    }
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (loading) return;
+    if (!user || !withdrawalInfo) return;
+
+    if (!amount || Number(amount) < 1000) {
+      setError('Le montant minimum de retrait est de 1000 FCFA.');
+      return;
+    }
     
-    if (numAmount < 2000) {
-      return setMessage({ type: 'error', text: 'Le minimum de retrait est de 2 000 FCFA.' });
+    if (hasActivePack === false) {
+       setError('Vous devez avoir acheté au moins un pack actif avant de pouvoir retirer vos gains.');
+       return;
     }
 
-    if (Number(user.balance) < numAmount) {
-      return setMessage({ type: 'error', text: 'Solde insuffisant.' });
+    // removed maxWithdrawable check
+
+    if (Number(amount) > Number(user.balance)) {
+      setError('Solde insuffisant.');
+      return;
+    }
+
+    if (!password) {
+      setError('Veuillez entrer votre mot de passe pour confirmer.');
+      return;
     }
 
     setLoading(true);
-    setMessage(null);
+    setError('');
 
     try {
-      // Verify password only if bank is not configured yet
-      if (!hasBankConfigured) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', user.id)
-          .eq('password_hash', password)
-          .single();
+      const { data: passData, error: passError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .eq('password_hash', password.trim())
+        .single();
 
-        if (!userData) {
-          setLoading(false);
-          return setMessage({ type: 'error', text: 'Mot de passe incorrect.' });
-        }
-      }
+      if (passError || !passData) throw new Error('Mot de passe incorrect.');
 
-      // Deduct balance immediately (pending state)
-      const newBalance = user.balance - numAmount;
-      await supabase.from('users').update({ balance: newBalance }).eq('id', user.id);
-
-      // Create withdrawal request
-      const { error } = await supabase.from('transactions').insert([{
+      const { error: txError } = await supabase.from('transactions').insert([{
         user_id: user.id,
         type: 'withdrawal',
-        amount: numAmount,
-        reference: `${bankMethod} - ${bankAccountNumber} (${bankAccountName})`,
-        status: 'pending'
+        amount: Number(amount),
+        status: 'pending',
+        reference: `Retrait vers ${withdrawalInfo.paymentMethod} (${withdrawalInfo.accountNumber})`
       }]);
 
-      if (error) throw error;
+      if (txError) throw txError;
+
+      const newBalance = Number(user.balance) - Number(amount);
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ balance: newBalance })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
       
       await refreshUser();
-      setMessage({ type: 'success', text: 'Demande de retrait envoyée. Traitement sous 24h max.' });
-      setAmount('');
-      setPassword('');
-    } catch (err) {
-      setMessage({ type: 'error', text: 'Une erreur est survenue.' });
+      setSuccess(true);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Une erreur est survenue lors de la demande de retrait.');
     } finally {
       setLoading(false);
     }
   };
 
+  if (!infoLoaded) {
+    return <div className="min-h-screen bg-slate-50 flex items-center justify-center"></div>;
+  }
+
+  if (!withdrawalInfo) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+        <header className="mb-6 flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">Retrait</h1>
+            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Configuration requise</p>
+          </div>
+        </header>
+
+        <div className="max-w-md mx-auto bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-200">
+          <div className="w-16 h-16 bg-slate-50 border border-slate-200 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Wallet className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-black text-slate-900 mb-2">Compte de retrait manquant</h2>
+          <p className="text-slate-500 mb-8 text-sm">Veuillez d'abord configurer vos informations de retrait avant de pouvoir retirer vos gains.</p>
+          <button onClick={() => navigate('/bank')} className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-brand-500/20 active:scale-[0.98] transition-all">
+            Configurer mon compte
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasActivePack === false) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+        <header className="mb-6 flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">Retrait bloqué</h1>
+          </div>
+        </header>
+
+        <div className="max-w-md mx-auto bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-200">
+          <div className="w-16 h-16 bg-red-50 border border-red-200 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-black text-slate-900 mb-2">Achat de pack requis</h2>
+          <p className="text-slate-500 mb-8 text-sm">Vous devez avoir acheté au moins un pack actif avant de pouvoir retirer vos gains.</p>
+          <button onClick={() => navigate('/products')} className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-brand-500/20 active:scale-[0.98] transition-all">
+            Voir les packs
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans animate-fade-in text-zinc-50">
-      <header className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors shadow-sm">
+    <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+      <header className="mb-6 flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-black tracking-tight">Retrait</h1>
-          <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mt-0.5">Retirer des fonds</p>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">Retrait</h1>
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Retirer vos gains</p>
         </div>
       </header>
 
-      {/* Balance Card */}
-      <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-3xl p-6 shadow-lg border border-red-500/30 mb-8 relative overflow-hidden">
-         {/* Glows */}
-         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-[30px] -mr-8 -mt-8 pointer-events-none"></div>
-         
-         <div className="flex items-start justify-between relative z-10 mb-4">
-           <div>
-              <p className="text-red-100 text-xs font-bold uppercase tracking-wider mb-1">Solde disponible</p>
-              <h2 className="text-3xl font-black text-white">{formatCurrency(user?.balance || 0)}</h2>
-           </div>
-           <div className="w-12 h-12 bg-black/20 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10">
-             <Wallet className="w-6 h-6 text-red-100" />
-           </div>
-         </div>
-         
-         <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/20 border border-white/10 text-red-50 rounded-full text-xs font-bold shadow-sm backdrop-blur-sm relative z-10">
-           <AlertCircle className="w-3.5 h-3.5" />
-           Frais de retrait : 15%
-         </div>
-      </div>
-
-      {!isBankLoaded ? (
-        <div className="flex justify-center p-8"><div className="w-8 h-8 rounded-full border-4 border-zinc-800 border-t-red-500 animate-spin"></div></div>
-      ) : !hasBankConfigured ? (
-        <div className="bg-zinc-900/50 border border-orange-500/20 rounded-3xl p-8 text-center backdrop-blur-sm">
-          <div className="mx-auto w-16 h-16 bg-orange-500/10 text-orange-500 rounded-full flex items-center justify-center mb-4">
-            <Building2 className="w-8 h-8" />
+      <div className="max-w-md mx-auto space-y-6">
+      
+      {success ? (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-200"
+        >
+          <div className="w-20 h-20 bg-brand-50 border border-brand-100 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+            <CheckCircle2 className="w-10 h-10 text-brand-500 relative z-10" />
           </div>
-          <h3 className="text-lg font-bold mb-2">Moyen de paiement manquant</h3>
-          <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
-            Pour des raisons de sécurité, veuillez configurer et vérifier votre compte de réception avant d'effectuer un retrait.
+          <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Demande envoyée !</h2>
+          <p className="text-slate-500 text-sm mb-8 leading-relaxed">
+            Votre demande de retrait a été enregistrée avec succès. Vous la recevrez sur votre compte sous peu.
           </p>
-          <Link to="/bank" className="inline-flex h-12 w-full max-w-[240px] items-center justify-center gap-2 rounded-xl bg-zinc-50 px-6 font-bold text-zinc-900 transition-colors hover:bg-zinc-200 active:scale-95">
-             <CreditCard className="w-4 h-4" />
-             Configurer ma banque
-          </Link>
-        </div>
+          <button 
+            onClick={() => navigate('/history')}
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-2xl font-bold transition-colors shadow-lg shadow-slate-900/20"
+          >
+            Voir l'historique
+          </button>
+        </motion.div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {message && (
-            <div className={`p-4 rounded-2xl text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 ${
-              message.type === 'success' 
-                ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' 
-                : 'bg-red-500/10 border border-red-500/20 text-red-400'
-            }`}>
-              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-              <p className="leading-relaxed">{message.text}</p>
+        <div className="space-y-6">
+        
+        {/* Balance Card */}
+        <div className="bg-brand-500 rounded-3xl p-6 text-white shadow-xl shadow-brand-500/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-[30px] -mr-10 -mt-10 pointer-events-none"></div>
+          
+          <div className="flex items-start justify-between relative z-10">
+            <div>
+               <p className="text-brand-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Retirable</p>
+               <h2 className="text-3xl font-black tracking-tight">{formatCurrency(Number(user?.balance || 0))}</h2>
             </div>
-          )}
-
-          <div className="space-y-4">
-            {/* Bank Info */}
-            <div className="bg-zinc-900/80 backdrop-blur-xl border-2 border-zinc-800 p-4 rounded-2xl flex items-center gap-4">
-              <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center shrink-0 border border-zinc-700/50">
-                <Building2 className="w-6 h-6 text-zinc-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Compte de réception</p>
-                <p className="font-bold text-sm truncate">{bankMethod} • {bankAccountNumber}</p>
-                <p className="text-zinc-400 text-xs truncate">{bankAccountName}</p>
-              </div>
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner shrink-0">
+               <Wallet className="w-6 h-6 text-white" />
             </div>
+          </div>
+        </div>
 
-            {/* Amount Input */}
-            <div className="bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300">
-              <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 mb-2 px-1">
-                <ArrowDownRight className="w-3.5 h-3.5" />
-                Montant à retirer
-              </label>
-              <div className="flex items-center px-1">
-                <span className="text-zinc-500 font-bold text-2xl mr-3">FCFA</span>
+        {error && (
+         <motion.div 
+           initial={{ opacity: 0, scale: 0.95 }}
+           animate={{ opacity: 1, scale: 1 }}
+           className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm font-medium flex items-start gap-3 shadow-sm"
+         >
+           <Info className="w-5 h-5 shrink-0 mt-0.5" />
+           <p>{error}</p>
+         </motion.div>
+        )}
+
+        <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-6">
+          
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between mb-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Compte de réception</p>
+              <p className="font-black text-slate-900 text-sm">{availableMethods.find(m => m.id === withdrawalInfo.paymentMethod)?.name.toUpperCase() || withdrawalInfo.paymentMethod.toUpperCase()}</p>
+              <p className="text-xs text-slate-500 font-mono mt-0.5">{withdrawalInfo.accountNumber}</p>
+            </div>
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-slate-400 border border-slate-200 shrink-0">
+              <Wallet className="w-5 h-5" />
+            </div>
+          </div>
+           
+           <div className="space-y-2">
+             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Montant à retirer</label>
+             <div className="bg-slate-50 border border-slate-200 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
+                <span className="text-slate-400 font-black text-2xl mr-3">FCFA</span>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-zinc-50 placeholder-zinc-700 outline-none"
+                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-slate-900 placeholder-slate-300 outline-none"
                   placeholder="0"
                   required
-                  min="2000"
                 />
-              </div>
-            </div>
+             </div>
+           </div>
 
-            {/* Fee Calculation Breakdown */}
-            {numAmount > 0 && (
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 space-y-3 animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-400">Montant brut</span>
-                  <span className="font-semibold text-zinc-300">{formatCurrency(numAmount)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-500">Frais (15%)</span>
-                  <span className="font-bold text-red-400">-{formatCurrency(feeAmount)}</span>
-                </div>
-                <div className="h-px w-full bg-zinc-800 my-2" />
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-zinc-50">Vous recevez</span>
-                  <span className="text-xl font-black text-emerald-400">{formatCurrency(netAmount)}</span>
-                </div>
-              </div>
-            )}
-            
-            {/* Password Input (only if no bank configured) */}
-            {!hasBankConfigured && (
-              <div className="bg-zinc-900/80 backdrop-blur-xl border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300">
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2 mb-2 px-1">
-                  <Lock className="w-3.5 h-3.5" />
-                  Code secret
-                </label>
-                <div className="px-1">
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-2xl font-black text-zinc-50 placeholder-zinc-700 outline-none tracking-widest"
-                    placeholder="••••••••"
-                    required={!hasBankConfigured}
-                  />
-                </div>
-              </div>
-            )}
+           {amount && Number(amount) >= 1000 && (
+             <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+                 <span className="text-slate-500 font-medium">Frais (15%): <span className="font-bold text-red-500">-{formatCurrency(Number(amount) * 0.15)}</span></span>
+                 <span className="text-slate-500 font-medium">Vous recevrez: <span className="font-bold text-brand-600">{formatCurrency(Number(amount) * 0.85)}</span></span>
+             </div>
+           )}
+           
+           <div className="space-y-2">
+             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Mot de passe</label>
+             <div className="bg-slate-50 border border-slate-200 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
+                <Lock className="w-5 h-5 text-slate-400 mr-3" />
+                <input 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-bold text-slate-900 placeholder-slate-300 outline-none tracking-widest"
+                  required
+                />
+             </div>
+           </div>
+           
+           <div className="pt-2">
+             <button
+               type="submit"
+               disabled={loading}
+               className="w-full py-4 rounded-2xl font-bold transition-all duration-300 disabled:opacity-50 text-white bg-brand-600 hover:bg-brand-500 shadow-lg shadow-brand-500/20 active:scale-[0.98] flex justify-center items-center gap-2"
+             >
+               {loading ? 'Traitement...' : 'Confirmer le retrait'}
+             </button>
+           </div>
+           
+           <div className="flex items-center justify-center gap-1.5 text-slate-400">
+             <ShieldCheck className="w-4 h-4" />
+             <span className="text-[10px] font-bold uppercase tracking-wider">Transaction Sécurisée</span>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading || !amount || (!hasBankConfigured && !password)}
-            className="w-full bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-4 rounded-2xl transition-all duration-300 disabled:opacity-50 shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-[0.98] border border-red-500/50 flex items-center justify-center gap-2 mt-4"
-          >
-            {loading ? (
-              <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <>
-                <span>Confirmer le retrait</span>
-                <ArrowRight className="w-5 h-5 ml-1" />
-              </>
-            )}
-          </button>
-        </form>
+       </form>
+      </div>
       )}
+      </div>
     </div>
   );
 }
-

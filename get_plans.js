@@ -1,21 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
+const SUPABASE_URL = 'https://vbwmgiauoxuxouwowyml.supabase.co';
+const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZid21naWF1b3h1eG91d293eW1sIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDMzNjgyMSwiZXhwIjoyMDg5OTEyODIxfQ.y4hMA8i26UYz7M97oX4baD2XhKIXn3uxCfdKIPwGJwA';
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-const supabaseUrl = 'https://ooekuyetmfgmpmwxtkpf.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vZWt1eWV0bWZnbXBtd3h0a3BmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjA4MTA5OSwiZXhwIjoyMDkxNjU3MDk5fQ.yQAGVNueCiTZ57_wY8ArZs5H5OAo465AbtpUeGdrLhI';
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function run() {
-  const { data, error } = await supabase.from('settings').select('*').eq('key', 'investment_plans');
-  if(data && data.length > 0) {
-    const plans = JSON.parse(data[0].value);
-    const summary = plans.map(p => ({
-        amount: p.amount,
-        category: p.category,
-        total: p.total,
-        daily: p.daily,
-        hasImage: !!p.image
-    }));
-    console.log(JSON.stringify(summary, null, 2));
+async function main() {
+  const { data, error } = await supabase.from('settings').select('*').eq('key', 'investment_plans').single();
+  if (data) {
+    console.log(data.value);
+  } else {
+    console.log(error);
   }
 }
-run();
+main();

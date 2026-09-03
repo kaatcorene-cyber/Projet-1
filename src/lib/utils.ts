@@ -13,36 +13,24 @@ export function formatCurrency(amount: number) {
   }).format(amount).replace('XOF', 'FCFA');
 }
 
-export function getDeepLink(url: string): string {
-  if (!url) return url;
-  try {
-    let checkUrl = url;
-    if (!checkUrl.startsWith('http') && !checkUrl.startsWith('tg://') && !checkUrl.startsWith('whatsapp://')) {
-      checkUrl = 'https://' + checkUrl;
-    }
-    const parsed = new URL(checkUrl);
-    
-    if (parsed.hostname === 't.me' || parsed.hostname === 'www.t.me') {
-      const path = parsed.pathname.substring(1);
-      if (path.startsWith('joinchat/')) {
-        return `tg://join?invite=${path.substring(9)}`;
-      } else if (path.startsWith('+')) {
-         return `tg://join?invite=${path.substring(1)}`;
-      } else {
-        return `tg://resolve?domain=${path}`;
-      }
-    }
-    return url;
-  } catch (e) {
-    if (url.includes('t.me/')) {
-      const parts = url.split('t.me/');
-      if (parts.length > 1) {
-        const path = parts[1];
-        if (path.startsWith('joinchat/')) return `tg://join?invite=${path.substring(9)}`;
-        if (path.startsWith('+')) return `tg://join?invite=${path.substring(1)}`;
-        return `tg://resolve?domain=${path}`;
-      }
-    }
-    return url;
+export function generateUserId(uuid: string | undefined) {
+  if (!uuid) return '000000';
+  let hash = 0;
+  for (let i = 0; i < uuid.length; i++) {
+    hash = uuid.charCodeAt(i) + ((hash << 5) - hash);
   }
+  return Math.abs(hash).toString().substring(0, 6).padStart(6, '0');
 }
+
+export const getPlanName = (amount: number) => {
+    const amt = Number(amount);
+    if (amt === 3000) return 'Héliciculture';
+    if (amt === 7000) return 'Pisciculture';
+    if (amt === 15000) return 'Aviculture';
+    if (amt === 31000) return 'Cuniculture';
+    if (amt === 63000) return 'Élevage porcin';
+    if (amt === 125000) return 'Élevage ovin';
+    if (amt === 249000) return 'Élevage caprin';
+    if (amt === 497000) return 'Élevage bovin';
+    return 'Pack Élevage';
+};

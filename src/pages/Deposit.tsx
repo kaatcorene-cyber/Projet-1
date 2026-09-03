@@ -1,84 +1,92 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Info, Wallet, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, Info, Wallet, Zap, ShieldCheck } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
+import { motion } from 'framer-motion';
+import { useAppStore } from '../store/useAppStore';
 
 export function Deposit() {
   const { user } = useAuthStore();
+  const { config } = useAppStore();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (!user) return;
     
-    if (Number(amount) < 5000) {
-      setError('Le montant minimum de dépôt est de 5000 FCFA.');
+    if (Number(amount) < 2000) {
+      setError('Le montant minimum de dépôt est de 2000 FCFA.');
+      return;
+    }
+
+    if (Number(amount) > 500000) {
+      setError('Le montant maximum de dépôt est de 500 000 FCFA.');
       return;
     }
 
     setLoading(true);
     setError('');
-
+    
     try {
       const { error: txError } = await supabase.from('transactions').insert([{
         user_id: user.id,
         type: 'deposit',
         amount: Number(amount),
-        reference: `RECHARGE - ${user.phone}`,
-        status: 'pending'
+        reference: `FUSION - ${user.phone}`,
+        status: 'pending' // En attente de paiement
       }]);
-
       if (txError) throw txError;
       
-      const { data: settingsData } = await supabase.from('settings').select('value').eq('key', 'payment_link').single();
-      const paymentLink = settingsData?.value || "https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96";
-
+      const rawBaseUrl = config?.payment_link || 'https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96';
       
-      let linkId = '';
-      try {
-        const urlObj = new URL(paymentLink);
-        linkId = urlObj.pathname.split('/').pop() || '';
-      } catch (e) {
-        linkId = paymentLink.split('/').pop() || '';
-      }
-
-      if (!linkId) {
-        throw new Error('ID de lien invalide');
-      }
-
-      const payload = {
-        id: linkId,
-        montant: amount,
-        name: `FuelMax Payement ${user.phone || ''}`.trim(),
-        merchantName: "FuelMax Payement",
-        shopName: "FuelMax Payement",
-        title: "FuelMax Payement",
-        description: "Rechargement de compte FuelMax",
-        customerEmail: "fuelmaxacte2@gmail.com",
-        phone: user.phone || '',
-        countryCode: "+225"
-      };
-
-      const res = await fetch('https://pay.moneyfusion.net/api/v2/links/init-payment', {
+      const shopIdMatch = rawBaseUrl.match(/([a-f0-9]{24})/i);
+      const shopId = shopIdMatch ? shopIdMatch[1] : '6a7da1aa655b3c8aa7379d96';
+      const fullName = `ElevFinAi ${user.first_name || 'User'}`;
+      const email = 'elevfinaipayement@gmail.com';
+      const phone = user.phone || '00000000';
+      const formattedPhone = phone.startsWith('+') ? phone : `+225${phone.replace(/^0+/, '')}`;
+      
+      const initResponse = await fetch('https://pay.moneyfusion.net/api/v2/links/init-payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: shopId,
+          montant: amount,
+          name: fullName,
+          phone: formattedPhone,
+          customerEmail: email,
+          countryCode: "+225"
+        })
       });
-      
-      const data = await res.json();
-      if (data.statut && data.url) {
-        let finalUrl = data.url;
-        finalUrl = finalUrl.replace(/assande(?:%20|\s|\+)*tanoa(?:%20|\s|\+)*grace(?:%20|\s|\+)*deborat/ig, encodeURIComponent('FuelMax Payement'));
-        window.location.href = finalUrl;
-      } else {
-        throw new Error("Erreur MoneyFusion: " + (data.message || JSON.stringify(data)));
+      if (!initResponse.ok) {
+        throw new Error("Erreur réseau lors de l'initialisation du paiement.");
       }
-
+      const initData = await initResponse.json();
+      
+      if (!initData.statut || !initData.url) {
+        throw new Error("Erreur avec la réponse de Fusion Money.");
+      }
+      let finalUrl = initData.url;
+      if (finalUrl) {
+        finalUrl = finalUrl.replace(/assande(\s|%20)tanoa(\s|%20)grace(\s|%20)Deborat/ig, 'ElevFinAi%20Pay');
+      }
+      
+      window.location.href = finalUrl;
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
@@ -88,72 +96,77 @@ export function Deposit() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent p-5 pt-16 pb-24 font-sans text-zinc-50">
-      <header className="flex items-center gap-4 mb-8">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-zinc-900/80 backdrop-blur-xl border border-zinc-800 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors shadow-sm">
+    <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+      <header className="mb-6 flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-black tracking-tight">Recharger</h1>
-          <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider mt-0.5">Ajouter des fonds</p>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">Recharger</h1>
+          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Ajouter des fonds</p>
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in relative z-10">
+      <div className="max-w-md mx-auto space-y-6">
         
-        <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-3xl p-6 shadow-lg border border-red-500/30 relative overflow-hidden">
-             {/* Glows */}
-             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-[30px] -mr-8 -mt-8 pointer-events-none"></div>
-             
-             <div className="flex items-start justify-between relative z-10">
-               <div>
-                  <p className="text-red-100 text-xs font-bold uppercase tracking-wider mb-1">Solde Actuel</p>
-                  <p className="text-3xl font-black text-white">{formatCurrency(user?.balance || 0)}</p>
-               </div>
-               <div className="w-12 h-12 bg-black/20 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10">
-                 <Wallet className="w-6 h-6 text-red-100" />
-               </div>
+        {/* Balance Card */}
+        <div className="bg-brand-500 rounded-3xl p-6 text-white shadow-xl shadow-brand-500/20 relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-[30px] -mr-10 -mt-10 pointer-events-none"></div>
+           
+           <div className="flex items-start justify-between relative z-10">
+             <div>
+                <p className="text-brand-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Actuel</p>
+                <p className="text-3xl font-black">{formatCurrency(user?.balance || 0)}</p>
+             </div>
+             <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner shrink-0">
+               <Wallet className="w-6 h-6 text-white" />
+             </div>
+           </div>
+        </div>
+
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm font-medium flex items-start gap-3 shadow-sm"
+          >
+            <Info className="w-5 h-5 shrink-0 mt-0.5" />
+            <p>{error}</p>
+          </motion.div>
+        )}
+
+        <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-6">
+          <div className="space-y-2">
+             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Montant à recharger</label>
+             <div className="bg-slate-50 border border-slate-200 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
+                <span className="text-slate-400 font-black text-2xl mr-3">FCFA</span>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-slate-900 placeholder-slate-300 outline-none"
+                  placeholder="0"
+                  required
+                  min="2000"
+                  max="500000"
+                />
              </div>
           </div>
 
-          {error && (
-            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-sm font-medium flex items-start gap-3">
-              <Info className="w-5 h-5 shrink-0 mt-0.5" />
-              <p>{error}</p>
-            </div>
-          )}
-
-          <div className="space-y-3">
-             <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 px-1">Montant à recharger</label>
-             <div className="bg-zinc-900/80 backdrop-blur-xl border-2 border-zinc-800 focus-within:border-red-500 focus-within:shadow-[0_0_15px_rgba(239,68,68,0.15)] rounded-2xl p-4 transition-all duration-300 flex flex-col">
-                <div className="flex items-center">
-                  <span className="text-zinc-500 font-bold text-2xl mr-3">FCFA</span>
-                  <input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-4xl font-black text-zinc-50 placeholder-zinc-700 outline-none"
-                    placeholder="0"
-                    required
-                    min="5000"
-                  />
-                </div>
-             </div>
-          </div>
-
-           <div className="flex flex-wrap gap-3">
-             {[5000, 40000, 90000, 200000, 450000, 700000].map((preset) => (
+          <div className="grid grid-cols-3 gap-2">
+             {[3000, 7000, 15000, 31000, 63000, 249000].map((preset) => (
                <button
                  key={preset}
                  type="button"
                  onClick={() => setAmount(preset.toString())}
-                 className={`flex-1 min-w-[30%] py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-1 border ${
-                   amount === preset.toString() 
-                     ? 'bg-red-500/20 text-red-500 border-red-500/50 shadow-sm' 
-                     : 'bg-zinc-900/80 backdrop-blur-xl text-zinc-400 border border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300'
+                 className={`py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-1 border ${
+                   amount === preset.toString()
+                      ? 'bg-brand-50 text-brand-600 border-brand-200 shadow-sm ring-1 ring-brand-500/50'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
                  }`}
                >
-                 {preset.toLocaleString('fr-FR')} F
+                 {preset >= 100000 ? <Zap className="w-3.5 h-3.5" /> : null}
+                 {preset >= 1000 ? `${preset / 1000}k` : preset}
                </button>
              ))}
           </div>
@@ -161,26 +174,19 @@ export function Deposit() {
           <div className="pt-2">
             <button
               type="submit"
-              disabled={loading || !amount || Number(amount) < 5000}
-              className="w-full bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold py-4 rounded-2xl transition-all duration-300 disabled:opacity-50 shadow-[0_0_20px_rgba(239,68,68,0.3)] active:scale-[0.98] border border-red-500/50 flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full py-4 rounded-2xl font-bold transition-all duration-300 disabled:opacity-50 text-white bg-brand-600 hover:bg-brand-500 shadow-lg shadow-brand-500/20 active:scale-[0.98] flex justify-center items-center gap-2"
             >
-              {loading ? (
-                'Redirection en cours...'
-              ) : (
-                <>
-                  Payer {amount ? formatCurrency(Number(amount)) : ''}
-                  <ArrowRight className="w-5 h-5 ml-1" />
-                </>
-              )}
+              {loading ? 'Redirection...' : 'Confirmer le dépôt'}
             </button>
           </div>
           
-        <div className="flex items-center justify-center gap-2 text-zinc-500">
-          <ShieldCheck className="w-4 h-4" />
-          <p className="text-[10px] font-bold uppercase tracking-wider">Paiement 100% sécurisé</p>
-        </div>
-      </form>
+          <div className="flex items-center justify-center gap-1.5 text-slate-400">
+             <ShieldCheck className="w-4 h-4" />
+             <span className="text-[10px] font-bold uppercase tracking-wider">Paiement 100% Sécurisé</span>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
-
