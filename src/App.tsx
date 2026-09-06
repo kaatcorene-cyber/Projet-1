@@ -25,7 +25,48 @@ import { About } from './pages/About';
 import { AnimatedBackground } from './components/AnimatedBackground';
 import { Toaster } from 'react-hot-toast';
 
+
+
+import { supabase } from './lib/supabase';
+import { useAppStore } from './store/useAppStore';
+import { useEffect } from 'react';
+
+
+
+const newPlans = [
+  { amount: 2000, percent: 20, duration: 80, daily: 400, total: 32000, image: '' },
+  { amount: 5000, percent: 20, duration: 80, daily: 1000, total: 80000, image: '' },
+  { amount: 8000, percent: 20, duration: 80, daily: 1600, total: 128000, image: '' },
+  { amount: 15000, percent: 20, duration: 80, daily: 3000, total: 240000, image: '' },
+  { amount: 35000, percent: 20, duration: 80, daily: 7000, total: 560000, image: '' },
+  { amount: 80000, percent: 20, duration: 80, daily: 16000, total: 1280000, image: '' },
+  { amount: 200000, percent: 20, duration: 80, daily: 40000, total: 3200000, image: '' },
+  { amount: 500000, percent: 20, duration: 80, daily: 100000, total: 8000000, image: '' }
+];
+
 export default function App() {
+  useEffect(() => {
+    const patchPlans = async () => {
+      try {
+        const { data } = await supabase.from('settings').select('value').eq('key', 'investment_plans').single();
+        if (data && data.value) {
+          const currentPlans = JSON.parse(data.value);
+          if (currentPlans.length > 0 && currentPlans[0].amount !== 2000) {
+             await supabase.from('settings').upsert({ key: 'investment_plans', value: JSON.stringify(newPlans) });
+             useAppStore.getState().fetchConfig();
+             console.log("Plans updated to new list");
+          }
+        } else {
+             await supabase.from('settings').upsert({ key: 'investment_plans', value: JSON.stringify(newPlans) });
+             useAppStore.getState().fetchConfig();
+        }
+      } catch (e) {
+        console.error("Patch error", e);
+      }
+    };
+    patchPlans();
+  }, []);
+
   return (
     <ErrorBoundary>
     <BrowserRouter>

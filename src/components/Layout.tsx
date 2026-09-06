@@ -88,7 +88,7 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen text-slate-900 pb-20 font-sans bg-slate-50">
+    <div className="min-h-screen text-white pb-20 font-sans bg-[#03296c]">
       <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden pb-8">
         {/* Top Mini Header for Admin */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">

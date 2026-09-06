@@ -117,23 +117,23 @@ export function Commissions() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+    <div className="min-h-[100dvh] bg-[#03296c] p-4 pt-10 pb-32 font-sans text-white relative">
       <header className="mb-6 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
           <h1 className="text-2xl font-black tracking-tight">Commissions</h1>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Bonus d'invitation</p>
+          <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-wider mt-0.5">Bonus d'invitation</p>
         </div>
       </header>
       
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-center mb-6">
+      <div className="bg-white/10 rounded-2xl p-5 border border-white/20 shadow-sm flex flex-col justify-center mb-6">
         <div className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-500 mb-2">
            <Trophy className="w-5 h-5" />
         </div>
-        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">Membres Actifs (Niveau 1)</p>
-        <p className="text-slate-900 font-black text-2xl">{isLoading ? <Loader2 className="w-6 h-6 animate-spin text-slate-400 mt-1" /> : activeL1Count}</p>
+        <p className="text-blue-200/60 text-[10px] font-bold uppercase tracking-widest mb-1">Membres Actifs (Niveau 1)</p>
+        <p className="text-white font-black text-2xl">{isLoading ? <Loader2 className="w-6 h-6 animate-spin text-slate-400 mt-1" /> : activeL1Count}</p>
         <p className="text-xs text-slate-400 font-medium mt-1">Seuls les membres ayant rechargé leur compte sont comptabilisés.</p>
       </div>
 
@@ -149,7 +149,7 @@ export function Commissions() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
-              className={`bg-white rounded-3xl p-5 border shadow-sm relative ${isClaimed ? 'border-brand-200 bg-brand-50/30' : isUnlocked ? 'border-brand-400' : 'border-slate-200'}`}
+              className={`bg-white/10 rounded-3xl p-5 border shadow-sm relative ${isClaimed ? 'border-brand-200 bg-brand-50/30' : isUnlocked ? 'border-brand-400' : 'border-white/20'}`}
             >
               {isClaimed && (
                 <div className="absolute top-4 right-4">
@@ -157,23 +157,23 @@ export function Commissions() {
                 </div>
               )}
               <div className="flex items-center gap-3 mb-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isClaimed || isUnlocked ? 'bg-brand-100 text-brand-600' : 'bg-slate-100 text-slate-400'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isClaimed || isUnlocked ? 'bg-brand-100 text-brand-600' : 'bg-white/5 text-slate-400'}`}>
                   <Gift className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className={`text-xs font-bold uppercase tracking-wider ${isClaimed || isUnlocked ? 'text-brand-600' : 'text-slate-500'}`}>
+                  <p className={`text-xs font-bold uppercase tracking-wider ${isClaimed || isUnlocked ? 'text-brand-600' : 'text-blue-200/60'}`}>
                     {level.members} Membre{level.members > 1 ? 's' : ''} actif{level.members > 1 ? 's' : ''}
                   </p>
-                  <p className="text-xl font-black text-slate-900">{formatCurrency(level.amount)}</p>
+                  <p className="text-xl font-black text-white">{formatCurrency(level.amount)}</p>
                 </div>
               </div>
 
               <div className="mb-5">
                 <div className="flex justify-between items-end mb-1.5">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Progression</span>
-                  <span className="text-xs font-black text-slate-700">{activeL1Count}/{level.members}</span>
+                  <span className="text-[10px] font-bold text-blue-200/60 uppercase">Progression</span>
+                  <span className="text-xs font-black text-white/90">{activeL1Count}/{level.members}</span>
                 </div>
-                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
                   <motion.div 
                     className={`h-full rounded-full ${isClaimed ? 'bg-brand-400' : isUnlocked ? 'bg-brand-500' : 'bg-slate-300'}`}
                     initial={{ width: 0 }}
@@ -191,7 +191,7 @@ export function Commissions() {
                     ? 'bg-brand-100 text-brand-600 cursor-not-allowed'
                     : isUnlocked
                       ? 'bg-brand-500 text-white hover:bg-brand-400 active:scale-95 shadow-lg shadow-brand-500/20'
-                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      : 'bg-white/5 text-slate-400 cursor-not-allowed'
                 }`}
               >
                 {loadingBonus === level.members ? <Loader2 className="w-5 h-5 animate-spin" /> : isClaimed ? 'Déjà réclamé' : 'Réclamer mon bonus'}

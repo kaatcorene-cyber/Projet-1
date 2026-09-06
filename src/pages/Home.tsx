@@ -2,149 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
-import { usePWAInstall } from '../hooks/usePWAInstall';
-import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle2, AlertCircle, Loader2, Info, ArrowDownToLine, Gift, Key, Zap, Clock , Smartphone, Download, Package, ShieldCheck, TrendingUp, Leaf, X , Share , PlusSquare , Apple } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BANNER_IMAGES = [
-  "https://i.imgur.com/6VqZ5tK.jpeg",
-  "https://i.imgur.com/OmhUdVm.jpeg",
-  "https://i.imgur.com/kytswvT.jpeg",
-  "https://images.unsplash.com/photo-1516253593875-bd7ba052fbc5?auto=format&fit=crop&q=80&w=800" // Farm/Cows
+  "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1600271886742-f049cd451bba?auto=format&fit=crop&w=1000&q=80",
+  "https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=1000&q=80"
 ];
 
 export function Home() {
-  const navigate = useNavigate();
-  const { installPWA, isIOS } = usePWAInstall();
-  const [showIOSOverlay, setShowIOSOverlay] = useState(false);
-  const { user, setUser } = useAuthStore();
+  const { user } = useAuthStore();
   const { config } = useAppStore();
-  const [loading, setLoading] = useState<number | null>(null);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [activePlans, setActivePlans] = useState<any[]>([]);
-    const [showJoinModal, setShowJoinModal] = useState(true);
+  const [showJoinModal, setShowJoinModal] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   const closeJoinModal = () => {
     setShowJoinModal(false);
   };
 
-  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
-  
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-    
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % BANNER_IMAGES.length);
     }, 4000);
-    
-  
-  return () => clearInterval(timer);
+    return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const { data } = await supabase.from('settings').select('value').eq('key', 'investment_plans').single();
-        if (data && data.value) {
-          const plans = JSON.parse(data.value);
-          const active = plans.filter((p: any) => p.isActive !== false);
-          active.sort((a: any, b: any) => Number(String(a.amount).replace(/\D/g, '')) - Number(String(b.amount).replace(/\D/g, '')));
-          setActivePlans(active);
-        } else setActivePlans([]);
-      } catch (err) {
-        console.error("Error fetching plans", err);
-      } finally {
-        setIsLoadingPlans(false);
-      }
-    };
-    fetchPlans();
-  }, []);
-
-  const handleInvest = async (plan: any, index: number) => {
-    if (!user) return;
-    setLoading(index);
-    setMessage(null);
-
-    const planAmount = Number(String(plan.amount).replace(/\D/g, ''));
-    const planDaily = Number(String(plan.daily).replace(/\D/g, ''));
-
-    if (user.balance < planAmount) {
-      setMessage({ type: 'error', text: 'Solde insuffisant pour ce pack.' });
-      setLoading(null);
-      return;
-    }
-
-    try {
-      const newBalance = user.balance - planAmount;
-      const { error: userError } = await supabase.from('users').update({ balance: newBalance }).eq('id', user.id);
-      if (userError) throw userError;
-
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + (plan.duration || 60));
-
-      const { error: investError } = await supabase.from('investments').insert([{
-        user_id: user.id, plan_amount: planAmount, daily_yield: planDaily, end_date: endDate.toISOString(), status: 'active'
-      }]);
-      if (investError) throw investError;
-
-      const { error: txError } = await supabase.from('transactions').insert([{
-        user_id: user.id, type: 'investment', amount: planAmount, status: 'completed', reference: `INV-${Date.now()}`
-      }]);
-      if (txError) throw txError;
-
-      setUser({ ...user, balance: newBalance });
-      setShowSuccess(true);
-      
-      setTimeout(() => {
-        window.location.href = '/revenues';
-      }, 2500);
-
-    } catch (err: any) {
-      setMessage({ type: 'error', text: 'Une erreur est survenue lors de l\'activation.' });
-    } finally {
-      if (!showSuccess) setLoading(null);
-    }
-  };
-
-  
-  const getPlanName = (amount: number) => {
-    const amt = Number(amount);
-    if (amt === 3000) return 'Héliciculture';
-    if (amt === 7000) return 'Pisciculture';
-    if (amt === 15000) return 'Aviculture';
-    if (amt === 31000) return 'Cuniculture';
-    if (amt === 63000) return 'Élevage porcin';
-    if (amt === 125000) return 'Élevage ovin';
-    if (amt === 249000) return 'Élevage caprin';
-    if (amt === 497000) return 'Élevage bovin';
-    return 'Pack Élevage';
-  };
-
-  const formatCurrency = (amount: number | string) => {
-    const num = typeof amount === 'string' ? Number(amount.replace(/\D/g, '')) : amount;
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num);
-  };
-
-  const quickLinks = [
-    { icon: null, image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&q=80&w=400', label: 'Coffre', path: '/coffre', color: 'bg-purple-500' },
-    { icon: ArrowDownToLine, label: 'Recharger', path: '/deposit', color: 'bg-brand-500' },
-    { icon: Gift, label: 'Commissions', path: '/commissions', color: 'bg-orange-500' },
-    { icon: Clock, label: 'Historique', path: '/history', color: 'bg-blue-500' },
-  ];
 
   return (
-    <div className="px-4 pt-4 pb-32 min-h-screen bg-slate-50 font-sans relative overflow-hidden">
+    <div className="px-5 pt-16 pb-32 min-h-[100dvh] font-sans relative overflow-hidden bg-[#03296c]">
       
+      {/* Modal Bienvenue */}
       <AnimatePresence>
         {showJoinModal && (
           <motion.div 
@@ -153,12 +39,12 @@ export function Home() {
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-3xl overflow-hidden max-w-sm w-full flex flex-col shadow-2xl relative"
+              className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl overflow-hidden max-w-sm w-full flex flex-col shadow-2xl relative"
             >
               <div className="p-8 flex flex-col items-center text-center">
-                <h2 className="text-2xl font-black text-slate-900 mb-4">Bienvenue sur ElevFinAi</h2>
-                <p className="text-slate-600 text-[15px] font-medium mb-8 leading-relaxed">
-                  Votre plateforme dédiée à l'investissement dans le secteur de l'élevage en Côte d'Ivoire. Découvrez nos différentes opportunités (Aviculture, Pisciculture, etc.) et participez activement au développement de l'agriculture locale tout en générant des revenus passifs sécurisés.
+                <h2 className="text-2xl font-black text-white mb-4">Bienvenue sur AGROCI</h2>
+                <p className="text-white/80 text-[15px] font-medium mb-8 leading-relaxed">
+                  Votre plateforme dédiée au développement agricole en Côte d'Ivoire. Découvrez nos différentes productions et participez à une agriculture moderne et durable.
                 </p>
                 <div className="w-full flex flex-col gap-3">
                   <a 
@@ -172,7 +58,7 @@ export function Home() {
                   </a>
                   <button 
                     onClick={closeJoinModal}
-                    className="w-full py-4 bg-slate-50 text-slate-500 rounded-2xl font-bold text-sm hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition-colors"
+                    className="w-full py-4 bg-[#03296c] text-blue-200/60 rounded-2xl font-bold text-sm hover:bg-white/5 hover:text-white/90 active:scale-95 transition-colors"
                   >
                     Fermer
                   </button>
@@ -181,28 +67,15 @@ export function Home() {
             </motion.div>
           </motion.div>
         )}
-        
-        {showSuccess && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-3xl p-8 max-w-sm w-full flex flex-col items-center text-center border border-slate-200 shadow-2xl"
-            >
-              <div className="w-20 h-20 bg-brand-500/20 rounded-full flex items-center justify-center mb-6">
-                <CheckCircle2 className="w-10 h-10 text-brand-500" />
-              </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">Pack Activé !</h3>
-              <p className="text-slate-500 font-medium mb-6 text-sm">Votre investissement est en cours de traitement. Redirection...</p>
-              <Loader2 className="w-6 h-6 text-brand-500 animate-spin" />
-            </motion.div>
-          </motion.div>
-        )}
       </AnimatePresence>
 
-      <div className="relative w-full h-48 rounded-3xl overflow-hidden mb-6 shadow-md border border-slate-200">
+      <header className="mb-8">
+        <h1 className="text-3xl font-black text-white tracking-tight leading-tight">Accueil</h1>
+        <p className="text-blue-200/60 font-medium text-sm mt-1">Cultiver aujourd’hui, construire demain.</p>
+      </header>
+
+      {/* Image Slider */}
+      <div className="relative w-full h-[220px] rounded-[32px] overflow-hidden mb-10 shadow-2xl border border-white/10">
         <AnimatePresence mode="wait">
           <motion.img
             key={currentSlide}
@@ -214,180 +87,285 @@ export function Home() {
             className="absolute inset-0 w-full h-full object-cover"
           />
         </AnimatePresence>
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
-        <div className="absolute bottom-4 left-4 right-4 flex justify-center items-end">
-           <div className="flex gap-1.5">
+        <div className="absolute inset-0 bg-gradient-to-t from-[#03296c] via-[#03296c]/20 to-transparent"></div>
+        <div className="absolute bottom-5 left-0 right-0 flex justify-center items-end z-10">
+           <div className="flex gap-2 bg-black/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
              {BANNER_IMAGES.map((_, i) => (
-               <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === currentSlide ? 'w-4 bg-brand-500' : 'w-1.5 bg-white/50'}`} />
+               <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === currentSlide ? 'w-5 bg-brand-500' : 'w-2 bg-white/50'}`} />
              ))}
            </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3 mb-6">
-        {quickLinks.map((link, i) => (
-          <Link key={i} to={link.path} className="flex flex-col items-center gap-2 group">
-            <div className={`w-14 h-14 rounded-2xl ${link.color} flex items-center justify-center text-white shadow-lg shadow-slate-200/50 group-hover:scale-105 transition-transform overflow-hidden`}>
-              {link.image ? (
-                <img src={link.image} alt={link.label} className="w-full h-full object-cover" />
-              ) : (
-                link.icon && <link.icon className="w-6 h-6" />
-              )}
-            </div>
-            <span className="text-[11px] font-bold text-slate-700">{link.label}</span>
-          </Link>
-        ))}
-      </div>
-
-      <button onClick={() => { if (isIOS) setShowIOSOverlay(true); else installPWA(); }} className="w-full flex items-center justify-between bg-brand-500 text-white rounded-3xl p-4 mb-8 shadow-lg shadow-brand-500/20 active:scale-95 transition-transform text-left">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
-            <Smartphone className="w-6 h-6 text-white" />
-          </div>
+      <div className="text-white pb-10 max-w-lg mx-auto">
+        
+        {/* Document Unifié */}
+        <div className="space-y-10">
+          
+          {/* Intro */}
           <div>
-            <h3 className="font-bold text-base">Application Mobile</h3>
-            <p className="text-xs text-brand-100 font-medium">Téléchargez ElevFinAi</p>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-4">
+              <strong className="text-white text-lg font-black">AGROCI</strong> est un projet agro-agricole ayant pour ambition de participer au développement d’une agriculture moderne, productive et accessible en Côte d’Ivoire.
+            </p>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-4">
+              À travers une approche combinant agriculture, technologie et innovation, AGROCI souhaite développer et valoriser différentes productions agricoles tout en créant de nouvelles opportunités autour du secteur agricole.
+            </p>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed">
+              Notre vision repose sur un principe simple : <strong className="text-brand-400">transformer le potentiel agricole en valeur durable</strong>.
+            </p>
           </div>
-        </div>
-        <div className="bg-white text-brand-600 text-xs font-black px-4 py-2.5 rounded-full shadow-sm">
-          Installer
-        </div>
-      </button>
 
-      
+          {/* Mission */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">🎯 Notre Mission</h2>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-4">
+              La mission d’AGROCI est de contribuer au développement de projets agricoles structurés autour de la production, de la valorisation et de la commercialisation des produits agricoles.
+            </p>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-2">Nous souhaitons notamment :</p>
+            <ul className="space-y-2 text-blue-100/90 text-[15px] ml-1">
+              <li>• développer des projets agricoles modernes ;</li>
+              <li>• favoriser la production de différentes cultures ;</li>
+              <li>• améliorer la valorisation des produits agricoles ;</li>
+              <li>• encourager l’utilisation des technologies dans l’agriculture ;</li>
+              <li>• créer des opportunités économiques autour du secteur agricole ;</li>
+              <li>• participer au développement des communautés rurales ;</li>
+              <li>• contribuer à une agriculture plus productive et durable.</li>
+            </ul>
+          </div>
 
+          {/* Vision */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">🌍 Notre Vision</h2>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-4">
+              Notre ambition est de faire d’AGROCI une marque agricole moderne et reconnue en Côte d’Ivoire et, à terme, dans la sous-région ouest-africaine.
+            </p>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-4">
+              AGROCI veut construire un modèle reposant sur la production, l’innovation, la transparence, la qualité et le développement durable.
+            </p>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed">
+              L’agriculture représente un secteur stratégique pour la Côte d’Ivoire et demeure un important moteur d’activité économique et d’emploi. Le gouvernement ivoirien met d’ailleurs aujourd’hui l’accent sur la modernisation, l’innovation, la transformation locale et la digitalisation du secteur.
+            </p>
+          </div>
 
-      <div className="mb-6 flex items-center justify-between">
-         <div>
-             <h1 className="text-xl font-black text-slate-900 tracking-tight">Packs Disponibles</h1>
-             <p className="text-slate-500 text-xs mt-1">Commencez à générer des revenus</p>
-         </div>
-      </div>
-
-      {message && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`p-4 rounded-xl mb-6 flex items-center gap-3 border ${message.type === 'success' ? 'bg-brand-50 text-brand-600 border-brand-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
-          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
-          <p className="text-sm font-semibold">{message.text}</p>
-        </motion.div>
-      )}
-
-      <div className="space-y-4 max-w-[340px] mx-auto">
-        {isLoadingPlans ? (
-          <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 text-brand-500 animate-spin" /></div>
-        ) : activePlans.length === 0 ? (
-          <div className="text-center py-12"><p className="text-slate-500 font-medium">Aucun pack disponible.</p></div>
-        ) : (
-          activePlans.map((plan, idx) => {
-            const hasInsufficientBalance = (user?.balance || 0) < plan.amount;
-            return (
-            <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex flex-col gap-5">
-              <div className="flex gap-4 items-center">
-                 <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 relative shadow-inner border border-slate-100">
-                   <img referrerPolicy="no-referrer" src={plan.image || "https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&q=80&w=800"} alt="Plan" className="w-full h-full object-cover" />
-                 </div>
-                 <div className="flex-1">
-                   <div className="flex justify-between items-start gap-2">
-                     <div>
-                       <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 block">{getPlanName(plan.amount)}</span>
-                       <h3 className="text-xl font-black text-slate-900 leading-tight">{formatCurrency(plan.amount)}</h3>
-                     </div>
-                     <div className="bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 flex items-center gap-1 whitespace-nowrap flex-shrink-0">
-                       <Clock className="w-3.5 h-3.5 text-slate-500" />
-                       <span className="text-slate-700 font-bold text-xs">{plan.duration || 30} Jours</span>
-                     </div>
-                   </div>
-                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
-                 <div className="flex flex-col">
-                    <span className="text-slate-500 text-[10px] font-bold uppercase mb-0.5">Gain par jour</span>
-                    <span className="text-brand-600 font-black text-sm">{formatCurrency(plan.daily)}</span>
-                 </div>
-                 <div className="flex flex-col">
-                    <span className="text-slate-500 text-[10px] font-bold uppercase mb-0.5">Gain total</span>
-                    <span className="text-slate-900 font-black text-sm">{formatCurrency(plan.total)}</span>
-                 </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  if (hasInsufficientBalance) {
-                    setMessage({ type: 'error', text: 'Votre solde est insuffisant pour payer ce pack.' });
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    setTimeout(() => setMessage(null), 3000);
-                  } else {
-                    handleInvest(plan, idx);
-                  }
-                }}
-                disabled={loading === idx}
-                className={`w-full py-3.5 rounded-2xl text-sm font-black transition-all flex items-center justify-center gap-2 ${hasInsufficientBalance ? 'bg-slate-100 text-slate-500 border border-slate-200 active:scale-95' : 'bg-brand-500 text-white hover:bg-brand-400 active:scale-95 shadow-lg shadow-brand-500/20'}`}
-              >
-                {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Payer'}
-              </button>
-            </motion.div>
-          )})
-        )}
-      </div>
-
-
-    
-      {/* Full Screen iOS Install Overlay */}
-      <AnimatePresence>
-        {showIOSOverlay && (
-          <motion.div
-            initial={{ opacity: 0, y: "100%" }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-[100] bg-slate-50 flex flex-col p-6"
-          >
-            <div className="flex justify-end mb-8">
-              <button 
-                onClick={() => setShowIOSOverlay(false)}
-                className="w-10 h-10 bg-white rounded-full shadow-sm border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+          {/* Activités */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">🌾 Nos Activités</h2>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-6">AGROCI peut développer ses activités autour de plusieurs domaines :</p>
             
-            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
-              <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-900 mb-6 shadow-sm border border-slate-200 self-center">
-                <Apple className="w-10 h-10" />
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-bold text-white text-base">Production agricole</h3>
+                <p className="text-blue-100/80 text-[14px] leading-relaxed">Développement et exploitation de cultures agricoles adaptées aux conditions locales et aux besoins du marché.</p>
               </div>
-              
-              <h2 className="text-2xl font-black tracking-tight text-center mb-2">Installation sur iOS</h2>
-              <p className="text-slate-500 text-center mb-10 text-sm">Installez l'application sur votre iPhone pour une expérience plus rapide et en plein écran.</p>
-              
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full bg-brand-50 text-brand-600 font-bold flex items-center justify-center shrink-0">1</div>
-                  <div>
-                    <p className="text-slate-900 font-bold mb-1">Appuyez sur Partager</p>
-                    <p className="text-slate-500 text-sm">Appuyez sur l'icône <Share className="w-4 h-4 inline-block mx-1" /> dans la barre de navigation Safari en bas de votre écran.</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full bg-brand-50 text-brand-600 font-bold flex items-center justify-center shrink-0">2</div>
-                  <div>
-                    <p className="text-slate-900 font-bold mb-1">Ajouter à l'écran d'accueil</p>
-                    <p className="text-slate-500 text-sm">Faites défiler le menu et sélectionnez l'option <strong>"Sur l'écran d'accueil"</strong> <PlusSquare className="w-4 h-4 inline-block mx-1" />.</p>
-                  </div>
-                </div>
+              <div>
+                <h3 className="font-bold text-white text-base">Valorisation agricole</h3>
+                <p className="text-blue-100/80 text-[14px] leading-relaxed">Transformation, conditionnement et mise en valeur des productions afin d’augmenter leur valeur ajoutée.</p>
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base">Commercialisation</h3>
+                <p className="text-blue-100/80 text-[14px] leading-relaxed">Mise en relation des productions agricoles avec les marchés, distributeurs et consommateurs.</p>
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base">Agriculture numérique</h3>
+                <p className="text-blue-100/80 text-[14px] leading-relaxed">Utilisation des outils numériques pour améliorer le suivi des projets, la gestion des activités et la communication avec les différents acteurs.</p>
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base">Développement de projets agricoles</h3>
+                <p className="text-blue-100/80 text-[14px] leading-relaxed">Mise en place de projets spécialisés autour de différentes cultures et chaînes de valeur.</p>
+              </div>
+            </div>
+          </div>
 
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full bg-brand-50 text-brand-600 font-bold flex items-center justify-center shrink-0">3</div>
-                  <div>
-                    <p className="text-slate-900 font-bold mb-1">Confirmer l'ajout</p>
-                    <p className="text-slate-500 text-sm">Appuyez sur <strong>Ajouter</strong> en haut à droite de votre écran.</p>
-                  </div>
+          {/* Productions */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">🍓 Nos Productions</h2>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-4">AGROCI souhaite mettre en avant différentes catégories de productions agricoles, notamment :</p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {['🍓 Fraise', '🍉 Pastèque', '🥝 Kiwi', '🍇 Raisin', '🍒 Cerise', '🍋 Citron', '🍏 Pomme verte', '🍌 Banane'].map(fruit => (
+                <span key={fruit} className="bg-white/10 text-white px-3 py-1.5 rounded-full text-[14px] font-medium border border-white/5">{fruit}</span>
+              ))}
+            </div>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed">
+              Chaque production peut faire l’objet d’un projet agricole spécifique comprenant la production, le suivi, la récolte, la valorisation et la commercialisation.
+            </p>
+          </div>
+
+          {/* Digital */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">💻 AGROCI Digital</h2>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed">
+              Afin de moderniser la gestion de ses activités, AGROCI peut s’appuyer sur une plateforme numérique permettant de centraliser les informations relatives aux différents projets agricoles.
+            </p>
+          </div>
+
+          {/* Valeurs */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">🤝 Nos Valeurs</h2>
+            <ul className="space-y-4">
+              <li>
+                <strong className="text-white block text-base">QUALITÉ</strong>
+                <span className="text-blue-100/80 text-[14px] leading-relaxed">Nous accordons une importance particulière à la qualité des productions et des services proposés.</span>
+              </li>
+              <li>
+                <strong className="text-white block text-base">INNOVATION</strong>
+                <span className="text-blue-100/80 text-[14px] leading-relaxed">Nous cherchons constamment à intégrer de nouvelles technologies et méthodes permettant d’améliorer nos activités.</span>
+              </li>
+              <li>
+                <strong className="text-white block text-base">TRANSPARENCE</strong>
+                <span className="text-blue-100/80 text-[14px] leading-relaxed">Nous souhaitons établir des relations basées sur des informations claires et une communication responsable.</span>
+              </li>
+              <li>
+                <strong className="text-white block text-base">DURABILITÉ</strong>
+                <span className="text-blue-100/80 text-[14px] leading-relaxed">Nous encourageons une agriculture capable de créer de la valeur tout en préservant les ressources naturelles.</span>
+              </li>
+              <li>
+                <strong className="text-white block text-base">PROXIMITÉ</strong>
+                <span className="text-blue-100/80 text-[14px] leading-relaxed">Nous voulons rester proches des producteurs, partenaires, clients et communautés.</span>
+              </li>
+              <li>
+                <strong className="text-white block text-base">PERFORMANCE</strong>
+                <span className="text-blue-100/80 text-[14px] leading-relaxed">Nous recherchons l’efficacité à chaque étape, de la production jusqu’à la commercialisation.</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Engagement */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">👨‍🌾 Notre Engagement</h2>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-4">
+              AGROCI souhaite participer à la construction d’un secteur agricole plus moderne, mieux organisé et davantage connecté aux nouvelles technologies. Notre engagement repose sur trois piliers :
+            </p>
+            <ul className="space-y-4">
+              <li>
+                <strong className="text-white block text-base">PRODUIRE</strong>
+                <span className="text-blue-100/80 text-[14px] leading-relaxed">Développer des productions agricoles répondant aux besoins du marché.</span>
+              </li>
+              <li>
+                <strong className="text-white block text-base">VALORISER</strong>
+                <span className="text-blue-100/80 text-[14px] leading-relaxed">Donner davantage de valeur aux productions grâce au conditionnement, à la transformation et à la commercialisation.</span>
+              </li>
+              <li>
+                <strong className="text-white block text-base">INNOVER</strong>
+                <span className="text-blue-100/80 text-[14px] leading-relaxed">Utiliser les outils numériques et les nouvelles technologies pour améliorer la gestion et le suivi des activités.</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Modèle */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">📈 Notre Modèle de Développement</h2>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-6">Le développement d’AGROCI s’articule autour de plusieurs étapes :</p>
+            <div className="space-y-4">
+              <div>
+                <strong className="text-white text-[15px]">1. Identification des opportunités agricoles</strong>
+                <p className="text-blue-100/80 text-[14px] mt-1">Étudier les besoins du marché et les possibilités de production.</p>
+              </div>
+              <div>
+                <strong className="text-white text-[15px]">2. Mise en place des projets</strong>
+                <p className="text-blue-100/80 text-[14px] mt-1">Sélectionner les cultures et organiser les différentes opérations agricoles.</p>
+              </div>
+              <div>
+                <strong className="text-white text-[15px]">3. Production</strong>
+                <p className="text-blue-100/80 text-[14px] mt-1">Assurer le suivi des cultures et des opérations agricoles.</p>
+              </div>
+              <div>
+                <strong className="text-white text-[15px]">4. Récolte et valorisation</strong>
+                <p className="text-blue-100/80 text-[14px] mt-1">Récolter, conditionner et préparer les produits.</p>
+              </div>
+              <div>
+                <strong className="text-white text-[15px]">5. Commercialisation</strong>
+                <p className="text-blue-100/80 text-[14px] mt-1">Distribuer les productions auprès des différents marchés.</p>
+              </div>
+              <div>
+                <strong className="text-white text-[15px]">6. Développement</strong>
+                <p className="text-blue-100/80 text-[14px] mt-1">Réinvestir dans l’amélioration des infrastructures, des technologies et des capacités de production.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Environnement */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">🌱 Responsabilité Environnementale</h2>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-4">AGROCI souhaite promouvoir une agriculture plus responsable à travers :</p>
+            <ul className="space-y-2 text-blue-100/90 text-[15px] ml-1">
+              <li>• une utilisation raisonnée des ressources ;</li>
+              <li>• la protection des sols ;</li>
+              <li>• une meilleure gestion de l’eau ;</li>
+              <li>• la réduction des pertes agricoles ;</li>
+              <li>• la valorisation des déchets agricoles ;</li>
+              <li>• l’adoption progressive de pratiques agricoles durables.</li>
+            </ul>
+          </div>
+
+          {/* Côte d'Ivoire */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">🇨🇮 AGROCI et la Côte d'Ivoire</h2>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-4">
+              La Côte d’Ivoire dispose d’un secteur agricole particulièrement important. Les données publiques récentes soulignent notamment le poids de l’agriculture dans l’économie nationale et l’importance des cultures vivrières et d’exportation.
+            </p>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed">
+              AGROCI souhaite s’inscrire dans cette dynamique en développant des activités agricoles créatrices de valeur et en contribuant à la modernisation du secteur.
+            </p>
+          </div>
+
+          {/* Ambitions */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">🚀 Nos Ambitions</h2>
+            <p className="text-blue-100/90 text-[15px] leading-relaxed mb-4">À moyen et long terme, AGROCI ambitionne de :</p>
+            <ul className="space-y-2 text-blue-100/90 text-[15px] ml-1">
+              <li>• développer plusieurs exploitations agricoles ;</li>
+              <li>• diversifier ses productions ;</li>
+              <li>• développer des infrastructures de transformation ;</li>
+              <li>• renforcer son réseau de distribution ;</li>
+              <li>• créer des emplois directs et indirects ;</li>
+              <li>• développer des partenariats agricoles ;</li>
+              <li>• intégrer davantage de technologies dans la gestion agricole ;</li>
+              <li>• étendre progressivement ses activités à l’échelle régionale.</li>
+            </ul>
+          </div>
+
+          {/* Identité Entreprise */}
+          <div>
+            <h2 className="text-xl font-black text-brand-400 mb-4 border-b border-white/10 pb-2">🏢 Identité de l'Entreprise</h2>
+            <div className="bg-[#021f54] p-5 rounded-2xl border border-brand-500/20 shadow-inner">
+              <div className="space-y-3 text-[14px]">
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-blue-200/60">Nom</span>
+                  <span className="font-bold text-white">AGROCI</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-blue-200/60">Secteur</span>
+                  <span className="font-bold text-white text-right">Agriculture & Agro-industrie</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-blue-200/60">Zone d'activité</span>
+                  <span className="font-bold text-white">Côte d'Ivoire</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-blue-200/60">Domaine</span>
+                  <span className="font-bold text-white text-right">Production, valorisation et commercialisation agricole</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-blue-200/60">Positionnement</span>
+                  <span className="font-bold text-white text-right">Agriculture moderne et innovation</span>
+                </div>
+                <div className="flex justify-between pt-1">
+                  <span className="text-blue-200/60 w-1/3">Vision</span>
+                  <span className="font-bold text-white text-right w-2/3">Construire une agriculture plus productive, moderne et durable.</span>
                 </div>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-</div>
+          </div>
+
+          {/* Signature */}
+          <div className="pt-6 pb-2 text-center">
+            <h2 className="text-brand-400 text-sm font-black tracking-widest uppercase mb-2">🔰 Notre Signature</h2>
+            <p className="text-white font-black text-lg italic">AGROCI — Cultiver aujourd’hui, construire demain.</p>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
   );
 }

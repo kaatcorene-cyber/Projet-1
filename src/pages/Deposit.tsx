@@ -96,14 +96,14 @@ export function Deposit() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+    <div className="min-h-[100dvh] bg-[#03296c] p-4 pt-10 pb-32 font-sans text-white relative">
       <header className="mb-6 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">Recharger</h1>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Ajouter des fonds</p>
+          <h1 className="text-2xl font-black tracking-tight text-white">Recharger</h1>
+          <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-wider mt-0.5">Ajouter des fonds</p>
         </div>
       </header>
 
@@ -135,16 +135,16 @@ export function Deposit() {
           </motion.div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white/10 rounded-3xl p-5 shadow-sm border border-white/20 space-y-6">
           <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Montant à recharger</label>
-             <div className="bg-slate-50 border border-slate-200 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
+             <label className="text-[11px] font-bold uppercase tracking-widest text-blue-200/60 px-1">Montant à recharger</label>
+             <div className="bg-[#03296c] border border-white/20 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
                 <span className="text-slate-400 font-black text-2xl mr-3">FCFA</span>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-slate-900 placeholder-slate-300 outline-none"
+                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-white placeholder-slate-300 outline-none"
                   placeholder="0"
                   required
                   min="2000"
@@ -162,7 +162,7 @@ export function Deposit() {
                  className={`py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-1 border ${
                    amount === preset.toString()
                       ? 'bg-brand-50 text-brand-600 border-brand-200 shadow-sm ring-1 ring-brand-500/50'
-                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
+                      : 'bg-white/10 text-white/80 border-white/20 hover:bg-[#03296c] hover:text-white'
                  }`}
                >
                  {preset >= 100000 ? <Zap className="w-3.5 h-3.5" /> : null}

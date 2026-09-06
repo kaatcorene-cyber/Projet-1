@@ -11,11 +11,11 @@ export function About() {
       <div className="flex items-center gap-4 mb-8">
         <button 
           onClick={() => navigate(-1)}
-          className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-700 shadow-sm border border-slate-200"
+          className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white/90 shadow-sm border border-white/20"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">À propos</h1>
+        <h1 className="text-2xl font-black text-white tracking-tight">À propos</h1>
       </div>
 
       <motion.div
@@ -25,8 +25,8 @@ export function About() {
       >
         
         <div className="px-2">
-          <h3 className="text-xl font-black text-slate-900 mb-6 text-center">𝐄𝐋𝐄𝐕𝐅𝐈𝐍𝐀𝐈 𝐂Ô𝐓𝐄 𝐃’𝐈𝐕𝐎𝐈𝐑𝐄 🇨🇮</h3>
-          <div className="space-y-4 text-slate-600 text-[15px] font-medium leading-relaxed">
+          <h3 className="text-xl font-black text-white mb-6 text-center">𝐄𝐋𝐄𝐕𝐅𝐈𝐍𝐀𝐈 𝐂Ô𝐓𝐄 𝐃’𝐈𝐕𝐎𝐈𝐑𝐄 🇨🇮</h3>
+          <div className="space-y-4 text-white/80 text-[15px] font-medium leading-relaxed">
             <p>
               𝐄𝐥𝐞𝐯𝐅𝐢𝐧𝐀𝐢 𝐂ô𝐭𝐞 𝐝’𝐈𝐯𝐨𝐢𝐫𝐞 𝐞𝐬𝐭 𝐮𝐧𝐞 𝐢𝐧𝐢𝐭𝐢𝐚𝐭𝐢𝐯𝐞 𝐝é𝐝𝐢é𝐞 𝐚𝐮 𝐝é𝐯𝐞𝐥𝐨𝐩𝐩𝐞𝐦𝐞𝐧𝐭 𝐞𝐭 à 𝐥𝐚 𝐬𝐭𝐫𝐮𝐜𝐭𝐮𝐫𝐚𝐭𝐢𝐨𝐧 𝐝𝐞 𝐥’é𝐥𝐞𝐯𝐚𝐠𝐞 𝐞𝐧 𝐂ô𝐭𝐞 𝐝’𝐈𝐯𝐨𝐢𝐫𝐞. 𝐍𝐨𝐭𝐫𝐞 𝐯𝐢𝐬𝐢𝐨𝐧 𝐞𝐬𝐭 𝐝𝐞 𝐫𝐚𝐬𝐬𝐞𝐦𝐛𝐥𝐞𝐫 𝐥𝐞𝐬 é𝐥𝐞𝐯𝐞𝐮𝐫𝐬, 𝐩𝐫𝐨𝐝𝐮𝐜𝐭𝐞𝐮𝐫𝐬 𝐞𝐭 𝐚𝐜𝐭𝐞𝐮𝐫𝐬 𝐝𝐮 𝐬𝐞𝐜𝐭𝐞𝐮𝐫 𝐚𝐟𝐢𝐧 𝐝𝐞 𝐟𝐚𝐯𝐨𝐫𝐢𝐬𝐞𝐫 𝐥𝐞 𝐩𝐚𝐫𝐭𝐚𝐠𝐞, 𝐥𝐚 𝐜𝐨𝐥𝐥𝐚𝐛𝐨𝐫𝐚𝐭𝐢𝐨𝐧 𝐞𝐭 𝐥𝐞 𝐝é𝐯𝐞𝐥𝐨𝐩𝐩𝐞𝐦𝐞𝐧𝐭 𝐝’𝐚𝐜𝐭𝐢𝐯𝐢𝐭é𝐬 𝐝𝐮𝐫𝐚𝐛𝐥𝐞𝐬.
             </p>
@@ -46,8 +46,8 @@ export function About() {
           
           
           
-          <div className="space-y-6 text-slate-600 text-[15px] font-medium leading-relaxed border-t border-slate-100 pt-8">
-            <h4 className="text-lg font-black text-slate-900 text-center mb-4">🇨🇮 𝐂𝐎𝐍𝐃𝐈𝐓𝐈𝐎𝐍𝐒 𝐄𝐋𝐄𝐕𝐅𝐈𝐍𝐀𝐈</h4>
+          <div className="space-y-6 text-white/80 text-[15px] font-medium leading-relaxed border-t border-white/10 pt-8">
+            <h4 className="text-lg font-black text-white text-center mb-4">🇨🇮 𝐂𝐎𝐍𝐃𝐈𝐓𝐈𝐎𝐍𝐒 𝐄𝐋𝐄𝐕𝐅𝐈𝐍𝐀𝐈</h4>
             
             <div>
               <p className="font-bold text-slate-800">💰 𝐃É𝐏Ô𝐓𝐒</p>

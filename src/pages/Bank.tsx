@@ -134,14 +134,14 @@ export function Bank() {
   };
 
   return (
-    <div className="px-5 pt-12 pb-32 min-h-[100dvh] bg-slate-50 max-w-lg mx-auto font-sans relative text-slate-900">
+    <div className="px-5 pt-12 pb-32 min-h-[100dvh] bg-[#03296c] max-w-lg mx-auto font-sans relative text-white">
       <header className="flex items-center gap-4 mb-8 relative z-10">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/80 backdrop-blur-xl border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-700 transition-colors shadow-sm shrink-0">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/80 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-slate-700 transition-colors shadow-sm shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
           <h1 className="text-2xl font-black tracking-tight">Compte de Retrait</h1>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Configurer</p>
+          <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-wider mt-0.5">Configurer</p>
         </div>
       </header>
 
@@ -170,7 +170,7 @@ export function Bank() {
             </p>
             <button
               onClick={() => setIsSaved(false)}
-              className="text-xs font-bold bg-white text-brand-600 px-4 py-2 rounded-xl shadow-sm border border-brand-500/20 active:scale-95 transition-transform"
+              className="text-xs font-bold bg-white/10 text-brand-600 px-4 py-2 rounded-xl shadow-sm border border-brand-500/20 active:scale-95 transition-transform"
             >
               Modifier mes informations
             </button>
@@ -178,33 +178,33 @@ export function Bank() {
         </motion.div>
       )}
 
-      <form onSubmit={handleSave} className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-2xl shadow-slate-200/50 border border-slate-200/50 space-y-6 relative z-10">
+      <form onSubmit={handleSave} className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-2xl shadow-slate-200/50 border border-white/20 space-y-6 relative z-10">
         
         <div className="space-y-4">
            {/* Moyen de paiement */}
            <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Moyen de paiement</label>
+             <label className="text-[11px] font-bold uppercase tracking-widest text-blue-200/60 px-1">Moyen de paiement</label>
              <select
                value={paymentMethod}
                onChange={(e) => setPaymentMethod(e.target.value)}
                disabled={isSaved}
-               className={`w-full border rounded-2xl px-4 py-4 text-slate-900 font-bold outline-none transition-all shadow-inner appearance-none ${isSaved ? 'bg-white/50 border-slate-200/50 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50/50 border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'}`}
+               className={`w-full border rounded-2xl px-4 py-4 text-white font-bold outline-none transition-all shadow-inner appearance-none ${isSaved ? 'bg-white/50 border-white/20 text-blue-200/60 opacity-80 cursor-not-allowed' : 'bg-[#03296c]/50 border-white/20 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'}`}
              >
                {availableMethods.map(method => (
-                 <option key={method.id} value={method.id} className="bg-white">{method.name}</option>
+                 <option key={method.id} value={method.id} className="bg-white/10">{method.name}</option>
                ))}
              </select>
            </div>
            
            {/* Numéro du compte de réception */}
            <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Numéro du compte de réception</label>
+             <label className="text-[11px] font-bold uppercase tracking-widest text-blue-200/60 px-1">Numéro du compte de réception</label>
              <input
                type="tel"
                value={accountNumber}
                onChange={(e) => setAccountNumber(e.target.value)}
                disabled={isSaved}
-               className={`w-full border rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-600 outline-none transition-all shadow-inner ${isSaved ? 'bg-white/50 border-slate-200/50 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50/50 border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'}`}
+               className={`w-full border rounded-2xl px-4 py-4 text-white font-bold placeholder-slate-600 outline-none transition-all shadow-inner ${isSaved ? 'bg-white/50 border-white/20 text-blue-200/60 opacity-80 cursor-not-allowed' : 'bg-[#03296c]/50 border-white/20 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'}`}
                placeholder="Ex: 0102030405"
                required
              />
@@ -212,13 +212,13 @@ export function Bank() {
            
            {/* Nom du titulaire */}
            <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Nom du titulaire</label>
+             <label className="text-[11px] font-bold uppercase tracking-widest text-blue-200/60 px-1">Nom du titulaire</label>
              <input
                type="text"
                value={accountHolder}
                onChange={(e) => setAccountHolder(e.target.value)}
                disabled={isSaved}
-               className={`w-full border rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-600 outline-none transition-all shadow-inner ${isSaved ? 'bg-white/50 border-slate-200/50 text-slate-500 opacity-80 cursor-not-allowed' : 'bg-slate-50/50 border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'}`}
+               className={`w-full border rounded-2xl px-4 py-4 text-white font-bold placeholder-slate-600 outline-none transition-all shadow-inner ${isSaved ? 'bg-white/50 border-white/20 text-blue-200/60 opacity-80 cursor-not-allowed' : 'bg-[#03296c]/50 border-white/20 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'}`}
                placeholder="Nom complet"
              />
            </div>
@@ -226,12 +226,12 @@ export function Bank() {
            {/* Mot de passe */}
            {!isSaved && (
              <div className="space-y-2">
-               <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Mot de passe de confirmation</label>
+               <label className="text-[11px] font-bold uppercase tracking-widest text-blue-200/60 px-1">Mot de passe de confirmation</label>
                <input
                  type="password"
                  value={password}
                  onChange={(e) => setPassword(e.target.value)}
-                 className="w-full bg-slate-50/50 border border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-2xl px-4 py-4 text-slate-900 font-bold placeholder-slate-600 outline-none transition-all shadow-inner tracking-widest"
+                 className="w-full bg-[#03296c]/50 border border-white/20 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-2xl px-4 py-4 text-white font-bold placeholder-slate-600 outline-none transition-all shadow-inner tracking-widest"
                  placeholder="••••••••"
                  required
                />
@@ -243,7 +243,7 @@ export function Bank() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 rounded-xl font-bold transition-all duration-300 disabled:opacity-50 text-slate-900 bg-brand-500 hover:bg-brand-400 shadow-xl shadow-brand-500/20 active:scale-[0.98] flex justify-center items-center gap-2 mt-6"
+            className="w-full py-4 rounded-xl font-bold transition-all duration-300 disabled:opacity-50 text-white bg-brand-500 hover:bg-brand-400 shadow-xl shadow-brand-500/20 active:scale-[0.98] flex justify-center items-center gap-2 mt-6"
           >
             {loading ? <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" /> : 'Enregistrer les informations'}
           </button>

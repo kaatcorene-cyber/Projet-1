@@ -97,14 +97,14 @@ export function Team() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+    <div className="min-h-[100dvh] bg-[#03296c] p-4 pt-10 pb-32 font-sans text-white relative">
       <header className="mb-6 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
           <h1 className="text-2xl font-black tracking-tight">Mon Équipe</h1>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Parrainage</p>
+          <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-wider mt-0.5">Parrainage</p>
         </div>
       </header>
       
@@ -120,7 +120,7 @@ export function Team() {
               </div>
               <button
                 onClick={copyLink}
-                className="w-10 h-10 bg-white text-brand-600 flex items-center justify-center rounded-xl shadow-sm hover:bg-brand-50 transition-colors shrink-0 active:scale-95"
+                className="w-10 h-10 bg-white/10 text-brand-600 flex items-center justify-center rounded-xl shadow-sm hover:bg-brand-50 transition-colors shrink-0 active:scale-95"
               >
                 {copied ? <CheckCircle2 className="w-5 h-5 text-brand-500" /> : <Copy className="w-5 h-5" />}
               </button>
@@ -141,15 +141,15 @@ export function Team() {
         </div>
       </div>
 
-      <div className="flex bg-slate-200/50 p-1 rounded-xl mb-6">
+      <div className="flex bg-white/10/50 p-1 rounded-xl mb-6">
         {[1, 2, 3].map((level) => (
           <button
             key={level}
             onClick={() => setActiveTab(level)}
             className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
               activeTab === level
-                  ? 'bg-white text-brand-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'bg-white/10 text-brand-600 shadow-sm'
+                  : 'text-blue-200/60 hover:text-white/90'
             }`}
           >
             Niveau {level}
@@ -159,9 +159,9 @@ export function Team() {
 
       <div className="space-y-3">
         {getActiveLevelData().length === 0 ? (
-          <div className="text-center py-10 bg-white border border-slate-200 rounded-2xl">
+          <div className="text-center py-10 bg-white/10 border border-white/20 rounded-2xl">
             <Users className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-slate-500 text-sm font-medium">Aucun membre au niveau {activeTab}.</p>
+            <p className="text-blue-200/60 text-sm font-medium">Aucun membre au niveau {activeTab}.</p>
           </div>
         ) : (
           getActiveLevelData().map((member, idx) => (
@@ -170,13 +170,13 @@ export function Team() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
               key={member.id} 
-              className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4"
+              className="bg-white/10 p-4 rounded-2xl border border-white/20 shadow-sm flex items-center gap-4"
             >
               <div className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 shrink-0">
                 <User className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-slate-900 truncate text-sm">{member.country && COUNTRIES[member.country as CountryName] ? COUNTRIES[member.country as CountryName].code : ""} {member.phone || (member.first_name + " " + member.last_name)}</p>
+                <p className="font-bold text-white truncate text-sm">{member.country && COUNTRIES[member.country as CountryName] ? COUNTRIES[member.country as CountryName].code : ""} {member.phone || (member.first_name + " " + member.last_name)}</p>
                 <p className="text-slate-400 text-[10px] font-bold tracking-wider mt-1">REJOINT LE {new Date(member.created_at).toLocaleDateString('fr-FR')}</p>
               </div>
             </motion.div>

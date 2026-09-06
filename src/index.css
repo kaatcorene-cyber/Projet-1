@@ -1,14 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 
 @layer base {
   body {
-    @apply text-slate-900 bg-slate-50;
-    font-family: 'Outfit', sans-serif;
+    @apply text-white bg-[#03296c];
+    font-family: 'Montserrat', sans-serif;
   }
   
   h1, h2, h3, h4, h5, h6, .grotesk {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Montserrat', sans-serif;
   }
 }
 
@@ -18,8 +18,8 @@
 }
 
 @theme {
-  --font-sans: 'Outfit', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Montserrat', system-ui, sans-serif;
+  --font-mono: 'Space Mono', monospace;
   --color-brand-300: #46e276;
   --color-brand-400: #35cf64;
   --color-brand-500: #229743;

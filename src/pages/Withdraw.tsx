@@ -171,28 +171,28 @@ export function Withdraw() {
   };
 
   if (!infoLoaded) {
-    return <div className="min-h-screen bg-slate-50 flex items-center justify-center"></div>;
+    return <div className="min-h-[100dvh] bg-[#03296c] flex items-center justify-center"></div>;
   }
 
   if (!withdrawalInfo) {
     return (
-      <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+      <div className="min-h-[100dvh] bg-[#03296c] p-4 pt-10 pb-32 font-sans text-white relative">
         <header className="mb-6 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm shrink-0">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">Retrait</h1>
-            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Configuration requise</p>
+            <h1 className="text-2xl font-black tracking-tight text-white">Retrait</h1>
+            <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-wider mt-0.5">Configuration requise</p>
           </div>
         </header>
 
-        <div className="max-w-md mx-auto bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-200">
-          <div className="w-16 h-16 bg-slate-50 border border-slate-200 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
+        <div className="max-w-md mx-auto bg-white/10 rounded-3xl p-8 text-center shadow-sm border border-white/20">
+          <div className="w-16 h-16 bg-[#03296c] border border-white/20 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Wallet className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-black text-slate-900 mb-2">Compte de retrait manquant</h2>
-          <p className="text-slate-500 mb-8 text-sm">Veuillez d'abord configurer vos informations de retrait avant de pouvoir retirer vos gains.</p>
+          <h2 className="text-xl font-black text-white mb-2">Compte de retrait manquant</h2>
+          <p className="text-blue-200/60 mb-8 text-sm">Veuillez d'abord configurer vos informations de retrait avant de pouvoir retirer vos gains.</p>
           <button onClick={() => navigate('/bank')} className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-brand-500/20 active:scale-[0.98] transition-all">
             Configurer mon compte
           </button>
@@ -203,22 +203,22 @@ export function Withdraw() {
 
   if (hasActivePack === false) {
     return (
-      <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+      <div className="min-h-[100dvh] bg-[#03296c] p-4 pt-10 pb-32 font-sans text-white relative">
         <header className="mb-6 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm shrink-0">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">Retrait bloqué</h1>
+            <h1 className="text-2xl font-black tracking-tight text-white">Retrait bloqué</h1>
           </div>
         </header>
 
-        <div className="max-w-md mx-auto bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-200">
+        <div className="max-w-md mx-auto bg-white/10 rounded-3xl p-8 text-center shadow-sm border border-white/20">
           <div className="w-16 h-16 bg-red-50 border border-red-200 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Lock className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-black text-slate-900 mb-2">Achat de pack requis</h2>
-          <p className="text-slate-500 mb-8 text-sm">Vous devez avoir acheté au moins un pack actif avant de pouvoir retirer vos gains.</p>
+          <h2 className="text-xl font-black text-white mb-2">Achat de pack requis</h2>
+          <p className="text-blue-200/60 mb-8 text-sm">Vous devez avoir acheté au moins un pack actif avant de pouvoir retirer vos gains.</p>
           <button onClick={() => navigate('/products')} className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-brand-500/20 active:scale-[0.98] transition-all">
             Voir les packs
           </button>
@@ -228,14 +228,14 @@ export function Withdraw() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
+    <div className="min-h-[100dvh] bg-[#03296c] p-4 pt-10 pb-32 font-sans text-white relative">
       <header className="mb-6 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm shrink-0">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">Retrait</h1>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Retirer vos gains</p>
+          <h1 className="text-2xl font-black tracking-tight text-white">Retrait</h1>
+          <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-wider mt-0.5">Retirer vos gains</p>
         </div>
       </header>
 
@@ -245,13 +245,13 @@ export function Withdraw() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-200"
+          className="bg-white/10 rounded-3xl p-8 text-center shadow-sm border border-white/20"
         >
           <div className="w-20 h-20 bg-brand-50 border border-brand-100 rounded-full flex items-center justify-center mx-auto mb-6 relative">
             <CheckCircle2 className="w-10 h-10 text-brand-500 relative z-10" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Demande envoyée !</h2>
-          <p className="text-slate-500 text-sm mb-8 leading-relaxed">
+          <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Demande envoyée !</h2>
+          <p className="text-blue-200/60 text-sm mb-8 leading-relaxed">
             Votre demande de retrait a été enregistrée avec succès. Vous la recevrez sur votre compte sous peu.
           </p>
           <button 
@@ -290,28 +290,28 @@ export function Withdraw() {
          </motion.div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white/10 rounded-3xl p-5 shadow-sm border border-white/20 space-y-6">
           
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between mb-2">
+          <div className="bg-[#03296c] p-4 rounded-2xl border border-white/20 flex items-center justify-between mb-2">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Compte de réception</p>
-              <p className="font-black text-slate-900 text-sm">{availableMethods.find(m => m.id === withdrawalInfo.paymentMethod)?.name.toUpperCase() || withdrawalInfo.paymentMethod.toUpperCase()}</p>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">{withdrawalInfo.accountNumber}</p>
+              <p className="font-black text-white text-sm">{availableMethods.find(m => m.id === withdrawalInfo.paymentMethod)?.name.toUpperCase() || withdrawalInfo.paymentMethod.toUpperCase()}</p>
+              <p className="text-xs text-blue-200/60 font-mono mt-0.5">{withdrawalInfo.accountNumber}</p>
             </div>
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-slate-400 border border-slate-200 shrink-0">
+            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shadow-sm text-slate-400 border border-white/20 shrink-0">
               <Wallet className="w-5 h-5" />
             </div>
           </div>
            
            <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Montant à retirer</label>
-             <div className="bg-slate-50 border border-slate-200 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
+             <label className="text-[11px] font-bold uppercase tracking-widest text-blue-200/60 px-1">Montant à retirer</label>
+             <div className="bg-[#03296c] border border-white/20 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
                 <span className="text-slate-400 font-black text-2xl mr-3">FCFA</span>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-slate-900 placeholder-slate-300 outline-none"
+                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-white placeholder-slate-300 outline-none"
                   placeholder="0"
                   required
                 />
@@ -319,22 +319,22 @@ export function Withdraw() {
            </div>
 
            {amount && Number(amount) >= 1000 && (
-             <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
-                 <span className="text-slate-500 font-medium">Frais (15%): <span className="font-bold text-red-500">-{formatCurrency(Number(amount) * 0.15)}</span></span>
-                 <span className="text-slate-500 font-medium">Vous recevrez: <span className="font-bold text-brand-600">{formatCurrency(Number(amount) * 0.85)}</span></span>
+             <div className="px-4 py-3 bg-[#03296c] rounded-xl border border-white/20 flex justify-between items-center text-xs">
+                 <span className="text-blue-200/60 font-medium">Frais (15%): <span className="font-bold text-red-500">-{formatCurrency(Number(amount) * 0.15)}</span></span>
+                 <span className="text-blue-200/60 font-medium">Vous recevrez: <span className="font-bold text-brand-600">{formatCurrency(Number(amount) * 0.85)}</span></span>
              </div>
            )}
            
            <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Mot de passe</label>
-             <div className="bg-slate-50 border border-slate-200 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
+             <label className="text-[11px] font-bold uppercase tracking-widest text-blue-200/60 px-1">Mot de passe</label>
+             <div className="bg-[#03296c] border border-white/20 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
                 <Lock className="w-5 h-5 text-slate-400 mr-3" />
                 <input 
                   type="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-bold text-slate-900 placeholder-slate-300 outline-none tracking-widest"
+                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-bold text-white placeholder-slate-300 outline-none tracking-widest"
                   required
                 />
              </div>

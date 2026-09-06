@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import fs from 'fs';
+
+const content = `import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { Wallet, Banknote, Coins, Briefcase, Users, Sparkles, CreditCard, Clock, ChevronLeft } from 'lucide-react';
+import { ArrowDown, ArrowUp, Clock, Plus, TrendingUp, Gift, CreditCard, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -34,14 +36,14 @@ export function History() {
     }
   };
 
-    const getIcon = (type: string) => {
+  const getIcon = (type: string) => {
     switch(type) {
-      case 'deposit': return <Wallet className="w-5 h-5" />;
-      case 'withdrawal': return <Banknote className="w-5 h-5" />;
-      case 'daily_gain': return <Coins className="w-5 h-5" />;
-      case 'investment': return <Briefcase className="w-5 h-5" />;
-      case 'referral_bonus': return <Users className="w-5 h-5" />;
-      case 'signup_bonus': return <Sparkles className="w-5 h-5" />;
+      case 'deposit': return <ArrowDown className="w-5 h-5" />;
+      case 'withdrawal': return <ArrowUp className="w-5 h-5" />;
+      case 'daily_gain': return <Plus className="w-5 h-5" />;
+      case 'investment': return <TrendingUp className="w-5 h-5" />;
+      case 'referral_bonus': return <Gift className="w-5 h-5" />;
+      case 'signup_bonus': return <Gift className="w-5 h-5" />;
       default: return <CreditCard className="w-5 h-5" />;
     }
   };
@@ -58,16 +60,10 @@ export function History() {
     }
   };
 
-    const getIconColor = (type: string) => {
-    switch(type) {
-      case 'deposit': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/10';
-      case 'withdrawal': return 'bg-red-500/20 text-red-400 border-red-500/10';
-      case 'daily_gain': return 'bg-brand-500/20 text-brand-400 border-brand-500/10';
-      case 'investment': return 'bg-purple-500/20 text-purple-400 border-purple-500/10';
-      case 'referral_bonus': return 'bg-amber-500/20 text-amber-400 border-amber-500/10';
-      case 'signup_bonus': return 'bg-pink-500/20 text-pink-400 border-pink-500/10';
-      default: return 'bg-white/10 text-white border-white/5';
-    }
+  const getIconColor = (type: string) => {
+    if (type === 'withdrawal' || type === 'investment') return 'bg-white/10 text-white';
+    if (type === 'deposit') return 'bg-brand-500/20 text-brand-400';
+    return 'bg-brand-500/20 text-brand-400';
   };
 
   const getStatusBadge = (status: string) => {
@@ -112,10 +108,10 @@ export function History() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
                 key={tx.id} 
-                className={`flex items-center justify-between py-4 ${idx !== transactions.length - 1 ? 'border-b border-white/10' : ''}`}
+                className={\`flex items-center justify-between py-4 \${idx !== transactions.length - 1 ? 'border-b border-white/10' : ''}\`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-[16px] flex items-center justify-center shrink-0 border border-white/5 ${getIconColor(tx.type)}`}>
+                  <div className={\`w-12 h-12 rounded-[16px] flex items-center justify-center shrink-0 border border-white/5 \${getIconColor(tx.type)}\`}>
                     {getIcon(tx.type)}
                   </div>
                   <div>
@@ -133,7 +129,7 @@ export function History() {
                 </div>
                 
                 <div className="text-right">
-                  <p className={`font-black text-[16px] leading-tight mb-1 ${tx.type === 'withdrawal' || tx.type === 'investment' ? 'text-white' : 'text-brand-400'}`}>
+                  <p className={\`font-black text-[16px] leading-tight mb-1 \${tx.type === 'withdrawal' || tx.type === 'investment' ? 'text-white' : 'text-brand-400'}\`}>
                     {tx.type === 'withdrawal' || tx.type === 'investment' ? '-' : '+'}{formatCurrency(tx.amount)}
                   </p>
                   <div className="flex justify-end mt-1">
@@ -148,3 +144,6 @@ export function History() {
     </div>
   );
 }
+\`;
+
+fs.writeFileSync('src/pages/History.tsx', content);

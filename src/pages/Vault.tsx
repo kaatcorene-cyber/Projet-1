@@ -86,13 +86,13 @@ export function Vault() {
   };
 
   return (
-    <div className="px-4 pt-4 pb-32 min-h-[100dvh] bg-slate-50 font-sans relative overflow-hidden">
+    <div className="px-4 pt-4 pb-32 min-h-[100dvh] bg-[#03296c] font-sans relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none -mr-20 -mt-20"></div>
       
       <div className="flex items-center gap-3 mb-8 relative z-10">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Coffre</h1>
-          <p className="text-slate-500 text-sm font-medium">Réclamez vos enveloppes rouges</p>
+          <h1 className="text-2xl font-black text-white tracking-tight">Coffre</h1>
+          <p className="text-blue-200/60 text-sm font-medium">Réclamez vos enveloppes rouges</p>
         </div>
       </div>
 
@@ -104,10 +104,10 @@ export function Vault() {
           </motion.div>
         )}
 
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col items-center">
+        <div className="bg-white/10 rounded-3xl p-6 border border-white/20 shadow-sm flex flex-col items-center">
           
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Entrez un code</h2>
-          <p className="text-slate-500 text-sm text-center mb-6">
+          <h2 className="text-xl font-bold text-white mb-2">Entrez un code</h2>
+          <p className="text-blue-200/60 text-sm text-center mb-6">
             Si vous avez reçu un code de coffre, entrez-le ci-dessous pour débloquer votre bonus.
           </p>
           
@@ -117,7 +117,7 @@ export function Vault() {
               value={code}
               onChange={e => setCode(e.target.value.toUpperCase())}
               placeholder="EX: CADEAU1000"
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-center font-black text-xl tracking-widest focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all uppercase"
+              className="w-full bg-[#03296c] border border-white/20 rounded-2xl px-4 py-4 text-center font-black text-xl tracking-widest focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all uppercase"
               required
             />
             

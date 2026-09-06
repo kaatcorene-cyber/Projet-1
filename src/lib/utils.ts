@@ -23,14 +23,15 @@ export function generateUserId(uuid: string | undefined) {
 }
 
 export const getPlanName = (amount: number) => {
-    const amt = Number(amount);
-    if (amt === 3000) return 'Héliciculture';
-    if (amt === 7000) return 'Pisciculture';
-    if (amt === 15000) return 'Aviculture';
-    if (amt === 31000) return 'Cuniculture';
-    if (amt === 63000) return 'Élevage porcin';
-    if (amt === 125000) return 'Élevage ovin';
-    if (amt === 249000) return 'Élevage caprin';
-    if (amt === 497000) return 'Élevage bovin';
-    return 'Pack Élevage';
+  switch (amount) {
+    case 2000: return '🍓 Jus de Fraise';
+    case 5000: return '🍉 Jus de Pastèque';
+    case 8000: return '🥝 Jus de Kiwi';
+    case 15000: return '🍇 Vin de Raisin';
+    case 35000: return '🍒 Vin de Cerise';
+    case 80000: return '🍋 Jus de Citron';
+    case 200000: return '🍏 Jus de Pomme Verte';
+    case 500000: return '🍌 Jus de Banane';
+    default: return 'PACK INVESTISSEMENT';
+  }
 };

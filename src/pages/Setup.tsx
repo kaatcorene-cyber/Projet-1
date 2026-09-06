@@ -125,21 +125,21 @@ ON CONFLICT (phone, country) DO NOTHING;
 
   if (isChecking) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500">
-        <div className="w-8 h-8 border-2 border-slate-200 border-t-brand-500 rounded-full animate-spin"></div>
+      <div className="min-h-[100dvh] bg-[#03296c] flex items-center justify-center text-blue-200/60">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-brand-500 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-6 flex flex-col items-center justify-center max-w-md mx-auto relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-[#03296c] text-white p-6 flex flex-col items-center justify-center max-w-md mx-auto relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-500/10 rounded-full blur-[80px] pointer-events-none"></div>
 
       <div className="w-16 h-16 bg-brand-500/20 border border-brand-500/30 rounded-2xl flex items-center justify-center mb-6 relative z-10">
         <Database className="w-8 h-8 text-brand-400" />
       </div>
       <h1 className="text-2xl font-black mb-2 text-center tracking-tight relative z-10">Configuration Requise</h1>
-      <p className="text-slate-500 text-center mb-8 text-sm relative z-10">
+      <p className="text-blue-200/60 text-center mb-8 text-sm relative z-10">
         La base de données n'est pas encore configurée. Veuillez exécuter le script SQL suivant dans votre éditeur SQL Supabase.
       </p>
 
@@ -147,19 +147,19 @@ ON CONFLICT (phone, country) DO NOTHING;
         <div className="absolute right-2 top-2">
           <button 
             onClick={copyToClipboard}
-            className="p-2 bg-white hover:bg-slate-700 rounded-xl text-slate-500 transition-colors border border-slate-200"
+            className="p-2 bg-white/10 hover:bg-slate-700 rounded-xl text-blue-200/60 transition-colors border border-white/20"
           >
             {copied ? <CheckCircle className="w-4 h-4 text-brand-400" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
-        <pre className="bg-slate-50/80 backdrop-blur-xl border-slate-200 p-4 rounded-2xl overflow-x-auto text-xs text-slate-600 border h-64 shadow-inner">
+        <pre className="bg-[#03296c]/80 backdrop-blur-xl border-white/20 p-4 rounded-2xl overflow-x-auto text-xs text-white/80 border h-64 shadow-inner">
           <code>{schema}</code>
         </pre>
       </div>
 
       <button 
         onClick={() => window.location.reload()}
-        className="mt-8 w-full py-4 bg-brand-500 hover:bg-brand-400 text-slate-900 rounded-xl font-bold transition-all shadow-lg shadow-brand-500/20 active:scale-[0.98] relative z-10"
+        className="mt-8 w-full py-4 bg-brand-500 hover:bg-brand-400 text-white rounded-xl font-bold transition-all shadow-lg shadow-brand-500/20 active:scale-[0.98] relative z-10"
       >
         J'ai exécuté le script
       </button>
