@@ -1,8 +1,35 @@
-import { ArrowRight, CheckCircle2, ShieldCheck, TrendingUp, Award, Building2, MapPin, Users, Calendar, Factory } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, CheckCircle2, ShieldCheck, TrendingUp, Award, Building2, MapPin, Users, Calendar, Factory, Eye, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AppLogo } from '../components/AppLogo';
 
 export function Dashboard() {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const presentationItems = [
+    {
+      id: 'doc-1',
+      image: '/images/presentation/image1.jpeg',
+      fallbackImage: 'https://i.imgur.com/MyrZuHN.jpeg',
+      title: 'INFORMATIONS & TRANSPARENCE',
+      text: 'Cette présentation rassemble des informations relatives aux activités et à la présence de Cargill en Côte d’Ivoire. Les éléments présentés sont destinés à permettre une meilleure compréhension de l’entreprise, de ses activités et de ses engagements.'
+    },
+    {
+      id: 'doc-2',
+      image: '/images/presentation/image2.jpg',
+      fallbackImage: '/images/presentation/image2.jpg',
+      title: 'ENGAGEMENT & CONFIANCE',
+      text: 'Cargill s’appuie sur une présence internationale et des activités structurées dans le secteur agricole et alimentaire. La transparence, la responsabilité et le respect des partenaires constituent des principes essentiels dans la conduite de ses activités.'
+    },
+    {
+      id: 'doc-3',
+      image: '/images/presentation/image3.png',
+      fallbackImage: 'https://i.imgur.com/q1Gy36v.png',
+      title: 'ENGAGEMENT POUR LA QUALITÉ ET LA CONFORMITÉ',
+      text: 'La qualité, la responsabilité et la conformité constituent des principes fondamentaux dans les activités de Cargill. Ce document présente les engagements et domaines d’activité associés à Cargill Côte d’Ivoire et doit être distingué de tout certificat ou agrément délivré par une autorité indépendante.'
+    }
+  ];
+
   const activities = [
     'Cacao',
     'Riz',
@@ -56,6 +83,54 @@ export function Dashboard() {
             <p className="text-gray-700 text-sm sm:text-base leading-relaxed font-normal">
               Cargill est un acteur mondial de l’agriculture et de l’agroalimentaire, présent en Côte d’Ivoire depuis 1997. L’entreprise travaille avec les producteurs et les coopératives afin de s’approvisionner en matières premières agricoles et de développer des chaînes d’approvisionnement durables.
             </p>
+          </div>
+
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+
+          {/* Section Présentation & Documents Officiels */}
+          <div className="space-y-6">
+            {presentationItems.map((item, index) => (
+              <div key={item.id} className="space-y-3">
+                {/* Image */}
+                <div 
+                  className="relative group rounded-2xl overflow-hidden bg-white border border-gray-200/90 shadow-xs cursor-pointer active:scale-[0.99] transition-transform"
+                  onClick={() => setSelectedImage(item.image)}
+                >
+                  <img 
+                    src={item.image} 
+                    alt={item.title}
+                    className="w-full h-auto max-h-[360px] object-contain bg-neutral-900/5 mx-auto transition-opacity"
+                    onError={(e) => {
+                      // Fallback if local path fails
+                      if (item.fallbackImage && e.currentTarget.src !== item.fallbackImage) {
+                        e.currentTarget.src = item.fallbackImage;
+                      }
+                    }}
+                  />
+                  <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-sm text-white text-[11px] font-bold flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Agrandir</span>
+                  </div>
+                </div>
+
+                {/* Text directly underneath image */}
+                <div className="space-y-1.5 px-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                    <h2 className="text-sm font-black tracking-tight text-gray-900 uppercase">
+                      {item.title}
+                    </h2>
+                  </div>
+                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-normal">
+                    {item.text}
+                  </p>
+                </div>
+
+                {index < presentationItems.length - 1 && (
+                  <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent pt-3"></div>
+                )}
+              </div>
+            ))}
           </div>
 
           <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
@@ -221,6 +296,28 @@ export function Dashboard() {
           </div>
         </Link>
       </div>
+      {/* Image Lightbox Modal */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedImage(null)}
+        >
+          <button 
+            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
+            onClick={() => setSelectedImage(null)}
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div className="relative max-w-2xl max-h-[90vh] w-full flex items-center justify-center overflow-auto">
+            <img 
+              src={selectedImage} 
+              alt="Document agrandi" 
+              className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

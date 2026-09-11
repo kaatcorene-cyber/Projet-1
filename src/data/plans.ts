@@ -42,7 +42,7 @@ export const DEFAULT_CROP_PLANS: CropPlan[] = [
   },
   {
     "id": "anacarde",
-    "name": "Anacarde (noix de cajou)",
+    "name": "Anacarde",
     "amount": 40000,
     "daily": 2800,
     "total": 168000,

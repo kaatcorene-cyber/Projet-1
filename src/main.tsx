@@ -11,12 +11,12 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// We unregister service workers to avoid old cached versions persisting
+// Register service worker for Cargill PWA auto-update
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    for(let registration of registrations) {
-      registration.unregister();
-    }
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+      // Graceful fallback if sw.js is not present in dev mode
+    });
   });
 }
 

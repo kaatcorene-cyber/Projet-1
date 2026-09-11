@@ -17,11 +17,17 @@ export function Invest() {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.map((p: any) => ({
+            ...p,
+            name: typeof p.name === 'string' ? p.name.replace(/\s*\(noix de cajou\)/gi, '') : p.name
+          }));
         }
       }
     } catch (e) {}
-    return DEFAULT_CROP_PLANS;
+    return DEFAULT_CROP_PLANS.map((p: any) => ({
+      ...p,
+      name: typeof p.name === 'string' ? p.name.replace(/\s*\(noix de cajou\)/gi, '') : p.name
+    }));
   });
   const [loading, setLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
@@ -41,7 +47,8 @@ export function Invest() {
           if (Array.isArray(parsed) && parsed.length > 0) {
             const formatted = parsed.map((p: any, idx: number) => ({
               ...p,
-              id: p.id || `crop_${p.amount || idx}_${idx}`
+              id: p.id || `crop_${p.amount || idx}_${idx}`,
+              name: typeof p.name === 'string' ? p.name.replace(/\s*\(noix de cajou\)/gi, '') : p.name
             }));
             setPlans(formatted);
             try {
@@ -61,7 +68,10 @@ export function Invest() {
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setPlans(parsed);
+            setPlans(parsed.map((p: any) => ({
+              ...p,
+              name: typeof p.name === 'string' ? p.name.replace(/\s*\(noix de cajou\)/gi, '') : p.name
+            })));
           }
         }
       } catch (e) {}
