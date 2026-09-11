@@ -244,14 +244,20 @@ export function Profile() {
            </div>
 
            {/* Actions Financer / Retirer */}
-           <div className="grid grid-cols-2 gap-3 mt-4 relative z-10">
-               <Link to="/deposit" className="group relative overflow-hidden bg-emerald-600 hover:bg-emerald-500 text-white transition-all py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs shadow-sm active:scale-95">
-                   <PlusCircle className="w-4 h-4 shrink-0" />
-                   <span>Financer</span>
+           <div className="grid grid-cols-2 gap-3.5 mt-5 relative z-10">
+               <Link 
+                 to="/deposit" 
+                 className="group relative overflow-hidden bg-emerald-600 hover:bg-emerald-500 text-white transition-all py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2.5 font-black text-sm shadow-md shadow-emerald-600/25 active:scale-95 min-h-[50px]"
+               >
+                   <PlusCircle className="w-5 h-5 shrink-0" />
+                   <span className="tracking-wide">Financer</span>
                </Link>
-               <Link to="/withdraw" className="group relative overflow-hidden bg-gray-100 hover:bg-gray-200 border border-black/5 text-gray-900 transition-all py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs active:scale-95 shadow-sm">
-                   <Banknote className="w-4 h-4 shrink-0 text-emerald-600" />
-                   <span>Retirer</span>
+               <Link 
+                 to="/withdraw" 
+                 className="group relative overflow-hidden bg-slate-900 hover:bg-slate-800 text-white transition-all py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2.5 font-black text-sm shadow-md shadow-slate-900/20 active:scale-95 min-h-[50px]"
+               >
+                   <Banknote className="w-5 h-5 shrink-0 text-emerald-400" />
+                   <span className="tracking-wide">Retirer</span>
                </Link>
            </div>
         </div>

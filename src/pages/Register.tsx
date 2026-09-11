@@ -109,17 +109,17 @@ export function Register() {
       </div>
 
       <div className="w-full relative z-10">
-        <form onSubmit={handleRegister} className="space-y-3">
+        <form onSubmit={handleRegister} className="space-y-3.5">
           {error && (
-            <div className="p-2.5 bg-red-50 border border-red-500/20 rounded-xl text-red-600 text-xs font-bold text-center">
+            <div className="p-3 bg-red-50 border border-red-500/20 rounded-xl text-red-600 text-xs font-bold text-center">
               {error}
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-gray-600 ml-1 uppercase tracking-widest">Téléphone</label>
-            <div className="flex bg-white border border-black/10 shadow-sm rounded-xl overflow-hidden focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all">
-              <span className="flex items-center px-3.5 bg-gray-50 text-gray-700 font-bold text-xs border-r border-black/10">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700 ml-1 uppercase tracking-wider">Numéro de Téléphone</label>
+            <div className="flex bg-white border border-black/15 shadow-sm rounded-2xl overflow-hidden focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all min-h-[52px]">
+              <span className="flex items-center px-4 bg-gray-50 text-gray-800 font-black text-sm border-r border-black/10 select-none">
                 +225
               </span>
               <input
@@ -127,42 +127,42 @@ export function Register() {
                 name="phone"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-3.5 py-2.5 text-gray-900 focus:outline-none bg-transparent placeholder:text-gray-400 font-medium tracking-wide text-sm"
+                className="w-full px-4 py-3.5 text-gray-900 focus:outline-none bg-transparent placeholder:text-gray-400 font-medium tracking-wide text-base"
                 placeholder="0123456789"
                 required
               />
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-gray-600 ml-1 uppercase tracking-widest">Mot de passe</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700 ml-1 uppercase tracking-wider">Mot de passe</label>
             <input
               type="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full bg-white border border-black/10 shadow-sm rounded-xl px-3.5 py-2.5 text-gray-900 focus:outline-none focus:border-emerald-500 transition-all font-medium text-sm placeholder:text-gray-400"
+              className="w-full bg-white border border-black/15 shadow-sm rounded-2xl px-4 py-3.5 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium text-base placeholder:text-gray-400 min-h-[52px]"
               placeholder="••••••••"
               required
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-gray-600 ml-1 uppercase tracking-widest">Code parrain</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700 ml-1 uppercase tracking-wider">Code parrain</label>
             <input
               type="text"
               name="referralCode"
               value={formData.referralCode}
               readOnly
               placeholder="Facultatif"
-              className="w-full bg-gray-100 border border-black/10 shadow-inner rounded-xl px-3.5 py-2.5 text-gray-500 focus:outline-none transition-all font-medium uppercase opacity-80 text-sm font-mono"
+              className="w-full bg-gray-100 border border-black/15 shadow-inner rounded-2xl px-4 py-3.5 text-gray-600 focus:outline-none transition-all font-semibold uppercase opacity-85 text-base font-mono min-h-[52px]"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl mt-4 transition-all shadow-md shadow-emerald-600/20 active:scale-95 disabled:opacity-50 text-sm cursor-pointer"
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl mt-4 transition-all shadow-lg shadow-emerald-600/25 active:scale-95 disabled:opacity-50 text-base cursor-pointer"
           >
             {loading ? 'Création du compte...' : "S'inscrire"}
           </button>
