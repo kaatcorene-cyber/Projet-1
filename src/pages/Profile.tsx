@@ -196,30 +196,37 @@ export function Profile() {
         </div>
       </div>
 
-      {/* Bulle flottante du Service Client (en bas avec avatar du logo) */}
+      {/* Bulle flottante du Service Client (avatar d'un conseiller homme portant l'habit avec le logo) */}
       <div className="fixed bottom-24 right-5 z-40">
         <button
           onClick={handleSupportRedirect}
-          className="group relative flex items-center justify-center w-14 h-14 rounded-full bg-white border-2 border-emerald-500 shadow-xl shadow-emerald-950/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          className="group relative flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-emerald-500 shadow-xl shadow-emerald-950/25 hover:scale-105 active:scale-95 transition-all cursor-pointer p-0.5"
           title="Contacter le Service Client"
           aria-label="Contacter le Service Client Cargill"
         >
-          {/* Avatar avec le logo */}
-          <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-emerald-50/50">
+          {/* Avatar avec la personne : homme habillé avec le logo */}
+          <div className="w-full h-full rounded-full overflow-hidden relative bg-emerald-100 flex items-center justify-center">
             <img 
-              src="/icon.svg" 
-              alt="Cargill Support" 
-              className="w-8 h-8 object-contain"
+              src="/images/customer_support_avatar.jpg" 
+              alt="Conseiller Service Client Cargill" 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/icon.svg';
+              }}
             />
+            {/* Petit badge logo officiel incrusté sous l'habit au bas de l'avatar */}
+            <div className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full p-0.5 shadow-sm border border-emerald-500/50">
+              <img src="/icon.svg" alt="Cargill" className="w-3.5 h-3.5 object-contain" />
+            </div>
           </div>
 
           {/* Badge point vert en ligne clignotant */}
-          <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
+          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white"></span>
           </span>
 
-          {/* Tooltip discreet on hover */}
+          {/* Tooltip discret au survol */}
           <span className="absolute right-full mr-2.5 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-bold rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
             Service Client 24/7
           </span>
