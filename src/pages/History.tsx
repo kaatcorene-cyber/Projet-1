@@ -2,146 +2,113 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { Wallet, Banknote, Coins, Briefcase, Users, Sparkles, CreditCard, Clock, ChevronLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { AppLogo } from '../components/AppLogo';
 
 export function History() {
   const { user } = useAuthStore();
   const [transactions, setTransactions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchTransactions();
+    fetchData();
+
+    const intervalId = setInterval(() => {
+      fetchData();
+    }, 60000);
+
+    return () => clearInterval(intervalId);
   }, [user]);
 
-  const fetchTransactions = async () => {
+  const fetchData = async () => {
     if (!user) return;
-    try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setTransactions(data || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+    
+    const { data: txData } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    
+    if (txData) {
+      setTransactions(txData);
     }
   };
 
-    const getIcon = (type: string) => {
-    switch(type) {
-      case 'deposit': return <Wallet className="w-5 h-5" />;
-      case 'withdrawal': return <Banknote className="w-5 h-5" />;
-      case 'daily_gain': return <Coins className="w-5 h-5" />;
-      case 'investment': return <Briefcase className="w-5 h-5" />;
-      case 'referral_bonus': return <Users className="w-5 h-5" />;
-      case 'signup_bonus': return <Sparkles className="w-5 h-5" />;
-      default: return <CreditCard className="w-5 h-5" />;
-    }
+  const isPositive = (type: string) => {
+    return type === 'deposit' || type === 'daily_gain' || type === 'signup_bonus' || type === 'referral_bonus';
   };
 
-  const getLabel = (type: string) => {
-    switch(type) {
+  const getTypeLabel = (type: string) => {
+    switch (type) {
       case 'deposit': return 'Dépôt';
       case 'withdrawal': return 'Retrait';
+      case 'investment': return 'Investissement Culture';
       case 'daily_gain': return 'Gain journalier';
-      case 'investment': return 'Investissement';
-      case 'referral_bonus': return 'Parrainage';
-      case 'signup_bonus': return 'Inscription';
+      case 'signup_bonus': return 'Bonus de bienvenue';
+      case 'referral_bonus': return 'Bonus de parrainage';
       default: return 'Transaction';
     }
   };
 
-    const getIconColor = (type: string) => {
-    switch(type) {
-      case 'deposit': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/10';
-      case 'withdrawal': return 'bg-red-500/20 text-red-400 border-red-500/10';
-      case 'daily_gain': return 'bg-brand-500/20 text-brand-400 border-brand-500/10';
-      case 'investment': return 'bg-purple-500/20 text-purple-400 border-purple-500/10';
-      case 'referral_bonus': return 'bg-amber-500/20 text-amber-400 border-amber-500/10';
-      case 'signup_bonus': return 'bg-pink-500/20 text-pink-400 border-pink-500/10';
-      default: return 'bg-white/10 text-white border-white/5';
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'completed': 
-      case 'approved': return <span className="text-brand-400 text-[10px] font-bold uppercase tracking-wider bg-brand-500/10 px-2 py-0.5 rounded-md border border-brand-500/20">Payé</span>;
-      case 'pending': return <span className="text-amber-400 text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">En attente</span>;
-      case 'rejected': return <span className="text-red-400 text-[10px] font-bold uppercase tracking-wider bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20">Rejeté</span>;
-      default: return null;
-    }
-  };
-
   return (
-    <div className="min-h-[100dvh] bg-[#03296c] font-sans relative text-white z-20">
-      <div className="px-5 pt-12 pb-32 max-w-lg mx-auto">
-        <header className="flex items-center gap-4 mb-8 relative z-10">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/20 transition-colors shadow-sm shrink-0">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-white">Historique</h1>
-            <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-wider mt-0.5">Vos transactions</p>
-          </div>
-        </header>
+    <div className="min-h-screen bg-gray-50 text-gray-900 p-5 pt-6 pb-24 font-sans relative overflow-x-hidden">
+      {/* Background FX */}
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] pointer-events-none"></div>
 
-        {loading ? (
-          <div className="flex justify-center p-12">
-            <div className="w-10 h-10 border-4 border-white/10 border-t-brand-500 rounded-full animate-spin"></div>
-          </div>
-        ) : transactions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10">
-              <Clock className="w-8 h-8 text-blue-200/60" />
-            </div>
-            <p className="text-blue-200/60 font-medium text-sm">Aucun mouvement pour le moment.</p>
+      <header className="flex justify-between items-center pb-4 border-b border-black/5 relative z-10">
+        <div>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Histoire</h1>
+          <p className="text-emerald-600 text-[11px] font-bold uppercase tracking-wider mt-0.5">Flux des Transactions</p>
+        </div>
+        <AppLogo imgClassName="h-8 w-auto object-contain max-h-10" />
+      </header>
+
+      {/* Directly on the page - No card wrapper, no icons behind notifications */}
+      <div className="relative z-10 mt-4">
+        {transactions.length === 0 ? (
+          <div className="text-center py-16 text-gray-400 text-xs font-bold tracking-wider uppercase">
+            Aucune transaction enregistrée
           </div>
         ) : (
-          <div className="flex flex-col gap-1 relative z-10">
-            {transactions.map((tx, idx) => (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                key={tx.id} 
-                className={`flex items-center justify-between py-4 ${idx !== transactions.length - 1 ? 'border-b border-white/10' : ''}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-[16px] flex items-center justify-center shrink-0 border border-white/5 ${getIconColor(tx.type)}`}>
-                    {getIcon(tx.type)}
-                  </div>
-                  <div>
-                    <p className="font-bold text-white text-[15px] leading-tight mb-1">
-                      {tx.type === 'referral_bonus' && tx.reference ? tx.reference : getLabel(tx.type)}
-                    </p>
-                    <p className="text-blue-200/60 text-[11px] font-medium uppercase tracking-wider">
-                      {new Date(tx.created_at).toLocaleDateString('fr-FR', {
-                        day: 'numeric', month: 'short'
-                      })} • {new Date(tx.created_at).toLocaleTimeString('fr-FR', {
-                        hour: '2-digit', minute: '2-digit'
-                      })}
+          <div className="divide-y divide-gray-200/80">
+            {transactions.map((tx) => {
+              const positive = isPositive(tx.type);
+              return (
+                <div 
+                  key={tx.id} 
+                  className="py-3.5 px-1 flex items-center justify-between hover:bg-black/[0.02] transition-colors"
+                >
+                  <div className="flex-1 pr-4">
+                    <h3 className="font-bold text-gray-900 text-sm leading-snug">
+                      {getTypeLabel(tx.type)}
+                    </h3>
+                    <p className="text-[11px] text-gray-500 font-medium mt-0.5">
+                      {format(new Date(tx.created_at), 'dd MMM yyyy à HH:mm', { locale: fr })}
                     </p>
                   </div>
-                </div>
-                
-                <div className="text-right">
-                  <p className={`font-black text-[16px] leading-tight mb-1 ${tx.type === 'withdrawal' || tx.type === 'investment' ? 'text-white' : 'text-brand-400'}`}>
-                    {tx.type === 'withdrawal' || tx.type === 'investment' ? '-' : '+'}{formatCurrency(tx.amount)}
-                  </p>
-                  <div className="flex justify-end mt-1">
-                    {getStatusBadge(tx.status)}
+                  
+                  <div className="text-right shrink-0">
+                    <p className={`text-base font-black tracking-tight ${
+                      positive ? 'text-emerald-600' : 'text-gray-900'
+                    }`}>
+                      {positive ? '+' : '-'}{formatCurrency(tx.amount)}
+                    </p>
+                    <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md mt-1 ${
+                      tx.status === 'completed' || tx.status === 'approved' 
+                        ? 'text-emerald-700 bg-emerald-50 border border-emerald-500/20' 
+                        : tx.status === 'pending' 
+                          ? 'text-amber-700 bg-amber-50 border border-amber-500/20' 
+                          : 'text-red-700 bg-red-50 border border-red-500/20'
+                    }`}>
+                      {tx.status === 'completed' || tx.status === 'approved' ? 'Validé' :
+                       tx.status === 'pending' ? 'En cours' : 'Rejeté'}
+                    </span>
                   </div>
                 </div>
-              </motion.div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -1,204 +1,314 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Wallet, ArrowDownLeft, ArrowUpRight, 
-  LogOut, ChevronRight, Landmark,
-  User as UserIcon, ShieldCheck,
-  Users, Apple, Share, PlusSquare, X, Info
-} from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { usePWAInstall } from '../hooks/usePWAInstall';
-import { motion, AnimatePresence } from 'framer-motion';
+import { formatCurrency, parseSafeDate } from '../lib/utils';
+import { Banknote, PlusCircle, Users, Headset, LogOut, Sprout, Wallet, Clock } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AppLogo } from '../components/AppLogo';
 
-export function Profile() {
-  const { user, logout, refreshUser } = useAuthStore();
-  const { config, fetchConfig } = useAppStore();
-  const { isInstallable, installPWA, isIOS } = usePWAInstall();
-  const navigate = useNavigate();
-  
-  const [balance, setBalance] = useState<number>(0);
-  const [hasRecharged, setHasRecharged] = useState(false);
-  const [showIOSOverlay, setShowIOSOverlay] = useState(false);
-  
-  useEffect(() => {
-    refreshUser();
-    fetchConfig();
-  }, []);
+function CountdownTimer({ activeInvestments }: { activeInvestments: any[] }) {
+  const [timeLeft, setTimeLeft] = useState<{h: number, m: number, s: number, percent: number} | null>(null);
 
   useEffect(() => {
-    if (user) {
-      setBalance(user.balance);
-    }
-  }, [user]);
+    if (!activeInvestments.length) return;
 
-  useEffect(() => {
-    if (user?.id) {
-      const checkRecharge = async () => {
-        const { data } = await supabase
-          .from('transactions')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('type', 'deposit')
-          .eq('status', 'approved')
-          .limit(1);
-          
-        if (data && data.length > 0) {
-          setHasRecharged(true);
+    const calculateTime = () => {
+      let closestPayout = Infinity;
+      const now = Date.now();
+
+      activeInvestments.forEach(inv => {
+        const startDateRaw = inv.start_date || inv.created_at;
+        const start = parseSafeDate(startDateRaw);
+        
+        const daysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
+        const nextPayout = start + (daysElapsed + 1) * 24 * 60 * 60 * 1000;
+        
+        if (nextPayout < closestPayout) {
+          closestPayout = nextPayout;
         }
-      };
-      
-      checkRecharge();
-    }
-  }, [user?.id]);
+      });
+
+      if (closestPayout === Infinity) return;
+
+      const diff = closestPayout - now;
+      const totalMs = 24 * 60 * 60 * 1000;
+      let progressPercent = ((totalMs - diff) / totalMs) * 100;
+      if (progressPercent > 100) progressPercent = 100;
+      if (progressPercent < 0) progressPercent = 0;
+
+      setTimeLeft({
+        h: Math.floor((Math.max(0, diff) / (1000 * 60 * 60)) % 24),
+        m: Math.floor((Math.max(0, diff) / 1000 / 60) % 60),
+        s: Math.floor((Math.max(0, diff) / 1000) % 60),
+        percent: progressPercent
+      });
+    };
+
+    calculateTime();
+    const interval = setInterval(calculateTime, 1000);
+    return () => clearInterval(interval);
+  }, [activeInvestments]);
+
+  if (!timeLeft) return null;
+
+  const radius = 28;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (timeLeft.percent / 100) * circumference;
 
   return (
-    <div className="min-h-[100dvh] bg-[#f8fafc] font-sans text-white pb-32">
-      {/* Simple Header */}
-      <div className="pt-10 pb-4 px-6 flex items-center justify-between">
-        <h1 className="text-2xl font-black text-slate-800 tracking-tight">Mon Profil</h1>
-        <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center shadow-sm border border-white/20">
-           <UserIcon className="w-5 h-5 text-white/80" />
+    <div className="bg-white rounded-3xl p-6 relative overflow-hidden flex items-center justify-between border border-black/5 shadow-sm mt-6">
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent pointer-events-none"></div>
+      
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <Clock className="w-4 h-4 text-emerald-600" />
+          <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Prochain gain de culture</span>
+        </div>
+        <div className="font-mono text-3xl font-black text-gray-900 tracking-widest flex items-baseline" style={{ fontVariantNumeric: 'tabular-nums' }}>
+          <span>{String(timeLeft.h).padStart(2, '0')}</span>
+          <span className="text-emerald-500/50 mx-1 mb-1">:</span>
+          <span>{String(timeLeft.m).padStart(2, '0')}</span>
+          <span className="text-emerald-500/50 mx-1 mb-1">:</span>
+          <span className="text-emerald-600">{String(timeLeft.s).padStart(2, '0')}</span>
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-4 space-y-6">
-        
-        {/* The Unified Premium Wallet Card */}
-        <div className="bg-brand-500 rounded-[2rem] p-6 shadow-xl shadow-brand-500/20 relative overflow-hidden">
-          {/* Decorative blurs */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
-          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-black/10 rounded-full blur-3xl"></div>
-          
-          <div className="relative z-10 flex flex-col gap-6">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/10">
-                <UserIcon className="w-4 h-4 text-white" />
-                <span className="text-white font-medium tracking-widest font-mono text-xs">{user?.phone}</span>
-              </div>
-              <div className="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm">
-                {hasRecharged ? <ShieldCheck className="w-3.5 h-3.5 text-white" /> : <div className="w-2 h-2 rounded-full bg-orange-300 animate-pulse" />}
-                <span className="text-white text-[10px] font-bold uppercase tracking-widest">{hasRecharged ? 'Actif' : 'Nouveau'}</span>
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <p className="text-brand-100 text-[10px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                <Wallet className="w-3.5 h-3.5" /> Solde Total
-              </p>
-              <h2 className="text-4xl font-black text-white tracking-tight flex items-baseline gap-1.5">
-                {new Intl.NumberFormat('fr-FR').format(balance)} <span className="text-lg font-bold text-brand-100">FCFA</span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <Link to="/deposit" className="bg-white/10 text-brand-600 hover:bg-brand-50 py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm transition-colors shadow-sm active:scale-95">
-                <ArrowDownLeft className="w-5 h-5" /> Recharger
-              </Link>
-              <Link to="/withdraw" className="bg-brand-600/50 hover:bg-brand-600 text-white border border-brand-400/30 py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm transition-colors active:scale-95">
-                <ArrowUpRight className="w-5 h-5" /> Retirer
-              </Link>
-            </div>
-          </div>
+      <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
+        <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
+          <circle 
+            className="text-gray-100" 
+            strokeWidth="6" 
+            stroke="currentColor" 
+            fill="transparent" 
+            r={radius} 
+            cx="40" 
+            cy="40" 
+          />
+          <circle 
+            className="text-emerald-500 transition-all duration-1000 ease-linear" 
+            strokeWidth="6" 
+            strokeDasharray={circumference} 
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round" 
+            stroke="currentColor" 
+            fill="transparent" 
+            r={radius} 
+            cx="40" 
+            cy="40" 
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Sprout className="w-6 h-6 text-emerald-600 animate-pulse" />
         </div>
-
-        {/* Menu Items */}
-        <div className="space-y-4">
-          <div className="bg-white/10 rounded-3xl shadow-sm border border-white/10 overflow-hidden">
-            <Link to="/bank" className="flex items-center p-4 hover:bg-[#03296c] transition-colors group">
-              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500 mr-4 shrink-0 transition-transform group-hover:scale-110">
-                <Landmark className="w-5 h-5" />
-              </div>
-              <span className="font-bold text-white/90 flex-1 text-sm">Compte de retrait</span>
-              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-orange-500 transition-colors" />
-            </Link>
-          </div>
-
-          <div className="bg-white/10 rounded-3xl shadow-sm border border-white/10 overflow-hidden divide-y divide-slate-50">
-            <a href={config?.group_link || "https://t.me/+6Po4wpvKD-QzYWVk"} target="_blank" rel="noopener noreferrer" className="flex items-center p-4 hover:bg-[#03296c] transition-colors group">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-500 mr-4 shrink-0 transition-transform group-hover:scale-110">
-                <Users className="w-5 h-5" />
-              </div>
-              <span className="font-bold text-white/90 flex-1 text-sm">Groupe Communauté</span>
-              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-colors" />
-            </a>
-            
-            <Link to="/about" className="flex items-center p-4 hover:bg-[#03296c] transition-colors group">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-500 mr-4 shrink-0 transition-transform group-hover:scale-110">
-                <Info className="w-5 h-5" />
-              </div>
-              <span className="font-bold text-white/90 flex-1 text-sm">À propos d'ElevFinAi</span>
-              <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-purple-500 transition-colors" />
-            </Link>
-          </div>
-
-          <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center p-4 bg-white/10 hover:bg-red-50 rounded-3xl transition-colors group shadow-sm border border-white/10 text-left">
-            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-500 mr-4 shrink-0 transition-transform group-hover:scale-110">
-              <LogOut className="w-5 h-5" />
-            </div>
-            <span className="font-bold text-red-600 flex-1 text-sm">Déconnexion</span>
-          </button>
-        </div>
-
       </div>
+    </div>
+  );
+}
 
-      {/* Full Screen iOS Install Overlay */}
-      <AnimatePresence>
-        {showIOSOverlay && (
-          <motion.div
-            initial={{ opacity: 0, y: "100%" }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-50 bg-[#03296c] flex flex-col p-6"
-          >
-            <div className="flex justify-end mb-8">
-              <button 
-                onClick={() => setShowIOSOverlay(false)}
-                className="w-10 h-10 bg-white/10 rounded-full shadow-sm border border-white/20 flex items-center justify-center text-blue-200/60 hover:text-white"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
-              <div className="w-20 h-20 bg-white/5 rounded-3xl flex items-center justify-center text-white mb-6 shadow-sm border border-white/20 self-center">
-                <Apple className="w-10 h-10" />
-              </div>
-              
-              <h2 className="text-2xl font-black tracking-tight text-center mb-2">Installation sur iOS</h2>
-              <p className="text-blue-200/60 text-center mb-10 text-sm">Installez l'application sur votre iPhone pour une expérience plus rapide et en plein écran.</p>
-              
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full bg-brand-50 text-brand-600 font-bold flex items-center justify-center shrink-0">1</div>
-                  <div>
-                    <p className="text-white font-bold mb-1">Appuyez sur Partager</p>
-                    <p className="text-blue-200/60 text-sm">Appuyez sur l'icône <Share className="w-4 h-4 inline-block mx-1" /> dans la barre de navigation Safari en bas de votre écran.</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full bg-brand-50 text-brand-600 font-bold flex items-center justify-center shrink-0">2</div>
-                  <div>
-                    <p className="text-white font-bold mb-1">Ajouter à l'écran d'accueil</p>
-                    <p className="text-blue-200/60 text-sm">Faites défiler le menu et sélectionnez l'option <strong>"Sur l'écran d'accueil"</strong> <PlusSquare className="w-4 h-4 inline-block mx-1" />.</p>
-                  </div>
-                </div>
+export function Profile() {
+  const { user, refreshUser, setUser } = useAuthStore();
+  const { settingsCache, setSettingsCache, investmentsCache, setInvestmentsCache } = useAppStore();
+  const navigate = useNavigate();
+  
+  const [activeInvestments, setActiveInvestments] = useState<any[]>(investmentsCache || []);
+  const [dailyGain, setDailyGain] = useState(0);
+  const [groupLink, setGroupLink] = useState('');
+  const [supportLink, setSupportLink] = useState('');
+  const [isLoading, setIsLoading] = useState(!settingsCache || !investmentsCache);
 
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full bg-brand-50 text-brand-600 font-bold flex items-center justify-center shrink-0">3</div>
-                  <div>
-                    <p className="text-white font-bold mb-1">Confirmer l'ajout</p>
-                    <p className="text-blue-200/60 text-sm">Appuyez sur <strong>Ajouter</strong> en haut à droite de votre écran.</p>
+  useEffect(() => {
+    refreshUser();
+    if (investmentsCache) {
+      const totalDaily = investmentsCache.reduce((acc, curr) => acc + Number(curr.daily_yield), 0);
+      setDailyGain(totalDaily);
+    }
+    if (settingsCache) applySettings(settingsCache);
+    if (settingsCache && investmentsCache) setIsLoading(false);
+    
+    fetchData();
+
+    const intervalId = setInterval(() => {
+      refreshUser();
+      fetchData();
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [user?.id]);
+
+  const formatLink = (link: string, defaultLink: string) => {
+    if (!link) return defaultLink;
+    if (link.startsWith('@')) return `https://t.me/${link.substring(1)}`;
+    if (!link.startsWith('http')) return `https://${link}`;
+    return link;
+  };
+  
+  const applySettings = (data: any[]) => {
+    const groupData = data.find(s => s.key === 'group_link');
+    const supportData = data.find(s => s.key === 'support_link');
+    if (groupData?.value) setGroupLink(formatLink(groupData.value, ''));
+    if (supportData?.value) setSupportLink(formatLink(supportData.value, 'https://t.me/sunpower_agt'));
+    else setSupportLink('https://t.me/sunpower_agt');
+  };
+
+  const fetchData = async () => {
+    const currentUser = useAuthStore.getState().user;
+    if (!currentUser) return setIsLoading(false);
+    try {
+      const [invRes, settingsRes] = await Promise.all([
+        supabase.from('investments').select('*').eq('user_id', currentUser.id).eq('status', 'active'),
+        supabase.from('settings').select('*')
+      ]);
+      if (invRes.data) {
+        setActiveInvestments(invRes.data);
+        setInvestmentsCache(invRes.data);
+        setDailyGain(invRes.data.reduce((acc, curr) => acc + Number(curr.daily_yield), 0));
+      }
+      if (settingsRes.data) {
+        setSettingsCache(settingsRes.data);
+        applySettings(settingsRes.data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    supabase.auth.signOut();
+    setUser(null);
+    navigate('/login');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
+        <p className="absolute mt-16 text-emerald-600 font-bold animate-pulse text-xs">Chargement...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900">
+      {/* Dynamic Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/5 to-transparent -translate-y-1/2 translate-x-1/3"></div>
+         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/5 to-transparent translate-y-1/3 -translate-x-1/3"></div>
+         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02]"></div>
+      </div>
+      
+      <div className="relative z-10 px-5 pt-8">
+        {/* Header */}
+        <header className="flex justify-between items-center mb-6">
+          <div>
+            <p className="text-emerald-600 text-[10px] font-black uppercase tracking-widest mb-0.5">Espace Utilisateur</p>
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight leading-tight">
+              Compte
+            </h1>
+            <p className="text-gray-500 text-xs mt-0.5">
+               Bienvenue, {user?.first_name || 'Utilisateur'}
+            </p>
+          </div>
+          <AppLogo imgClassName="h-8 w-auto object-contain max-h-10" />
+        </header>
+
+        {/* Main Balance Card */}
+        <div className="bg-white rounded-3xl p-6 border border-black/5 shadow-sm relative overflow-hidden mb-5">
+           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600"></div>
+           <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+           
+           <div className="flex justify-between items-start mb-5 relative z-10">
+               <div className="flex flex-col">
+                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <Wallet className="w-4 h-4 text-emerald-600" />
+                    Solde du Compte
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="text-3xl font-black tracking-tight text-gray-900">
+                      {formatCurrency(Number(user?.balance) || 0)}
+                    </h2>
                   </div>
-                </div>
+                  {user?.phone && (
+                    <div className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-gray-500">
+                      <span>N° Compte :</span>
+                      <span className="font-mono text-gray-800 bg-gray-100 px-2 py-0.5 rounded-md font-bold border border-black/5">+225 {user.phone}</span>
+                    </div>
+                  )}
+               </div>
+               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-500/20 rounded-full text-emerald-700 text-xs font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Actif</span>
+               </div>
+           </div>
+
+           {/* Actions Financer / Retirer */}
+           <div className="grid grid-cols-2 gap-3 mt-4 relative z-10">
+               <Link to="/deposit" className="group relative overflow-hidden bg-emerald-600 hover:bg-emerald-500 text-white transition-all py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs shadow-sm active:scale-95">
+                   <PlusCircle className="w-4 h-4 shrink-0" />
+                   <span>Financer</span>
+               </Link>
+               <Link to="/withdraw" className="group relative overflow-hidden bg-gray-100 hover:bg-gray-200 border border-black/5 text-gray-900 transition-all py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs active:scale-95 shadow-sm">
+                   <Banknote className="w-4 h-4 shrink-0 text-emerald-600" />
+                   <span>Retirer</span>
+               </Link>
+           </div>
+        </div>
+
+        {/* Stats Section */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
+           <div className="bg-white rounded-2xl p-4 border border-black/5 relative overflow-hidden shadow-sm">
+              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Rendement / jour</p>
+              <p className="text-lg font-black text-emerald-600">{formatCurrency(dailyGain)}</p>
+           </div>
+           
+           <div className="bg-white rounded-2xl p-4 border border-black/5 relative overflow-hidden shadow-sm">
+              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Cultures Actives</p>
+              <div className="flex items-center gap-1.5">
+                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                 <p className="text-lg font-black text-gray-900">{activeInvestments.length} <span className="text-xs text-gray-500 font-bold">parcelles</span></p>
               </div>
-            </div>
-          </motion.div>
+           </div>
+        </div>
+
+        {/* Quick Communications & Logout */}
+        <div className="grid grid-cols-2 gap-3">
+            {groupLink && (
+              <a href={groupLink} target="_blank" rel="noopener noreferrer" className="bg-white border border-black/5 p-3.5 rounded-2xl flex items-center gap-2.5 hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-500/20">
+                     <Users className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col">
+                     <span className="text-gray-900 text-xs font-bold">Réseau</span>
+                     <span className="text-gray-400 text-[10px] font-semibold">Communauté</span>
+                  </div>
+              </a>
+            )}
+            <Link to="/support" className="bg-white border border-black/5 p-3.5 rounded-2xl flex items-center gap-2.5 hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-gray-700">
+                   <Headset className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col">
+                   <span className="text-gray-900 text-xs font-bold">Support</span>
+                   <span className="text-gray-400 text-[10px] font-semibold">Assistance 24/7</span>
+                </div>
+            </Link>
+        </div>
+
+        <div className="mt-3">
+           <button onClick={handleLogout} className="w-full bg-white border border-red-500/15 p-3.5 rounded-2xl flex items-center justify-center gap-2 hover:bg-red-50 transition-all active:scale-95 shadow-sm">
+                <LogOut className="w-4 h-4 text-red-500" />
+                <span className="text-red-600 text-xs font-bold">Se déconnecter</span>
+           </button>
+        </div>
+
+        {activeInvestments.length > 0 && (
+          <CountdownTimer 
+            activeInvestments={activeInvestments} 
+          />
         )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }

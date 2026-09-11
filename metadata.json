@@ -1,6 +1,8 @@
 {
-  "name": "ElevFinAi",
-  "description": "Plateforme d'investissement agricole ElevFinAi.",
+  "name": "Cargill",
+  "description": "Plateforme d'investissement agricole Cargill et de gestion des cultures à fort rendement.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

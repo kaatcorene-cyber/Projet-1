@@ -2,190 +2,260 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Info, Wallet, Zap, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, Info, CheckCircle2, Phone, ArrowRight, Wallet, Copy } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
-import { motion } from 'framer-motion';
-import { useAppStore } from '../store/useAppStore';
+import { AppLogo } from '../components/AppLogo';
 
 export function Deposit() {
-  const { user } = useAuthStore();
-  const { config } = useAppStore();
-  const navigate = useNavigate();
-  const [amount, setAmount] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [settings, setSettings] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(''), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
+    supabase.from('settings').select('key, value').then(({ data }) => {
+      if (data) {
+        const _s: Record<string, string> = {};
+        data.forEach(d => _s[d.key] = d.value);
+        setSettings(_s);
+      }
+    });
+  }, []);
+
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const [amount, setAmount] = useState('');
+  const [phone, setPhone] = useState('');
+  const country = "Cote d'Ivoire";
+  const [method, setMethod] = useState<string>('wave');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const allowedMethods = [
+    { id: 'wave', label: 'Wave' },
+    { id: 'moov', label: 'Moov Money' },
+    { id: 'mtn', label: 'MTN Mobile Money' }
+  ];
+
+  const handleCopy = (txt: string) => {
+    if(!txt) return;
+    navigator.clipboard.writeText(txt.replace(/\s/g, ''));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  
+  const [step, setStep] = useState<1 | 2>(1);
+  const [ussdCode, setUssdCode] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
     if (!user) return;
     
-    if (Number(amount) < 2000) {
-      setError('Le montant minimum de dépôt est de 2000 FCFA.');
-      return;
-    }
-
-    if (Number(amount) > 500000) {
-      setError('Le montant maximum de dépôt est de 500 000 FCFA.');
+    if (Number(amount) < 1000) {
+      setError('Le montant minimum de financement est de 1 000 FCFA.');
       return;
     }
 
     setLoading(true);
     setError('');
-    
+
     try {
       const { error: txError } = await supabase.from('transactions').insert([{
         user_id: user.id,
         type: 'deposit',
         amount: Number(amount),
-        reference: `FUSION - ${user.phone}`,
-        status: 'pending' // En attente de paiement
+        reference: `${method.toUpperCase()} - ${phone}`,
+        status: 'pending'
       }]);
+
       if (txError) throw txError;
       
-      const rawBaseUrl = config?.payment_link || 'https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96';
-      
-      const shopIdMatch = rawBaseUrl.match(/([a-f0-9]{24})/i);
-      const shopId = shopIdMatch ? shopIdMatch[1] : '6a7da1aa655b3c8aa7379d96';
-      const fullName = `ElevFinAi ${user.first_name || 'User'}`;
-      const email = 'elevfinaipayement@gmail.com';
-      const phone = user.phone || '00000000';
-      const formattedPhone = phone.startsWith('+') ? phone : `+225${phone.replace(/^0+/, '')}`;
-      
-      const initResponse = await fetch('https://pay.moneyfusion.net/api/v2/links/init-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: shopId,
-          montant: amount,
-          name: fullName,
-          phone: formattedPhone,
-          customerEmail: email,
-          countryCode: "+225"
-        })
-      });
-      if (!initResponse.ok) {
-        throw new Error("Erreur réseau lors de l'initialisation du paiement.");
+      let syntax = '';
+      if (method === 'moov') syntax = settings['ussd_ci'] || '*155*1*1*0140814162#';
+      if (method === 'mtn') syntax = settings['ussd_mtn_ci'] || '*133*1*1*0595918513#';
+
+      if (syntax) {
+        syntax = syntax.replace(/X/g, amount);
+        setUssdCode(syntax);
       }
-      const initData = await initResponse.json();
-      
-      if (!initData.statut || !initData.url) {
-        throw new Error("Erreur avec la réponse de Fusion Money.");
-      }
-      let finalUrl = initData.url;
-      if (finalUrl) {
-        finalUrl = finalUrl.replace(/assande(\s|%20)tanoa(\s|%20)grace(\s|%20)Deborat/ig, 'ElevFinAi%20Pay');
-      }
-      
-      window.location.href = finalUrl;
+      setStep(2);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Une erreur est survenue lors de la création du dépôt.');
+      setError('Erreur lors de la création de la transaction.');
     } finally {
       setLoading(false);
     }
   };
 
+  const getMethodNum = () => {
+    if (method === 'wave') return settings['num_wave_ci'] || '0701020304';
+    if (method === 'moov') return settings['num_moov_ci'] || '0140814162';
+    if (method === 'mtn') return settings['num_mtn_ci'] || '0595918513';
+    return '';
+  };
+
+  const getMethodName = () => {
+    if (method === 'wave') return 'Wave';
+    if (method === 'moov') return 'Moov Money';
+    if (method === 'mtn') return 'MTN Mobile Money';
+    return '';
+  };
+
   return (
-    <div className="min-h-[100dvh] bg-[#03296c] p-4 pt-10 pb-32 font-sans text-white relative">
-      <header className="mb-6 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm shrink-0">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-white">Recharger</h1>
-          <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-wider mt-0.5">Ajouter des fonds</p>
+    <div className="min-h-screen bg-gray-50 text-gray-900 p-5 pt-8 pb-24 font-sans relative overflow-x-hidden">
+      {/* Background FX */}
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] pointer-events-none"></div>
+
+      <header className="flex justify-between items-center mb-6 relative z-10">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 bg-white border border-black/10 rounded-full flex items-center justify-center text-gray-900 hover:bg-gray-100 transition-colors shadow-sm">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-xl font-black text-gray-900 tracking-tight">Financement</h1>
+            <p className="text-emerald-600 text-[10px] uppercase font-bold tracking-wider">Recharge de Compte</p>
+          </div>
         </div>
+        <AppLogo imgClassName="h-7 w-auto object-contain max-h-9" />
       </header>
 
-      <div className="max-w-md mx-auto space-y-6">
-        
-        {/* Balance Card */}
-        <div className="bg-brand-500 rounded-3xl p-6 text-white shadow-xl shadow-brand-500/20 relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-[30px] -mr-10 -mt-10 pointer-events-none"></div>
-           
-           <div className="flex items-start justify-between relative z-10">
-             <div>
-                <p className="text-brand-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Actuel</p>
-                <p className="text-3xl font-black">{formatCurrency(user?.balance || 0)}</p>
-             </div>
-             <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner shrink-0">
-               <Wallet className="w-6 h-6 text-white" />
-             </div>
+      <div className="relative z-10 max-w-lg mx-auto">
+      {step === 2 ? (
+         <div className="bg-white p-6 rounded-3xl border border-black/5 shadow-sm text-center animate-in fade-in zoom-in duration-200">
+           <div className="w-14 h-14 bg-emerald-50 border border-emerald-500/20 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-8 h-8" />
            </div>
-        </div>
+           
+           <h2 className="text-xl font-black text-gray-900 mb-1 tracking-tight">Demande Enregistrée</h2>
+           <p className="text-gray-500 text-xs mb-5 font-medium leading-relaxed">
+             Pour finaliser votre dépôt de <strong className="text-emerald-700 font-bold">{formatCurrency(Number(amount))}</strong>, effectuez le transfert vers les coordonnées ci-dessous :
+           </p>
 
-        {error && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm font-medium flex items-start gap-3 shadow-sm"
-          >
-            <Info className="w-5 h-5 shrink-0 mt-0.5" />
-            <p>{error}</p>
-          </motion.div>
-        )}
+           {(method === 'moov' || method === 'mtn') && (
+              <div className="mb-4 text-left bg-gray-50 border border-black/5 p-4 rounded-2xl">
+                 <div className="flex items-center justify-center gap-2 mb-3">
+                    <p className="font-bold text-gray-900 text-sm">Paiement {getMethodName()}</p>
+                 </div>
+                 
+                 <div className="space-y-3 text-xs text-gray-700 font-medium text-center">
+                    <p className="text-xs">Numéro destinataire :</p>
+                    <div className="bg-white border border-black/10 p-3 rounded-xl flex flex-col items-center justify-center">
+                       <p className="text-xl font-black text-gray-900 tracking-wider leading-none mb-2">{getMethodNum()}</p>
+                       <div className="w-full space-y-2">
+                         <button 
+                           onClick={() => handleCopy(getMethodNum())}
+                           className="flex items-center justify-center gap-1.5 w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors text-xs font-bold"
+                         >
+                           {copied ? <><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Copié</> : <><Copy className="w-4 h-4" /> Copier le numéro</>}
+                         </button>
+                         
+                         {ussdCode && (
+                           <a href={`tel:${ussdCode.replace('#', '%23')}`} className="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-black rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm">
+                             <Phone className="w-4 h-4" />
+                             Payer via USSD
+                           </a>
+                         )}
+                       </div>
+                    </div>
+                    <p className="text-[10px] text-gray-400">Votre solde sera crédité dès confirmation du transfert.</p>
+                 </div>
+              </div>
+           )}
 
-        <form onSubmit={handleSubmit} className="bg-white/10 rounded-3xl p-5 shadow-sm border border-white/20 space-y-6">
-          <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-blue-200/60 px-1">Montant à recharger</label>
-             <div className="bg-[#03296c] border border-white/20 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
-                <span className="text-slate-400 font-black text-2xl mr-3">FCFA</span>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-white placeholder-slate-300 outline-none"
-                  placeholder="0"
-                  required
-                  min="2000"
-                  max="500000"
-                />
+           {method === 'wave' && (
+              <div className="mb-4 text-left bg-gray-50 border border-black/5 p-4 rounded-2xl">
+                 <div className="flex items-center justify-center gap-2 mb-3">
+                    <p className="font-bold text-[#1C3FB7] text-sm">Paiement Wave</p>
+                 </div>
+                 
+                 <div className="space-y-3 text-xs text-gray-700 font-medium text-center">
+                    <p className="text-xs">Ouvrez Wave et transférez sur le numéro :</p>
+                    <div className="bg-white border border-black/10 p-3 rounded-xl flex flex-col items-center justify-center">
+                       <p className="text-xl font-black text-[#1C3FB7] tracking-wider leading-none mb-2">{getMethodNum()}</p>
+                       <button 
+                         onClick={() => handleCopy(getMethodNum())}
+                         className="flex items-center justify-center gap-1.5 w-full py-2 bg-blue-50 hover:bg-blue-100 text-[#1C3FB7] rounded-lg transition-colors text-xs font-bold"
+                       >
+                         {copied ? <><CheckCircle2 className="w-4 h-4 text-green-600" /> Copié</> : <><Copy className="w-4 h-4" /> Copier le numéro Wave</>}
+                       </button>
+                    </div>
+                 </div>
+              </div>
+           )}
+
+           <button onClick={() => navigate('/history')} className="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm text-xs mt-3">
+             Voir l'historique
+             <ArrowRight className="w-4 h-4" />
+           </button>
+         </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-black/5 flex items-center justify-between">
+             <div>
+               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Solde Actuel</p>
+               <p className="text-xl font-black text-gray-900">{formatCurrency(user?.balance || 0)}</p>
+             </div>
+             <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0 border border-emerald-500/20 text-emerald-600">
+               <Wallet className="w-5 h-5" />
              </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-             {[3000, 7000, 15000, 31000, 63000, 249000].map((preset) => (
-               <button
-                 key={preset}
-                 type="button"
-                 onClick={() => setAmount(preset.toString())}
-                 className={`py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-1 border ${
-                   amount === preset.toString()
-                      ? 'bg-brand-50 text-brand-600 border-brand-200 shadow-sm ring-1 ring-brand-500/50'
-                      : 'bg-white/10 text-white/80 border-white/20 hover:bg-[#03296c] hover:text-white'
-                 }`}
-               >
-                 {preset >= 100000 ? <Zap className="w-3.5 h-3.5" /> : null}
-                 {preset >= 1000 ? `${preset / 1000}k` : preset}
-               </button>
-             ))}
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-500/20 rounded-xl text-red-600 text-xs font-bold flex items-center gap-2">
+              <Info className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-4 space-y-3">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Moyen de paiement (Côte d'Ivoire)</label>
+              <select
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+                className="w-full bg-gray-50 border border-black/10 rounded-xl px-3 py-2.5 text-sm font-bold text-gray-900 mt-1 focus:outline-none focus:border-emerald-500"
+                required
+              >
+                {allowedMethods.map(m => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Numéro de source</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full bg-gray-50 border border-black/10 rounded-xl px-3 py-2.5 text-sm font-bold text-gray-900 placeholder-gray-400 mt-1 focus:outline-none focus:border-emerald-500"
+                placeholder="Votre numéro de paiement"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Montant à financer (FCFA)</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full bg-gray-50 border border-black/10 rounded-xl px-3 py-2.5 text-lg font-black text-emerald-600 placeholder-gray-300 mt-1 focus:outline-none focus:border-emerald-500"
+                placeholder="1000"
+                required
+                min="1000"
+              />
+            </div>
           </div>
 
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 rounded-2xl font-bold transition-all duration-300 disabled:opacity-50 text-white bg-brand-600 hover:bg-brand-500 shadow-lg shadow-brand-500/20 active:scale-[0.98] flex justify-center items-center gap-2"
-            >
-              {loading ? 'Redirection...' : 'Confirmer le dépôt'}
-            </button>
-          </div>
-          
-          <div className="flex items-center justify-center gap-1.5 text-slate-400">
-             <ShieldCheck className="w-4 h-4" />
-             <span className="text-[10px] font-bold uppercase tracking-wider">Paiement 100% Sécurisé</span>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl transition-all shadow-md shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+          >
+            {loading ? 'Traitement...' : 'Valider le financement'}
+            {!loading && <ArrowRight className="w-4 h-4" />}
+          </button>
         </form>
+      )}
       </div>
     </div>
   );

@@ -1,362 +1,199 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Info, Wallet, Lock, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, AlertCircle, ArrowRight } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
-import { motion } from 'framer-motion';
-
-const availableMethods = [
-  { id: 'orange', name: 'Orange Money' },
-  { id: 'mtn', name: 'MTN Mobile Money' },
-  { id: 'moov', name: 'Moov Money' },
-  { id: 'wave', name: 'Wave' },
-  { id: 'bank', name: 'Virement Bancaire' },
-  { id: 'crypto', name: 'Cryptomonnaie' },
-];
+import { AppLogo } from '../components/AppLogo';
 
 export function Withdraw() {
   const { user, refreshUser } = useAuthStore();
   const navigate = useNavigate();
   const [amount, setAmount] = useState('');
+  
+  const availableMethods = ['Wave', 'Moov Money', 'MTN Mobile Money'];
+
+  const [method, setMethod] = useState(availableMethods[0]);
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(''), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
-  const [success, setSuccess] = useState(false);
-  
-  const [withdrawalInfo, setWithdrawalInfo] = useState<{paymentMethod: string, accountNumber: string, accountHolder: string} | null>(null);
-  const [infoLoaded, setInfoLoaded] = useState(false);
-  const [maxWithdrawable, setMaxWithdrawable] = useState<number | null>(null);
-  const [hasActivePack, setHasActivePack] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (user?.id) {
-      const loadInfo = async () => {
-        let hasLocalData = false;
-        const savedInfo = localStorage.getItem('withdrawal_info_v4_' + user.id);
-        if (savedInfo) {
-          try {
-            const parsed = JSON.parse(savedInfo);
-            if (parsed.accountNumber) {
-              setWithdrawalInfo({
-                ...parsed,
-                paymentMethod: parsed.paymentMethod || parsed.bank_method || parsed.bank_name || 'orange'
-              });
-              hasLocalData = true;
-            }
-          } catch (e) {}
-        }
-        
-        if (!hasLocalData) {
-          const { data } = await supabase.from('settings').select('value').eq('key', `bank_${user.id}`).maybeSingle();
-            if (data && data.value) {
-              try {
-                const parsed = JSON.parse(data.value);
-                if (parsed.bank_account_number) {
-                  setWithdrawalInfo({
-                    paymentMethod: parsed.bank_method || parsed.paymentMethod || parsed.bank_name || 'orange',
-                    accountNumber: parsed.bank_account_number,
-                    accountHolder: parsed.bank_account_name || user.first_name || ''
-                  });
-                }
-              } catch(e) {}
-            }
-        }
-
-        const { data: txData } = await supabase
-          .from('transactions')
-          .select('amount, status, type')
-          .eq('user_id', user.id);
-
-        let totalEarnings = 0;
-        let pendingWithdrawals = 0;
-
-        if (txData) {
-           txData.forEach(tx => {
-             if (tx.status === 'approved' && (tx.type === 'daily_revenue' || tx.type === 'referral_bonus' || tx.type === 'admin_bonus')) {
-               totalEarnings += Number(tx.amount);
-             }
-             if (tx.type === 'withdrawal' && tx.status === 'pending') {
-               pendingWithdrawals += Number(tx.amount);
-             }
-           });
-        }
-        const available = Math.max(0, totalEarnings - pendingWithdrawals);
-        
-        setMaxWithdrawable(Math.min(available, Number(user.balance)));
-
-        // Check for active pack
-        const { data: invData } = await supabase.from('investments').select('id').eq('user_id', user.id);
-        setHasActivePack(invData && invData.length > 0);
-
-        setInfoLoaded(true);
-      };
-      loadInfo();
-    }
-  }, [user]);
+  const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
-    if (!user || !withdrawalInfo) return;
-
-    if (!amount || Number(amount) < 1000) {
-      setError('Le montant minimum de retrait est de 1000 FCFA.');
-      return;
+    if (!user) return;
+    
+    const nowLocal = new Date();
+    const gmtDay = nowLocal.getUTCDay();
+    const gmtHour = nowLocal.getUTCHours();
+    
+    if (gmtDay === 0) {
+      return setMessage({ type: 'error', text: 'Opérations de retrait suspendues le dimanche.' });
+    }
+    if (gmtHour < 9 || gmtHour >= 17) {
+      return setMessage({ type: 'error', text: 'Horaires d\'ouverture des retraits : 09:00 - 17:00 GMT.' });
     }
     
-    if (hasActivePack === false) {
-       setError('Vous devez avoir acheté au moins un pack actif avant de pouvoir retirer vos gains.');
-       return;
+    const numAmount = Number(amount);
+    
+    if (numAmount < 1500) {
+      return setMessage({ type: 'error', text: 'Retrait minimum requis : 1 500 FCFA.' });
     }
 
-    // removed maxWithdrawable check
-
-    if (Number(amount) > Number(user.balance)) {
-      setError('Solde insuffisant.');
-      return;
-    }
-
-    if (!password) {
-      setError('Veuillez entrer votre mot de passe pour confirmer.');
-      return;
+    if (Number(user.balance) < numAmount) {
+      return setMessage({ type: 'error', text: 'Solde disponible insuffisant.' });
     }
 
     setLoading(true);
-    setError('');
+    setMessage(null);
 
     try {
-      const { data: passData, error: passError } = await supabase
+      const { data: userData } = await supabase
         .from('users')
         .select('id')
         .eq('id', user.id)
-        .eq('password_hash', password.trim())
+        .eq('password_hash', password)
         .single();
 
-      if (passError || !passData) throw new Error('Mot de passe incorrect.');
+      if (!userData) {
+        setLoading(false);
+        return setMessage({ type: 'error', text: 'Mot de passe incorrect.' });
+      }
 
-      const { error: txError } = await supabase.from('transactions').insert([{
+      const newBalance = user.balance - numAmount;
+      await supabase.from('users').update({ balance: newBalance }).eq('id', user.id);
+
+      const { error } = await supabase.from('transactions').insert([{
         user_id: user.id,
         type: 'withdrawal',
-        amount: Number(amount),
-        status: 'pending',
-        reference: `Retrait vers ${withdrawalInfo.paymentMethod} (${withdrawalInfo.accountNumber})`
+        amount: numAmount,
+        reference: `${method} - ${phone} (Côte d'Ivoire)`,
+        status: 'pending'
       }]);
 
-      if (txError) throw txError;
-
-      const newBalance = Number(user.balance) - Number(amount);
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ balance: newBalance })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
+      if (error) throw error;
       
       await refreshUser();
-      setSuccess(true);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Une erreur est survenue lors de la demande de retrait.');
+      setMessage({ type: 'success', text: 'Demande de retrait enregistrée. Validation sous 24h.' });
+      setAmount('');
+      setPhone('');
+      setPassword('');
+      setMethod(availableMethods[0] || '');
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Une erreur est survenue lors de votre demande.' });
     } finally {
       setLoading(false);
     }
   };
 
-  if (!infoLoaded) {
-    return <div className="min-h-[100dvh] bg-[#03296c] flex items-center justify-center"></div>;
-  }
-
-  if (!withdrawalInfo) {
-    return (
-      <div className="min-h-[100dvh] bg-[#03296c] p-4 pt-10 pb-32 font-sans text-white relative">
-        <header className="mb-6 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm shrink-0">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-white">Retrait</h1>
-            <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-wider mt-0.5">Configuration requise</p>
-          </div>
-        </header>
-
-        <div className="max-w-md mx-auto bg-white/10 rounded-3xl p-8 text-center shadow-sm border border-white/20">
-          <div className="w-16 h-16 bg-[#03296c] border border-white/20 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Wallet className="w-8 h-8" />
-          </div>
-          <h2 className="text-xl font-black text-white mb-2">Compte de retrait manquant</h2>
-          <p className="text-blue-200/60 mb-8 text-sm">Veuillez d'abord configurer vos informations de retrait avant de pouvoir retirer vos gains.</p>
-          <button onClick={() => navigate('/bank')} className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-brand-500/20 active:scale-[0.98] transition-all">
-            Configurer mon compte
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (hasActivePack === false) {
-    return (
-      <div className="min-h-[100dvh] bg-[#03296c] p-4 pt-10 pb-32 font-sans text-white relative">
-        <header className="mb-6 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm shrink-0">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-white">Retrait bloqué</h1>
-          </div>
-        </header>
-
-        <div className="max-w-md mx-auto bg-white/10 rounded-3xl p-8 text-center shadow-sm border border-white/20">
-          <div className="w-16 h-16 bg-red-50 border border-red-200 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-8 h-8" />
-          </div>
-          <h2 className="text-xl font-black text-white mb-2">Achat de pack requis</h2>
-          <p className="text-blue-200/60 mb-8 text-sm">Vous devez avoir acheté au moins un pack actif avant de pouvoir retirer vos gains.</p>
-          <button onClick={() => navigate('/products')} className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-brand-500/20 active:scale-[0.98] transition-all">
-            Voir les packs
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-[100dvh] bg-[#03296c] p-4 pt-10 pb-32 font-sans text-white relative">
-      <header className="mb-6 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm shrink-0">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-white">Retrait</h1>
-          <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-wider mt-0.5">Retirer vos gains</p>
+    <div className="min-h-screen bg-gray-50 text-gray-900 p-5 pt-8 pb-24 font-sans relative overflow-x-hidden">
+      {/* Background FX */}
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] pointer-events-none"></div>
+
+      <header className="flex justify-between items-center mb-6 relative z-10">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 bg-white border border-black/10 rounded-full flex items-center justify-center text-gray-900 hover:bg-gray-100 transition-colors shadow-sm">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-xl font-black text-gray-900 tracking-tight">Retrait</h1>
+            <p className="text-emerald-600 text-[10px] uppercase font-bold tracking-wider">Récupération des gains</p>
+          </div>
         </div>
+        <AppLogo imgClassName="h-7 w-auto object-contain max-h-9" />
       </header>
 
-      <div className="max-w-md mx-auto space-y-6">
-      
-      {success ? (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white/10 rounded-3xl p-8 text-center shadow-sm border border-white/20"
-        >
-          <div className="w-20 h-20 bg-brand-50 border border-brand-100 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-            <CheckCircle2 className="w-10 h-10 text-brand-500 relative z-10" />
-          </div>
-          <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Demande envoyée !</h2>
-          <p className="text-blue-200/60 text-sm mb-8 leading-relaxed">
-            Votre demande de retrait a été enregistrée avec succès. Vous la recevrez sur votre compte sous peu.
-          </p>
-          <button 
-            onClick={() => navigate('/history')}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-2xl font-bold transition-colors shadow-lg shadow-slate-900/20"
-          >
-            Voir l'historique
-          </button>
-        </motion.div>
-      ) : (
-        <div className="space-y-6">
-        
-        {/* Balance Card */}
-        <div className="bg-brand-500 rounded-3xl p-6 text-white shadow-xl shadow-brand-500/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-[30px] -mr-10 -mt-10 pointer-events-none"></div>
-          
-          <div className="flex items-start justify-between relative z-10">
-            <div>
-               <p className="text-brand-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Retirable</p>
-               <h2 className="text-3xl font-black tracking-tight">{formatCurrency(Number(user?.balance || 0))}</h2>
-            </div>
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner shrink-0">
-               <Wallet className="w-6 h-6 text-white" />
-            </div>
+      <div className="relative z-10 max-w-lg mx-auto">
+        <div className="bg-white p-5 rounded-3xl shadow-sm border border-black/5 flex flex-col items-center justify-center mb-5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-16 -mt-16"></div>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-center">Solde Disponible</p>
+          <h2 className="text-3xl font-black text-gray-900 tracking-tight">{formatCurrency(user?.balance || 0)}</h2>
+          <div className="mt-3 px-3 py-1 bg-emerald-50 border border-emerald-500/20 text-emerald-700 rounded-lg text-xs font-bold text-center">
+            Frais de retrait réseau : 10%
           </div>
         </div>
 
-        {error && (
-         <motion.div 
-           initial={{ opacity: 0, scale: 0.95 }}
-           animate={{ opacity: 1, scale: 1 }}
-           className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm font-medium flex items-start gap-3 shadow-sm"
-         >
-           <Info className="w-5 h-5 shrink-0 mt-0.5" />
-           <p>{error}</p>
-         </motion.div>
-        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {message && (
+            <div className={`p-3.5 rounded-xl text-xs font-bold flex items-center gap-2.5 animate-in fade-in zoom-in duration-200 ${
+              message.type === 'success' ? 'bg-emerald-50 border border-emerald-500/20 text-emerald-800' : 'bg-red-50 border border-red-500/20 text-red-600'
+            }`}>
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {message.text}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="bg-white/10 rounded-3xl p-5 shadow-sm border border-white/20 space-y-6">
-          
-          <div className="bg-[#03296c] p-4 rounded-2xl border border-white/20 flex items-center justify-between mb-2">
+          <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-4 space-y-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Compte de réception</p>
-              <p className="font-black text-white text-sm">{availableMethods.find(m => m.id === withdrawalInfo.paymentMethod)?.name.toUpperCase() || withdrawalInfo.paymentMethod.toUpperCase()}</p>
-              <p className="text-xs text-blue-200/60 font-mono mt-0.5">{withdrawalInfo.accountNumber}</p>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Montant à retirer (FCFA)</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full bg-gray-50 border border-black/10 rounded-xl px-3 py-2.5 text-lg font-black text-emerald-600 placeholder-gray-300 mt-1 focus:outline-none focus:border-emerald-500"
+                placeholder="1500"
+                required
+                min="1500"
+              />
             </div>
-            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shadow-sm text-slate-400 border border-white/20 shrink-0">
-              <Wallet className="w-5 h-5" />
-            </div>
-          </div>
-           
-           <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-blue-200/60 px-1">Montant à retirer</label>
-             <div className="bg-[#03296c] border border-white/20 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
-                <span className="text-slate-400 font-black text-2xl mr-3">FCFA</span>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-white placeholder-slate-300 outline-none"
-                  placeholder="0"
-                  required
-                />
-             </div>
-           </div>
 
-           {amount && Number(amount) >= 1000 && (
-             <div className="px-4 py-3 bg-[#03296c] rounded-xl border border-white/20 flex justify-between items-center text-xs">
-                 <span className="text-blue-200/60 font-medium">Frais (15%): <span className="font-bold text-red-500">-{formatCurrency(Number(amount) * 0.15)}</span></span>
-                 <span className="text-blue-200/60 font-medium">Vous recevrez: <span className="font-bold text-brand-600">{formatCurrency(Number(amount) * 0.85)}</span></span>
-             </div>
-           )}
-           
-           <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-blue-200/60 px-1">Mot de passe</label>
-             <div className="bg-[#03296c] border border-white/20 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
-                <Lock className="w-5 h-5 text-slate-400 mr-3" />
-                <input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-bold text-white placeholder-slate-300 outline-none tracking-widest"
-                  required
-                />
-             </div>
-           </div>
-           
-           <div className="pt-2">
-             <button
-               type="submit"
-               disabled={loading}
-               className="w-full py-4 rounded-2xl font-bold transition-all duration-300 disabled:opacity-50 text-white bg-brand-600 hover:bg-brand-500 shadow-lg shadow-brand-500/20 active:scale-[0.98] flex justify-center items-center gap-2"
-             >
-               {loading ? 'Traitement...' : 'Confirmer le retrait'}
-             </button>
-           </div>
-           
-           <div className="flex items-center justify-center gap-1.5 text-slate-400">
-             <ShieldCheck className="w-4 h-4" />
-             <span className="text-[10px] font-bold uppercase tracking-wider">Transaction Sécurisée</span>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Moyen de réception</label>
+              <select
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+                className="w-full bg-gray-50 border border-black/10 rounded-xl px-3 py-2.5 text-sm font-bold text-gray-900 mt-1 focus:outline-none focus:border-emerald-500"
+                required
+              >
+                {availableMethods.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Numéro de réception</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full bg-gray-50 border border-black/10 rounded-xl px-3 py-2.5 text-sm font-bold text-gray-900 placeholder-gray-400 mt-1 focus:outline-none focus:border-emerald-500"
+                placeholder="+225 000 000"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Mot de passe de confirmation</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-gray-50 border border-black/10 rounded-xl px-3 py-2.5 text-sm font-bold text-gray-900 placeholder-gray-400 mt-1 focus:outline-none focus:border-emerald-500"
+                placeholder="••••••••"
+                required
+              />
+            </div>
           </div>
-       </form>
-      </div>
-      )}
+
+          {amount && Number(amount) >= 1500 && (
+            <div className="text-xs font-medium text-center text-gray-600 bg-white border border-black/5 py-3 px-4 rounded-xl shadow-sm">
+              Montant net à recevoir (après déduction des frais de 10%) : <br/>
+              <span className="font-black text-xl text-emerald-600 mt-0.5 inline-block">{formatCurrency(Number(amount) * 0.90)}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || (!!message && message.type === 'success')}
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl transition-all disabled:opacity-50 shadow-md shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2 text-sm"
+          >
+            {loading ? 'Vérification...' : 'Valider le retrait'}
+            {!loading && <ArrowRight className="w-4 h-4" />}
+          </button>
+        </form>
       </div>
     </div>
   );

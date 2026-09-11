@@ -20,17 +20,18 @@ export function Setup() {
   }, [navigate]);
 
   const schema = `-- Run this in your Supabase SQL Editor
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   phone TEXT NOT NULL,
-  country TEXT DEFAULT 'Côte d''Ivoire',
+  country TEXT DEFAULT "Cote d'Ivoire",
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   role TEXT DEFAULT 'user',
-  balance NUMERIC DEFAULT 100,
+  balance NUMERIC DEFAULT 500,
   referral_code TEXT UNIQUE,
   referred_by TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -40,20 +41,12 @@ CREATE TABLE IF NOT EXISTS users (
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='country') THEN
-    ALTER TABLE users ADD COLUMN country TEXT DEFAULT 'Côte d''Ivoire';
+    ALTER TABLE users ADD COLUMN country TEXT DEFAULT "Cote d'Ivoire";
     ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_key;
     ALTER TABLE users ADD CONSTRAINT users_phone_country_key UNIQUE (phone, country);
   END IF;
-  
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='bank_method') THEN
-    ALTER TABLE users ADD COLUMN bank_method TEXT;
-    ALTER TABLE users ADD COLUMN bank_account_name TEXT;
-  END IF;
-  
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='bank_account_number') THEN
-    ALTER TABLE users ADD COLUMN bank_account_number TEXT;
-  END IF;
-END$$;
+END
+$$;
 
 -- IMPORTANT: Disable RLS for the prototype so API calls don't get blocked
 ALTER TABLE users DISABLE ROW LEVEL SECURITY;
@@ -99,21 +92,13 @@ CREATE TABLE IF NOT EXISTS deposit_verifications (
 ALTER TABLE investments DISABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
-CREATE TABLE IF NOT EXISTS proofs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  image_url TEXT NOT NULL,
-  testimonial TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-ALTER TABLE proofs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE deposit_verifications DISABLE ROW LEVEL SECURITY;
-
 ALTER TABLE deposit_verifications ADD COLUMN IF NOT EXISTS sender_number TEXT;
 
 INSERT INTO settings (key, value) VALUES ('payment_link', 'https://bkapay.com/merchant/20cf6268') ON CONFLICT DO NOTHING;
 
 INSERT INTO users (phone, country, first_name, last_name, password_hash, role, balance)
-VALUES ('0704752133', 'Côte d''Ivoire', 'Admin', 'ElevFinAi', 'Calmaress225@', 'admin', 0)
+VALUES ('mission01', "Cote d'Ivoire", 'Admin', 'SOLEIL-POWER', 'admin123', 'admin', 0)
 ON CONFLICT (phone, country) DO NOTHING;
 `;
 
@@ -124,42 +109,36 @@ ON CONFLICT (phone, country) DO NOTHING;
   };
 
   if (isChecking) {
-    return (
-      <div className="min-h-[100dvh] bg-[#03296c] flex items-center justify-center text-blue-200/60">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-brand-500 rounded-full animate-spin"></div>
-      </div>
-    );
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-500">Vérification de la base de données...</div>;
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[#03296c] text-white p-6 flex flex-col items-center justify-center max-w-md mx-auto relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-500/10 rounded-full blur-[80px] pointer-events-none"></div>
-
-      <div className="w-16 h-16 bg-brand-500/20 border border-brand-500/30 rounded-2xl flex items-center justify-center mb-6 relative z-10">
-        <Database className="w-8 h-8 text-brand-400" />
+    <div className="min-h-screen bg-gray-50 text-gray-900 p-6 flex flex-col items-center justify-center max-w-md mx-auto">
+      <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mb-6">
+        <Database className="w-8 h-8 text-amber-500" />
       </div>
-      <h1 className="text-2xl font-black mb-2 text-center tracking-tight relative z-10">Configuration Requise</h1>
-      <p className="text-blue-200/60 text-center mb-8 text-sm relative z-10">
+      <h1 className="text-2xl font-bold mb-2 text-center">Configuration Requise</h1>
+      <p className="text-gray-500 text-center mb-8">
         La base de données n'est pas encore configurée. Veuillez exécuter le script SQL suivant dans votre éditeur SQL Supabase.
       </p>
 
-      <div className="w-full relative group z-10">
+      <div className="w-full relative group">
         <div className="absolute right-2 top-2">
           <button 
             onClick={copyToClipboard}
-            className="p-2 bg-white/10 hover:bg-slate-700 rounded-xl text-blue-200/60 transition-colors border border-white/20"
+            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors"
           >
-            {copied ? <CheckCircle className="w-4 h-4 text-brand-400" /> : <Copy className="w-4 h-4" />}
+            {copied ? <CheckCircle className="w-4 h-4 text-amber-500" /> : <Copy className="w-4 h-4" />}
           </button>
         </div>
-        <pre className="bg-[#03296c]/80 backdrop-blur-xl border-white/20 p-4 rounded-2xl overflow-x-auto text-xs text-white/80 border h-64 shadow-inner">
+        <pre className="bg-white p-4 rounded-xl overflow-x-auto text-xs text-gray-600 border border-gray-200 h-64">
           <code>{schema}</code>
         </pre>
       </div>
 
       <button 
         onClick={() => window.location.reload()}
-        className="mt-8 w-full py-4 bg-brand-500 hover:bg-brand-400 text-white rounded-xl font-bold transition-all shadow-lg shadow-brand-500/20 active:scale-[0.98] relative z-10"
+        className="mt-8 w-full py-3 bg-amber-500 hover:bg-amber-700 text-gray-900 rounded-xl font-medium transition-colors"
       >
         J'ai exécuté le script
       </button>
