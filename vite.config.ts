@@ -16,15 +16,16 @@ export default defineConfig(({mode}) => {
         workbox: {
           cleanupOutdatedCaches: true,
           clientsClaim: true,
-          skipWaiting: true
+          skipWaiting: true,
+          maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         },
         includeAssets: ['favicon.ico', 'icon.svg', 'apple-touch-icon.png'],
         manifest: {
-          name: 'SoleilPower',
-          short_name: 'SoleilPower',
-          description: 'Plateforme Soleil-Power',
-          theme_color: '#f59e0b',
-          background_color: '#111111',
+          name: 'Cargill',
+          short_name: 'Cargill',
+          description: 'Plateforme d’investissement et de gestion des cultures agricoles Cargill',
+          theme_color: '#059669',
+          background_color: '#f9fafb',
           display: 'standalone',
           icons: [
             {

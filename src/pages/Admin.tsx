@@ -345,6 +345,10 @@ export function Admin() {
       
       if (error) throw error;
       setPlans(updatedPlans);
+      try {
+        localStorage.setItem('cargill_investment_plans', JSON.stringify(updatedPlans));
+        window.dispatchEvent(new Event('cargill_plans_updated'));
+      } catch (e) {}
       setMessage({ type: 'success', text: "Plans de culture enregistrés et synchronisés avec l'application !" });
     } catch(err: any) {
       setMessage({ type: 'error', text: "Erreur d'enregistrement : " + err.message });
@@ -511,7 +515,7 @@ export function Admin() {
         </button>
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Administration</h1>
-          <p className="text-xs text-emerald-600 font-bold">Plateforme Agricole • Gestion globale</p>
+          <p className="text-xs text-emerald-600 font-bold">Cargill • Gestion globale & cultures</p>
         </div>
       </header>
 

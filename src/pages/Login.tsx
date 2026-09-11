@@ -63,41 +63,26 @@ export function Login() {
   };
 
   return (
-    <div className="h-screen flex flex-col justify-center px-6 max-w-md mx-auto relative overflow-hidden bg-gray-50 text-gray-900 font-sans">
+    <div className="h-[100dvh] max-h-[100dvh] w-full overflow-hidden flex flex-col justify-center px-6 max-w-md mx-auto relative bg-gray-50 text-gray-900 font-sans overscroll-none select-none">
       {/* Background FX */}
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
 
-      <div className="text-center mb-6 flex flex-col items-center relative z-10">
-        <div className="mb-4">
-           <AppLogo imgClassName="h-10 w-auto object-contain max-h-12" />
+      <div className="text-center mb-5 flex flex-col items-center relative z-10 shrink-0">
+        <div className="mb-3">
+           <AppLogo imgClassName="h-9 w-auto object-contain max-h-11" />
         </div>
         <h1 className="text-2xl font-black tracking-tight mb-1 text-gray-900">Connexion</h1>
-        <p className="text-gray-500 font-medium text-xs">Accédez à votre espace agricole et cultures</p>
+        <p className="text-gray-500 font-medium text-xs">Accédez à votre espace agricole Cargill</p>
       </div>
 
       <div className="w-full relative z-10">
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-3.5">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-500/20 rounded-xl text-red-600 text-xs font-bold text-center">
+            <div className="p-2.5 bg-red-50 border border-red-500/20 rounded-xl text-red-600 text-xs font-bold text-center">
               {error}
             </div>
           )}
-
-          <div className="space-y-1.5 hidden">
-            <label className="text-[10px] font-bold text-gray-600 ml-1 uppercase tracking-widest">Pays</label>
-            <div className="relative">
-              <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="w-full bg-white border border-black/5 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all font-medium appearance-none opacity-80"
-                required
-                disabled
-              >
-                <option value="Cote d'Ivoire">Côte d'Ivoire</option>
-              </select>
-            </div>
-          </div>
 
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-gray-600 ml-1 uppercase tracking-widest">Téléphone</label>
@@ -109,7 +94,7 @@ export function Login() {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-3.5 py-3 text-gray-900 focus:outline-none bg-transparent placeholder:text-gray-400 font-medium tracking-wide text-sm"
+                className="w-full px-3.5 py-2.5 text-gray-900 focus:outline-none bg-transparent placeholder:text-gray-400 font-medium tracking-wide text-sm"
                 placeholder="0123456789"
                 required
               />
@@ -122,7 +107,7 @@ export function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white border border-black/10 shadow-sm rounded-xl px-3.5 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-all placeholder:text-gray-400 font-medium tracking-wide text-sm"
+              className="w-full bg-white border border-black/10 shadow-sm rounded-xl px-3.5 py-2.5 text-gray-900 focus:outline-none focus:border-emerald-500 transition-all placeholder:text-gray-400 font-medium tracking-wide text-sm"
               placeholder="••••••••"
               required
             />
@@ -131,13 +116,13 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl mt-6 transition-all shadow-md shadow-emerald-600/20 active:scale-95 disabled:opacity-50 text-sm"
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl mt-5 transition-all shadow-md shadow-emerald-600/20 active:scale-95 disabled:opacity-50 text-sm cursor-pointer"
           >
             {loading ? 'Authentification...' : 'Se connecter'}
           </button>
         </form>
 
-        <p className="text-center text-gray-500 text-xs mt-6 font-medium">
+        <p className="text-center text-gray-500 text-xs mt-5 font-medium">
           Pas encore de compte ?{' '}
           <Link to="/register" className="text-emerald-600 hover:text-emerald-500 font-bold tracking-wide transition-colors">
             Créer un compte

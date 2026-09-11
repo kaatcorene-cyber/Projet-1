@@ -11,7 +11,18 @@ export const CROP_PLANS = DEFAULT_CROP_PLANS;
 
 export function Invest() {
   const { user, refreshUser } = useAuthStore();
-  const [plans, setPlans] = useState<CropPlan[]>(DEFAULT_CROP_PLANS);
+  const [plans, setPlans] = useState<CropPlan[]>(() => {
+    try {
+      const cached = localStorage.getItem('cargill_investment_plans');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return DEFAULT_CROP_PLANS;
+  });
   const [loading, setLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
@@ -28,10 +39,14 @@ export function Invest() {
         if (data?.value) {
           const parsed = JSON.parse(data.value);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setPlans(parsed.map((p: any, idx: number) => ({
+            const formatted = parsed.map((p: any, idx: number) => ({
               ...p,
               id: p.id || `crop_${p.amount || idx}_${idx}`
-            })));
+            }));
+            setPlans(formatted);
+            try {
+              localStorage.setItem('cargill_investment_plans', JSON.stringify(formatted));
+            } catch (err) {}
           }
         }
       } catch (e) {
@@ -40,11 +55,30 @@ export function Invest() {
     }
     fetchPlans();
 
+    const handlePlansUpdate = () => {
+      try {
+        const cached = localStorage.getItem('cargill_investment_plans');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setPlans(parsed);
+          }
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('cargill_plans_updated', handlePlansUpdate);
+    window.addEventListener('storage', handlePlansUpdate);
+
     const intervalId = setInterval(() => {
       refreshUser();
     }, 60000);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('cargill_plans_updated', handlePlansUpdate);
+      window.removeEventListener('storage', handlePlansUpdate);
+    };
   }, [refreshUser]);
 
   const handleInvest = async (plan: CropPlan, planKey: string) => {

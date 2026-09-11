@@ -1,234 +1,214 @@
-import { useEffect, useState } from 'react';
-import { ArrowRight, Users, X } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ShieldCheck, TrendingUp, Award, Building2, MapPin, Users, Calendar, Factory } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { useAppStore } from '../store/useAppStore';
 import { AppLogo } from '../components/AppLogo';
 
-function WelcomeModal({ groupLink, onClose }: { groupLink: string, onClose: () => void }) {
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = 'unset'; };
-  }, []);
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl relative border border-black/10">
-        <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-black/5 text-gray-600 rounded-full hover:bg-black/10 transition-colors">
-          <X className="w-4 h-4" />
-        </button>
-         <div className="p-8 text-center mt-4">
-            <div className="flex items-center justify-center mb-6">
-              <AppLogo imgClassName="h-10 w-auto object-contain max-h-12" />
-            </div>
-            
-            <div className="w-20 h-20 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-5 border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
-              <Users className="w-8 h-8" />
-            </div>
-            <h2 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">Rejoignez la Communauté !</h2>
-            <p className="text-gray-600 text-sm mb-8 leading-relaxed">
-              Pour rester informé de toutes nos actualités et opportunités de culture agricole, rejoignez notre communauté officielle.
-            </p>
-            <div className="space-y-3">
-              {groupLink ? (
-                <a href={groupLink} target="_blank" rel="noopener noreferrer" className="block w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black tracking-wide shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 transition-all text-sm text-center" onClick={onClose}>
-                  Connecter au Groupe
-                </a>
-              ) : (
-                <button className="block w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black tracking-wide shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 transition-all text-sm" onClick={onClose}>
-                  Continuer
-                </button>
-              )}
-              <button onClick={onClose} className="w-full py-3.5 text-gray-500 hover:text-gray-900 font-bold transition-colors text-sm">
-                 Ignorer pour l'instant
-              </button>
-            </div>
-         </div>
-      </div>
-    </div>
-  );
-}
-
 export function Dashboard() {
-  const { settingsCache, setSettingsCache } = useAppStore();
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [groupLink, setGroupLink] = useState('');
+  const activities = [
+    'Cacao',
+    'Riz',
+    'Igname',
+    'Manioc',
+    'Café',
+    'Anacarde',
+    'Palmier à huile',
+    'Hévéa',
+    'Coton'
+  ];
 
-  useEffect(() => {
-    if (!sessionStorage.getItem('welcome_shown')) {
-      setShowWelcome(true);
-    }
-    
-    if (settingsCache) {
-       const link = settingsCache.find(s => s.key === 'group_link')?.value;
-       if (link) setGroupLink(link);
-    } else {
-       supabase.from('settings').select('*').then(({ data }) => {
-          if (data) {
-             setSettingsCache(data);
-             const link = data.find(s => s.key === 'group_link')?.value;
-             if (link) setGroupLink(link);
-          }
-       });
-    }
-  }, []);
-
-  const handleCloseWelcome = () => {
-    sessionStorage.setItem('welcome_shown', 'true');
-    setShowWelcome(false);
-  };
+  const ivoryCoastHighlights = [
+    { label: 'Présence', value: 'Depuis 1997', icon: Calendar },
+    { label: 'Secteurs principaux', value: 'Cacao et coton', icon: Building2 },
+    { label: 'Transformation', value: 'Usine de Yopougon', icon: Factory },
+    { label: 'Produits cacao', value: 'Liqueur, beurre, tourteaux et poudre', icon: MapPin },
+    { label: 'Effectif annoncé', value: 'Plus de 570 personnes (officiel)', icon: Users },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900 overflow-x-hidden">
-      {/* Dynamic Background */}
+      {/* Background Decorative Gradients */}
       <div className="fixed inset-0 pointer-events-none">
-         <div className="absolute top-[-10%] left-[-10%] w-[300px] h-[300px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent"></div>
-         <div className="absolute top-[40%] right-[-10%] w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-500/5 to-transparent"></div>
-         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02]"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[320px] h-[320px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent"></div>
+        <div className="absolute top-[40%] right-[-10%] w-[380px] h-[380px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-green-500/5 to-transparent"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02]"></div>
       </div>
-
-      {showWelcome && <WelcomeModal groupLink={groupLink} onClose={handleCloseWelcome} />}
 
       {/* Header Section */}
-      <div className="relative pt-6 px-4 z-10 block">
+      <div className="relative pt-6 px-4 z-10">
         <div className="w-full flex items-center justify-between mb-4">
-           <AppLogo imgClassName="h-9 w-auto object-contain max-h-11" />
-           <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-             <span className="text-[11px] font-bold text-emerald-700">En ligne</span>
-           </div>
+          <AppLogo imgClassName="h-9 w-auto object-contain max-h-11" />
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span className="text-[11px] font-bold text-emerald-700">En ligne</span>
+          </div>
         </div>
-        
-        {/* Presentation Section - Directly on page (No giant card) */}
-        <div className="relative w-full mt-4 space-y-6">
-           <div>
-             <h1 className="text-2xl font-black text-gray-900 tracking-tight leading-tight">
-               Bienvenue sur votre plateforme <span className="text-emerald-600">Agricole</span> 🌱
-             </h1>
-             <p className="text-gray-500 text-xs mt-1 font-semibold uppercase tracking-wider">
-               Investissement & Développement des Cultures
-             </p>
-           </div>
-           
-           <div className="space-y-4 text-gray-700 text-sm font-medium leading-relaxed">
-             <p>
-               Une plateforme innovante spécialisée dans le financement et le développement des cultures agricoles à fort rendement. Notre mission est de permettre à chacun de générer des revenus journaliers de manière simple, transparente et accessible, tout en soutenant l'essor de la filière agricole.
-             </p>
 
-             <div className="bg-emerald-50/70 rounded-2xl p-4 border border-emerald-500/15">
-               <p className="font-bold text-gray-900 mb-3">Grâce à notre système structuré, vous bénéficiez :</p>
-               <ul className="space-y-2.5">
-                 <li className="flex items-start gap-2.5">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-                    <span>De gains journaliers attractifs sur 60 jours</span>
-                 </li>
-                 <li className="flex items-start gap-2.5">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-                    <span>D’un plan de parrainage avantageux (10% - 3% - 2%)</span>
-                 </li>
-                 <li className="flex items-start gap-2.5">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-                    <span>D’une gestion sécurisée, fiable et transparente</span>
-                 </li>
-               </ul>
-             </div>
+        {/* Hero Presentation */}
+        <div className="relative w-full mt-2 space-y-5">
+          {/* Welcome Card */}
+          <div className="bg-gradient-to-br from-emerald-900 via-emerald-950 to-slate-950 text-white rounded-3xl p-6 shadow-xl border border-emerald-800/40 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/15 text-emerald-300 text-xs font-bold mb-3 uppercase tracking-wider">
+                <span>🌱</span> Bienvenue chez Cargill
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight text-white mb-3">
+                Acteur mondial de l’agriculture & de l’agroalimentaire
+              </h1>
+              <p className="text-emerald-100/90 text-sm font-normal leading-relaxed">
+                Cargill est un acteur mondial de l’agriculture et de l’agroalimentaire, présent en Côte d’Ivoire depuis 1997. L’entreprise travaille avec les producteurs et les coopératives afin de s’approvisionner en matières premières agricoles et de développer des chaînes d’approvisionnement durables.
+              </p>
+            </div>
+          </div>
 
-             <p className="text-gray-700">
-               Vous avez l’opportunité de faire fructifier votre argent intelligemment tout en participant activement à l'économie agricole productive.
-             </p>
+          {/* Nos Activités Agricoles */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-black/5 shadow-sm space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-lg">
+                🌾
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-gray-900 tracking-tight">NOS ACTIVITÉS AGRICOLES</h2>
+                <p className="text-xs text-gray-500 font-medium">Cargill développe principalement ses activités autour de :</p>
+              </div>
+            </div>
 
-             <div className="mt-4">
-               <p className="font-bold text-gray-900 mb-3 text-base">Pourquoi nous rejoindre ?</p>
-               <ul className="grid gap-2.5">
-                 <li className="flex items-center gap-3 bg-white p-3.5 rounded-xl border border-black/5 shadow-sm">
-                    <span className="text-emerald-600 font-black">✓</span> <span className="text-gray-900 font-bold text-sm">Sécurité totale des transactions</span>
-                 </li>
-                 <li className="flex items-center gap-3 bg-white p-3.5 rounded-xl border border-black/5 shadow-sm">
-                    <span className="text-emerald-600 font-black">✓</span> <span className="text-gray-900 font-bold text-sm">Transparence des rendements</span>
-                 </li>
-                 <li className="flex items-center gap-3 bg-white p-3.5 rounded-xl border border-black/5 shadow-sm">
-                    <span className="text-emerald-600 font-black">✓</span> <span className="text-gray-900 font-bold text-sm">Rentabilité stable et garantie</span>
-                 </li>
-               </ul>
-             </div>
-             
-             <div className="bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-5 mt-6 shadow-sm">
-                <p className="text-emerald-700 font-bold mb-2 text-center text-sm">Rejoignez dès aujourd’hui notre communauté agricole et commencez à bâtir vos revenus quotidiens.</p>
-                <p className="text-gray-900 font-black tracking-wide text-center text-xs uppercase">Investissez dans la terre, récoltez votre avenir 🌿</p>
-             </div>
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              {activities.map((crop) => (
+                <div 
+                  key={crop}
+                  className="flex items-center gap-1.5 p-2.5 rounded-xl bg-emerald-50/50 border border-emerald-500/15 hover:bg-emerald-50 transition-colors"
+                >
+                  <span className="text-emerald-600 font-black text-sm">✓</span>
+                  <span className="text-xs font-bold text-gray-800 truncate">{crop}</span>
+                </div>
+              ))}
+            </div>
 
-             <div className="mt-8">
-               <h2 className="text-lg font-black text-gray-900 mb-3">🌱 À propos de nos cultures et gains</h2>
-               <p className="text-gray-700 font-medium leading-relaxed mb-3">
-                 Notre structure génère des rendements à travers l’exploitation et la commercialisation de cultures vivrières et de rente : coton, hévéa, palmier à huile, anacarde, café, manioc, igname, riz et cacao.
-               </p>
-               <p className="text-gray-700 font-medium leading-relaxed mb-4">
-                 Grâce à ces récoltes, des flux constants sont réalisés chaque jour. Une part directe de ces bénéfices est redistribuée chaque jour aux investisseurs.
-               </p>
-               
-               <div className="bg-white rounded-2xl p-4 border border-black/5 shadow-sm">
-                 <p className="font-bold text-gray-900 mb-3 text-sm">Un modèle pérenne basé sur :</p>
-                 <ul className="space-y-2 text-xs font-semibold text-gray-700">
-                   <li className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
-                      <span>La valorisation des filières agricoles locales</span>
-                   </li>
-                   <li className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
-                      <span>La vente de récoltes sur les marchés régionaux et internationaux</span>
-                   </li>
-                   <li className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
-                      <span>Des partenariats agricoles durables</span>
-                   </li>
-                 </ul>
-               </div>
-             </div>
+            <div className="bg-gradient-to-r from-amber-50/80 to-emerald-50/80 rounded-2xl p-4 border border-amber-500/20 text-xs sm:text-sm text-gray-800 leading-relaxed font-medium">
+              <span className="font-bold text-amber-900 block mb-1">Transformation locale du cacao :</span>
+              En Côte d’Ivoire, Cargill transforme notamment le cacao en <strong>liqueur de cacao</strong>, <strong>beurre de cacao</strong>, <strong>tourteaux</strong> et <strong>poudre de cacao</strong>.
+            </div>
+          </div>
 
-             <div className="mt-6">
-               <h2 className="text-lg font-black text-gray-900 mb-2">🚀 BOOSTEZ VOS REVENUS AVEC LE PARRAINAGE</h2>
-               <p className="text-gray-700 text-sm font-medium leading-relaxed mb-4">
-                 Invitez vos proches et gagnez des commissions automatiques sur leurs investissements :
-               </p>
+          {/* De la ferme à la transformation */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-black/5 shadow-sm space-y-2.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <h2 className="text-sm font-black uppercase tracking-wider text-emerald-800">
+                DE LA FERME À LA TRANSFORMATION
+              </h2>
+            </div>
+            <p className="text-sm text-gray-700 leading-relaxed font-medium">
+              Cargill collabore avec les agriculteurs, les coopératives et différents partenaires afin de construire une chaîne d’approvisionnement allant de la production agricole jusqu’à la transformation et la commercialisation.
+            </p>
+          </div>
 
-               <div className="grid grid-cols-3 gap-2 mb-4">
-                 <div className="bg-white p-3 rounded-xl border border-black/5 text-center shadow-sm">
-                   <p className="text-[10px] font-bold text-gray-500 uppercase">Niveau 1</p>
-                   <p className="text-xl font-black text-emerald-600">10%</p>
-                   <p className="text-[9px] text-gray-500">Directs</p>
-                 </div>
-                 <div className="bg-white p-3 rounded-xl border border-black/5 text-center shadow-sm">
-                   <p className="text-[10px] font-bold text-gray-500 uppercase">Niveau 2</p>
-                   <p className="text-xl font-black text-emerald-600">3%</p>
-                   <p className="text-[9px] text-gray-500">Secondaires</p>
-                 </div>
-                 <div className="bg-white p-3 rounded-xl border border-black/5 text-center shadow-sm">
-                   <p className="text-[10px] font-bold text-gray-500 uppercase">Niveau 3</p>
-                   <p className="text-xl font-black text-emerald-600">2%</p>
-                   <p className="text-[9px] text-gray-500">Tertiaires</p>
-                 </div>
-               </div>
-             </div>
+          {/* Cargill en Côte d'Ivoire */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-black/5 shadow-sm space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🇨🇮</span>
+              <h2 className="text-lg font-black text-gray-900 tracking-tight">
+                CARGILL EN CÔTE D’IVOIRE
+              </h2>
+            </div>
 
-             <div className="mt-6">
-               <h2 className="text-lg font-black text-gray-900 mb-3">🏆 Garantie & Fiabilité</h2>
-               <div className="bg-white rounded-2xl p-4 border border-black/5 shadow-sm text-xs leading-relaxed text-gray-700">
-                 Notre plateforme applique les plus hauts standards de sécurité informatique et financière pour vous offrir un environnement d'investissement transparent, rapide et pérenne.
-               </div>
-             </div>
-           </div>
+            <div className="divide-y divide-gray-100 rounded-2xl border border-gray-100 overflow-hidden bg-gray-50/40">
+              {ivoryCoastHighlights.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.label} className="p-3.5 flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">{item.label}</p>
+                      <p className="text-xs sm:text-sm font-black text-gray-900 mt-0.5">{item.value}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Avantages & Structure */}
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50/60 rounded-3xl p-5 sm:p-6 border border-emerald-500/20 shadow-sm space-y-3.5">
+            <p className="font-black text-gray-900 text-sm sm:text-base">
+              Grâce à notre système structuré, vous bénéficiez :
+            </p>
+            <ul className="space-y-2.5 text-xs sm:text-sm font-medium text-gray-800">
+              <li className="flex items-start gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                <span>De gains journaliers attractifs sur <strong>60 jours</strong></span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                <span>D'un plan de parrainage avantageux (<strong>10% - 3% - 2%</strong>)</span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                <span>D'une gestion sécurisée, fiable et transparente</span>
+              </li>
+            </ul>
+
+            <div className="pt-2 border-t border-emerald-500/20 text-xs sm:text-sm text-gray-700 font-medium leading-relaxed">
+              Vous avez l'opportunité de faire fructifier votre argent intelligemment tout en participant activement à l'économie agricole productive.
+            </div>
+          </div>
+
+          {/* Pourquoi nous rejoindre */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Award className="w-4 h-4 text-emerald-600" />
+              <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">Pourquoi nous rejoindre ?</h2>
+            </div>
+            <div className="grid gap-2.5">
+              <div className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-black/5 shadow-sm">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-gray-900">Sécurité totale des transactions</p>
+                  <p className="text-xs text-gray-500 font-medium">Protocoles bancaires et conformité rigoureuse</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-black/5 shadow-sm">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-gray-900">Transparence des rendements</p>
+                  <p className="text-xs text-gray-500 font-medium">Suivi quotidien en temps réel sur votre tableau de bord</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-black/5 shadow-sm">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center shrink-0">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-gray-900">Rentabilité stable et garantie</p>
+                  <p className="text-xs text-gray-500 font-medium">Génération continue liée aux flux des récoltes réelles</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* CTA Button */}
       <div className="relative z-10 px-4 pt-6 pb-8">
-        <Link to="/invest" className="w-full relative overflow-hidden group bg-emerald-600 hover:bg-emerald-500 text-white py-4 px-6 rounded-2xl flex items-center justify-between font-black shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 transition-all">
-            <div className="flex flex-col text-left">
-               <span className="text-base tracking-wide leading-tight mb-0.5">Accéder aux cultures</span>
-               <span className="text-white/80 text-[10px] uppercase font-bold tracking-wider">Découvrir les 9 plans de culture</span>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors shrink-0">
-               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </div>
+        <Link 
+          to="/invest" 
+          className="w-full relative overflow-hidden group bg-emerald-600 hover:bg-emerald-500 text-white py-4 px-6 rounded-2xl flex items-center justify-between font-black shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 transition-all"
+        >
+          <div className="flex flex-col text-left">
+            <span className="text-base tracking-wide leading-tight mb-0.5">Accéder aux cultures</span>
+            <span className="text-white/80 text-[10px] uppercase font-bold tracking-wider">Découvrir les plans d’investissement</span>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors shrink-0">
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </div>
         </Link>
       </div>
     </div>
