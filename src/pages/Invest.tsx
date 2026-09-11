@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { CheckCircle2, AlertCircle, Loader2, Lock, Sprout } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Lock, Sprout, Eye, X } from 'lucide-react';
 import { AppLogo } from '../components/AppLogo';
 import { CropPlan, DEFAULT_CROP_PLANS } from '../data/plans';
 
@@ -11,6 +11,7 @@ export const CROP_PLANS = DEFAULT_CROP_PLANS;
 
 export function Invest() {
   const { user, refreshUser } = useAuthStore();
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [plans, setPlans] = useState<CropPlan[]>(() => {
     try {
       const cached = localStorage.getItem('cargill_investment_plans');
@@ -182,6 +183,44 @@ export function Invest() {
           </div>
         </div>
 
+        {/* Tableau Récapitulatif Officiel des Plans d'Investissement */}
+        <div className="space-y-3 pt-1">
+          <div 
+            className="relative group rounded-2xl overflow-hidden bg-white border border-gray-200/90 shadow-xs cursor-pointer active:scale-[0.99] transition-transform"
+            onClick={() => setSelectedImage('/images/presentation/plans_tableau.png')}
+          >
+            <img 
+              src="/images/presentation/plans_tableau.png" 
+              alt="Tableau des plans d'investissement Cargill"
+              className="w-full h-auto max-h-[380px] object-contain bg-neutral-900/5 mx-auto transition-opacity"
+              onError={(e) => {
+                if (e.currentTarget.src !== 'https://i.imgur.com/m65iX4H.png') {
+                  e.currentTarget.src = 'https://i.imgur.com/m65iX4H.png';
+                }
+              }}
+            />
+            <div className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-sm text-white text-[11px] font-bold flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+              <Eye className="w-3.5 h-3.5" />
+              <span>Agrandir</span>
+            </div>
+          </div>
+
+          {/* Texte officiel sous l'image */}
+          <div className="space-y-1.5 px-0.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+              <h2 className="text-sm font-black tracking-tight text-gray-900 uppercase">
+                PLANS D&apos;INVESTISSEMENT DISPONIBLES
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-normal">
+              Découvrez ci-dessus les différents plans d’investissement disponibles sur notre plateforme. Chaque formule est conçue selon un niveau d’investissement précis, avec les gains correspondants présentés dans le tableau. Choisissez la formule adaptée à vos possibilités et consultez les conditions de la plateforme avant toute participation.
+            </p>
+          </div>
+        </div>
+
+        <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent my-1"></div>
+
         {/* Plans de Culture */}
         <div className="space-y-4">
           {plans.map((plan, index) => {
@@ -287,6 +326,29 @@ export function Invest() {
           })}
         </div>
       </div>
+
+      {/* Image Lightbox Modal */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedImage(null)}
+        >
+          <button 
+            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
+            onClick={() => setSelectedImage(null)}
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div className="relative max-w-2xl max-h-[90vh] w-full flex items-center justify-center overflow-auto">
+            <img 
+              src={selectedImage} 
+              alt="Tableau agrandi" 
+              className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

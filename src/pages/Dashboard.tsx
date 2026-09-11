@@ -27,6 +27,13 @@ export function Dashboard() {
       fallbackImage: 'https://i.imgur.com/q1Gy36v.png',
       title: 'ENGAGEMENT POUR LA QUALITÉ ET LA CONFORMITÉ',
       text: 'La qualité, la responsabilité et la conformité constituent des principes fondamentaux dans les activités de Cargill. Ce document présente les engagements et domaines d’activité associés à Cargill Côte d’Ivoire et doit être distingué de tout certificat ou agrément délivré par une autorité indépendante.'
+    },
+    {
+      id: 'doc-4',
+      image: '/images/presentation/plans_tableau.png',
+      fallbackImage: 'https://i.imgur.com/m65iX4H.png',
+      title: 'PLANS D’INVESTISSEMENT DISPONIBLES',
+      text: 'Découvrez ci-dessus les différents plans d’investissement disponibles sur notre plateforme. Chaque formule est conçue selon un niveau d’investissement précis, avec les gains correspondants présentés dans le tableau. Choisissez la formule adaptée à vos possibilités et consultez les conditions de la plateforme avant toute participation.'
     }
   ];
 

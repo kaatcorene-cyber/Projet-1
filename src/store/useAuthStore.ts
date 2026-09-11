@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
+import { safeStorage } from '../lib/storage';
 
 interface User {
   id: string;
@@ -51,7 +52,8 @@ export const useAuthStore = create<AuthState>()(
       }
     }),
     {
-      name: 'sunpower-auth'
+      name: 'sunpower-auth',
+      storage: createJSONStorage(() => safeStorage),
     }
   )
 );

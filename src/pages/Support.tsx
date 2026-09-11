@@ -23,13 +23,13 @@ export function Support() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>(() => {
-    const saved = localStorage.getItem('support_chat_history');
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem('support_chat_history');
+      if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
-      } catch (e) {}
-    }
+      }
+    } catch (e) {}
     return [];
   });
   const [supportLink, setSupportLink] = useState('');
@@ -51,11 +51,24 @@ export function Support() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    localStorage.setItem('support_chat_history', JSON.stringify(messages));
+    try {
+      // Strip large base64 data to avoid QuotaExceededError
+      const safeMsgs = messages.slice(-15).map(m => ({
+        ...m,
+        imageUrl: m.imageUrl && m.imageUrl.startsWith('data:') ? undefined : m.imageUrl
+      }));
+      localStorage.setItem('support_chat_history', JSON.stringify(safeMsgs));
+    } catch (e) {
+      console.warn('Could not save support chat history:', e);
+    }
   }, [messages]);
 
   useEffect(() => {
-    localStorage.setItem('support_verif_state', JSON.stringify(verifState));
+    try {
+      localStorage.setItem('support_verif_state', JSON.stringify(verifState));
+    } catch (e) {
+      console.warn('Could not save support verif state:', e);
+    }
   }, [verifState]);
 
   useEffect(() => {
