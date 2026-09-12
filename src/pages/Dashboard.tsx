@@ -34,6 +34,13 @@ export function Dashboard() {
       fallbackImage: 'https://i.imgur.com/m65iX4H.png',
       title: 'PLANS D’INVESTISSEMENT DISPONIBLES',
       text: 'Découvrez ci-dessus les différents plans d’investissement disponibles sur notre plateforme. Chaque formule est conçue selon un niveau d’investissement précis, avec les gains correspondants présentés dans le tableau. Choisissez la formule adaptée à vos possibilités et consultez les conditions de la plateforme avant toute participation.'
+    },
+    {
+      id: 'doc-5',
+      image: '/images/presentation/image4.png',
+      fallbackImage: 'https://i.imgur.com/1ybNOe6.png',
+      title: 'PROGRAMME OFFICIEL DE COMMISSIONS & PARRAINAGE',
+      text: 'Participez activement au développement de la communauté agricole Cargill en invitant vos collaborateurs et proches. Profitez de notre grille de récompenses transparente et progressive pour chaque personne parrainée sur notre plateforme.'
     }
   ];
 

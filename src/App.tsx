@@ -18,6 +18,7 @@ import { Setup } from './pages/Setup';
 import { Support } from './pages/Support';
 import { Profile } from './pages/Profile';
 import { Activity } from './pages/Activity';
+import { Commissions } from './pages/Commissions';
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/team" element={<Team />} />
           <Route path="/history" element={<History />} />
           <Route path="/activity" element={<Activity />} />
+          <Route path="/commissions" element={<Commissions />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/deposit" element={<Deposit />} />
           <Route path="/withdraw" element={<Withdraw />} />

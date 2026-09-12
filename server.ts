@@ -257,8 +257,41 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.use(express.json());
+
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  // MoneyFusion background payment initialization endpoint
+  app.post("/api/moneyfusion/init", async (req, res) => {
+    try {
+      const { montant, name, phone, customerEmail, countryCode } = req.body;
+      const cleanPhone = phone ? (phone.startsWith('+') ? phone : `+225${phone.replace(/\s+/g, '')}`) : '+2250700000000';
+      
+      const payload = {
+        id: "6a7da1aa655b3c8aa7379d96",
+        montant: String(montant),
+        name: name || "Client Cargill",
+        phone: cleanPhone,
+        customerEmail: customerEmail || "client@cargill-ci.com",
+        countryCode: countryCode || "+225"
+      };
+
+      const response = await fetch("https://pay.moneyfusion.net/api/v2/links/init-payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      res.json(data);
+    } catch (err: any) {
+      console.error("Erreur proxy MoneyFusion:", err.message);
+      res.status(500).json({ error: err.message, fallbackUrl: "https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96" });
+    }
   });
 
   // Redirect old domain

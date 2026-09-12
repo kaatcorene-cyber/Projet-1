@@ -32,7 +32,7 @@ export function Support() {
     } catch (e) {}
     return [];
   });
-  const [supportLink, setSupportLink] = useState('');
+  const [supportLink, setSupportLink] = useState('https://t.me/AgentCargill');
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [verifState, setVerifState] = useState<VerifState>(() => {
@@ -350,7 +350,7 @@ export function Support() {
           />
           <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white"></span>
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-base font-black text-gray-900 tracking-tight flex items-center gap-1.5">Service Client</h1>
           <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 uppercase tracking-wider mt-0.5">
             <span className="relative flex h-2 w-2">
@@ -360,6 +360,15 @@ export function Support() {
             Conseiller en ligne 24/7
           </p>
         </div>
+        <a
+          href={supportLink || 'https://t.me/AgentCargill'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-500/20 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <span>Telegram</span>
+          <Send className="w-3 h-3" />
+        </a>
       </header>
 
       <div className="flex-1 overflow-y-auto p-5 space-y-4 pb-[160px] relative z-10 scrollbar-hide">

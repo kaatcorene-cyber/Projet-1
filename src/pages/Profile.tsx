@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { Banknote, PlusCircle, Users, LogOut, Wallet, Activity, ChevronRight, ExternalLink } from 'lucide-react';
+import { Banknote, PlusCircle, Users, LogOut, Wallet, Activity, ChevronRight, ExternalLink, Gift } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppLogo } from '../components/AppLogo';
 
@@ -13,8 +13,8 @@ export function Profile() {
   const navigate = useNavigate();
   
   // Instant display without waiting for DB network request
-  const [groupLink, setGroupLink] = useState('https://t.me/+84LEZgG2c8A5MzRk');
-  const [supportLink, setSupportLink] = useState('https://t.me/GraceRaphaelle');
+  const [groupLink, setGroupLink] = useState('https://t.me/+iqqRWMWHSY8wYWE0');
+  const [supportLink, setSupportLink] = useState('https://t.me/AgentCargill');
 
   useEffect(() => {
     refreshUser();
@@ -39,8 +39,8 @@ export function Profile() {
   const applySettings = (data: any[]) => {
     const groupData = data.find(s => s.key === 'group_link');
     const supportData = data.find(s => s.key === 'support_link');
-    if (groupData?.value) setGroupLink(formatLink(groupData.value, 'https://t.me/+84LEZgG2c8A5MzRk'));
-    if (supportData?.value) setSupportLink(formatLink(supportData.value, 'https://t.me/GraceRaphaelle'));
+    if (groupData?.value) setGroupLink(formatLink(groupData.value, 'https://t.me/+iqqRWMWHSY8wYWE0'));
+    if (supportData?.value) setSupportLink(formatLink(supportData.value, 'https://t.me/AgentCargill'));
   };
 
   const fetchData = async () => {
@@ -64,7 +64,7 @@ export function Profile() {
   };
 
   const handleSupportRedirect = () => {
-    const target = supportLink || 'https://t.me/GraceRaphaelle';
+    const target = supportLink || 'https://t.me/AgentCargill';
     window.open(target, '_blank', 'noopener,noreferrer');
   };
 
@@ -158,9 +158,26 @@ export function Profile() {
             <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
           </Link>
 
+          {/* Onglet Commission (parrainage & pas de progression) */}
+          <Link
+            to="/commissions"
+            className="w-full bg-white border border-black/5 p-4 rounded-2xl flex items-center justify-between hover:bg-gray-50/80 transition-all active:scale-[0.99] shadow-sm cursor-pointer"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-500/20 shrink-0">
+                <Gift className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-gray-900 text-sm font-black">Commission</span>
+                <span className="text-gray-400 text-xs font-semibold">Paliers de parrainage & récompenses</span>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
+          </Link>
+
           {/* Ligne Groupe officiel (affiche immédiatement avec le bon lien) */}
           <a
-            href={groupLink || 'https://t.me/+84LEZgG2c8A5MzRk'}
+            href={groupLink || 'https://t.me/+iqqRWMWHSY8wYWE0'}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full bg-white border border-black/5 p-4 rounded-2xl flex items-center justify-between hover:bg-gray-50/80 transition-all active:scale-[0.99] shadow-sm cursor-pointer"
