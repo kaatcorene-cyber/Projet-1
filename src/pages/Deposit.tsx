@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +44,7 @@ export function Deposit() {
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState('');
+  const submittingRef = useRef(false);
 
   const handleSelectAmount = (val: number) => {
     setAmount(val.toString());
@@ -52,7 +53,7 @@ export function Deposit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || loading || redirecting || submittingRef.current) return;
 
     const numAmount = Number(amount);
     if (!numAmount || isNaN(numAmount) || numAmount < 3000) {
@@ -60,6 +61,7 @@ export function Deposit() {
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     setError('');
 
@@ -138,6 +140,7 @@ export function Deposit() {
     } finally {
       // Keep loader running while browser completes navigation
       setTimeout(() => {
+        submittingRef.current = false;
         setLoading(false);
         setRedirecting(false);
       }, 4000);

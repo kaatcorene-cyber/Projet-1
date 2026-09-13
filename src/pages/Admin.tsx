@@ -58,6 +58,9 @@ export function Admin() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [loading, setLoading] = useState(false);
+  // Verrouillage anti-double clic / idempotence pour les confirmations de transaction
+  const processingTxRef = useRef<Set<string>>(new Set());
+  const [processingTxIds, setProcessingTxIds] = useState<Record<string, boolean>>({});
   const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, message: string, onConfirm: () => void} | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
@@ -195,10 +198,40 @@ export function Admin() {
 
   // --- Transactions Handlers ---
   const handleTransaction = async (id: string, newStatus: string, type: string, amount: number, userId: string) => {
+    // 1. Verrou immédiat anti-double clic / re-entrance
+    if (processingTxRef.current.has(id)) {
+      console.warn(`[Admin] Transaction ${id} est déjà en cours de traitement.`);
+      return;
+    }
+    processingTxRef.current.add(id);
+    setProcessingTxIds(prev => ({ ...prev, [id]: true }));
     setLoading(true);
+
     try {
-      const { error } = await supabase.from('transactions').update({ status: newStatus }).eq('id', id);
-      if (error) throw error;
+      // 2. Vérification et mise à jour atomique conditionnelle WHERE id = id AND status = 'pending'
+      // Cela garantit au niveau de la base qu'une transaction ne peut être validée qu'une seule et unique fois
+      const { data: updatedTx, error: updateError } = await supabase
+        .from('transactions')
+        .update({ status: newStatus })
+        .eq('id', id)
+        .eq('status', 'pending')
+        .select('id, status, amount, type, user_id')
+        .maybeSingle();
+
+      if (updateError) throw updateError;
+
+      // Si aucune ligne n'a été mise à jour, la transaction a déjà été traitée par un clic précédent
+      if (!updatedTx) {
+        setMessage({ 
+          type: 'error', 
+          text: "Cette transaction a déjà été confirmée ou n'est plus en attente. Aucun double crédit n'a été effectué." 
+        });
+        await fetchData(false);
+        return;
+      }
+
+      // Mise à jour optimiste immédiate dans la liste pour faire disparaître les boutons
+      setTransactions(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
 
       if (newStatus === 'approved') {
         const { data: userData } = await supabase.from('users').select('balance, referred_by').eq('id', userId).single();
@@ -305,11 +338,17 @@ export function Admin() {
         }
       }
 
-      fetchData();
-      setMessage({ type: 'success', text: `Transaction mise à jour : ${newStatus}` });
+      await fetchData(false);
+      setMessage({ type: 'success', text: `Transaction mise à jour : ${newStatus === 'approved' ? 'Approuvée' : 'Rejetée'}` });
     } catch(err: any) {
       setMessage({ type: 'error', text: "Erreur: " + err.message });
     } finally {
+      processingTxRef.current.delete(id);
+      setProcessingTxIds(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
       setLoading(false);
     }
   };
@@ -741,10 +780,26 @@ export function Admin() {
                 
                 {tx.status === 'pending' && (
                   <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer shadow-sm">
-                      <CheckCircle className="w-4 h-4" /> Approuver
+                    <button 
+                      disabled={Boolean(processingTxIds[tx.id]) || loading}
+                      onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} 
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer shadow-sm"
+                    >
+                      {processingTxIds[tx.id] ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Confirmation...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4" /> Approuver
+                        </>
+                      )}
                     </button>
-                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer border border-red-200">
+                    <button 
+                      disabled={Boolean(processingTxIds[tx.id]) || loading}
+                      onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} 
+                      className="flex-1 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer border border-red-200"
+                    >
                       <XCircle className="w-4 h-4" /> Rejeter
                     </button>
                   </div>
@@ -781,10 +836,26 @@ export function Admin() {
                 
                 {tx.status === 'pending' && (
                   <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer shadow-sm">
-                      <CheckCircle className="w-4 h-4" /> Approuver
+                    <button 
+                      disabled={Boolean(processingTxIds[tx.id]) || loading}
+                      onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} 
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer shadow-sm"
+                    >
+                      {processingTxIds[tx.id] ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Traitement...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4" /> Approuver
+                        </>
+                      )}
                     </button>
-                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer border border-red-200">
+                    <button 
+                      disabled={Boolean(processingTxIds[tx.id]) || loading}
+                      onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} 
+                      className="flex-1 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer border border-red-200"
+                    >
                       <XCircle className="w-4 h-4" /> Rejeter
                     </button>
                   </div>

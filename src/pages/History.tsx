@@ -36,18 +36,58 @@ export function History() {
   };
 
   const isPositive = (type: string) => {
-    return type === 'deposit' || type === 'daily_gain' || type === 'signup_bonus' || type === 'referral_bonus';
+    const positiveTypes = [
+      'deposit', 
+      'daily_gain', 
+      'signup_bonus', 
+      'referral_bonus', 
+      'bonus', 
+      'commission', 
+      'parrainage'
+    ];
+    return positiveTypes.includes(type?.toLowerCase());
   };
 
-  const getTypeLabel = (type: string) => {
+  const getTransactionTitle = (tx: { type?: string; reference?: string }) => {
+    const type = (tx.type || '').toLowerCase();
+    const ref = (tx.reference || '').toLowerCase();
+
+    // 1. Commission : paliers d'équipe (Commissions de membres ou palier) ou type commission
+    if (
+      type === 'commission' || 
+      ref.includes('palier') || 
+      ref.includes('équipe') || 
+      ref.includes('membres') ||
+      ref.startsWith('commission palier')
+    ) {
+      return 'Commission';
+    }
+
+    // 2. Bonus de parrainage : commissions sur dépôt filleul (Niveau 1, 2, 3), bonus affiliation, bonus parrainage
+    if (
+      type === 'referral_bonus' || 
+      type === 'bonus' || 
+      type === 'parrainage' || 
+      ref.includes('parrainage') || 
+      ref.includes('niveau')
+    ) {
+      return 'Bonus de parrainage';
+    }
+
+    // 3. Types classiques
     switch (type) {
-      case 'deposit': return 'Dépôt';
-      case 'withdrawal': return 'Retrait';
-      case 'investment': return 'Investissement Culture';
-      case 'daily_gain': return 'Gain journalier';
-      case 'signup_bonus': return 'Bonus de bienvenue';
-      case 'referral_bonus': return 'Bonus de parrainage';
-      default: return 'Transaction';
+      case 'deposit': 
+        return 'Dépôt';
+      case 'withdrawal': 
+        return 'Retrait';
+      case 'investment': 
+        return 'Investissement Culture';
+      case 'daily_gain': 
+        return 'Gain journalier';
+      case 'signup_bonus': 
+        return 'Bonus de bienvenue';
+      default: 
+        return 'Bonus de parrainage';
     }
   };
 
@@ -75,6 +115,7 @@ export function History() {
           <div className="divide-y divide-gray-200/80">
             {transactions.map((tx) => {
               const positive = isPositive(tx.type);
+              const title = getTransactionTitle(tx);
               return (
                 <div 
                   key={tx.id} 
@@ -82,7 +123,7 @@ export function History() {
                 >
                   <div className="flex-1 pr-4">
                     <h3 className="font-bold text-gray-900 text-sm leading-snug">
-                      {getTypeLabel(tx.type)}
+                      {title}
                     </h3>
                     <p className="text-[11px] text-gray-500 font-medium mt-0.5">
                       {format(new Date(tx.created_at), 'dd MMM yyyy à HH:mm', { locale: fr })}

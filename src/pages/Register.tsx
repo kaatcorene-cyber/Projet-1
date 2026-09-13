@@ -27,12 +27,25 @@ export function Register() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Ne garder strictement que les chiffres et limiter à 10 chiffres maximum
+    const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setFormData(prev => ({ ...prev, phone: numericOnly }));
+    if (error) setError('');
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
+    const cleanPhone = formData.phone.replace(/\D/g, '');
+
+    if (cleanPhone.length !== 10) {
+      setError('Le numéro de téléphone doit comporter exactement 10 chiffres (ex: 0701020304).');
+      return;
+    }
+
     setLoading(true);
-    const cleanPhone = formData.phone.replace(/\s/g, '');
 
     try {
       const { data: existingUser, error: existError } = await supabase
@@ -124,13 +137,21 @@ export function Register() {
               </span>
               <input
                 type="tel"
+                inputMode="numeric"
                 name="phone"
+                maxLength={10}
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={handlePhoneChange}
                 className="w-full px-4 py-3.5 text-gray-900 focus:outline-none bg-transparent placeholder:text-gray-400 font-medium tracking-wide text-base"
-                placeholder="0123456789"
+                placeholder="0701020304"
                 required
               />
+            </div>
+            <div className="flex items-center justify-between px-1 text-[11px] font-medium text-gray-500">
+              <span>Numéro national (10 chiffres)</span>
+              <span className={`font-mono font-bold ${formData.phone.length === 10 ? 'text-emerald-600' : 'text-gray-400'}`}>
+                {formData.phone.length}/10
+              </span>
             </div>
           </div>
 
