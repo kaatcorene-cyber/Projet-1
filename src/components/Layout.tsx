@@ -6,6 +6,7 @@ import { LogOut, Settings, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { parseSafeDate } from '../lib/utils';
+import { claimAllActiveYields } from '../lib/investments';
 
 export function Layout() {
   const { isAuthenticated, user, logout, refreshUser } = useAuthStore();
@@ -28,70 +29,17 @@ export function Layout() {
 
   const processDailyYields = async (userId: string) => {
     try {
-      const { data: investments } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
+      const { data: investments } = await supabase
+        .from('investments')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active');
+
       if (!investments || investments.length === 0) return;
 
-      // Optimize: Only fetch needed columns to reduce payload size drastically
-      const { data: gains } = await supabase.from('transactions')
-          .select('reference')
-          .eq('user_id', userId)
-          .eq('type', 'daily_gain');
-
-      let totalToAdd = 0;
-      const newTransactions: any[] = [];
-      const completedInvestments: string[] = [];
-
-      for (const inv of investments) {
-          const startDate = parseSafeDate(inv.start_date || inv.created_at || Date.now());
-          let effectiveNow = Date.now();
-          let isExpired = false;
-
-          if (inv.end_date) {
-            const endTimestamp = parseSafeDate(inv.end_date);
-            if (Date.now() >= endTimestamp) {
-              effectiveNow = endTimestamp;
-              isExpired = true;
-            }
-          }
-
-          const daysElapsed = Math.floor((effectiveNow - startDate) / (24 * 60 * 60 * 1000));
-          const paidCount = gains?.filter(g => g.reference === inv.id).length || 0;
-          const missedDays = daysElapsed - paidCount;
-
-          if (missedDays > 0) {
-              // Ensure we don't attempt to process an infinite number of days if bug happens
-              const boundedMissedDays = Math.min(missedDays, 1000);
-              
-              totalToAdd += (inv.daily_yield * boundedMissedDays);
-              for (let i = 0; i < boundedMissedDays; i++) {
-                  newTransactions.push({
-                      user_id: userId,
-                      type: 'daily_gain',
-                      amount: inv.daily_yield,
-                      status: 'completed',
-                      reference: inv.id
-                  });
-              }
-          }
-          
-          if (isExpired) {
-             completedInvestments.push(inv.id);
-          }
-      }
-
-      if (totalToAdd > 0 && newTransactions.length > 0) {
-          await supabase.from('transactions').insert(newTransactions);
-          
-          const { data: userData } = await supabase.from('users').select('balance').eq('id', userId).single();
-          if (userData) {
-              await supabase.from('users').update({ balance: userData.balance + totalToAdd }).eq('id', userId);
-          }
-      }
-      
-      if (completedInvestments.length > 0) {
-          for (const id of completedInvestments) {
-              await supabase.from('investments').update({ status: 'completed' }).eq('id', id);
-          }
+      const result = await claimAllActiveYields(investments, userId);
+      if (result.success && result.totalAmount > 0) {
+        await refreshUser();
       }
     } catch (e) {
       console.error("Failed to process yields", e);

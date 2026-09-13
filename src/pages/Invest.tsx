@@ -261,7 +261,6 @@ export function Invest() {
         <div className="space-y-4">
           {plans.map((plan, index) => {
             const planKey = plan.id || `crop-plan-${plan.amount}-${index}`;
-            const hasEnoughBalance = (Number(user?.balance) || 0) >= plan.amount;
 
             return (
               <div 
@@ -341,7 +340,7 @@ export function Invest() {
                   >
                     <Lock className="w-3.5 h-3.5" /> Verrouillé
                   </button>
-                ) : hasEnoughBalance ? (
+                ) : (
                   <button
                     onClick={() => handleInvest(plan, planKey)}
                     disabled={loading === planKey}
@@ -353,28 +352,6 @@ export function Invest() {
                       `Cultiver (${formatCurrency(plan.amount)})`
                     )}
                   </button>
-                ) : (
-                  <div className="flex gap-2 w-full">
-                    <button
-                      onClick={() => handleInvest(plan, planKey)}
-                      disabled={loading === planKey}
-                      className="flex-1 py-3 rounded-xl text-xs font-black bg-emerald-50 border border-emerald-500/20 text-emerald-800 hover:bg-emerald-100/70 transition-all flex justify-center items-center gap-1.5 cursor-pointer"
-                      title="Vérifier le solde et lancer la culture"
-                    >
-                      {loading === planKey ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-emerald-700" />
-                      ) : (
-                        `Cultiver (${formatCurrency(plan.amount)})`
-                      )}
-                    </button>
-                    <button
-                      onClick={() => navigate('/deposit')}
-                      className="py-3 px-4 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm active:scale-98 flex items-center justify-center shrink-0 cursor-pointer gap-1"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>Financer</span>
-                    </button>
-                  </div>
                 )}
               </div>
             );

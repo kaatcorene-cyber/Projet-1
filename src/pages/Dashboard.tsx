@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, CheckCircle2, ShieldCheck, TrendingUp, Award, Building2, MapPin, Users, Calendar, Factory, Eye, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { CheckCircle2, ShieldCheck, TrendingUp, Award, Building2, MapPin, Users, Calendar, Factory, Eye, X } from 'lucide-react';
 import { AppLogo } from '../components/AppLogo';
 
 export function Dashboard() {
@@ -293,22 +292,6 @@ export function Dashboard() {
           </div>
 
         </div>
-      </div>
-
-      {/* CTA Button */}
-      <div className="relative z-10 px-4 pt-6 pb-8">
-        <Link 
-          to="/invest" 
-          className="w-full relative overflow-hidden group bg-emerald-600 hover:bg-emerald-500 text-white py-4 px-6 rounded-2xl flex items-center justify-between font-black shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 transition-all"
-        >
-          <div className="flex flex-col text-left">
-            <span className="text-base tracking-wide leading-tight mb-0.5">Accéder aux cultures</span>
-            <span className="text-white/80 text-[10px] uppercase font-bold tracking-wider">Découvrir les plans d’investissement</span>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors shrink-0">
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
       </div>
       {/* Image Lightbox Modal */}
       {selectedImage && (

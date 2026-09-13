@@ -5,6 +5,7 @@ import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { AppLogo } from '../components/AppLogo';
+import { Trash2 } from 'lucide-react';
 
 export function History() {
   const { user } = useAuthStore();
@@ -62,7 +63,24 @@ export function History() {
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Histoire</h1>
           <p className="text-emerald-600 text-[11px] font-bold uppercase tracking-wider mt-0.5">Flux des Transactions</p>
         </div>
-        <AppLogo imgClassName="h-8 w-auto object-contain max-h-10" />
+        <div className="flex items-center gap-3">
+          {user?.role === 'admin' && transactions.length > 0 && (
+            <button
+              onClick={async () => {
+                if (window.confirm("Voulez-vous supprimer tout l'historique de votre compte administrateur ?")) {
+                  await supabase.from('transactions').delete().eq('user_id', user.id);
+                  setTransactions([]);
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 text-xs font-bold rounded-xl border border-red-200 hover:bg-red-100 transition-colors cursor-pointer"
+              title="Vider l'historique admin"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Vider</span>
+            </button>
+          )}
+          <AppLogo imgClassName="h-8 w-auto object-contain max-h-10" />
+        </div>
       </header>
 
       {/* Directly on the page - No card wrapper, no icons behind notifications */}
