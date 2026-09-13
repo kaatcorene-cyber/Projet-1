@@ -177,19 +177,47 @@ export function Admin() {
     fetchData();
   };
 
-  const handleDeleteUser = async (id: string) => {
+  const handleDeleteUser = async (id: string, userPhone?: string, referralCode?: string) => {
     setConfirmModal({
       isOpen: true,
-      message: `Voulez-vous vraiment supprimer cet utilisateur ?`,
+      message: `Voulez-vous vraiment supprimer définitivement cet utilisateur (${userPhone || id}) ? Toutes ses transactions et investissements associés seront également supprimés.`,
       onConfirm: async () => {
         try {
           setLoading(true);
-          await supabase.from('users').delete().eq('id', id);
-          fetchData();
-          setLoading(false);
-          setMessage({ type: 'success', text: "Utilisateur supprimé." });
+
+          // 1. Supprimer ou dissocier les tables dépendantes ayant une clé étrangère vers users(id)
+          // a. Transactions de l'utilisateur
+          const { error: txErr } = await supabase.from('transactions').delete().eq('user_id', id);
+          if (txErr) console.warn('[DeleteUser] Erreur suppression transactions:', txErr.message);
+
+          // b. Investissements de l'utilisateur
+          const { error: invErr } = await supabase.from('investments').delete().eq('user_id', id);
+          if (invErr) console.warn('[DeleteUser] Erreur suppression investissements:', invErr.message);
+
+          // c. Demandes de vérification de dépôt
+          const { error: depErr } = await supabase.from('deposit_verifications').delete().eq('user_id', id);
+          if (depErr) console.warn('[DeleteUser] Erreur suppression verifications:', depErr.message);
+
+          // d. Dissocier les filleuls parrainés par cet utilisateur pour éviter les blocages
+          if (referralCode) {
+            await supabase.from('users').update({ referred_by: null }).eq('referred_by', referralCode);
+          }
+
+          // 2. Supprimer l'utilisateur lui-même
+          const { error: userErr } = await supabase.from('users').delete().eq('id', id);
+          if (userErr) throw userErr;
+
+          // Mise à jour optimiste immédiate de la liste des utilisateurs
+          setUsersList(prev => prev.filter(u => u.id !== id));
+          setTransactions(prev => prev.filter(t => t.user_id !== id));
+          setInvestmentsList(prev => prev.filter(i => i.user_id !== id));
+
+          await fetchData(false);
+          setMessage({ type: 'success', text: "Utilisateur et données associées supprimés avec succès." });
         } catch(err: any) {
-          setMessage({ type: 'error', text: "Erreur: " + err.message });
+          console.error('[DeleteUser Error]', err);
+          setMessage({ type: 'error', text: "Erreur suppression: " + (err.message || 'Impossible de supprimer cet utilisateur.') });
+        } finally {
           setLoading(false);
         }
       }
@@ -742,7 +770,7 @@ export function Admin() {
                       <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Modifier Solde
                     </button>
                     {u.role !== 'admin' && (
-                      <button onClick={() => handleDeleteUser(u.id)} className="p-2 bg-red-50 text-red-500 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">
+                      <button onClick={() => handleDeleteUser(u.id, u.phone, u.referral_code)} className="p-2 bg-red-50 text-red-500 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer" title="Supprimer cet utilisateur">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
