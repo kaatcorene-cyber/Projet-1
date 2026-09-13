@@ -165,7 +165,7 @@ export function Activity() {
         .select('*')
         .eq('user_id', currentUser.id)
         .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .order('start_date', { ascending: false });
 
       if (!error && data) {
         setActiveInvestments(data);

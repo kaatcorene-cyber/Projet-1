@@ -81,7 +81,7 @@ export function Admin() {
       const [usersRes, transRes, invRes, settingsRes, verifsRes] = await Promise.all([
         supabase.from('users').select('*').order('created_at', { ascending: false }),
         supabase.from('transactions').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false }),
-        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false }),
+        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false }),
         supabase.from('settings').select('*'),
         supabase.from('deposit_verifications').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false })
       ]);

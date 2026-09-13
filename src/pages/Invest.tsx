@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { CheckCircle2, AlertCircle, Loader2, Lock, Sprout } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Lock, Sprout, ArrowRight, Wallet, PlusCircle } from 'lucide-react';
 import { AppLogo } from '../components/AppLogo';
 import { CropPlan, DEFAULT_CROP_PLANS } from '../data/plans';
 
@@ -10,7 +12,9 @@ export type { CropPlan };
 export const CROP_PLANS = DEFAULT_CROP_PLANS;
 
 export function Invest() {
+  const navigate = useNavigate();
   const { user, refreshUser } = useAuthStore();
+  const { setInvestmentsCache } = useAppStore();
   const [plans, setPlans] = useState<CropPlan[]>(() => {
     try {
       const cached = localStorage.getItem('cargill_investment_plans');
@@ -33,6 +37,9 @@ export function Invest() {
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
   useEffect(() => {
+    // Refresh user balance immediately on mount
+    refreshUser();
+
     // Fetch unified investment plans from database settings
     async function fetchPlans() {
       try {
@@ -82,7 +89,7 @@ export function Invest() {
 
     const intervalId = setInterval(() => {
       refreshUser();
-    }, 60000);
+    }, 30000);
 
     return () => {
       clearInterval(intervalId);
@@ -92,14 +99,12 @@ export function Invest() {
   }, [refreshUser]);
 
   const handleInvest = async (plan: CropPlan, planKey: string) => {
-    if (!user) return;
-    if (plan.locked) {
-      setMessage({ type: 'error', text: 'Ce plan est actuellement verrouillé.' });
+    if (!user) {
+      navigate('/login');
       return;
     }
-    
-    if (Number(user.balance) < plan.amount) {
-      setMessage({ type: 'error', text: 'Solde insuffisant. Veuillez recharger votre compte.' });
+    if (plan.locked) {
+      setMessage({ type: 'error', text: 'Ce plan est actuellement verrouillé.' });
       return;
     }
 
@@ -107,7 +112,32 @@ export function Invest() {
     setMessage(null);
 
     try {
-      const newBalance = Number(user.balance) - plan.amount;
+      // 1. Fetch live user data directly from DB to prevent stale state issues
+      const { data: freshUser, error: fetchErr } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (fetchErr || !freshUser) {
+        throw new Error('Impossible de synchroniser votre solde. Veuillez vous reconnecter.');
+      }
+
+      // Update local state with latest user record
+      useAuthStore.getState().setUser(freshUser);
+
+      const liveBalance = Number(freshUser.balance) || 0;
+      if (liveBalance < plan.amount) {
+        setMessage({ 
+          type: 'error', 
+          text: `Solde insuffisant (${formatCurrency(liveBalance)} disponible sur ${formatCurrency(plan.amount)} requis). Veuillez financer votre compte.` 
+        });
+        setLoading(null);
+        return;
+      }
+
+      // 2. Deduct balance in users table
+      const newBalance = liveBalance - plan.amount;
       const { error: updateError } = await supabase
         .from('users')
         .update({ balance: newBalance })
@@ -115,35 +145,54 @@ export function Invest() {
 
       if (updateError) throw updateError;
 
+      // 3. Create investment with explicit dates and status
       const durationDays = plan.duration || 60;
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + durationDays);
+      const now = new Date();
+      const endDate = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
-      const { error: invError } = await supabase
+      const { data: newInv, error: invError } = await supabase
         .from('investments')
         .insert([{
           user_id: user.id,
           plan_amount: plan.amount,
           daily_yield: plan.daily,
-          end_date: endDate.toISOString()
-        }]);
+          start_date: now.toISOString(),
+          end_date: endDate.toISOString(),
+          last_paid_at: now.toISOString(),
+          status: 'active'
+        }])
+        .select()
+        .single();
 
       if (invError) throw invError;
 
+      // 4. Record transaction in transactions table
       await supabase.from('transactions').insert([{
         user_id: user.id,
         type: 'investment',
         amount: plan.amount,
-        status: 'completed'
+        status: 'completed',
+        reference: `Culture - ${plan.name}`
       }]);
 
+      // Invalidate investments cache so Activity immediately picks up the new culture
+      setInvestmentsCache(null);
+
+      // Refresh auth store user balance
       await refreshUser();
-      setMessage({ type: 'success', text: `Culture de ${plan.name} lancée avec succès !` });
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Échec de la transaction. Veuillez réessayer.' });
+
+      setMessage({ 
+        type: 'success', 
+        text: `Culture de ${plan.name} lancée avec succès ! Vos rendements quotidiens de ${formatCurrency(plan.daily)} sont maintenant activés.` 
+      });
+    } catch (error: any) {
+      console.error('Erreur lors du lancement de la culture:', error);
+      setMessage({ 
+        type: 'error', 
+        text: error?.message || 'Échec de la transaction. Veuillez réessayer.' 
+      });
     } finally {
       setLoading(null);
-      setTimeout(() => setMessage(null), 3500);
     }
   };
 
@@ -163,30 +212,56 @@ export function Invest() {
 
       <div className="relative z-10 max-w-xl mx-auto space-y-4 mt-4">
         {message && (
-          <div className={`p-3.5 rounded-xl flex items-center gap-2.5 animate-in fade-in zoom-in duration-200 shadow-sm ${
+          <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in zoom-in duration-200 shadow-sm ${
             message.type === 'success' ? 'bg-emerald-50 border border-emerald-500/20 text-emerald-800' : 'bg-red-50 border border-red-500/20 text-red-700'
           }`}>
-            {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" /> : <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />}
-            <p className="text-xs font-bold">{message.text}</p>
+            <div className="flex items-center gap-2.5">
+              {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" /> : <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />}
+              <p className="text-xs font-bold leading-relaxed">{message.text}</p>
+            </div>
+            {message.type === 'success' ? (
+              <Link 
+                to="/activity" 
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shrink-0 shadow-sm transition-all"
+              >
+                <span>Voir l'Activité</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            ) : (
+              <Link 
+                to="/deposit" 
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shrink-0 shadow-sm transition-all"
+              >
+                <span>Financer</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </div>
         )}
 
         {/* Solde utilisateur */}
         <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Votre solde disponible</p>
-            <p className="text-xl font-black text-emerald-600">{formatCurrency(user?.balance || 0)}</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Wallet className="w-3.5 h-3.5 text-emerald-600" />
+              Votre solde disponible
+            </p>
+            <p className="text-xl font-black text-emerald-600 mt-0.5">{formatCurrency(user?.balance || 0)}</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-500/20">
-            <Sprout className="w-5 h-5" />
-          </div>
+          <Link
+            to="/deposit"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-sm transition-all active:scale-95"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Financer</span>
+          </Link>
         </div>
 
         {/* Plans de Culture */}
         <div className="space-y-4">
           {plans.map((plan, index) => {
             const planKey = plan.id || `crop-plan-${plan.amount}-${index}`;
-            const hasEnoughBalance = (user?.balance || 0) >= plan.amount;
+            const hasEnoughBalance = (Number(user?.balance) || 0) >= plan.amount;
 
             return (
               <div 
@@ -259,29 +334,48 @@ export function Invest() {
                 </div>
 
                 {/* Bouton d'action */}
-                <button
-                  onClick={() => handleInvest(plan, planKey)}
-                  disabled={loading === planKey || plan.locked || !hasEnoughBalance}
-                  className={`w-full py-3 rounded-xl text-xs font-black transition-all flex justify-center items-center gap-1.5 ${
-                    plan.locked
-                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed border border-gray-300'
-                      : !hasEnoughBalance
-                        ? 'bg-emerald-600/30 text-emerald-900 cursor-not-allowed'
-                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm active:scale-98'
-                  }`}
-                >
-                  {loading === planKey ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : plan.locked ? (
-                    <>
-                      <Lock className="w-3.5 h-3.5" /> Verrouillé
-                    </>
-                  ) : !hasEnoughBalance ? (
-                    'Solde insuffisant'
-                  ) : (
-                    `Cultiver (${formatCurrency(plan.amount)})`
-                  )}
-                </button>
+                {plan.locked ? (
+                  <button
+                    disabled
+                    className="w-full py-3 rounded-xl text-xs font-black bg-gray-200 text-gray-500 cursor-not-allowed border border-gray-300 flex justify-center items-center gap-1.5"
+                  >
+                    <Lock className="w-3.5 h-3.5" /> Verrouillé
+                  </button>
+                ) : hasEnoughBalance ? (
+                  <button
+                    onClick={() => handleInvest(plan, planKey)}
+                    disabled={loading === planKey}
+                    className="w-full py-3 rounded-xl text-xs font-black transition-all flex justify-center items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm active:scale-98 cursor-pointer"
+                  >
+                    {loading === planKey ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      `Cultiver (${formatCurrency(plan.amount)})`
+                    )}
+                  </button>
+                ) : (
+                  <div className="flex gap-2 w-full">
+                    <button
+                      onClick={() => handleInvest(plan, planKey)}
+                      disabled={loading === planKey}
+                      className="flex-1 py-3 rounded-xl text-xs font-black bg-emerald-50 border border-emerald-500/20 text-emerald-800 hover:bg-emerald-100/70 transition-all flex justify-center items-center gap-1.5 cursor-pointer"
+                      title="Vérifier le solde et lancer la culture"
+                    >
+                      {loading === planKey ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-emerald-700" />
+                      ) : (
+                        `Cultiver (${formatCurrency(plan.amount)})`
+                      )}
+                    </button>
+                    <button
+                      onClick={() => navigate('/deposit')}
+                      className="py-3 px-4 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm active:scale-98 flex items-center justify-center shrink-0 cursor-pointer gap-1"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      <span>Financer</span>
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
