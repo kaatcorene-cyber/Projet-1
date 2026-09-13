@@ -485,29 +485,6 @@ export function Admin() {
     }
   };
 
-  const handleClearAdminHistory = async () => {
-    setConfirmModal({
-      isOpen: true,
-      message: "Voulez-vous vraiment supprimer tout l'historique (transactions et investissements) du compte administrateur ?",
-      onConfirm: async () => {
-        try {
-          setLoading(true);
-          const adminUser = usersList.find(u => u.role === 'admin') || user;
-          if (adminUser) {
-            await supabase.from('transactions').delete().eq('user_id', adminUser.id);
-            await supabase.from('investments').delete().eq('user_id', adminUser.id);
-          }
-          await fetchData();
-          setLoading(false);
-          setMessage({ type: 'success', text: "Historique de l'administrateur supprimé avec succès." });
-        } catch (err: any) {
-          setMessage({ type: 'error', text: "Erreur: " + err.message });
-          setLoading(false);
-        }
-      }
-    });
-  };
-
   const tabs = [
     { id: 'overview', label: "Vue d'ensemble", icon: BarChart3 },
     { id: 'users', label: 'Utilisateurs', icon: Users },
@@ -725,15 +702,6 @@ export function Admin() {
                     <button onClick={() => {setEditingUserId(u.id); setEditBalance(String(u.balance));}} className="flex-1 py-2 bg-gray-50 text-gray-700 rounded-xl flex items-center justify-center text-xs font-bold hover:bg-gray-100 transition-colors border border-gray-200 cursor-pointer">
                       <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Modifier Solde
                     </button>
-                    {u.role === 'admin' && (
-                      <button 
-                        onClick={handleClearAdminHistory} 
-                        className="py-2 px-3 bg-red-50 text-red-700 border border-red-200 rounded-xl flex items-center justify-center text-xs font-bold hover:bg-red-100 transition-colors cursor-pointer shrink-0"
-                        title="Vider les transactions et investissements de test du compte administrateur"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 mr-1" /> Vider historique admin
-                      </button>
-                    )}
                     {u.role !== 'admin' && (
                       <button onClick={() => handleDeleteUser(u.id)} className="p-2 bg-red-50 text-red-500 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer">
                         <Trash2 className="w-4 h-4" />
