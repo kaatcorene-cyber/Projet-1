@@ -7,7 +7,8 @@ import {
   Gift, 
   CheckCircle2, 
   Sparkles,
-  Loader2
+  Loader2,
+  Users
 } from 'lucide-react';
 
 interface CommissionTier {
@@ -230,6 +231,24 @@ export function Commissions() {
           </div>
         )}
 
+        {/* Bannière explicative : Niveau 1 uniquement */}
+        <div className="bg-emerald-50/80 border border-emerald-500/20 rounded-2xl p-3.5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-900">Membres Niveau 1 qualifiés</p>
+                <p className="text-[10px] text-gray-500 font-medium">Seuls les filleuls directs avec recharge ≥ 3 000 F comptent</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-lg font-black text-emerald-700">{qualifiedCount}</span>
+              <span className="text-[10px] text-gray-500 block font-semibold">actif{qualifiedCount > 1 ? 's' : ''}</span>
+            </div>
+          </div>
+        </div>
 
         {/* Liste des Paliers avec boutons Réclamer lorsque la barre est remplie */}
         <div className="space-y-3 pt-1">
@@ -237,7 +256,7 @@ export function Commissions() {
             <h2 className="text-xs font-black text-gray-500 uppercase tracking-wider">
               Paliers de progression
             </h2>
-            <span className="text-[11px] font-bold text-emerald-700">10 Paliers</span>
+            <span className="text-[11px] font-bold text-emerald-700">10 Paliers • Niveau 1</span>
           </div>
 
           <div className="space-y-3">
@@ -273,11 +292,11 @@ export function Commissions() {
                       <div className="text-left">
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs font-bold text-gray-900">
-                            {tier.target} {tier.target === 1 ? 'personne à inviter' : 'personnes à inviter'}
+                            {tier.target} {tier.target === 1 ? 'filleul direct (Niveau 1)' : 'filleuls directs (Niveau 1)'}
                           </span>
                         </div>
                         <span className="text-[11px] text-gray-500 font-medium">
-                          Recharge min. 3 000 F / membre
+                          Recharge min. 3 000 F / membre N1
                         </span>
                       </div>
                     </div>
@@ -340,7 +359,7 @@ export function Commissions() {
                       </button>
                     ) : (
                       <div className="flex items-center justify-between text-[11px] text-gray-400 py-1 font-medium">
-                        <span>Encore {tier.target - qualifiedCount} personne{tier.target - qualifiedCount > 1 ? 's' : ''} (recharge ≥ 3 000 F)</span>
+                        <span>Encore {tier.target - qualifiedCount} filleul{tier.target - qualifiedCount > 1 ? 's' : ''} N1 (recharge ≥ 3 000 F)</span>
                         <span className="text-gray-400 font-bold">À débloquer</span>
                       </div>
                     )}
