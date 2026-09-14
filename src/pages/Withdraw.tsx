@@ -36,8 +36,8 @@ export function Withdraw() {
     
     const numAmount = Number(amount);
     
-    if (numAmount < 1500) {
-      return setMessage({ type: 'error', text: 'Retrait minimum requis : 1 500 FCFA.' });
+    if (numAmount < 1000) {
+      return setMessage({ type: 'error', text: 'Retrait minimum requis : 1 000 FCFA.' });
     }
 
     if (Number(user.balance) < numAmount) {
@@ -133,9 +133,9 @@ export function Withdraw() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="w-full bg-gray-50 border border-black/10 rounded-xl px-3 py-2.5 text-lg font-black text-emerald-600 placeholder-gray-300 mt-1 focus:outline-none focus:border-emerald-500"
-                placeholder="1500"
+                placeholder="1000"
                 required
-                min="1500"
+                min="1000"
               />
             </div>
 
@@ -178,7 +178,7 @@ export function Withdraw() {
             </div>
           </div>
 
-          {amount && Number(amount) >= 1500 && (
+          {amount && Number(amount) >= 1000 && (
             <div className="text-xs font-medium text-center text-gray-600 bg-white border border-black/5 py-3 px-4 rounded-xl shadow-sm">
               Montant net à recevoir (après déduction des frais de 10%) : <br/>
               <span className="font-black text-xl text-emerald-600 mt-0.5 inline-block">{formatCurrency(Number(amount) * 0.90)}</span>
