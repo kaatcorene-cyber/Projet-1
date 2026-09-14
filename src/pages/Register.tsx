@@ -70,7 +70,7 @@ export function Register() {
         .insert([
           {
             first_name: "Membre",
-            last_name: "Agri",
+            last_name: "",
             phone: cleanPhone,
             country: formData.country,
             password_hash: formData.password,

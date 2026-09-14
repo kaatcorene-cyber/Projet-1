@@ -294,14 +294,14 @@ export function Team() {
                   <div key={member.id} className="p-3.5 bg-white rounded-xl border border-black/5 shadow-sm flex items-center justify-between">
                     <div>
                       <p className="font-bold text-gray-900 text-xs">
-                        {member.first_name || 'Membre'} {member.last_name || ''}
+                        Membre
                       </p>
                       <p className="text-[10px] text-gray-400 mt-0.5">
                         Inscrit le {format(new Date(member.created_at), 'dd/MM/yyyy', { locale: fr })}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[11px] font-mono font-bold text-gray-700">
+                      <p className="text-[11px] font-mono font-bold text-gray-800">
                         {member.phone}
                       </p>
                       <p className="text-[10px] font-bold text-emerald-600 mt-0.5">
