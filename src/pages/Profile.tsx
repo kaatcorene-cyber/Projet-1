@@ -188,7 +188,7 @@ export function Profile() {
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-gray-900 text-sm font-black">Groupe officiel</span>
-                <span className="text-gray-400 text-xs font-semibold">Communauté officielle Cargill</span>
+                <span className="text-gray-400 text-xs font-semibold">Communauté officielle CargillCi</span>
               </div>
             </div>
             <ExternalLink className="w-4 h-4 text-gray-400 shrink-0" />
@@ -213,27 +213,27 @@ export function Profile() {
         </div>
       </div>
 
-      {/* Bulle flottante du Service Client (avatar d'un conseiller homme portant l'habit avec le logo) */}
+      {/* Bulle flottante du Service Client */}
       <div className="fixed bottom-24 right-5 z-40">
         <button
           onClick={handleSupportRedirect}
           className="group relative flex items-center justify-center w-16 h-16 rounded-full bg-white border-2 border-emerald-500 shadow-xl shadow-emerald-950/25 hover:scale-105 active:scale-95 transition-all cursor-pointer p-0.5"
           title="Contacter le Service Client"
-          aria-label="Contacter le Service Client Cargill"
+          aria-label="Contacter le Service Client CargillCi"
         >
-          {/* Avatar avec la personne : homme habillé avec le logo */}
+          {/* Avatar avec la personne */}
           <div className="w-full h-full rounded-full overflow-hidden relative bg-emerald-100 flex items-center justify-center">
             <img 
               src="/images/customer_support_avatar.jpg" 
-              alt="Conseiller Service Client Cargill" 
+              alt="Conseiller Service Client CargillCi" 
               className="w-full h-full object-cover"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src = '/icon.svg';
               }}
             />
-            {/* Petit badge logo officiel incrusté sous l'habit au bas de l'avatar */}
+            {/* Petit badge logo officiel */}
             <div className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full p-0.5 shadow-sm border border-emerald-500/50">
-              <img src="/icon.svg" alt="Cargill" className="w-3.5 h-3.5 object-contain" />
+              <img src="/icon.svg" alt="CargillCi" className="w-3.5 h-3.5 object-contain" />
             </div>
           </div>
 

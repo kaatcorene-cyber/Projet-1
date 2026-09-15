@@ -11,21 +11,21 @@ export function Dashboard() {
       image: '/images/presentation/image1.jpeg',
       fallbackImage: 'https://i.imgur.com/MyrZuHN.jpeg',
       title: 'INFORMATIONS & TRANSPARENCE',
-      text: 'Cette présentation rassemble des informations relatives aux activités et à la présence de Cargill en Côte d’Ivoire. Les éléments présentés sont destinés à permettre une meilleure compréhension de l’entreprise, de ses activités et de ses engagements.'
+      text: 'Cette présentation rassemble des informations relatives aux activités et à la présence de CargillCi en Côte d’Ivoire. Les éléments présentés sont destinés à permettre une meilleure compréhension de l’entreprise, de ses activités et de ses engagements.'
     },
     {
       id: 'doc-2',
       image: '/images/presentation/image2.jpg',
       fallbackImage: '/images/presentation/image2.jpg',
       title: 'ENGAGEMENT & CONFIANCE',
-      text: 'Cargill s’appuie sur une présence internationale et des activités structurées dans le secteur agricole et alimentaire. La transparence, la responsabilité et le respect des partenaires constituent des principes essentiels dans la conduite de ses activités.'
+      text: 'CargillCi s’appuie sur une présence reconnue et des activités structurées dans le secteur agricole et alimentaire. La transparence, la responsabilité et le respect des partenaires constituent des principes essentiels dans la conduite de ses activités.'
     },
     {
       id: 'doc-3',
       image: '/images/presentation/image3.png',
       fallbackImage: 'https://i.imgur.com/q1Gy36v.png',
       title: 'ENGAGEMENT POUR LA QUALITÉ ET LA CONFORMITÉ',
-      text: 'La qualité, la responsabilité et la conformité constituent des principes fondamentaux dans les activités de Cargill. Ce document présente les engagements et domaines d’activité associés à Cargill Côte d’Ivoire et doit être distingué de tout certificat ou agrément délivré par une autorité indépendante.'
+      text: 'La qualité, la responsabilité et la conformité constituent des principes fondamentaux dans les activités de CargillCi. Ce document présente les engagements et domaines d’activité associés à CargillCi en Côte d’Ivoire.'
     },
     {
       id: 'doc-4',
@@ -39,7 +39,7 @@ export function Dashboard() {
       image: '/images/presentation/image4.png',
       fallbackImage: 'https://i.imgur.com/1ybNOe6.png',
       title: 'PROGRAMME OFFICIEL DE COMMISSIONS & PARRAINAGE',
-      text: 'Participez activement au développement de la communauté agricole Cargill en invitant vos collaborateurs et proches. Profitez de notre grille de récompenses transparente et progressive pour chaque personne parrainée sur notre plateforme.'
+      text: 'Participez activement au développement de la communauté agricole CargillCi en invitant vos collaborateurs et proches. Profitez de notre grille de récompenses transparente et progressive pour chaque personne parrainée sur notre plateforme.'
     }
   ];
 
@@ -88,13 +88,13 @@ export function Dashboard() {
           {/* Main Title & Intro */}
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100/70 border border-emerald-500/20 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-              <span>🌱</span> Cargill en Côte d'Ivoire
+              <span>🌱</span> CargillCi en Côte d'Ivoire
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-gray-900 leading-tight">
-              Acteur mondial de l’agriculture & de l’agroalimentaire
+              Acteur majeur de l’agriculture & de l’agroalimentaire
             </h1>
             <p className="text-gray-700 text-sm sm:text-base leading-relaxed font-normal">
-              Cargill est un acteur mondial de l’agriculture et de l’agroalimentaire, présent en Côte d’Ivoire depuis 1997. L’entreprise travaille avec les producteurs et les coopératives afin de s’approvisionner en matières premières agricoles et de développer des chaînes d’approvisionnement durables.
+              CargillCi est un acteur de l’agriculture et de l’agroalimentaire en Côte d’Ivoire. La plateforme collabore avec les producteurs et les coopératives afin de promouvoir des cultures durables à fort rendement.
             </p>
           </div>
 
@@ -157,7 +157,7 @@ export function Dashboard() {
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-gray-600 font-medium">
-              Cargill développe principalement ses activités autour de :
+              CargillCi développe principalement ses activités autour de :
             </p>
 
             <div className="grid grid-cols-3 gap-2 pt-1">
@@ -174,7 +174,7 @@ export function Dashboard() {
 
             <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-500/20 text-xs sm:text-sm text-gray-800 leading-relaxed">
               <span className="font-bold text-amber-900">Transformation locale du cacao : </span>
-              En Côte d’Ivoire, Cargill transforme notamment le cacao en <strong>liqueur de cacao</strong>, <strong>beurre de cacao</strong>, <strong>tourteaux</strong> et <strong>poudre de cacao</strong>.
+              En Côte d’Ivoire, les filières agricoles valorisent notamment le cacao en <strong>liqueur de cacao</strong>, <strong>beurre de cacao</strong>, <strong>tourteaux</strong> et <strong>poudre de cacao</strong>.
             </div>
           </div>
 
@@ -189,7 +189,7 @@ export function Dashboard() {
               </h2>
             </div>
             <p className="text-sm text-gray-700 leading-relaxed font-normal">
-              Cargill collabore avec les agriculteurs, les coopératives et différents partenaires afin de construire une chaîne d’approvisionnement allant de la production agricole jusqu’à la transformation et la commercialisation.
+              CargillCi collabore avec les agriculteurs, les coopératives et différents partenaires afin de construire une chaîne d’approvisionnement allant de la production agricole jusqu’à la transformation et la commercialisation.
             </p>
           </div>
 
@@ -200,7 +200,7 @@ export function Dashboard() {
             <div className="flex items-center gap-2">
               <span className="text-lg">🇨🇮</span>
               <h2 className="text-base font-black text-gray-900 tracking-tight uppercase">
-                Cargill en Côte d’Ivoire
+                CargillCi en Côte d’Ivoire
               </h2>
             </div>
 

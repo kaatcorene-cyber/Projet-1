@@ -1,6 +1,6 @@
 {
-  "name": "Cargill",
-  "description": "Plateforme d'investissement agricole Cargill et de gestion des cultures à fort rendement.",
+  "name": "CargillCi",
+  "description": "Plateforme d'investissement agricole CargillCi et de gestion des cultures à fort rendement en Côte d'Ivoire.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

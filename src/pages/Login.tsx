@@ -91,7 +91,7 @@ export function Login() {
            <AppLogo imgClassName="h-9 w-auto object-contain max-h-11" />
         </div>
         <h1 className="text-2xl font-black tracking-tight mb-1 text-gray-900">Connexion</h1>
-        <p className="text-gray-500 font-medium text-xs">Accédez à votre espace agricole Cargill</p>
+        <p className="text-gray-500 font-medium text-xs">Accédez à votre espace agricole CargillCi</p>
       </div>
 
       <div className="w-full relative z-10">

@@ -1,12 +1,12 @@
 {
-  "name": "Cargill",
-  "short_name": "Cargill",
+  "name": "CargillCi",
+  "short_name": "CargillCi",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f9fafb",
   "theme_color": "#059669",
   "orientation": "portrait",
-  "description": "Plateforme officielle d'investissement et de gestion des cultures agricoles Cargill.",
+  "description": "Plateforme d'investissement agricole CargillCi et de gestion des cultures à fort rendement en Côte d'Ivoire.",
   "icons": [
     {
       "src": "/icon.svg",

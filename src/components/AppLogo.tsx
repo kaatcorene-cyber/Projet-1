@@ -12,7 +12,7 @@ export function AppLogo({
   imgClassName = 'h-9 w-auto object-contain',
   showText = false 
 }: AppLogoProps) {
-  const [logoSrc, setLogoSrc] = useState<string>('/logo.svg?v=cargill');
+  const [logoSrc, setLogoSrc] = useState<string>('/logo.svg?v=cargillci');
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
@@ -37,19 +37,19 @@ export function AppLogo({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <img
-        src={hasError ? '/logo.svg?v=cargill' : logoSrc}
-        alt="Cargill Logo"
+        src={hasError ? '/logo.svg?v=cargillci' : logoSrc}
+        alt="CargillCi Logo"
         className={imgClassName}
         onError={() => {
           if (!hasError) {
             setHasError(true);
-            setLogoSrc('/logo.svg?v=cargill');
+            setLogoSrc('/logo.svg?v=cargillci');
           }
         }}
       />
       {showText && (
         <span className="font-black text-gray-900 tracking-tight text-lg">
-          Car<span className="text-emerald-600">gill</span>
+          Cargill<span className="text-emerald-600 font-black">CI</span>
         </span>
       )}
     </div>

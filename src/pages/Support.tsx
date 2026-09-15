@@ -81,7 +81,7 @@ export function Support() {
         {
           id: '1',
           sender: 'bot',
-          text: `Bonjour ${user?.first_name || ''} ! Je suis le Service Client de Cargill. Comment puis-je vous assister aujourd'hui ?`
+          text: `Bonjour ${user?.first_name || ''} ! Je suis le Service Client de CargillCi. Comment puis-je vous assister aujourd'hui ?`
         }
       ]);
     }
@@ -126,20 +126,20 @@ export function Support() {
       } else if (lower.includes('télécharg') || lower.includes('install') || lower.includes('application') || lower.includes('appli')) {
         responseText = `
           <span>
-            L'installation de l'application <b>Cargill</b> s'effectue en quelques instants. Appuyez sur l'icône d'installation ⬇️ (ou accédez au menu de votre navigateur) pour procéder à l'ajout.<br/><br/>
+            L'installation de l'application <b>CargillCi</b> s'effectue en quelques instants. Appuyez sur l'icône d'installation ⬇️ (ou accédez au menu de votre navigateur) pour procéder à l'ajout.<br/><br/>
             <b>• Sur appareil Android :</b><br/>
             Acceptez l'installation via la bannière qui s'affiche au bas de l'écran ou depuis le menu de votre navigateur (Ajouter à l'écran d'accueil).<br/><br/>
             <b>• Sur appareil iOS (iPhone) :</b><br/>
             1. Appuyez sur l'icône de partage située en bas de votre navigateur Safari.<br/>
             2. Sélectionnez l'option <b>« Sur l'écran d'accueil »</b>.<br/>
             3. Validez en appuyant sur <b>« Ajouter »</b>.<br/><br/>
-            L'application sera ainsi disponible directement sur votre écran d'accueil pour une gestion optimale de vos actifs solaires.
+            L'application sera ainsi disponible directement sur votre écran d'accueil pour une gestion optimale de vos cultures.
           </span>
         `;
       } else if (lower.includes('moov') || lower.includes('mtn')) {
         responseText = `
           <span>
-            Voici la procédure à suivre pour effectuer un dépôt via <b>Moov Money ou MTN Mobile Money</b> sur votre compte Cargill :<br/><br/>
+            Voici la procédure à suivre pour effectuer un dépôt via <b>Moov Money ou MTN Mobile Money</b> sur votre compte CargillCi :<br/><br/>
             <b>Étape 1 :</b> Accédez à la rubrique « Recharger » et sélectionnez l'opérateur concerné (Moov ou MTN).<br/>
             <b>Étape 2 :</b> Saisissez le montant de votre investissement et votre numéro de téléphone de facturation.<br/>
             <b>Étape 3 :</b> Cliquez sur « Lancer le code système ». Vous serez redirigé vers l'invite de commande de votre téléphone.<br/>
@@ -150,7 +150,7 @@ export function Support() {
       } else if (lower.includes('wave')) {
         responseText = `
           <span>
-            Voici le protocole de rechargement via <b>Wave</b> sur la plateforme Cargill :<br/><br/>
+            Voici le protocole de rechargement via <b>Wave</b> sur la plateforme CargillCi :<br/><br/>
             <b>Étape 1 :</b> Rendez-vous dans la section « Recharger » et choisissez l'option « Wave ».<br/>
             <b>Étape 2 :</b> Renseignez le montant désiré et votre numéro de compte Wave.<br/>
             <b>Étape 3 :</b> Un identifiant de paiement vous sera fourni. Copiez ce numéro.<br/>
@@ -187,7 +187,7 @@ export function Support() {
       } else if (lower.includes('parrain') || lower.includes('invit') || lower.includes('équipe') || lower.includes('equipe') || lower.includes('affili')) {
         responseText = `
           <span>
-            Cargill vous offre l'opportunité de multiplier vos sources de revenus grâce à notre programme d'affiliation structuré en réseau :<br/><br/>
+            CargillCi vous offre l'opportunité de multiplier vos sources de revenus grâce à notre programme d'affiliation structuré en réseau :<br/><br/>
             <b>Étape 1 :</b> Naviguez vers l'onglet « Réseau » ou « Équipe » en bas de votre écran.<br/>
             <b>Étape 2 :</b> Repérez et copiez votre lien de parrainage affilié unique.<br/>
             <b>Étape 3 :</b> Diffusez-le à votre entourage ou vos collaborateurs.<br/><br/>
@@ -197,7 +197,7 @@ export function Support() {
       } else if (lower.includes('investir') || lower.includes('plan') || lower.includes('vip') || lower.includes('culture') || lower.includes('générateur') || lower.includes('generateur')) {
         responseText = `
           <span>
-            Le lancement d'un plan de culture sur la plateforme Cargill est optimisé pour garantir une rentabilité efficace :<br/><br/>
+            Le lancement d'un plan de culture sur la plateforme CargillCi est optimisé pour garantir une rentabilité efficace :<br/><br/>
             <b>Étape 1 :</b> Vérifiez que votre solde d'intérêts a été rechargé conformément à la valeur de la culture souhaitée.<br/>
             <b>Étape 2 :</b> Consultez la liste des cultures disponibles dans la section « Culture » (Investir).<br/>
             <b>Étape 3 :</b> Évaluez les rendements proposés pour chaque culture et sélectionnez celle de votre choix.<br/>
@@ -206,7 +206,7 @@ export function Support() {
           </span>
         `;
       } else if (lower.includes('bonjour') || lower.includes('salut') || lower.includes('coucou')) {
-        responseText = "Bonjour ! Le Service Client Cargill est à votre écoute pour vous assister dans vos opérations. Souhaitez-vous des conseils sur un dépôt, un retrait ou un plan de culture ?";
+        responseText = "Bonjour ! Le Service Client CargillCi est à votre écoute pour vous assister dans vos opérations. Souhaitez-vous des conseils sur un dépôt, un retrait ou un plan de culture ?";
       } else {
         const finalLink = supportLink ? (supportLink.startsWith('http') ? supportLink : `https://${supportLink}`) : 'https://wa.me/2250574738155';
         responseText = `
@@ -344,7 +344,7 @@ export function Support() {
         <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-emerald-500 shrink-0 bg-emerald-50">
           <img 
             src="/images/customer_support_avatar.jpg" 
-            alt="Conseiller Cargill" 
+            alt="Conseiller CargillCi" 
             className="w-full h-full object-cover"
             onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/icon.svg'; }}
           />

@@ -118,7 +118,7 @@ export function Register() {
            <AppLogo imgClassName="h-9 w-auto object-contain max-h-11" />
         </div>
         <h1 className="text-2xl font-black tracking-tight mb-0.5 text-gray-900">Inscription</h1>
-        <p className="text-gray-500 font-medium text-xs">Rejoignez la plateforme agricole Cargill</p>
+        <p className="text-gray-500 font-medium text-xs">Rejoignez la plateforme agricole CargillCi</p>
       </div>
 
       <div className="w-full relative z-10">

@@ -579,7 +579,7 @@ export function Admin() {
         </button>
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Administration</h1>
-          <p className="text-xs text-emerald-600 font-bold">Cargill • Gestion globale & cultures</p>
+          <p className="text-xs text-emerald-600 font-bold">CargillCi • Gestion globale & cultures</p>
         </div>
       </header>
 
