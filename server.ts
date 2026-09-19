@@ -421,14 +421,21 @@ async function startServer() {
         }
       }
 
+      if (!cleanUrl) {
+        return res.status(502).json({
+          statut: false,
+          error: "Échec du pré-remplissage automatique en arrière-plan de la première page MoneyFusion."
+        });
+      }
+
       res.json({
-        statut: data?.statut ?? true,
-        url: cleanUrl || "https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96",
+        statut: true,
+        url: cleanUrl,
         token: token
       });
     } catch (err: any) {
       console.error("Erreur proxy MoneyFusion:", err.message);
-      res.status(500).json({ error: err.message, fallbackUrl: "https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96" });
+      res.status(500).json({ error: err.message });
     }
   };
 

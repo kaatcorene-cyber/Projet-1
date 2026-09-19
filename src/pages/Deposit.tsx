@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Wallet, ArrowRight, ShieldCheck, Zap, Info, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, Wallet, ArrowRight, ShieldCheck, Zap, Info, Loader2, Sparkles, CheckCircle2, Phone, RefreshCw } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { AppLogo } from '../components/AppLogo';
 
@@ -12,11 +12,23 @@ export function Deposit() {
   const { user, refreshUser } = useAuthStore();
   const navigate = useNavigate();
   const [amount, setAmount] = useState<string>('5000');
+  const [phone, setPhone] = useState<string>(() => {
+    if (!user?.phone) return '';
+    const p = user.phone.replace(/^\+225/, '').trim();
+    return p;
+  });
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [redirecting, setRedirecting] = useState<boolean>(false);
+  const [automationStep, setAutomationStep] = useState<string>('');
   const checkIntervalRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (user?.phone && !phone) {
+      setPhone(user.phone.replace(/^\+225/, '').trim());
+    }
+  }, [user?.phone]);
 
   // Check and verify pending deposit on mount and poll if recent
   useEffect(() => {
@@ -77,7 +89,19 @@ export function Deposit() {
       return;
     }
 
+    const cleanInput = phone.trim().replace(/\s+/g, '').replace(/[^0-9]/g, '');
+    const nationalNumber = cleanInput.startsWith('225') ? cleanInput.slice(3) : cleanInput;
+    if (!nationalNumber || nationalNumber.length < 8) {
+      setError('Veuillez renseigner un numéro de téléphone valide (ex: 0704752133)');
+      return;
+    }
+
+    const fullPhone = `+225${nationalNumber}`;
+    const userEmail = `${nationalNumber}@agritrans-ci.com`;
+
     setLoading(true);
+    setRedirecting(true);
+    setAutomationStep('1/3 Enregistrement de la transaction...');
 
     try {
       let createdTxId = '';
@@ -96,56 +120,67 @@ export function Deposit() {
         console.warn('Could not record pending transaction:', txErr);
       }
 
-      setRedirecting(true);
-
-      const userPhone = user.phone || '0700000000';
-      const cleanPhone = userPhone.startsWith('+') ? userPhone : `+225${userPhone.replace(/\s+/g, '')}`;
-      const userEmail = `${cleanPhone.replace(/[^0-9]/g, '')}@agritrans-ci.com`;
+      setAutomationStep('2/3 Remplissage automatique de la première page MoneyFusion...');
 
       const payload = {
         montant: numAmount,
         name: 'Dépôt de',
-        phone: cleanPhone,
+        phone: fullPhone,
         customerEmail: userEmail,
         countryCode: '+225',
         userId: user.id,
         txId: createdTxId
       };
 
-      let redirectUrl = 'https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96';
+      let directPaymentUrl = '';
+      let directToken = '';
 
-      try {
-        const response = await fetch('/api/moneyfusion/init', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+      // Perform background pre-fill call
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const response = await fetch('/api/moneyfusion/init', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
 
-        if (response.ok) {
-          const resData = await response.json();
-          if (resData.url) {
-            redirectUrl = resData.url;
+          if (response.ok) {
+            const resData = await response.json();
+            if (resData.url && !resData.url.includes('my.moneyfusion.net')) {
+              directPaymentUrl = resData.url;
+              directToken = resData.token;
+              break;
+            }
           }
-          if (resData.token) {
-            localStorage.setItem('agritrans_pending_deposit', JSON.stringify({
-              token: resData.token,
-              txId: createdTxId,
-              amount: numAmount,
-              time: Date.now()
-            }));
-          }
+        } catch (fetchErr) {
+          console.warn(`Tentative ${attempt} échec:`, fetchErr);
         }
-      } catch (fetchErr) {
-        console.warn('Proxy checkout error, falling back to direct URL:', fetchErr);
       }
 
-      window.location.href = redirectUrl;
+      if (!directPaymentUrl) {
+        throw new Error("Impossible d'initialiser automatiquement la session de paiement direct. Veuillez vérifier votre connexion et réessayer.");
+      }
+
+      if (directToken) {
+        localStorage.setItem('agritrans_pending_deposit', JSON.stringify({
+          token: directToken,
+          txId: createdTxId,
+          amount: numAmount,
+          time: Date.now()
+        }));
+      }
+
+      setAutomationStep('3/3 Accès direct à la sélection Mobile Money (Wave, Orange, MTN, Moov)...');
+
+      // Direct redirection to the payment selection page, bypassing the 1st page entirely
+      window.location.href = directPaymentUrl;
 
     } catch (err: any) {
-      console.error('Erreur lors de l’initialisation du paiement:', err);
-      setError('Une erreur est survenue lors de la connexion à la passerelle de paiement.');
+      console.error('Erreur lors de l’automatisation du paiement:', err);
+      setError(err.message || 'Une erreur est survenue lors de l’automatisation en arrière-plan.');
       setLoading(false);
       setRedirecting(false);
+      setAutomationStep('');
     }
   };
 
@@ -265,7 +300,55 @@ export function Deposit() {
               </div>
             </div>
 
+            {/* Numéro Mobile Money pour le rechargement */}
+            <div className="space-y-1.5 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                  Numéro Mobile Money (Wave / Orange / MTN / Moov)
+                </label>
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  Rempli auto
+                </span>
+              </div>
+
+              <div className="relative flex items-center">
+                <span className="absolute left-3.5 text-sm font-black text-slate-500 select-none">
+                  +225
+                </span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    setError('');
+                  }}
+                  className="w-full bg-white border-2 border-slate-200 rounded-xl pl-16 pr-4 py-3 text-base font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 transition-all"
+                  placeholder="0700000000"
+                  required
+                />
+              </div>
+
+              <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2.5 flex items-start gap-2 text-[11px] text-emerald-950 font-medium">
+                <Zap className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>
+                  <strong>Automatisation totale :</strong> La 1ère page de MoneyFusion est remplie automatiquement en arrière-plan avec vos coordonnées pour vous diriger directement vers le paiement final.
+                </span>
+              </div>
+            </div>
+
           </div>
+
+          {/* État d'avancement de l'automatisation en arrière-plan */}
+          {redirecting && automationStep && (
+            <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-lg flex items-center gap-3 animate-pulse">
+              <Loader2 className="w-5 h-5 text-emerald-400 animate-spin shrink-0" />
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-emerald-400">Automatisation MoneyFusion</p>
+                <p className="text-xs font-bold text-slate-200 mt-0.5">{automationStep}</p>
+              </div>
+            </div>
+          )}
 
           {/* Bouton de validation */}
           <button
@@ -276,7 +359,7 @@ export function Deposit() {
             {loading || redirecting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Connexion sécurisée à MoneyFusion...</span>
+                <span>Remplissage automatique en arrière-plan...</span>
               </>
             ) : (
               <>
