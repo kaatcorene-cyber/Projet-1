@@ -98,29 +98,29 @@ bot.on('message', async (msg) => {
       
       const memberName = newMember.first_name || newMember.username || "nouveau membre";
       
-      const welcomeText = `Bienvenue sur la plateforme <b>SUNPOWER</b>, <a href="tg://user?id=${newMember.id}">${memberName}</a> ! 🛢️
-
+      const welcomeText = `Bienvenue sur la plateforme <b>AgriTrans CI</b>, <a href="tg://user?id=${newMember.id}">${memberName}</a> ! 🚛
+ 
 Cher client fidèle,
 Nous sommes ravis de vous compter parmi nos membres. 🙌
-
-💼 <u><b>Nos Offres</b></u> :
+ 
+💼 <u><b>Nos Conditions & Services</b></u> :
 • 🎁 <b>Bonus d’inscription :</b> 100 F CFA
-• 💰 <b>Dépôt minimum :</b> 2 500 F CFA
-• 💸 <b>Retrait minimum :</b> 1 000 F CFA
+• 💰 <b>Dépôt minimum :</b> 5 000 F CFA
+• 💸 <b>Retrait minimum :</b> 2 000 F CFA
 • ⏰ <b>Disponibilité :</b> Tous les jours de 09h00 à 17h00 GMT
 • ⚠️ <b>Frais de retrait :</b> 15%
 • 🌍 <b>Pays éligibles :</b> 🇨🇮 Côte d'Ivoire
-
+ 
 📊 <u><b>Nos plans d’investissement</b></u> :
 • 🔹 <b>Plan Standard :</b> Gagnez <tg-spoiler>18%</tg-spoiler> de votre investissement <u>chaque jour</u> pendant <b>8 jours</b>.
 • 🔸 <b>Plan Premium :</b> Gagnez <tg-spoiler>5%</tg-spoiler> de votre investissement <u>chaque jour</u> pendant <b>60 jours</b>.
-
+ 
 👥 <u><b>Système de parrainage</b></u> :
 • 🥇 <b>Niveau 1 :</b> 15%
 • 🥈 <b>Niveau 2 :</b> 3%
 • 🥉 <b>Niveau 3 :</b> 2%
-
-🚀 <i><b>SUNPOWER</b>, votre partenaire de confiance</i>`;
+ 
+🚀 <i><b>AgriTrans CI</b>, votre partenaire de transport et logistique agricole</i>`;
 
       try {
         if (lastWelcomeMessageId) {
@@ -263,33 +263,130 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  // Helper to ensure payment recipient/name is displayed as "Financement" on MoneyFusion
+  // Helper to ensure payment recipient/name is displayed as "Dépôt de" on MoneyFusion
   function cleanPaymentUrl(url: string): string {
     if (!url) return url;
     try {
       // MoneyFusion payin format: https://payin.moneyfusion.net/payment/:token/:amount/:name
       const paymentRegex = /(https:\/\/payin\.moneyfusion\.net\/payment\/[^\/]+\/[^\/]+\/)(.*)/i;
       if (paymentRegex.test(url)) {
-        return url.replace(paymentRegex, '$1Financement');
+        return url.replace(paymentRegex, '$1D%C3%A9p%C3%B4t%20de');
       }
     } catch (e) {
       // fallback
     }
-    return url.replace(/assande(\s|%20)+tanoa(\s|%20)+grace(\s|%20)+deborat/gi, 'Financement');
+    return url.replace(/assande(\s|%20)+tanoa(\s|%20)+grace(\s|%20)+debora(t|h)?/gi, 'D%C3%A9p%C3%B4t%20de');
   }
 
-  // MoneyFusion background payment initialization endpoint
-  app.post("/api/moneyfusion/init", async (req, res) => {
+  // Automatic crediting helper for a MoneyFusion payment token
+  async function checkAndCreditToken(token: string, txId?: string, userId?: string, fallbackAmount?: number) {
+    if (!token) return { success: false, status: 'missing_token' };
     try {
-      const { montant, name, phone, customerEmail, countryCode } = req.body;
+      const statusRes = await fetch(`https://pay.moneyfusion.net/api/v3/payments/status/${token}`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!statusRes.ok) {
+        return { success: false, status: `http_${statusRes.status}` };
+      }
+
+      const statusData = await statusRes.json();
+      const payStatus = statusData?.data?.status;
+
+      if (payStatus === 'paid' || payStatus === 'completed' || payStatus === 'success') {
+        // Find existing transaction
+        let tx: any = null;
+        if (txId) {
+          const { data: byId } = await supabase.from('transactions').select('*').eq('id', txId).maybeSingle();
+          tx = byId;
+        }
+        if (!tx) {
+          const { data: byRef } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('type', 'deposit')
+            .ilike('reference', `%${token}%`)
+            .maybeSingle();
+          tx = byRef;
+        }
+
+        // Already completed -> do not credit twice
+        if (tx && tx.status === 'completed') {
+          return { success: true, status: 'already_completed', credited: false };
+        }
+
+        const targetUserId = tx?.user_id || userId;
+        const creditAmount = Number(tx?.amount || fallbackAmount || 0);
+
+        if (targetUserId && creditAmount > 0) {
+          if (tx?.id) {
+            await supabase.from('transactions').update({ 
+              status: 'completed',
+              reference: `MoneyFusion - ${token}`
+            }).eq('id', tx.id);
+          } else {
+            await supabase.from('transactions').insert({
+              user_id: targetUserId,
+              type: 'deposit',
+              amount: creditAmount,
+              status: 'completed',
+              reference: `MoneyFusion - ${token} (Auto)`
+            });
+          }
+
+          const { data: usr } = await supabase.from('users').select('balance').eq('id', targetUserId).single();
+          if (usr) {
+            const newBal = Number(usr.balance || 0) + creditAmount;
+            await supabase.from('users').update({ balance: newBal }).eq('id', targetUserId);
+            console.log(`✅ [MONEYFUSION AUTO-DEPOSIT] ${creditAmount} FCFA crédités automatiquement à ${targetUserId} (Token: ${token})`);
+            return { success: true, status: 'completed', credited: true, balance: newBal, amount: creditAmount };
+          }
+        }
+      }
+
+      return { success: false, status: payStatus || 'pending' };
+    } catch (e: any) {
+      console.error(`Check payment status error (${token}):`, e.message);
+      return { success: false, status: 'exception', error: e.message };
+    }
+  }
+
+  // Automatic deposit validation cron (runs every 20 seconds)
+  cron.schedule('*/20 * * * * *', async () => {
+    try {
+      const { data: pendingDeposits } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('type', 'deposit')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(15);
+
+      if (!pendingDeposits || pendingDeposits.length === 0) return;
+
+      for (const dep of pendingDeposits) {
+        const match = (dep.reference || '').match(/([a-f0-9]{20,32})/i);
+        if (match) {
+          const token = match[1];
+          await checkAndCreditToken(token, dep.id, dep.user_id, Number(dep.amount));
+        }
+      }
+    } catch (cronErr: any) {
+      // Non-blocking
+    }
+  });
+
+  // MoneyFusion background payment initialization endpoint (handles both /api/moneyfusion/init and /api/pay)
+  const handleMoneyFusionInit = async (req: express.Request, res: express.Response) => {
+    try {
+      const { montant, name, phone, customerEmail, countryCode, userId, txId } = req.body;
       const cleanPhone = phone ? (phone.startsWith('+') ? phone : `+225${phone.replace(/\s+/g, '')}`) : '+2250700000000';
       
       const payload = {
         id: "6a7da1aa655b3c8aa7379d96",
         montant: String(montant),
-        name: "Financement",
+        name: "Dépôt de",
         phone: cleanPhone,
-        customerEmail: customerEmail || "financement@cargill-ci.com",
+        customerEmail: customerEmail || "depot@agritrans-ci.com",
         countryCode: countryCode || "+225"
       };
 
@@ -302,13 +399,82 @@ async function startServer() {
       });
 
       const data = await response.json();
-      if (data && data.url) {
-        data.url = cleanPaymentUrl(data.url);
+      let cleanUrl = data?.url;
+      let token: string | null = null;
+
+      if (cleanUrl) {
+        const tokenMatch = cleanUrl.match(/payment\/([a-zA-Z0-9_-]+)/i);
+        if (tokenMatch) {
+          token = tokenMatch[1];
+        }
+        cleanUrl = cleanPaymentUrl(cleanUrl);
       }
-      res.json(data);
+
+      // If txId provided and token extracted, update reference in Supabase
+      if (txId && token) {
+        try {
+          await supabase.from('transactions').update({
+            reference: `MoneyFusion - ${token}`
+          }).eq('id', txId);
+        } catch (dbErr) {
+          console.warn('Could not update pending tx reference:', dbErr);
+        }
+      }
+
+      res.json({
+        statut: data?.statut ?? true,
+        url: cleanUrl || "https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96",
+        token: token
+      });
     } catch (err: any) {
       console.error("Erreur proxy MoneyFusion:", err.message);
       res.status(500).json({ error: err.message, fallbackUrl: "https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96" });
+    }
+  };
+
+  app.post("/api/moneyfusion/init", handleMoneyFusionInit);
+  app.post("/api/pay", handleMoneyFusionInit);
+
+  // Immediate status check & crediting endpoint
+  app.get("/api/moneyfusion/verify", async (req, res) => {
+    const token = (req.query.token as string) || '';
+    const txId = (req.query.txId as string) || '';
+    const userId = (req.query.userId as string) || '';
+
+    if (!token && !txId) {
+      return res.status(400).json({ error: "Token ou Transaction ID requis" });
+    }
+
+    let searchToken = token;
+    let fallbackAmount = 0;
+    if (!searchToken && txId) {
+      const { data: tx } = await supabase.from('transactions').select('*').eq('id', txId).maybeSingle();
+      if (tx) {
+        fallbackAmount = Number(tx.amount || 0);
+        const match = (tx.reference || '').match(/([a-f0-9]{20,32})/i);
+        if (match) searchToken = match[1];
+      }
+    }
+
+    if (!searchToken) {
+      return res.json({ success: false, status: 'no_token_found' });
+    }
+
+    const result = await checkAndCreditToken(searchToken, txId, userId, fallbackAmount);
+    res.json(result);
+  });
+
+  // Webhook endpoint in case MoneyFusion calls it
+  app.post("/api/moneyfusion/webhook", async (req, res) => {
+    try {
+      const body = req.body || {};
+      const token = body.token || body.payment_token || body.id || (body.data && body.data.token);
+      if (token) {
+        await checkAndCreditToken(token);
+      }
+      res.json({ received: true });
+    } catch (e: any) {
+      res.json({ received: false, error: e.message });
     }
   });
 

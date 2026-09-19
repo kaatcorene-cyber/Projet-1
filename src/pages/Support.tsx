@@ -175,10 +175,10 @@ export function Support() {
           <span>
             Pour effectuer un retrait de vos gains AgriTrans :<br/><br/>
             <b>Étape 1 :</b> Rendez-vous sur la section « Retrait ».<br/>
-            <b>Étape 2 :</b> Spécifiez le montant (minimum 1 000 FCFA).<br/>
+            <b>Étape 2 :</b> Spécifiez le montant (minimum 2 000 FCFA).<br/>
             <b>Étape 3 :</b> Entrez votre mot de passe de connexion.<br/>
             <b>Étape 4 :</b> Validez votre nom et numéro de réception.<br/><br/>
-            Le montant net vous sera transféré après déduction des frais réglementaires de 10%.
+            Le montant net vous sera transféré après déduction des frais réglementaires de 15%.
           </span>
         `;
       } else if (lower.includes('retrait') || lower.includes('retirer')) {

@@ -1,20 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Wallet, ArrowRight, ShieldCheck, Zap, Info, Loader2, Sparkles } from 'lucide-react';
+import { ChevronLeft, Wallet, ArrowRight, ShieldCheck, Zap, Info, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { AppLogo } from '../components/AppLogo';
 
-const SUGGESTED_AMOUNTS = [5000, 15000, 25000, 40000, 90000, 120000, 200000, 300000, 450000, 1000000];
+const SUGGESTED_AMOUNTS = [5000, 15000, 25000, 40000, 90000, 120000, 200000, 300000, 450000];
 
 export function Deposit() {
-  const { user } = useAuthStore();
+  const { user, refreshUser } = useAuthStore();
   const navigate = useNavigate();
   const [amount, setAmount] = useState<string>('5000');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
   const [redirecting, setRedirecting] = useState<boolean>(false);
+  const checkIntervalRef = useRef<any>(null);
+
+  // Check and verify pending deposit on mount and poll if recent
+  useEffect(() => {
+    async function checkPending() {
+      const saved = localStorage.getItem('agritrans_pending_deposit');
+      if (!saved) return;
+      try {
+        const data = JSON.parse(saved);
+        if (!data || !data.token) return;
+
+        const res = await fetch(`/api/moneyfusion/verify?token=${data.token}&txId=${data.txId || ''}&userId=${user?.id || ''}`);
+        if (res.ok) {
+          const result = await res.json();
+          if (result.credited || result.status === 'already_completed') {
+            await refreshUser();
+            setSuccessMessage(`Dépôt de ${formatCurrency(data.amount || 0)} validé automatiquement avec succès !`);
+            localStorage.removeItem('agritrans_pending_deposit');
+            if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+          }
+        }
+      } catch (e) {
+        console.warn('Auto check error:', e);
+      }
+    }
+
+    checkPending();
+
+    // Check periodically for 45s after landing back
+    checkIntervalRef.current = setInterval(checkPending, 5000);
+    const timeout = setTimeout(() => {
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+    }, 45000);
+
+    return () => {
+      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      clearTimeout(timeout);
+    };
+  }, [user?.id, refreshUser]);
 
   const handleSelectAmount = (val: number) => {
     setAmount(val.toString());
@@ -24,6 +64,7 @@ export function Deposit() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
 
     const numAmount = Number(amount);
     if (!numAmount || numAmount < 5000) {
@@ -39,14 +80,18 @@ export function Deposit() {
     setLoading(true);
 
     try {
+      let createdTxId = '';
       try {
-        await supabase.from('transactions').insert([{
+        const { data: newTx } = await supabase.from('transactions').insert([{
           user_id: user.id,
           type: 'deposit',
           amount: numAmount,
-          reference: `MoneyFusion - ${user.phone || 'Web'}`,
+          reference: `MoneyFusion - En attente`,
           status: 'pending'
-        }]);
+        }]).select().single();
+        if (newTx?.id) {
+          createdTxId = newTx.id;
+        }
       } catch (txErr) {
         console.warn('Could not record pending transaction:', txErr);
       }
@@ -59,16 +104,18 @@ export function Deposit() {
 
       const payload = {
         montant: numAmount,
-        name: 'Financement Transport AgriTrans',
+        name: 'Dépôt de',
         phone: cleanPhone,
         customerEmail: userEmail,
-        countryCode: '+225'
+        countryCode: '+225',
+        userId: user.id,
+        txId: createdTxId
       };
 
       let redirectUrl = 'https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96';
 
       try {
-        const response = await fetch('/api/pay', {
+        const response = await fetch('/api/moneyfusion/init', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -78,6 +125,14 @@ export function Deposit() {
           const resData = await response.json();
           if (resData.url) {
             redirectUrl = resData.url;
+          }
+          if (resData.token) {
+            localStorage.setItem('agritrans_pending_deposit', JSON.stringify({
+              token: resData.token,
+              txId: createdTxId,
+              amount: numAmount,
+              time: Date.now()
+            }));
           }
         }
       } catch (fetchErr) {
@@ -126,6 +181,14 @@ export function Deposit() {
             <Wallet className="w-6 h-6" />
           </div>
         </div>
+
+        {/* Success Alert */}
+        {successMessage && (
+          <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-2 animate-in fade-in shadow-sm">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+            <span>{successMessage}</span>
+          </div>
+        )}
 
         {/* Error Alert */}
         {error && (
@@ -187,9 +250,9 @@ export function Deposit() {
                     setError('');
                   }}
                   className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3.5 text-2xl font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 transition-all"
-                  placeholder="3000"
+                  placeholder="5000"
                   required
-                  min="3000"
+                  min="5000"
                   step="100"
                 />
                 <span className="absolute right-4 text-xs font-black text-slate-500 uppercase tracking-wider pointer-events-none">
@@ -198,7 +261,7 @@ export function Deposit() {
               </div>
 
               <div className="flex items-center justify-between text-xs text-slate-500 px-1 pt-1 font-medium">
-                <span>Montant minimum requis : <strong className="text-slate-900 font-black">3 000 FCFA</strong></span>
+                <span>Montant minimum requis : <strong className="text-slate-900 font-black">5 000 FCFA</strong></span>
               </div>
             </div>
 

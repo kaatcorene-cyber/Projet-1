@@ -150,8 +150,8 @@ export function Withdraw() {
     }
     
     const numAmount = Number(amount);
-    if (!numAmount || numAmount < 1000) {
-      return setMessage({ type: 'error', text: 'Le montant minimum de retrait est de 1 000 FCFA.' });
+    if (!numAmount || numAmount < 2000) {
+      return setMessage({ type: 'error', text: 'Le montant minimum de retrait est de 2 000 FCFA.' });
     }
 
     if (!password) {
@@ -191,10 +191,10 @@ export function Withdraw() {
 
       if (updateError) throw updateError;
 
-      // Fee calculation: 10%
-      const fee = Math.round(numAmount * 0.10);
+      // Fee calculation: 15%
+      const fee = Math.round(numAmount * 0.15);
       const netAmount = numAmount - fee;
-      const referenceText = `${savedMethod} - ${savedPhone} (${savedFullName || 'Titulaire'}) | Net: ${netAmount} FCFA (Frais: ${fee} FCFA)`;
+      const referenceText = `${savedMethod} - ${savedPhone} (${savedFullName || 'Titulaire'}) | Net: ${netAmount} FCFA (Frais 15%: ${fee} FCFA)`;
 
       // Create transaction
       const { error: txError } = await supabase
@@ -257,8 +257,12 @@ export function Withdraw() {
         <div className="bg-white border border-slate-200 rounded-2xl p-5 text-center space-y-2 shadow-sm">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Solde Retirable</p>
           <h2 className="text-3xl font-black tracking-tight text-slate-900">{formatCurrency(user?.balance || 0)}</h2>
-          <div className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700 border border-slate-200">
-            Frais de réseau : 10% • Heures : 09h00 - 17h00 GMT
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 rounded-full text-xs font-bold text-slate-700 border border-slate-200">
+            <span>Frais : 15%</span>
+            <span>•</span>
+            <span>Min : 2 000 FCFA</span>
+            <span>•</span>
+            <span>09h00 - 17h00 GMT</span>
           </div>
         </div>
 
@@ -352,13 +356,36 @@ export function Withdraw() {
                     className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3.5 text-2xl font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 transition-all"
                     placeholder="Ex: 5000"
                     required
-                    min="1000"
+                    min="2000"
                   />
                   <span className="absolute right-4 text-xs font-black text-slate-500 uppercase tracking-wider pointer-events-none">
                     FCFA
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 font-medium">Minimum de retrait : 1 000 FCFA</p>
+                <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
+                  <span>Minimum de retrait : <strong className="text-slate-900 font-black">2 000 FCFA</strong></span>
+                  <span>Frais de retrait : <strong className="text-slate-900 font-black">15%</strong></span>
+                </div>
+
+                {/* Calcul en direct des frais et du net reçu */}
+                {Number(amount) >= 2000 && (
+                  <div className="mt-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs animate-in fade-in">
+                    <div className="flex justify-between items-center text-slate-600">
+                      <span>Montant brut demandé :</span>
+                      <span className="font-bold text-slate-900">{formatCurrency(Number(amount))}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-amber-700">
+                      <span>Frais de retrait (15%) :</span>
+                      <span className="font-bold">- {formatCurrency(Math.round(Number(amount) * 0.15))}</span>
+                    </div>
+                    <div className="pt-1.5 border-t border-slate-200 flex justify-between items-center text-emerald-800">
+                      <span className="font-black">Montant net viré sur votre compte :</span>
+                      <span className="text-sm font-black text-emerald-700">
+                        {formatCurrency(Number(amount) - Math.round(Number(amount) * 0.15))}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 2. Mot de passe */}

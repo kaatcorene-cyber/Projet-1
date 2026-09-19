@@ -519,7 +519,7 @@ export function Admin() {
   const handleResetDefaultPlans = () => {
     setConfirmModal({
       isOpen: true,
-      message: "Voulez-vous réinitialiser aux véhicules et plans de transport officiels de TransLogis CI ?",
+      message: "Voulez-vous réinitialiser aux véhicules et plans de transport officiels de AgriTrans CI ?",
       onConfirm: async () => {
         await handleSavePlans(DEFAULT_CROP_PLANS);
       }
@@ -579,7 +579,7 @@ export function Admin() {
         </button>
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Administration</h1>
-          <p className="text-xs text-blue-600 font-bold">TransLogis CI • Gestion de la flotte & des utilisateurs</p>
+          <p className="text-xs text-blue-600 font-bold">AgriTrans CI • Gestion de la flotte & des utilisateurs</p>
         </div>
       </header>
 

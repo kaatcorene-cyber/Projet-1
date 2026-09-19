@@ -25,12 +25,45 @@ import { formatCurrency } from '../lib/utils';
 import { AppLogo } from '../components/AppLogo';
 
 export function Profile() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, refreshUser } = useAuthStore();
   const navigate = useNavigate();
   const [groupLink, setGroupLink] = useState('https://t.me/+iqqRWMWHSY8wYWE0');
   const [supportLink, setSupportLink] = useState('https://wa.me/2250574738155');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [depositSuccessMsg, setDepositSuccessMsg] = useState<string>('');
+
+  // Auto verify pending MoneyFusion deposit
+  useEffect(() => {
+    async function checkDeposit() {
+      const saved = localStorage.getItem('agritrans_pending_deposit');
+      if (!saved) return;
+      try {
+        const data = JSON.parse(saved);
+        if (!data || !data.token) return;
+
+        const res = await fetch(`/api/moneyfusion/verify?token=${data.token}&txId=${data.txId || ''}&userId=${user?.id || ''}`);
+        if (res.ok) {
+          const result = await res.json();
+          if (result.credited || result.status === 'already_completed') {
+            await refreshUser();
+            setDepositSuccessMsg(`Dépôt de ${formatCurrency(data.amount || 0)} validé automatiquement avec succès !`);
+            localStorage.removeItem('agritrans_pending_deposit');
+          }
+        }
+      } catch (e) {
+        console.warn('Profile deposit check error:', e);
+      }
+    }
+
+    checkDeposit();
+    const interval = setInterval(checkDeposit, 6000);
+    const timeout = setTimeout(() => clearInterval(interval), 30000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [user?.id, refreshUser]);
 
   useEffect(() => {
     supabase.from('settings').select('*').in('key', ['telegram_link', 'whatsapp_support', 'support_link', 'official_group']).then(({ data }) => {
@@ -94,6 +127,23 @@ export function Profile() {
 
       <div className="pt-3 max-w-lg mx-auto space-y-4 px-3 sm:px-0">
         
+        {/* Success Deposit Alert */}
+        {depositSuccessMsg && (
+          <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-900 text-xs font-bold flex items-center justify-between shadow-sm animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
+              <span>{depositSuccessMsg}</span>
+            </div>
+            <button 
+              onClick={() => setDepositSuccessMsg('')} 
+              className="text-emerald-700 hover:text-emerald-900 ml-2"
+              aria-label="Fermer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* User Identity Direct Band */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3.5">
