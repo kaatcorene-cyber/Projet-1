@@ -1,12 +1,12 @@
 {
-  "name": "CargillCi",
-  "short_name": "CargillCi",
+  "name": "AgriTrans",
+  "short_name": "AgriTrans",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f9fafb",
+  "background_color": "#ffffff",
   "theme_color": "#059669",
   "orientation": "portrait",
-  "description": "Plateforme d'investissement agricole CargillCi et de gestion des cultures à fort rendement en Côte d'Ivoire.",
+  "description": "Plateforme officielle d'investissement et de logistique agro-pastorale et de transport AgriTrans en Côte d'Ivoire.",
   "icons": [
     {
       "src": "/icon.svg",

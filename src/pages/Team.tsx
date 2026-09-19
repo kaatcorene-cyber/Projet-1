@@ -1,62 +1,93 @@
-import { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
-import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
-import { Copy, CheckCircle2, Users, AlertCircle, Share2 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
+import { Copy, Users, CheckCircle2, AlertCircle, Sparkles, ChevronRight, Award, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { AppLogo } from '../components/AppLogo';
+import { Link } from 'react-router-dom';
+
+type TeamStatsCache = {
+  level1: any[];
+  level2: any[];
+  level3: any[];
+  totalBonus: number;
+};
+
+const getTeamStatsCache = (): TeamStatsCache | null => {
+  try {
+    const raw = localStorage.getItem('agritrans_team_stats');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+};
+
+const setTeamStatsCache = (data: TeamStatsCache) => {
+  try {
+    localStorage.setItem('agritrans_team_stats', JSON.stringify(data));
+  } catch (e) {}
+};
 
 export function Team() {
   const { user } = useAuthStore();
-  const { teamStatsCache, setTeamStatsCache } = useAppStore();
+  const [selectedCircle, setSelectedCircle] = useState<1 | 2 | 3>(1);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [selectedCircle, setSelectedCircle] = useState<number>(1);
-  const [teamStats, setTeamStats] = useState({
-    level1: teamStatsCache?.level1 || ([] as any[]),
-    level2: teamStatsCache?.level2 || ([] as any[]),
-    level3: teamStatsCache?.level3 || ([] as any[]),
-    totalBonus: teamStatsCache?.totalBonus || 0
-  });
-  const [isLoading, setIsLoading] = useState(!teamStatsCache);
+  const [isLoading, setIsLoading] = useState(false);
 
-  let baseLink = window.location.origin;
-  if (baseLink.includes('ais-dev-')) {
-    baseLink = baseLink.replace('ais-dev-', 'ais-pre-');
-  }
-  const referralLink = `${baseLink}/register?ref=${user?.referral_code || ''}`;
+  const [teamStats, setTeamStats] = useState<TeamStatsCache>(() => {
+    return getTeamStatsCache() || { level1: [], level2: [], level3: [], totalBonus: 0 };
+  });
+
+  const referralLink = `${window.location.origin}/register?ref=${user?.referral_code || ''}`;
 
   useEffect(() => {
-    if (user) {
-      fetchTeamStats();
-    }
+    fetchTeamData();
   }, [user]);
 
-  const fetchTeamStats = async () => {
+  const fetchTeamData = async () => {
     if (!user) return;
     setIsLoading(true);
 
     try {
-      const { data: bonusesRes } = await supabase.from('transactions').select('amount').eq('user_id', user.id).eq('type', 'referral_bonus');
-      const totalBonus = bonusesRes?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0;
+      const { data: level1Users } = await supabase
+        .from('users')
+        .select('id, phone, created_at, investments(id, plan_amount, status)')
+        .eq('referrer_id', user.id);
 
-      const { data: l1Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at, investments(plan_amount)').eq('referred_by', user.referral_code).order('created_at', { ascending: false });
-      const l1 = l1Data || [];
-      const l1Codes = l1.map(u => u.referral_code).filter(Boolean);
-
+      const l1 = level1Users || [];
       let l2: any[] = [];
-      let l2Codes: string[] = [];
-      if (l1Codes.length > 0) {
-        const { data: l2Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at, investments(plan_amount)').in('referred_by', l1Codes).order('created_at', { ascending: false });
-        l2 = l2Data || [];
-        l2Codes = l2.map(u => u.referral_code).filter(Boolean);
+      let l3: any[] = [];
+
+      if (l1.length > 0) {
+        const l1Ids = l1.map(u => u.id);
+        const { data: level2Users } = await supabase
+          .from('users')
+          .select('id, phone, created_at, investments(id, plan_amount, status)')
+          .in('referrer_id', l1Ids);
+        
+        l2 = level2Users || [];
+
+        if (l2.length > 0) {
+          const l2Ids = l2.map(u => u.id);
+          const { data: level3Users } = await supabase
+            .from('users')
+            .select('id, phone, created_at, investments(id, plan_amount, status)')
+            .in('referrer_id', l2Ids);
+          
+          l3 = level3Users || [];
+        }
       }
 
-      let l3: any[] = [];
-      if (l2Codes.length > 0) {
-        const { data: l3Data } = await supabase.from('users').select('id, first_name, last_name, phone, referral_code, created_at, investments(plan_amount)').in('referred_by', l2Codes).order('created_at', { ascending: false });
-        l3 = l3Data || [];
+      const { data: bonusTxs } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('user_id', user.id)
+        .in('type', ['referral_bonus', 'commission', 'bonus', 'parrainage']);
+
+      let totalBonus = 0;
+      if (bonusTxs) {
+        totalBonus = bonusTxs.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
       }
 
       const newStats = {
@@ -107,212 +138,219 @@ export function Team() {
           throw new Error("execCommand failed");
         }
       } catch (fallbackErr) {
-        window.prompt("Copiez votre lien de parrainage ci-dessous :", referralLink);
-        setCopyStatus('success'); 
+        setCopyStatus('error');
       }
       setTimeout(() => setCopyStatus('idle'), 3000);
     }
   };
 
   const totalMembers = teamStats.level1.length + teamStats.level2.length + teamStats.level3.length;
-
-  const currentMembers = selectedCircle === 1 
-    ? teamStats.level1 
-    : selectedCircle === 2 
-      ? teamStats.level2 
-      : teamStats.level3;
+  const currentMembers = selectedCircle === 1 ? teamStats.level1 : selectedCircle === 2 ? teamStats.level2 : teamStats.level3;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 p-5 pt-6 pb-24 font-sans relative overflow-x-hidden">
-      {/* Background FX */}
-      <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] pointer-events-none"></div>
-
-      <header className="flex justify-between items-center pb-4 border-b border-black/5 relative z-10">
+    <div className="min-h-screen pb-28 font-sans text-slate-900 bg-slate-50 overflow-x-hidden">
+      {/* Header Sticky */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between transition-all">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Équipe</h1>
-          <p className="text-emerald-600 text-[11px] font-bold uppercase tracking-wider mt-0.5">Parrainage & Réseau</p>
+          <h1 className="text-base font-black text-slate-900 tracking-tight">Réseau d'Affiliation</h1>
+          <p className="text-emerald-700 text-[10px] uppercase font-black tracking-wider">Programme Partenaires 3 Niveaux</p>
         </div>
-        <AppLogo imgClassName="h-8 w-auto object-contain max-h-10" />
+        <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />
       </header>
 
-      {/* Petite carte en haut : Lien, Total gagné parrainage, Total invité */}
-      <div className="mt-4 bg-white border border-black/5 rounded-2xl p-4 shadow-sm relative z-10">
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-emerald-50/80 rounded-xl p-3 border border-emerald-500/15">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total gagné</p>
-            <p className="text-lg font-black text-emerald-600 mt-0.5">{formatCurrency(teamStats.totalBonus)}</p>
+      <div className="pt-3 max-w-xl mx-auto space-y-3 px-3 sm:px-0">
+        
+        {/* Compact Stats Ribbon */}
+        <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 shadow-sm flex items-center justify-between divide-x divide-slate-200">
+          <div className="pr-3 flex-1">
+            <span className="text-slate-500 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-emerald-600" />
+              Gains Parrainage
+            </span>
+            <p className="text-base sm:text-lg font-black text-slate-900 tracking-tight mt-0.5">
+              {formatCurrency(teamStats.totalBonus)}
+            </p>
           </div>
-          <div className="bg-emerald-50/80 rounded-xl p-3 border border-emerald-500/15">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total invité</p>
-            <p className="text-lg font-black text-gray-900 mt-0.5">{totalMembers} membres</p>
+
+          <div className="pl-3 flex-1 text-right">
+            <span className="text-slate-500 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1">
+              <Users className="w-3 h-3 text-emerald-600" />
+              Membres Référés
+            </span>
+            <p className="text-base sm:text-lg font-black text-emerald-700 tracking-tight mt-0.5">
+              {totalMembers}
+            </p>
           </div>
         </div>
 
-        <div>
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Votre lien de parrainage</p>
+        {/* Link Box */}
+        <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+              Votre Lien d’Invitation
+            </label>
+            <span className="text-[11px] font-mono font-black text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+              Code : {user?.referral_code || '---'}
+            </span>
+          </div>
+
           <div className="flex items-center gap-2">
             <input 
               readOnly
               type="text"
               value={referralLink}
               onClick={(e) => (e.target as HTMLInputElement).select()}
-              className="flex-1 bg-gray-50 border border-black/10 rounded-xl px-3 py-2.5 text-xs text-gray-700 font-mono focus:outline-none select-all"
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono font-bold focus:outline-none select-all focus:border-emerald-600 transition-colors"
             />
             <button 
               onClick={copyCode}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 transition-colors shadow-sm active:scale-95"
+              className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-sm cursor-pointer"
             >
               {copyStatus === 'success' ? (
                 <>
-                  <CheckCircle2 className="w-4 h-4" /> Copié !
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                  <span>Copié !</span>
                 </>
               ) : (
                 <>
-                  <Copy className="w-4 h-4" /> Copier
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copier</span>
                 </>
               )}
             </button>
           </div>
-        </div>
 
-        {copyStatus === 'error' && (
-          <div className="mt-2 bg-red-50 text-red-600 rounded-lg p-2 text-xs flex items-center gap-1">
-            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-            Sélectionnez et copiez le lien manuellement.
-          </div>
-        )}
-      </div>
-
-      {/* Cercles alignés horizontalement */}
-      <div className="mt-6 relative z-10">
-        <h2 className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">
-          Cercles de parrainage
-        </h2>
-
-        <div className="grid grid-cols-3 gap-2">
-          {/* Cercle 1 */}
-          <button
-            onClick={() => setSelectedCircle(1)}
-            className={`py-2 px-1.5 rounded-xl flex flex-col items-center justify-center text-center transition-all border ${
-              selectedCircle === 1 
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
-                : 'bg-white text-gray-900 border-black/5 hover:border-emerald-500/30'
-            }`}
-          >
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-xs mb-1 ${
-              selectedCircle === 1 ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600 border border-emerald-500/20'
-            }`}>
-              1
-            </div>
-            <p className="text-[11px] font-black leading-tight">Cercle 1</p>
-            <p className={`text-[10px] font-extrabold mt-0.5 ${selectedCircle === 1 ? 'text-emerald-100' : 'text-emerald-600'}`}>
-              10%
-            </p>
-            <span className={`text-[9px] font-medium mt-0.5 ${selectedCircle === 1 ? 'text-white/80' : 'text-gray-400'}`}>
-              {teamStats.level1.length} invité{teamStats.level1.length > 1 ? 's' : ''}
-            </span>
-          </button>
-
-          {/* Cercle 2 */}
-          <button
-            onClick={() => setSelectedCircle(2)}
-            className={`py-2 px-1.5 rounded-xl flex flex-col items-center justify-center text-center transition-all border ${
-              selectedCircle === 2 
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
-                : 'bg-white text-gray-900 border-black/5 hover:border-emerald-500/30'
-            }`}
-          >
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-xs mb-1 ${
-              selectedCircle === 2 ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600 border border-emerald-500/20'
-            }`}>
-              2
-            </div>
-            <p className="text-[11px] font-black leading-tight">Cercle 2</p>
-            <p className={`text-[10px] font-extrabold mt-0.5 ${selectedCircle === 2 ? 'text-emerald-100' : 'text-emerald-600'}`}>
-              3%
-            </p>
-            <span className={`text-[9px] font-medium mt-0.5 ${selectedCircle === 2 ? 'text-white/80' : 'text-gray-400'}`}>
-              {teamStats.level2.length} invité{teamStats.level2.length > 1 ? 's' : ''}
-            </span>
-          </button>
-
-          {/* Cercle 3 */}
-          <button
-            onClick={() => setSelectedCircle(3)}
-            className={`py-2 px-1.5 rounded-xl flex flex-col items-center justify-center text-center transition-all border ${
-              selectedCircle === 3 
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' 
-                : 'bg-white text-gray-900 border-black/5 hover:border-emerald-500/30'
-            }`}
-          >
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-xs mb-1 ${
-              selectedCircle === 3 ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-600 border border-emerald-500/20'
-            }`}>
-              3
-            </div>
-            <p className="text-[11px] font-black leading-tight">Cercle 3</p>
-            <p className={`text-[10px] font-extrabold mt-0.5 ${selectedCircle === 3 ? 'text-emerald-100' : 'text-emerald-600'}`}>
-              2%
-            </p>
-            <span className={`text-[9px] font-medium mt-0.5 ${selectedCircle === 3 ? 'text-white/80' : 'text-gray-400'}`}>
-              {teamStats.level3.length} invité{teamStats.level3.length > 1 ? 's' : ''}
-            </span>
-          </button>
-        </div>
-
-        {/* Liste des membres du cercle sélectionné */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between px-1 mb-2">
-            <span className="text-xs font-bold text-gray-700">
-              Membres du Cercle {selectedCircle} ({currentMembers.length})
-            </span>
-            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              Commission : {selectedCircle === 1 ? '10%' : selectedCircle === 2 ? '3%' : '2%'}
-            </span>
-          </div>
-
-          {isLoading ? (
-            <p className="text-xs text-emerald-600 text-center py-8 font-bold animate-pulse">
-              Chargement des données...
-            </p>
-          ) : currentMembers.length === 0 ? (
-            <div className="text-center py-10 bg-white rounded-2xl border border-black/5">
-              <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">
-                Aucun membre dans ce cercle
-              </p>
-              <p className="text-[11px] text-gray-400 mt-1">
-                Partagez votre lien pour développer ce niveau.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {currentMembers.map((member) => {
-                const totalInvested = member.investments?.reduce((sum: number, inv: any) => sum + (Number(inv.plan_amount) || 0), 0) || 0;
-                return (
-                  <div key={member.id} className="p-3.5 bg-white rounded-xl border border-black/5 shadow-sm flex items-center justify-between">
-                    <div>
-                      <p className="font-bold text-gray-900 text-xs">
-                        Membre
-                      </p>
-                      <p className="text-[10px] text-gray-400 mt-0.5">
-                        Inscrit le {format(new Date(member.created_at), 'dd/MM/yyyy', { locale: fr })}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[11px] font-mono font-bold text-gray-800">
-                        {member.phone}
-                      </p>
-                      <p className="text-[10px] font-bold text-emerald-600 mt-0.5">
-                        {totalInvested > 0 ? formatCurrency(totalInvested) : '0 FCFA'}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+          {copyStatus === 'error' && (
+            <div className="p-2 bg-red-50 text-red-900 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-red-300">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
+              <span>Sélectionnez et copiez le lien manuellement.</span>
             </div>
           )}
+        </div>
+
+        {/* Compact Level Selectors */}
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-[11px] font-black text-slate-600 uppercase tracking-wider">
+              Niveaux de Commissions
+            </h2>
+            <span className="text-[11px] font-bold text-slate-500">Total : {totalMembers} affilié{totalMembers > 1 ? 's' : ''}</span>
+          </div>
+
+          {/* Reduced & Compact Niveaux Tabs */}
+          <div className="grid grid-cols-3 gap-2">
+            {/* Niveau 1 */}
+            <button
+              onClick={() => setSelectedCircle(1)}
+              className={`py-2 px-2 rounded-xl flex items-center justify-between transition-all border cursor-pointer ${
+                selectedCircle === 1 
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+                  : 'bg-white text-slate-800 border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              <div className="text-left">
+                <p className="text-[11px] font-black leading-tight">N1 (20%)</p>
+                <p className={`text-[10px] font-semibold ${selectedCircle === 1 ? 'text-emerald-100' : 'text-slate-500'}`}>
+                  {teamStats.level1.length} membre{teamStats.level1.length > 1 ? 's' : ''}
+                </p>
+              </div>
+            </button>
+
+            {/* Niveau 2 */}
+            <button
+              onClick={() => setSelectedCircle(2)}
+              className={`py-2 px-2 rounded-xl flex items-center justify-between transition-all border cursor-pointer ${
+                selectedCircle === 2 
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+                  : 'bg-white text-slate-800 border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              <div className="text-left">
+                <p className="text-[11px] font-black leading-tight">N2 (2%)</p>
+                <p className={`text-[10px] font-semibold ${selectedCircle === 2 ? 'text-emerald-100' : 'text-slate-500'}`}>
+                  {teamStats.level2.length} membre{teamStats.level2.length > 1 ? 's' : ''}
+                </p>
+              </div>
+            </button>
+
+            {/* Niveau 3 */}
+            <button
+              onClick={() => setSelectedCircle(3)}
+              className={`py-2 px-2 rounded-xl flex items-center justify-between transition-all border cursor-pointer ${
+                selectedCircle === 3 
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+                  : 'bg-white text-slate-800 border-slate-200 hover:border-slate-300'
+              }`}
+            >
+              <div className="text-left">
+                <p className="text-[11px] font-black leading-tight">N3 (1%)</p>
+                <p className={`text-[10px] font-semibold ${selectedCircle === 3 ? 'text-emerald-100' : 'text-slate-500'}`}>
+                  {teamStats.level3.length} membre{teamStats.level3.length > 1 ? 's' : ''}
+                </p>
+              </div>
+            </button>
+          </div>
+
+          {/* Members List */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-bold text-slate-700">
+                Partenaires Niveau {selectedCircle} ({currentMembers.length})
+              </span>
+              <span className="text-[11px] font-black text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                Taux : {selectedCircle === 1 ? '20%' : selectedCircle === 2 ? '2%' : '1%'}
+              </span>
+            </div>
+
+            {isLoading ? (
+              <p className="text-xs text-emerald-700 text-center py-8 font-bold animate-pulse">
+                Chargement du réseau...
+              </p>
+            ) : currentMembers.length === 0 ? (
+              <div className="text-center py-10 bg-white border border-slate-200 rounded-2xl p-6 space-y-2 shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto border border-slate-200">
+                  <Users className="w-6 h-6" />
+                </div>
+                <p className="text-xs text-slate-900 font-bold uppercase tracking-wider">
+                  Aucun affilié pour le moment dans ce niveau
+                </p>
+                <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                  Partagez votre lien d’invitation pour percevoir vos commissions sur les véhicules activés.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {currentMembers.map((member) => {
+                  const totalInvested = member.investments?.reduce((sum: number, inv: any) => sum + (Number(inv.plan_amount) || 0), 0) || 0;
+                  return (
+                    <div key={member.id} className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                          <UserCheck className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900 text-xs font-mono">
+                            {member.phone}
+                          </p>
+                          <p className="text-[11px] font-medium text-slate-500">
+                            Rejoint le {format(new Date(member.created_at), 'dd/MM/yyyy', { locale: fr })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-black text-emerald-700">
+                          {totalInvested > 0 ? formatCurrency(totalInvested) : '0 FCFA'}
+                        </p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase">
+                          Volume flotte
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

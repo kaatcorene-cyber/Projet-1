@@ -1,12 +1,12 @@
 {
-  "name": "Cargill",
-  "short_name": "Cargill",
+  "name": "AgriTrans",
+  "short_name": "AgriTrans",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f9fafb",
+  "background_color": "#ffffff",
   "theme_color": "#059669",
   "orientation": "portrait",
-  "description": "Plateforme officielle d'investissement et de gestion des cultures agricoles Cargill.",
+  "description": "Plateforme officielle d'investissement et de logistique agro-pastorale et de transport AgriTrans en Côte d'Ivoire.",
   "icons": [
     {
       "src": "/icon.svg",

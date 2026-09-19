@@ -271,7 +271,7 @@ export function Admin() {
             updatedBalance = currentBalance + Number(amount);
             
             // Distribute Referral Bonus on 1st approved deposit
-            // Level 1: 10%, Level 2: 3%, Level 3: 2%
+            // Level 1: 20%, Level 2: 2%, Level 3: 1%
             if (userData.referred_by) {
               const { data: previousApprovedDeposits } = await supabase
                 .from('transactions')
@@ -281,7 +281,7 @@ export function Admin() {
                 .eq('status', 'approved');
 
               if (!previousApprovedDeposits || previousApprovedDeposits.length <= 1) {
-                // Level 1 (10%)
+                // Level 1 (20%)
                 const { data: referrerL1 } = await supabase
                   .from('users')
                   .select('id, balance, referred_by')
@@ -289,7 +289,7 @@ export function Admin() {
                   .maybeSingle();
 
                 if (referrerL1) {
-                  const bonusL1 = Math.round(Number(amount) * 0.10);
+                  const bonusL1 = Math.round(Number(amount) * 0.20);
                   await supabase.from('users').update({
                     balance: Number(referrerL1.balance || 0) + bonusL1
                   }).eq('id', referrerL1.id);
@@ -299,10 +299,10 @@ export function Admin() {
                     type: 'bonus',
                     amount: bonusL1,
                     status: 'completed',
-                    reference: `Commission Niveau 1 (10%) - Parrainage`
+                    reference: `Commission Niveau 1 (20%) - Parrainage`
                   }]);
 
-                  // Level 2 (3%)
+                  // Level 2 (2%)
                   if (referrerL1.referred_by) {
                     const { data: referrerL2 } = await supabase
                       .from('users')
@@ -311,7 +311,7 @@ export function Admin() {
                       .maybeSingle();
 
                     if (referrerL2) {
-                      const bonusL2 = Math.round(Number(amount) * 0.03);
+                      const bonusL2 = Math.round(Number(amount) * 0.02);
                       await supabase.from('users').update({
                         balance: Number(referrerL2.balance || 0) + bonusL2
                       }).eq('id', referrerL2.id);
@@ -321,10 +321,10 @@ export function Admin() {
                         type: 'bonus',
                         amount: bonusL2,
                         status: 'completed',
-                        reference: `Commission Niveau 2 (3%) - Parrainage`
+                        reference: `Commission Niveau 2 (2%) - Parrainage`
                       }]);
 
-                      // Level 3 (2%)
+                      // Level 3 (1%)
                       if (referrerL2.referred_by) {
                         const { data: referrerL3 } = await supabase
                           .from('users')
@@ -333,7 +333,7 @@ export function Admin() {
                           .maybeSingle();
 
                         if (referrerL3) {
-                          const bonusL3 = Math.round(Number(amount) * 0.02);
+                          const bonusL3 = Math.round(Number(amount) * 0.01);
                           await supabase.from('users').update({
                             balance: Number(referrerL3.balance || 0) + bonusL3
                           }).eq('id', referrerL3.id);
@@ -343,7 +343,7 @@ export function Admin() {
                             type: 'bonus',
                             amount: bonusL3,
                             status: 'completed',
-                            reference: `Commission Niveau 3 (2%) - Parrainage`
+                            reference: `Commission Niveau 3 (1%) - Parrainage`
                           }]);
                         }
                       }
@@ -519,7 +519,7 @@ export function Admin() {
   const handleResetDefaultPlans = () => {
     setConfirmModal({
       isOpen: true,
-      message: "Voulez-vous réinitialiser aux 9 cultures officielles (Coton, Hévéa, Palmier, Anacarde, Café, Manioc, Igname, Riz, Cacao) ?",
+      message: "Voulez-vous réinitialiser aux véhicules et plans de transport officiels de TransLogis CI ?",
       onConfirm: async () => {
         await handleSavePlans(DEFAULT_CROP_PLANS);
       }
@@ -555,10 +555,10 @@ export function Admin() {
   const tabs = [
     { id: 'overview', label: "Vue d'ensemble", icon: BarChart3 },
     { id: 'users', label: 'Utilisateurs', icon: Users },
-    { id: 'investments', label: 'Investissements', icon: Activity },
+    { id: 'investments', label: 'Investissements Flotte', icon: Activity },
     { id: 'deposits', label: 'Dépôts', icon: ArrowDownRight },
     { id: 'withdrawals', label: 'Retraits', icon: ArrowUpRight },
-    { id: 'plans', label: 'Plans de Culture', icon: LayoutList },
+    { id: 'plans', label: 'Formules de Transport', icon: LayoutList },
     { id: 'settings', label: 'Paramètres', icon: LayoutList },
   ];
 
@@ -579,7 +579,7 @@ export function Admin() {
         </button>
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Administration</h1>
-          <p className="text-xs text-emerald-600 font-bold">CargillCi • Gestion globale & cultures</p>
+          <p className="text-xs text-blue-600 font-bold">TransLogis CI • Gestion de la flotte & des utilisateurs</p>
         </div>
       </header>
 
@@ -1033,7 +1033,7 @@ export function Admin() {
 
               {/* URL IMAGE OU UPLOAD */}
               <div className="space-y-2">
-                <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Image de la culture</label>
+                <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Image du véhicule / service</label>
                 <div className="flex gap-2">
                   <input
                     type="url"

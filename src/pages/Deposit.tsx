@@ -1,50 +1,20 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ChevronLeft, 
-  Info, 
-  Wallet, 
-  ArrowRight, 
-  Loader2, 
-  Sparkles,
-  Zap
-} from 'lucide-react';
+import { ChevronLeft, Wallet, ArrowRight, ShieldCheck, Zap, Info, Loader2, Sparkles } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { AppLogo } from '../components/AppLogo';
 
-const SUGGESTED_AMOUNTS = [
-  3000,
-  10000,
-  25000,
-  50000,
-  75000,
-  200000
-];
-
-// Helper to ensure payment recipient/name is displayed as "Financement" on MoneyFusion
-function cleanPaymentUrl(url: string): string {
-  if (!url) return url;
-  try {
-    const paymentRegex = /(https:\/\/payin\.moneyfusion\.net\/payment\/[^\/]+\/[^\/]+\/)(.*)/i;
-    if (paymentRegex.test(url)) {
-      return url.replace(paymentRegex, '$1Financement');
-    }
-  } catch (e) {
-    // fallback
-  }
-  return url.replace(/assande(\s|%20)+tanoa(\s|%20)+grace(\s|%20)+deborat/gi, 'Financement');
-}
+const SUGGESTED_AMOUNTS = [5000, 15000, 25000, 40000, 90000, 120000, 200000, 300000, 450000, 1000000];
 
 export function Deposit() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [amount, setAmount] = useState<string>('3000');
-  const [loading, setLoading] = useState(false);
-  const [redirecting, setRedirecting] = useState(false);
-  const [error, setError] = useState('');
-  const submittingRef = useRef(false);
+  const [amount, setAmount] = useState<string>('5000');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [redirecting, setRedirecting] = useState<boolean>(false);
 
   const handleSelectAmount = (val: number) => {
     setAmount(val.toString());
@@ -53,20 +23,22 @@ export function Deposit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || loading || redirecting || submittingRef.current) return;
+    setError('');
 
     const numAmount = Number(amount);
-    if (!numAmount || isNaN(numAmount) || numAmount < 3000) {
-      setError('Le montant minimum de financement est de 3 000 FCFA.');
+    if (!numAmount || numAmount < 5000) {
+      setError('Le montant minimum de financement est de 5 000 FCFA');
       return;
     }
 
-    submittingRef.current = true;
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
     setLoading(true);
-    setError('');
 
     try {
-      // 1. Record pending transaction in Supabase
       try {
         await supabase.from('transactions').insert([{
           user_id: user.id,
@@ -81,112 +53,84 @@ export function Deposit() {
 
       setRedirecting(true);
 
-      // 2. Prepare user info to auto-fill background fields
       const userPhone = user.phone || '0700000000';
       const cleanPhone = userPhone.startsWith('+') ? userPhone : `+225${userPhone.replace(/\s+/g, '')}`;
-      const userEmail = `${cleanPhone.replace(/[^0-9]/g, '')}@cargill-ci.com`;
+      const userEmail = `${cleanPhone.replace(/[^0-9]/g, '')}@agritrans-ci.com`;
 
       const payload = {
         montant: numAmount,
-        name: 'Financement',
+        name: 'Financement Transport AgriTrans',
         phone: cleanPhone,
         customerEmail: userEmail,
         countryCode: '+225'
       };
 
-      // 3. Call server proxy for MoneyFusion init
       let redirectUrl = 'https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96';
 
       try {
-        const res = await fetch('/api/moneyfusion/init', {
+        const response = await fetch('/api/pay', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.url) {
-            redirectUrl = cleanPaymentUrl(data.url);
-          }
-        } else {
-          // Direct fallback if proxy is down
-          const directRes = await fetch('https://pay.moneyfusion.net/api/v2/links/init-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: '6a7da1aa655b3c8aa7379d96',
-              ...payload
-            })
-          });
-          if (directRes.ok) {
-            const directData = await directRes.json();
-            if (directData && directData.url) {
-              redirectUrl = cleanPaymentUrl(directData.url);
-            }
+        if (response.ok) {
+          const resData = await response.json();
+          if (resData.url) {
+            redirectUrl = resData.url;
           }
         }
-      } catch (callErr) {
-        console.warn('Error calling init payment, using fallback URL:', callErr);
+      } catch (fetchErr) {
+        console.warn('Proxy checkout error, falling back to direct URL:', fetchErr);
       }
 
-      // 4. Redirect immediately to the payment page
-      window.location.href = cleanPaymentUrl(redirectUrl);
+      window.location.href = redirectUrl;
 
     } catch (err: any) {
-      console.error('Erreur financement:', err);
-      // Even on error, redirect to MoneyFusion payment link so the user is never blocked
-      window.location.href = 'https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96';
-    } finally {
-      // Keep loader running while browser completes navigation
-      setTimeout(() => {
-        submittingRef.current = false;
-        setLoading(false);
-        setRedirecting(false);
-      }, 4000);
+      console.error('Erreur lors de l’initialisation du paiement:', err);
+      setError('Une erreur est survenue lors de la connexion à la passerelle de paiement.');
+      setLoading(false);
+      setRedirecting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 p-4 sm:p-5 pt-8 pb-28 font-sans relative overflow-x-hidden">
-      {/* Background Subtle Gradient */}
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-
-      {/* Header */}
-      <header className="flex justify-between items-center mb-5 relative z-10">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen pb-28 font-sans text-slate-900 bg-slate-50 overflow-x-hidden">
+      {/* Header Sticky */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between transition-all">
+        <div className="flex items-center gap-2.5">
           <button 
             onClick={() => navigate(-1)} 
-            className="w-10 h-10 bg-white border border-black/10 rounded-full flex items-center justify-center text-gray-900 hover:bg-gray-100 transition-colors shadow-xs cursor-pointer active:scale-95"
+            className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors active:scale-95 cursor-pointer"
             aria-label="Retour"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-xl font-black text-gray-900 tracking-tight">Financement</h1>
-            <p className="text-emerald-700 text-[10px] uppercase font-bold tracking-wider">Recharge Sécurisée</p>
+            <h1 className="text-base font-black text-slate-900 tracking-tight">Financement</h1>
+            <p className="text-emerald-700 text-[10px] uppercase font-black tracking-wider">Rechargement Mobile Money</p>
           </div>
         </div>
-        <AppLogo imgClassName="h-7 w-auto object-contain max-h-9" />
+        <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />
       </header>
 
-      <div className="relative z-10 max-w-lg mx-auto space-y-4">
+      <div className="pt-3 max-w-lg mx-auto space-y-4 px-3 sm:px-0">
         
-        {/* Solde Actuel */}
-        <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-xs border border-black/5 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Solde Actuel Disponible</p>
-            <p className="text-2xl font-black text-gray-900">{formatCurrency(user?.balance || 0)}</p>
+        {/* Solde Actuel Direct Band */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 text-slate-900 flex items-center justify-between shadow-sm">
+          <div className="space-y-0.5">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Solde Disponible Actuel</p>
+            <p className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">{formatCurrency(user?.balance || 0)}</p>
           </div>
-          <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-500/20 text-emerald-600">
+          <div className="w-12 h-12 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-center shrink-0 text-emerald-700">
             <Wallet className="w-6 h-6" />
           </div>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="p-3.5 bg-red-50 border border-red-500/20 rounded-2xl text-red-600 text-xs font-bold flex items-center gap-2 animate-in fade-in">
-            <Info className="w-4 h-4 shrink-0" />
+          <div className="p-3.5 bg-red-50 border border-red-300 rounded-xl text-red-900 text-xs font-bold flex items-center gap-2 animate-in fade-in shadow-sm">
+            <Info className="w-4 h-4 shrink-0 text-red-600" />
             <span>{error}</span>
           </div>
         )}
@@ -194,32 +138,31 @@ export function Deposit() {
         {/* Formulaire de Rechargement */}
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          <div className="bg-white rounded-3xl border border-black/5 shadow-xs p-5 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
             
             {/* Propositions de montant */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                  Propositions de montant
+                <label className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  Sélection rapide de montant
                 </label>
-                <span className="text-[11px] text-gray-400 font-medium">Sélection rapide</span>
+                <span className="text-xs text-slate-500 font-bold">FCFA</span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2.5 pt-1">
+              <div className="grid grid-cols-3 gap-2 pt-1">
                 {SUGGESTED_AMOUNTS.map((val) => {
                   const isSelected = amount === val.toString();
-                  // Vrai montant affiché (3 000 F, 10 000 F, 25 000 F, etc.) sans "k"
                   const displayAmount = `${val.toLocaleString('fr-FR')} F`;
                   return (
                     <button
                       key={val}
                       type="button"
                       onClick={() => handleSelectAmount(val)}
-                      className={`py-3 px-2 rounded-2xl text-xs font-black transition-all cursor-pointer text-center border ${
+                      className={`py-2.5 px-2 rounded-xl text-xs font-black transition-all cursor-pointer text-center border ${
                         isSelected
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20 scale-[1.02]'
-                          : 'bg-gray-50 hover:bg-gray-100 text-gray-800 border-black/5 active:scale-95'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200 active:scale-95'
                       }`}
                     >
                       {displayAmount}
@@ -230,9 +173,9 @@ export function Deposit() {
             </div>
 
             {/* Saisie personnalisée du montant */}
-            <div className="space-y-1.5 pt-2 border-t border-gray-100">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-700 block">
-                Montant du financement (FCFA)
+            <div className="space-y-1.5 pt-3 border-t border-slate-100">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-800 block">
+                Montant personnalisé (FCFA)
               </label>
               
               <div className="relative flex items-center">
@@ -243,19 +186,19 @@ export function Deposit() {
                     setAmount(e.target.value);
                     setError('');
                   }}
-                  className="w-full bg-gray-50 border border-black/10 rounded-2xl px-4 py-3.5 text-2xl font-black text-emerald-700 placeholder-gray-300 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3.5 text-2xl font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 transition-all"
                   placeholder="3000"
                   required
                   min="3000"
                   step="100"
                 />
-                <span className="absolute right-4 text-xs font-black text-gray-400 uppercase tracking-wider pointer-events-none">
+                <span className="absolute right-4 text-xs font-black text-slate-500 uppercase tracking-wider pointer-events-none">
                   FCFA
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-gray-500 px-1 pt-1">
-                <span>Montant minimum : <strong>3 000 FCFA</strong></span>
+              <div className="flex items-center justify-between text-xs text-slate-500 px-1 pt-1 font-medium">
+                <span>Montant minimum requis : <strong className="text-slate-900 font-black">3 000 FCFA</strong></span>
               </div>
             </div>
 
@@ -265,25 +208,26 @@ export function Deposit() {
           <button
             type="submit"
             disabled={loading || redirecting}
-            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-sm shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full py-4 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading || redirecting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Redirection sécurisée vers le paiement...</span>
+                <span>Connexion sécurisée à MoneyFusion...</span>
               </>
             ) : (
               <>
                 <Zap className="w-4 h-4 text-amber-300" />
-                <span>Valider le financement</span>
+                <span>Confirmer et Recharger {Number(amount) > 0 ? formatCurrency(Number(amount)) : ''}</span>
                 <ArrowRight className="w-4 h-4 ml-1" />
               </>
             )}
           </button>
 
-          <p className="text-[11px] text-center text-gray-400 font-medium pt-1">
-            Transaction cryptée et protégée par la passerelle agréée MoneyFusion
-          </p>
+          <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 font-medium">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Paiement crypté & garanti par la passerelle MoneyFusion</span>
+          </div>
 
         </form>
 

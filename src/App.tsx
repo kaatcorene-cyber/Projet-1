@@ -19,6 +19,7 @@ import { Support } from './pages/Support';
 import { Profile } from './pages/Profile';
 import { Activity } from './pages/Activity';
 import { Commissions } from './pages/Commissions';
+import WithdrawInfo from './pages/WithdrawInfo';
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/activity" element={<Activity />} />
           <Route path="/commissions" element={<Commissions />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/withdraw-info" element={<WithdrawInfo />} />
           <Route path="/deposit" element={<Deposit />} />
           <Route path="/withdraw" element={<Withdraw />} />
           <Route path="/admin" element={<Admin />} />

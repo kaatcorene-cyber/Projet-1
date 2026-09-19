@@ -1,33 +1,50 @@
 @import "tailwindcss";
 
 @layer base {
+  * {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
   body {
-    @apply text-zinc-900 antialiased;
-    background-color: #FAFAFA;
-    background-image: 
-      radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
-    background-size: 100% 100%;
-    background-attachment: fixed;
+    @apply text-slate-900 antialiased selection:bg-emerald-600 selection:text-white bg-slate-50;
     min-height: 100vh;
   }
 }
 
 @layer utilities {
+  /* Direct page-flow items (not cards, direct seamless page items) */
+  .direct-section {
+    @apply bg-white border-y sm:border sm:rounded-2xl border-slate-200/80 transition-all;
+  }
+  .direct-row {
+    @apply bg-white border-b border-slate-100 transition-colors hover:bg-slate-50/80;
+  }
+  .direct-flat {
+    @apply bg-white border border-slate-200/90 rounded-2xl;
+  }
+
+  /* Backward compatibility alias if needed, but redesigned flat and bright */
+  .tl-card {
+    @apply bg-white border border-slate-200/90 rounded-2xl shadow-sm transition-all text-slate-900;
+  }
+  .tl-card-interactive {
+    @apply bg-white border border-slate-200/90 rounded-2xl shadow-sm transition-all hover:border-emerald-500/50 hover:bg-slate-50/50 active:scale-[0.99] text-slate-900;
+  }
   .glass-card {
-    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl;
+    @apply bg-white/95 backdrop-blur-md border border-slate-200 shadow-sm rounded-2xl text-slate-900;
   }
-  .sun-gradient {
-    @apply bg-gradient-to-br from-emerald-500 to-emerald-700 text-white;
+
+  .agri-gradient {
+    @apply bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white;
   }
-  .sun-text-gradient {
-    @apply bg-gradient-to-br from-emerald-600 to-green-700 bg-clip-text text-transparent;
+  .agri-text-gradient {
+    @apply bg-gradient-to-r from-emerald-600 to-teal-700 bg-clip-text text-transparent font-black;
   }
 }
 
 @theme {
-  --animate-fade-in: fade-in 0.4s ease-out forwards;
-  --animate-slide-up: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-fade-in: fade-in 0.25s ease-out forwards;
+  --animate-slide-up: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes fade-in {
@@ -36,6 +53,6 @@
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }

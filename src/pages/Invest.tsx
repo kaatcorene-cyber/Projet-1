@@ -4,43 +4,48 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { CheckCircle2, AlertCircle, Loader2, Lock, Sprout, ArrowRight, Wallet, PlusCircle } from 'lucide-react';
+import { 
+  CheckCircle2, 
+  AlertCircle, 
+  Loader2, 
+  Lock, 
+  Truck, 
+  ArrowRight, 
+  Wallet, 
+  PlusCircle,
+  TrendingUp,
+  Clock
+} from 'lucide-react';
 import { AppLogo } from '../components/AppLogo';
-import { CropPlan, DEFAULT_CROP_PLANS } from '../data/plans';
+import { TransportPlan, DEFAULT_TRANSPORT_PLANS } from '../data/plans';
 
-export type { CropPlan };
-export const CROP_PLANS = DEFAULT_CROP_PLANS;
+export type { TransportPlan };
+export type CropPlan = TransportPlan;
+export const TRANSPORT_PLANS = DEFAULT_TRANSPORT_PLANS;
+export const CROP_PLANS = DEFAULT_TRANSPORT_PLANS;
 
 export function Invest() {
   const navigate = useNavigate();
   const { user, refreshUser } = useAuthStore();
   const { setInvestmentsCache } = useAppStore();
-  const [plans, setPlans] = useState<CropPlan[]>(() => {
+  const [plans, setPlans] = useState<TransportPlan[]>(() => {
     try {
-      const cached = localStorage.getItem('cargill_investment_plans');
+      const cached = localStorage.getItem('translogis_investment_plans');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((p: any) => ({
-            ...p,
-            name: typeof p.name === 'string' ? p.name.replace(/\s*\(noix de cajou\)/gi, '') : p.name
-          }));
+        if (Array.isArray(parsed) && parsed.length === 10 && parsed[0].duration === 80) {
+          return parsed;
         }
       }
     } catch (e) {}
-    return DEFAULT_CROP_PLANS.map((p: any) => ({
-      ...p,
-      name: typeof p.name === 'string' ? p.name.replace(/\s*\(noix de cajou\)/gi, '') : p.name
-    }));
+    return DEFAULT_TRANSPORT_PLANS;
   });
   const [loading, setLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
   useEffect(() => {
-    // Refresh user balance immediately on mount
     refreshUser();
 
-    // Fetch unified investment plans from database settings
     async function fetchPlans() {
       try {
         const { data } = await supabase
@@ -54,142 +59,223 @@ export function Invest() {
           if (Array.isArray(parsed) && parsed.length > 0) {
             const formatted = parsed.map((p: any, idx: number) => ({
               ...p,
-              id: p.id || `crop_${p.amount || idx}_${idx}`,
-              name: typeof p.name === 'string' ? p.name.replace(/\s*\(noix de cajou\)/gi, '') : p.name
+              id: p.id || `transport_${p.amount || idx}_${idx}`,
+              name: p.name || `Service ${formatCurrency(p.amount)}`
             }));
             setPlans(formatted);
             try {
-              localStorage.setItem('cargill_investment_plans', JSON.stringify(formatted));
+              localStorage.setItem('translogis_investment_plans', JSON.stringify(formatted));
             } catch (err) {}
           }
+        } else {
+          setPlans(DEFAULT_TRANSPORT_PLANS);
+          try {
+            localStorage.setItem('translogis_investment_plans', JSON.stringify(DEFAULT_TRANSPORT_PLANS));
+          } catch (err) {}
         }
       } catch (e) {
-        console.error('Failed to parse investment_plans setting', e);
+        setPlans(DEFAULT_TRANSPORT_PLANS);
       }
     }
     fetchPlans();
 
     const handlePlansUpdate = () => {
       try {
-        const cached = localStorage.getItem('cargill_investment_plans');
+        const cached = localStorage.getItem('translogis_investment_plans');
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setPlans(parsed.map((p: any) => ({
-              ...p,
-              name: typeof p.name === 'string' ? p.name.replace(/\s*\(noix de cajou\)/gi, '') : p.name
-            })));
+            setPlans(parsed);
           }
         }
       } catch (e) {}
     };
 
-    window.addEventListener('cargill_plans_updated', handlePlansUpdate);
-    window.addEventListener('storage', handlePlansUpdate);
+    window.addEventListener('translogis_plans_updated', handlePlansUpdate);
 
-    const intervalId = setInterval(() => {
-      refreshUser();
-    }, 30000);
+    if (user?.id) {
+      supabase.functions.invoke('process-yields').catch(() => {});
+    }
 
     return () => {
-      clearInterval(intervalId);
-      window.removeEventListener('cargill_plans_updated', handlePlansUpdate);
-      window.removeEventListener('storage', handlePlansUpdate);
+      window.removeEventListener('translogis_plans_updated', handlePlansUpdate);
     };
-  }, [refreshUser]);
+  }, [user?.id]);
 
-  const handleInvest = async (plan: CropPlan, planKey: string) => {
+  const handleInvest = async (plan: TransportPlan, key: string) => {
     if (!user) {
       navigate('/login');
       return;
     }
+
     if (plan.locked) {
-      setMessage({ type: 'error', text: 'Ce plan est actuellement verrouillé.' });
+      setMessage({ type: 'error', text: 'Cette formule de transport est temporairement indisponible.' });
       return;
     }
 
-    setLoading(planKey);
-    setMessage(null);
+    const currentBalance = Number(user.balance || 0);
+    const requiredAmount = Number(plan.amount);
+
+    if (currentBalance < requiredAmount) {
+      setMessage({
+        type: 'error',
+        text: `Solde insuffisant (${formatCurrency(currentBalance)}). Il vous manque ${formatCurrency(requiredAmount - currentBalance)} pour activer ce véhicule.`
+      });
+      return;
+    }
 
     try {
-      // 1. Fetch live user data directly from DB to prevent stale state issues
-      const { data: freshUser, error: fetchErr } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+      setLoading(key);
+      setMessage(null);
 
-      if (fetchErr || !freshUser) {
-        throw new Error('Impossible de synchroniser votre solde. Veuillez vous reconnecter.');
-      }
+      const newBalance = currentBalance - requiredAmount;
 
-      // Update local state with latest user record
-      useAuthStore.getState().setUser(freshUser);
-
-      const liveBalance = Number(freshUser.balance) || 0;
-      if (liveBalance < plan.amount) {
-        setMessage({ 
-          type: 'error', 
-          text: `Solde insuffisant (${formatCurrency(liveBalance)} disponible sur ${formatCurrency(plan.amount)} requis). Veuillez financer votre compte.` 
-        });
-        setLoading(null);
-        return;
-      }
-
-      // 2. Deduct balance in users table
-      const newBalance = liveBalance - plan.amount;
-      const { error: updateError } = await supabase
+      const { error: balanceError } = await supabase
         .from('users')
         .update({ balance: newBalance })
         .eq('id', user.id);
 
-      if (updateError) throw updateError;
+      if (balanceError) throw balanceError;
 
-      // 3. Create investment with explicit dates and status
-      const durationDays = plan.duration || 60;
       const now = new Date();
-      const endDate = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+      const nextClaim = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const endsAt = new Date(now.getTime() + (plan.duration || 60) * 24 * 60 * 60 * 1000);
 
-      const { data: newInv, error: invError } = await supabase
+      const { data: newInvest, error: investError } = await supabase
         .from('investments')
         .insert([{
           user_id: user.id,
-          plan_amount: plan.amount,
+          plan_id: plan.id,
+          plan_name: plan.name,
+          amount: requiredAmount,
           daily_yield: plan.daily,
-          start_date: now.toISOString(),
-          end_date: endDate.toISOString(),
-          last_paid_at: now.toISOString(),
-          status: 'active'
+          total_return: plan.total,
+          duration_days: plan.duration || 60,
+          status: 'active',
+          claimed_amount: 0,
+          last_claim_date: now.toISOString(),
+          next_claim_date: nextClaim.toISOString(),
+          created_at: now.toISOString(),
+          ends_at: endsAt.toISOString(),
+          crop_type: plan.name,
+          daily_yield_percent: ((plan.daily / requiredAmount) * 100).toFixed(2),
+          total_yield_percent: ((plan.total / requiredAmount) * 100).toFixed(2)
         }])
         .select()
         .single();
 
-      if (invError) throw invError;
+      if (investError) throw investError;
 
-      // 4. Record transaction in transactions table
       await supabase.from('transactions').insert([{
         user_id: user.id,
         type: 'investment',
-        amount: plan.amount,
-        status: 'completed',
-        reference: `Culture - ${plan.name}`
+        amount: requiredAmount,
+        status: 'approved',
+        description: `Souscription: ${plan.name}`,
+        created_at: now.toISOString()
       }]);
 
-      // Invalidate investments cache so Activity immediately picks up the new culture
-      setInvestmentsCache(null);
+      // Distribute Multilevel Referral Bonuses: Level 1: 20%, Level 2: 2%, Level 3: 1%
+      if (user.referred_by) {
+        try {
+          // Level 1: 20%
+          const { data: ref1 } = await supabase
+            .from('users')
+            .select('id, balance, referred_by')
+            .eq('referral_code', user.referred_by)
+            .maybeSingle();
 
-      // Refresh auth store user balance
+          if (ref1) {
+            const bonus1 = Math.round(requiredAmount * 0.20);
+            await supabase.from('users').update({
+              balance: Number(ref1.balance || 0) + bonus1
+            }).eq('id', ref1.id);
+
+            await supabase.from('transactions').insert([{
+              user_id: ref1.id,
+              type: 'bonus',
+              amount: bonus1,
+              status: 'completed',
+              reference: `Commission Niveau 1 (20%) - Activation ${plan.name}`
+            }]);
+
+            // Level 2: 2%
+            if (ref1.referred_by) {
+              const { data: ref2 } = await supabase
+                .from('users')
+                .select('id, balance, referred_by')
+                .eq('referral_code', ref1.referred_by)
+                .maybeSingle();
+
+              if (ref2) {
+                const bonus2 = Math.round(requiredAmount * 0.02);
+                await supabase.from('users').update({
+                  balance: Number(ref2.balance || 0) + bonus2
+                }).eq('id', ref2.id);
+
+                await supabase.from('transactions').insert([{
+                  user_id: ref2.id,
+                  type: 'bonus',
+                  amount: bonus2,
+                  status: 'completed',
+                  reference: `Commission Niveau 2 (2%) - Activation ${plan.name}`
+                }]);
+
+                // Level 3: 1%
+                if (ref2.referred_by) {
+                  const { data: ref3 } = await supabase
+                    .from('users')
+                    .select('id, balance')
+                    .eq('referral_code', ref2.referred_by)
+                    .maybeSingle();
+
+                  if (ref3) {
+                    const bonus3 = Math.round(requiredAmount * 0.01);
+                    await supabase.from('users').update({
+                      balance: Number(ref3.balance || 0) + bonus3
+                    }).eq('id', ref3.id);
+
+                    await supabase.from('transactions').insert([{
+                      user_id: ref3.id,
+                      type: 'bonus',
+                      amount: bonus3,
+                      status: 'completed',
+                      reference: `Commission Niveau 3 (1%) - Activation ${plan.name}`
+                    }]);
+                  }
+                }
+              }
+            }
+          }
+        } catch (commErr) {
+          console.error('Error distributing referral commission:', commErr);
+        }
+      }
+
+      try {
+        const { data: currentInvestments } = await supabase
+          .from('investments')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (currentInvestments) {
+          setInvestmentsCache(currentInvestments);
+        }
+      } catch (cacheErr) {}
+
       await refreshUser();
 
-      setMessage({ 
-        type: 'success', 
-        text: `Culture de ${plan.name} lancée avec succès ! Vos rendements quotidiens de ${formatCurrency(plan.daily)} sont maintenant activés.` 
+      setMessage({
+        type: 'success',
+        text: `Félicitations ! Le véhicule "${plan.name}" a été activé avec succès. Vos dividendes quotidiens (${formatCurrency(plan.daily)}/jour) sont désormais en cours de rotation.`
       });
-    } catch (error: any) {
-      console.error('Erreur lors du lancement de la culture:', error);
-      setMessage({ 
-        type: 'error', 
-        text: error?.message || 'Échec de la transaction. Veuillez réessayer.' 
+
+    } catch (err: any) {
+      console.error('Subscription error:', err);
+      setMessage({
+        type: 'error',
+        text: err?.message || "Une erreur s'est produite lors de la souscription."
       });
     } finally {
       setLoading(null);
@@ -197,162 +283,182 @@ export function Invest() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 p-5 pt-6 pb-24 font-sans relative overflow-x-hidden">
-      {/* Background FX */}
-      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 -translate-x-1/4 pointer-events-none"></div>
-
-      {/* Header */}
-      <header className="flex justify-between items-center mb-6 relative z-10">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Culture</h1>
-          <p className="text-emerald-600 text-[11px] font-bold uppercase tracking-wider mt-0.5">Plans Agricoles Disponibles</p>
+    <div className="min-h-screen pb-28 font-sans text-slate-900 bg-slate-50 overflow-x-hidden">
+      {/* Header Bar */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 transition-all">
+        <div className="max-w-xl mx-auto flex items-center justify-between">
+          <AppLogo imgClassName="h-9 w-auto object-contain max-h-10" />
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-300 rounded-full text-[11px] font-black text-emerald-800 shadow-sm">
+              <Truck className="w-3.5 h-3.5 text-emerald-600" />
+              Catalogue Flotte
+            </span>
+          </div>
         </div>
-        <AppLogo imgClassName="h-8 w-auto object-contain max-h-10" />
       </header>
 
-      <div className="relative z-10 max-w-xl mx-auto space-y-4 mt-4">
+      {/* Main Content - Direct Page Flow */}
+      <div className="pt-3 max-w-xl mx-auto space-y-4">
+        
+        {/* Notifications */}
         {message && (
-          <div className={`p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in zoom-in duration-200 shadow-sm ${
-            message.type === 'success' ? 'bg-emerald-50 border border-emerald-500/20 text-emerald-800' : 'bg-red-50 border border-red-500/20 text-red-700'
+          <div className={`mx-4 sm:mx-0 p-4 rounded-xl flex items-center justify-between gap-3 text-xs font-bold border transition-all ${
+            message.type === 'success' 
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
+              : 'bg-red-50 border-red-300 text-red-900'
           }`}>
             <div className="flex items-center gap-2.5">
-              {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" /> : <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />}
-              <p className="text-xs font-bold leading-relaxed">{message.text}</p>
+              {message.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              )}
+              <p className="leading-snug">{message.text}</p>
             </div>
             {message.type === 'success' ? (
               <Link 
                 to="/activity" 
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shrink-0 shadow-sm transition-all"
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shrink-0 shadow-sm transition-all"
               >
-                <span>Voir l'Activité</span>
+                <span>Activité</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             ) : (
               <Link 
                 to="/deposit" 
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shrink-0 shadow-sm transition-all"
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-lg shrink-0 shadow-sm transition-all"
               >
-                <span>Financer</span>
+                <span>Recharger</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             )}
           </div>
         )}
 
-        {/* Solde utilisateur */}
-        <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Wallet className="w-3.5 h-3.5 text-emerald-600" />
-              Votre solde disponible
+        {/* Balance Section - Direct Seamless Band */}
+        <div className="bg-white border-y border-slate-200 px-4 sm:px-6 py-4 flex items-center justify-between shadow-sm">
+          <div className="space-y-0.5">
+            <span className="text-slate-500 text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">
+              <Wallet className="w-4 h-4 text-emerald-600" />
+              Solde Disponible
+            </span>
+            <p className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+              {formatCurrency(user?.balance || 0)}
             </p>
-            <p className="text-xl font-black text-emerald-600 mt-0.5">{formatCurrency(user?.balance || 0)}</p>
           </div>
           <Link
             to="/deposit"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-sm transition-all active:scale-95"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md shadow-emerald-600/25 transition-all active:scale-95 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>Financer</span>
+            <span>Recharger</span>
           </Link>
         </div>
 
-        {/* Plans de Culture */}
-        <div className="space-y-4">
+        {/* Titre de section */}
+        <div className="flex items-center justify-between px-4 sm:px-2 pt-1 pb-1">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+            <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+              Flotte de Véhicules ({plans.length})
+            </h2>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black border border-emerald-200">
+            Cycle 80 Jours
+          </span>
+        </div>
+
+        {/* Liste des véhicules : simple, clair et propre */}
+        <div className="space-y-3 px-3 sm:px-0">
           {plans.map((plan, index) => {
-            const planKey = plan.id || `crop-plan-${plan.amount}-${index}`;
+            const planKey = plan.id || `transport-plan-${plan.amount}-${index}`;
 
             return (
               <div 
                 key={planKey} 
-                className={`bg-white border rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden transition-all shadow-sm ${
+                className={`bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3.5 transition-all ${
                   plan.locked 
-                    ? 'border-gray-200 bg-gray-50/70 opacity-90' 
-                    : 'border-black/5 hover:border-emerald-500/30'
+                    ? 'opacity-60 bg-slate-50' 
+                    : 'hover:border-emerald-500'
                 }`}
               >
-                {/* Image + Nom + Statut */}
-                <div className="flex items-center gap-3 relative z-10">
-                  <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-black/10 bg-gray-100 relative">
+                {/* En-tête : Miniature + Nom + Durée */}
+                <div className="flex items-center gap-3.5">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
                     <img 
-                      src={plan.image || '/logo-icon.svg'} 
+                      src={plan.image || '/icon.svg'} 
                       alt={plan.name} 
-                      className={`w-full h-full object-cover transition-transform duration-300 ${plan.locked ? 'grayscale contrast-125' : 'hover:scale-105'}`}
+                      className={`w-full h-full object-cover ${plan.locked ? 'grayscale' : ''}`}
                       loading="lazy"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/logo-icon.svg';
+                        (e.target as HTMLImageElement).src = '/icon.svg';
                       }}
                     />
-                    {plan.locked && (
-                      <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
-                        <Lock className="w-6 h-6 text-white drop-shadow-md" />
-                      </div>
-                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-black text-gray-900 text-base tracking-tight truncate">
-                          {plan.name}
-                        </h3>
-                        <p className="text-xs font-bold text-gray-500 mt-0.5">
-                          Investissement : <span className="text-emerald-700 font-black">{formatCurrency(plan.amount)}</span>
-                        </p>
-                      </div>
-
-                      {plan.locked ? (
-                        <span className="text-[10px] font-bold bg-gray-200 text-gray-700 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
-                          <Lock className="w-3 h-3" /> Verrouillé
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-500/20 px-2 py-0.5 rounded-md shrink-0">
-                          Disponible
-                        </span>
-                      )}
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-bold text-emerald-600">
+                        Véhicule N°{index + 1}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
+                        {plan.duration || 80} jours
+                      </span>
                     </div>
+
+                    <h3 className="text-base font-bold text-slate-900 mt-1 leading-snug">
+                      {plan.name}
+                    </h3>
                   </div>
                 </div>
 
-                {/* Chiffres clés : Investissement / Gain par jour / Gains total */}
-                <div className="rounded-xl p-3 bg-gray-50 border border-black/5 flex justify-between items-center text-center">
-                  <div className="text-left">
-                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Gain / jour</p>
-                    <p className="text-emerald-600 font-black text-sm">{formatCurrency(plan.daily)}</p>
+                {/* Détails financiers nets, propres et lisibles */}
+                <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3 space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600 font-medium">Prix d'achat :</span>
+                    <span className="font-bold text-slate-900">{formatCurrency(plan.amount)}</span>
                   </div>
-                  <div className="w-px h-7 bg-black/10"></div>
-                  <div>
-                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Gain total</p>
-                    <p className="text-gray-900 font-black text-sm">{formatCurrency(plan.total)}</p>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600 font-medium">Gain quotidien :</span>
+                    <span className="font-bold text-emerald-600">+{formatCurrency(plan.daily)} / jour</span>
                   </div>
-                  <div className="w-px h-7 bg-black/10"></div>
-                  <div className="text-right">
-                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Durée</p>
-                    <p className="text-gray-700 font-black text-sm">{plan.duration} Jours</p>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                    <span className="text-slate-700 font-medium">Gain total ({plan.duration || 80} jours) :</span>
+                    <span className="font-bold text-slate-900">{formatCurrency(plan.total)}</span>
                   </div>
                 </div>
 
-                {/* Bouton d'action */}
-                {plan.locked ? (
-                  <button
-                    disabled
-                    className="w-full py-3 rounded-xl text-xs font-black bg-gray-200 text-gray-500 cursor-not-allowed border border-gray-300 flex justify-center items-center gap-1.5"
-                  >
-                    <Lock className="w-3.5 h-3.5" /> Verrouillé
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleInvest(plan, planKey)}
-                    disabled={loading === planKey}
-                    className="w-full py-3 rounded-xl text-xs font-black transition-all flex justify-center items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm active:scale-98 cursor-pointer"
-                  >
-                    {loading === planKey ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      `Cultiver (${formatCurrency(plan.amount)})`
-                    )}
-                  </button>
-                )}
+                {/* Bouton d'action sobre */}
+                <div>
+                  {plan.locked ? (
+                    <button
+                      disabled
+                      className="w-full py-3 rounded-xl text-sm font-semibold bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 flex justify-center items-center gap-1.5"
+                    >
+                      <Lock className="w-4 h-4" /> Indisponible
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleInvest(plan, planKey)}
+                      disabled={loading === planKey}
+                      className="w-full py-3 rounded-xl text-sm font-bold transition-all flex justify-center items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm active:scale-[0.99] cursor-pointer disabled:opacity-75"
+                    >
+                      {loading === planKey ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Activation en cours...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Truck className="w-4 h-4" />
+                          <span>Activer ce véhicule</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
