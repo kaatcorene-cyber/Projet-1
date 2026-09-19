@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Wallet, ArrowRight, ShieldCheck, Zap, Info, Loader2, Sparkles, CheckCircle2, Phone, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Wallet, ArrowRight, ShieldCheck, Zap, Info, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { AppLogo } from '../components/AppLogo';
 
@@ -12,23 +12,12 @@ export function Deposit() {
   const { user, refreshUser } = useAuthStore();
   const navigate = useNavigate();
   const [amount, setAmount] = useState<string>('5000');
-  const [phone, setPhone] = useState<string>(() => {
-    if (!user?.phone) return '';
-    const p = user.phone.replace(/^\+225/, '').trim();
-    return p;
-  });
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [redirecting, setRedirecting] = useState<boolean>(false);
   const [automationStep, setAutomationStep] = useState<string>('');
   const checkIntervalRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (user?.phone && !phone) {
-      setPhone(user.phone.replace(/^\+225/, '').trim());
-    }
-  }, [user?.phone]);
 
   // Check and verify pending deposit on mount and poll if recent
   useEffect(() => {
@@ -89,13 +78,8 @@ export function Deposit() {
       return;
     }
 
-    const cleanInput = phone.trim().replace(/\s+/g, '').replace(/[^0-9]/g, '');
-    const nationalNumber = cleanInput.startsWith('225') ? cleanInput.slice(3) : cleanInput;
-    if (!nationalNumber || nationalNumber.length < 8) {
-      setError('Veuillez renseigner un numéro de téléphone valide (ex: 0704752133)');
-      return;
-    }
-
+    const rawUserPhone = (user.phone || '0700000000').trim().replace(/\s+/g, '').replace(/[^0-9]/g, '');
+    const nationalNumber = rawUserPhone.startsWith('225') ? rawUserPhone.slice(3) : (rawUserPhone || '0700000000');
     const fullPhone = `+225${nationalNumber}`;
     const userEmail = `${nationalNumber}@agritrans-ci.com`;
 
@@ -297,43 +281,6 @@ export function Deposit() {
 
               <div className="flex items-center justify-between text-xs text-slate-500 px-1 pt-1 font-medium">
                 <span>Montant minimum requis : <strong className="text-slate-900 font-black">5 000 FCFA</strong></span>
-              </div>
-            </div>
-
-            {/* Numéro Mobile Money pour le rechargement */}
-            <div className="space-y-1.5 pt-3 border-t border-slate-100">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                  Numéro Mobile Money (Wave / Orange / MTN / Moov)
-                </label>
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  Rempli auto
-                </span>
-              </div>
-
-              <div className="relative flex items-center">
-                <span className="absolute left-3.5 text-sm font-black text-slate-500 select-none">
-                  +225
-                </span>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => {
-                    setPhone(e.target.value);
-                    setError('');
-                  }}
-                  className="w-full bg-white border-2 border-slate-200 rounded-xl pl-16 pr-4 py-3 text-base font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 transition-all"
-                  placeholder="0700000000"
-                  required
-                />
-              </div>
-
-              <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2.5 flex items-start gap-2 text-[11px] text-emerald-950 font-medium">
-                <Zap className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span>
-                  <strong>Automatisation totale :</strong> La 1ère page de MoneyFusion est remplie automatiquement en arrière-plan avec vos coordonnées pour vous diriger directement vers le paiement final.
-                </span>
               </div>
             </div>
 
