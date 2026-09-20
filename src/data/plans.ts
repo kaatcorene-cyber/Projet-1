@@ -15,7 +15,7 @@ export type CropPlan = TransportPlan;
 export const DEFAULT_TRANSPORT_PLANS: TransportPlan[] = [
   {
     id: "plan-depart",
-    name: "Plan Départ",
+    name: "Rizières",
     amount: 5000,
     daily: 600,
     total: 48000,
@@ -25,7 +25,7 @@ export const DEFAULT_TRANSPORT_PLANS: TransportPlan[] = [
   },
   {
     id: "plan-croissance",
-    name: "Plan Croissance",
+    name: "Maïs",
     amount: 15000,
     daily: 1800,
     total: 144000,
@@ -35,7 +35,7 @@ export const DEFAULT_TRANSPORT_PLANS: TransportPlan[] = [
   },
   {
     id: "plan-evolution",
-    name: "Plan Évolution",
+    name: "Banane plantain",
     amount: 25000,
     daily: 3000,
     total: 240000,
@@ -65,7 +65,7 @@ export const DEFAULT_TRANSPORT_PLANS: TransportPlan[] = [
   },
   {
     id: "plan-agricole",
-    name: "Plan Agricole",
+    name: "Haricot",
     amount: 120000,
     daily: 14400,
     total: 1152000,

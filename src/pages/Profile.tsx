@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { AppLogo } from '../components/AppLogo';
+import { WelcomeModal } from '../components/WelcomeModal';
 
 export function Profile() {
   const { user, logout, refreshUser } = useAuthStore();
@@ -30,8 +31,29 @@ export function Profile() {
   const [groupLink, setGroupLink] = useState('https://t.me/+5i6UubrC1mtmMDg0');
   const [supportLink, setSupportLink] = useState('https://t.me/AgriTrans_01');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [depositSuccessMsg, setDepositSuccessMsg] = useState<string>('');
+
+  // Check if welcome message should be displayed on login
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const shouldShow = sessionStorage.getItem('agritrans_show_welcome');
+      const shownForSession = sessionStorage.getItem('agritrans_welcome_shown_for_session');
+      if (shouldShow === 'true' || !shownForSession) {
+        setShowWelcomeModal(true);
+      }
+    } catch (e) {}
+  }, [user]);
+
+  const handleCloseWelcomeModal = () => {
+    setShowWelcomeModal(false);
+    try {
+      sessionStorage.removeItem('agritrans_show_welcome');
+      sessionStorage.setItem('agritrans_welcome_shown_for_session', 'true');
+    } catch (e) {}
+  };
 
   // Auto verify pending MoneyFusion deposit
   useEffect(() => {
@@ -330,6 +352,14 @@ export function Profile() {
           </div>
         </div>
       )}
+
+      {/* Full Screen Welcome Modal on Login */}
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={handleCloseWelcomeModal}
+        userName={user?.first_name || user?.phone || 'Partenaire'}
+        telegramLink={groupLink}
+      />
 
       {/* Floating Customer Support Button */}
       <div className="fixed bottom-24 right-5 z-40">

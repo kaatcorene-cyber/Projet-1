@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { AppLogo } from '../components/AppLogo';
-import { Loader2, ArrowRight, ShieldCheck, Lock, Gift, Phone } from 'lucide-react';
+import { Loader2, ArrowRight, ShieldCheck, Lock, Gift, Phone, Globe2 } from 'lucide-react';
+import { COUNTRIES, CountryConfig } from '../data/countries';
 
 export function Register() {
   const [searchParams] = useSearchParams();
+  const [selectedCountryCode, setSelectedCountryCode] = useState('CI');
   const [formData, setFormData] = useState({
     phone: '',
     password: '',
@@ -16,6 +18,7 @@ export function Register() {
   
   const navigate = useNavigate();
   const { register } = useAuthStore();
+  const currentCountry = COUNTRIES.find(c => c.code === selectedCountryCode) || COUNTRIES[0];
 
   useEffect(() => {
     const ref = searchParams.get('ref');
@@ -49,12 +52,14 @@ export function Register() {
 
     setLoading(true);
     try {
+      const fullPhone = `${currentCountry.dialCode}${formData.phone}`;
       await register(
-        formData.phone,
+        fullPhone,
         formData.password,
         '',
         '',
-        formData.referralCode
+        formData.referralCode,
+        currentCountry.name
       );
       navigate('/profile');
     } catch (err: any) {
@@ -100,25 +105,33 @@ export function Register() {
               Numéro Mobile Money
             </label>
             <div className="flex bg-white border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-emerald-600 transition-all min-h-[50px]">
-              <span className="flex items-center px-4 bg-slate-100 text-slate-800 font-black text-sm border-r border-slate-200 select-none">
-                +225
-              </span>
+              <select
+                value={selectedCountryCode}
+                onChange={(e) => setSelectedCountryCode(e.target.value)}
+                className="bg-slate-100 text-slate-900 font-bold text-sm px-3 border-r border-slate-200 outline-none cursor-pointer"
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.dialCode}
+                  </option>
+                ))}
+              </select>
               <input
                 type="tel"
                 inputMode="numeric"
                 name="phone"
-                maxLength={10}
+                maxLength={12}
                 value={formData.phone}
                 onChange={handlePhoneChange}
-                className="w-full px-4 py-3 text-slate-900 focus:outline-none bg-transparent placeholder:text-slate-400 font-bold tracking-wide text-base"
-                placeholder="0701020304"
+                className="w-full px-3.5 py-3 text-slate-900 focus:outline-none bg-transparent placeholder:text-slate-400 font-bold tracking-wide text-base"
+                placeholder="Ex: 0701020304"
                 required
               />
             </div>
             <div className="flex items-center justify-between px-1 text-[11px] font-medium text-slate-500">
-              <span>Numéro national (10 chiffres)</span>
-              <span className={`font-mono font-bold ${formData.phone.length === 10 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                {formData.phone.length}/10
+              <span>Numéro mobile sans l'indicatif</span>
+              <span className={`font-mono font-bold ${formData.phone.length >= 8 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {formData.phone.length} chiffres
               </span>
             </div>
           </div>

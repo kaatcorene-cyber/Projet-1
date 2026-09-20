@@ -23,7 +23,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   updateBalance: (newBalance: number) => void;
   login: (phone: string, passwordHash: string) => Promise<void>;
-  register: (phone: string, passwordHash: string, firstName?: string, lastName?: string, referralCode?: string) => Promise<void>;
+  register: (phone: string, passwordHash: string, firstName?: string, lastName?: string, referralCode?: string, country?: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -43,14 +43,14 @@ export const useAuthStore = create<AuthState>()(
       login: async (phone, password) => {
         // Clean national number
         const cleanPhone = phone.trim().replace(/\s+/g, '');
-        // Standardize with +225 if not provided
         const fullPhone = cleanPhone.startsWith('+') ? cleanPhone : `+225${cleanPhone}`;
+        const rawDigits = cleanPhone.replace(/^\+\d{3}/, '');
 
         // Find user by phone in either format
         const { data: user, error } = await supabase
           .from('users')
           .select('*')
-          .or(`phone.eq.${fullPhone},phone.eq.${cleanPhone}`)
+          .or(`phone.eq.${fullPhone},phone.eq.${cleanPhone},phone.eq.${rawDigits}`)
           .maybeSingle();
 
         if (error || !user) {
@@ -61,9 +61,13 @@ export const useAuthStore = create<AuthState>()(
           throw new Error('Mot de passe incorrect');
         }
 
+        try {
+          sessionStorage.setItem('agritrans_show_welcome', 'true');
+        } catch (e) {}
+
         set({ user, isAuthenticated: true });
       },
-      register: async (phone, password, firstName = '', lastName = '', referralCode = '') => {
+      register: async (phone, password, firstName = '', lastName = '', referralCode = '', country = "Côte d'Ivoire") => {
         const cleanPhone = phone.trim().replace(/\s+/g, '');
         const fullPhone = cleanPhone.startsWith('+') ? cleanPhone : `+225${cleanPhone}`;
 
@@ -98,14 +102,14 @@ export const useAuthStore = create<AuthState>()(
         const newUserPayload = {
           phone: fullPhone,
           password_hash: password,
-          first_name: firstName || 'Chauffeur/Partenaire',
+          first_name: firstName || 'Partenaire',
           last_name: lastName || '',
           role: 'user',
           balance: 0,
           referral_code: genReferralCode,
           referred_by: referralCode.trim() || undefined,
           referrer_id: referrerId || undefined,
-          country: "Côte d'Ivoire"
+          country: country || "Côte d'Ivoire"
         };
 
         const { data: createdUser, error: insertError } = await supabase
@@ -118,9 +122,18 @@ export const useAuthStore = create<AuthState>()(
           throw insertError;
         }
 
+        try {
+          sessionStorage.setItem('agritrans_show_welcome', 'true');
+        } catch (e) {}
+
         set({ user: createdUser, isAuthenticated: true });
       },
-      logout: () => set({ user: null, isAuthenticated: false }),
+      logout: () => {
+        try {
+          sessionStorage.removeItem('agritrans_show_welcome');
+        } catch (e) {}
+        set({ user: null, isAuthenticated: false });
+      },
       refreshUser: async () => {
         const { user } = get();
         if (!user) return;

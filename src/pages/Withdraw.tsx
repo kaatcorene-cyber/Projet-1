@@ -26,6 +26,8 @@ export function Withdraw() {
   const [checkingAccount, setCheckingAccount] = useState(true);
   
   // Saved withdrawal info
+  const [savedCountry, setSavedCountry] = useState<string | null>(null);
+  const [savedDialCode, setSavedDialCode] = useState<string | null>(null);
   const [savedMethod, setSavedMethod] = useState<string | null>(null);
   const [savedPhone, setSavedPhone] = useState<string | null>(null);
   const [savedFullName, setSavedFullName] = useState<string | null>(null);
@@ -48,6 +50,8 @@ export function Withdraw() {
           try {
             const parsed = JSON.parse(cachedNew);
             if (parsed.method && parsed.phone && parsed.fullName) {
+              setSavedCountry(parsed.country || null);
+              setSavedDialCode(parsed.dialCode || null);
               setSavedMethod(parsed.method);
               setSavedPhone(parsed.phone);
               setSavedFullName(parsed.fullName);
@@ -63,6 +67,8 @@ export function Withdraw() {
           try {
             const parsed = JSON.parse(cachedOld);
             if (parsed.method && parsed.phone) {
+              setSavedCountry(parsed.country || null);
+              setSavedDialCode(parsed.dialCode || null);
               setSavedMethod(parsed.method);
               setSavedPhone(parsed.phone);
               setSavedFullName(parsed.recipientName || `${user.first_name || ''} ${user.last_name || ''}`.trim());
@@ -79,6 +85,8 @@ export function Withdraw() {
           try {
             const parsed = JSON.parse(userAddress);
             if (parsed.method && parsed.phone) {
+              setSavedCountry(parsed.country || (user as any).country || null);
+              setSavedDialCode(parsed.dialCode || null);
               setSavedMethod(parsed.method);
               setSavedPhone(parsed.phone);
               setSavedFullName(parsed.fullName || `${user.first_name || ''} ${user.last_name || ''}`.trim());
@@ -194,7 +202,9 @@ export function Withdraw() {
       // Fee calculation: 15%
       const fee = Math.round(numAmount * 0.15);
       const netAmount = numAmount - fee;
-      const referenceText = `${savedMethod} - ${savedPhone} (${savedFullName || 'Titulaire'}) | Net: ${netAmount} FCFA (Frais 15%: ${fee} FCFA)`;
+      const countryLabel = savedCountry ? `[${savedCountry}] ` : '';
+      const dialLabel = savedDialCode ? `${savedDialCode} ` : '';
+      const referenceText = `${countryLabel}${savedMethod} - ${dialLabel}${savedPhone} (${savedFullName || 'Titulaire'}) | Net: ${netAmount} FCFA (Frais 15%: ${fee} FCFA)`;
 
       // Create transaction
       const { error: txError } = await supabase
@@ -205,7 +215,7 @@ export function Withdraw() {
           amount: numAmount,
           status: 'pending',
           reference: referenceText,
-          description: `Retrait vers ${savedMethod} ${savedPhone}`,
+          description: `Retrait ${savedCountry ? `(${savedCountry}) ` : ''}vers ${savedMethod} ${dialLabel}${savedPhone}`,
           created_at: new Date().toISOString()
         }]);
 
@@ -324,13 +334,24 @@ export function Withdraw() {
               </div>
 
               <div className="bg-white rounded-xl p-3 border border-emerald-100 space-y-1.5 text-xs">
+                {savedCountry && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 font-medium">Pays :</span>
+                    <span className="font-black text-slate-900 flex items-center gap-1">
+                      <span>{savedCountry}</span>
+                      {savedDialCode && <span className="text-slate-500 text-[11px] font-mono">({savedDialCode})</span>}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500 font-medium">Moyen :</span>
                   <span className="font-black text-slate-900">{savedMethod}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500 font-medium">Numéro :</span>
-                  <span className="font-mono font-black text-emerald-800">{savedPhone}</span>
+                  <span className="font-mono font-black text-emerald-800">
+                    {savedDialCode ? `${savedDialCode} ` : ''}{savedPhone}
+                  </span>
                 </div>
                 {savedFullName && (
                   <div className="flex justify-between items-center">

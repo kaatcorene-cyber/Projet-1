@@ -412,7 +412,9 @@ export function Admin() {
       setPlans(updatedPlans);
       try {
         localStorage.setItem('agritrans_investment_plans', JSON.stringify(updatedPlans));
+        localStorage.setItem('translogis_investment_plans', JSON.stringify(updatedPlans));
         window.dispatchEvent(new Event('agritrans_plans_updated'));
+        window.dispatchEvent(new Event('translogis_plans_updated'));
       } catch (e) {}
       setMessage({ type: 'success', text: "Plans de culture enregistrés et synchronisés avec l'application !" });
     } catch(err: any) {

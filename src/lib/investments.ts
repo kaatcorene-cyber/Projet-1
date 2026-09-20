@@ -14,7 +14,7 @@ export function getCropInfo(planAmount: number | string, dailyYield?: number | s
 
   // 1. Try to find in cache or database settings
   try {
-    const cachedPlans = localStorage.getItem('translogis_investment_plans');
+    const cachedPlans = localStorage.getItem('agritrans_investment_plans') || localStorage.getItem('translogis_investment_plans');
     if (cachedPlans) {
       const parsed: TransportPlan[] = JSON.parse(cachedPlans);
       const match = parsed.find(p => Number(p.amount) === amount);

@@ -30,10 +30,10 @@ export function Invest() {
   const { setInvestmentsCache } = useAppStore();
   const [plans, setPlans] = useState<TransportPlan[]>(() => {
     try {
-      const cached = localStorage.getItem('translogis_investment_plans');
+      const cached = localStorage.getItem('agritrans_investment_plans') || localStorage.getItem('translogis_investment_plans');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length === 10 && parsed[0].duration === 80) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
         }
       }
@@ -76,29 +76,25 @@ export function Invest() {
           if (Array.isArray(parsed) && parsed.length > 0) {
             const formatted = parsed.map((p: any, idx: number) => ({
               ...p,
-              id: p.id || `transport_${p.amount || idx}_${idx}`,
-              name: p.name || `Service ${formatCurrency(p.amount)}`
+              id: p.id || `plan_${p.amount || idx}_${idx}`,
+              name: p.name || `Formule ${formatCurrency(p.amount)}`
             }));
             setPlans(formatted);
             try {
+              localStorage.setItem('agritrans_investment_plans', JSON.stringify(formatted));
               localStorage.setItem('translogis_investment_plans', JSON.stringify(formatted));
             } catch (err) {}
           }
-        } else {
-          setPlans(DEFAULT_TRANSPORT_PLANS);
-          try {
-            localStorage.setItem('translogis_investment_plans', JSON.stringify(DEFAULT_TRANSPORT_PLANS));
-          } catch (err) {}
         }
       } catch (e) {
-        setPlans(DEFAULT_TRANSPORT_PLANS);
+        // Garder les plans en cache en cas de souci réseau
       }
     }
     fetchPlans();
 
     const handlePlansUpdate = () => {
       try {
-        const cached = localStorage.getItem('translogis_investment_plans');
+        const cached = localStorage.getItem('agritrans_investment_plans') || localStorage.getItem('translogis_investment_plans');
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -108,14 +104,18 @@ export function Invest() {
       } catch (e) {}
     };
 
+    window.addEventListener('agritrans_plans_updated', handlePlansUpdate);
     window.addEventListener('translogis_plans_updated', handlePlansUpdate);
+    window.addEventListener('storage', handlePlansUpdate);
 
     if (user?.id) {
       supabase.functions.invoke('process-yields').catch(() => {});
     }
 
     return () => {
+      window.removeEventListener('agritrans_plans_updated', handlePlansUpdate);
       window.removeEventListener('translogis_plans_updated', handlePlansUpdate);
+      window.removeEventListener('storage', handlePlansUpdate);
     };
   }, [user?.id]);
 
@@ -395,18 +395,15 @@ export function Invest() {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
             <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">
-              Flotte de Véhicules ({plans.length})
+              Plans Disponibles ({plans.length})
             </h2>
           </div>
-          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black border border-emerald-200">
-            Cycle 80 Jours
-          </span>
         </div>
 
-        {/* Liste des véhicules : simple, clair et propre */}
+        {/* Liste des plans : simple, clair et propre */}
         <div className="space-y-3 px-3 sm:px-0">
           {plans.map((plan, index) => {
-            const planKey = plan.id || `transport-plan-${plan.amount}-${index}`;
+            const planKey = plan.id || `plan-${plan.amount}-${index}`;
 
             return (
               <div 
@@ -434,7 +431,7 @@ export function Invest() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-xs font-bold text-emerald-600">
-                        Véhicule N°{index + 1}
+                        Formule N°{index + 1}
                       </span>
                       <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
                         {plan.duration || 80} jours

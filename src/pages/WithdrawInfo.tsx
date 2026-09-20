@@ -9,12 +9,16 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Save, 
-  Lock,
-  ArrowRight
+  ArrowRight,
+  Globe2
 } from 'lucide-react';
+import { COUNTRIES, CountryConfig, getCountryByCode } from '../data/countries';
 
 export interface WithdrawalDetails {
-  method: 'Wave' | 'Orange Money' | 'MTN MoMo' | 'Moov Money';
+  country: string;
+  countryCode: string;
+  dialCode: string;
+  method: string;
   phone: string;
   fullName: string;
   savedAt: string;
@@ -24,12 +28,24 @@ export default function WithdrawInfo() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
-  const [method, setMethod] = useState<'Wave' | 'Orange Money' | 'MTN MoMo' | 'Moov Money'>('Wave');
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string>('CI');
+  const [method, setMethod] = useState<string>('Wave');
   const [phone, setPhone] = useState('');
   const [fullName, setFullName] = useState('');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const currentCountry = getCountryByCode(selectedCountryCode);
+
+  // When country changes, ensure selected method belongs to this country
+  const handleCountryChange = (code: string) => {
+    setSelectedCountryCode(code);
+    const country = getCountryByCode(code);
+    if (!country.methods.includes(method)) {
+      setMethod(country.methods[0]);
+    }
+  };
 
   // Load existing details
   useEffect(() => {
@@ -39,12 +55,28 @@ export default function WithdrawInfo() {
     if (saved) {
       try {
         const parsed: WithdrawalDetails = JSON.parse(saved);
+        if (parsed.countryCode) {
+          setSelectedCountryCode(parsed.countryCode);
+        }
         if (parsed.method) setMethod(parsed.method);
         if (parsed.phone) setPhone(parsed.phone);
         if (parsed.fullName) setFullName(parsed.fullName);
+        return;
       } catch (e) {}
-    } else if (user.phone) {
-      setPhone(user.phone);
+    }
+
+    // Try fallback from user object
+    if (user.phone) {
+      // Check if phone matches dial code
+      for (const c of COUNTRIES) {
+        if (user.phone.startsWith(c.dialCode)) {
+          setSelectedCountryCode(c.code);
+          setMethod(c.methods[0]);
+          setPhone(user.phone.replace(c.dialCode, ''));
+          return;
+        }
+      }
+      setPhone(user.phone.replace('+225', ''));
     }
   }, [user]);
 
@@ -58,7 +90,7 @@ export default function WithdrawInfo() {
       return;
     }
 
-    const cleanPhone = phone.trim();
+    const cleanPhone = phone.trim().replace(/\s+/g, '');
     const cleanName = fullName.trim();
 
     if (!cleanPhone || cleanPhone.length < 8) {
@@ -74,6 +106,9 @@ export default function WithdrawInfo() {
     setSaving(true);
     try {
       const details: WithdrawalDetails = {
+        country: currentCountry.name,
+        countryCode: currentCountry.code,
+        dialCode: currentCountry.dialCode,
         method,
         phone: cleanPhone,
         fullName: cleanName,
@@ -84,13 +119,13 @@ export default function WithdrawInfo() {
       const storageKey = `translogis_withdraw_info_${user.id}`;
       localStorage.setItem(storageKey, JSON.stringify(details));
 
-      // 2. Also try to persist to Supabase if possible (update address or withdrawal_info column)
+      // 2. Also persist to Supabase in user address/metadata
       try {
         await supabase
           .from('users')
           .update({
-            // Store method and full name in metadata if needed
-            address: JSON.stringify(details)
+            address: JSON.stringify(details),
+            country: currentCountry.name
           })
           .eq('id', user.id);
       } catch (dbErr) {
@@ -131,7 +166,7 @@ export default function WithdrawInfo() {
               <span>Coordonnées enregistrées avec succès !</span>
             </div>
             <p className="text-xs text-emerald-800 font-medium">
-              Vos informations ont été sauvegardées en toute sécurité. Vous pouvez maintenant effectuer un retrait immédiatement.
+              Vos informations ({currentCountry.name} - {method}) ont été sauvegardées. Vous pouvez effectuer vos retraits en toute sécurité.
             </p>
             <Link
               to="/withdraw"
@@ -152,14 +187,48 @@ export default function WithdrawInfo() {
         )}
 
         {/* Form Card */}
-        <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-          {/* Moyen de Réception */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
-              Moyen de réception
+        <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
+          {/* 1. Sélection du Pays */}
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <Globe2 className="w-4 h-4 text-emerald-600" />
+              <span>Sélectionnez votre Pays</span>
             </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {COUNTRIES.map((c) => (
+                <button
+                  type="button"
+                  key={c.code}
+                  onClick={() => handleCountryChange(c.code)}
+                  className={`p-2.5 rounded-xl border text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+                    selectedCountryCode === c.code
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-500/20 shadow-xs'
+                      : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="text-lg">{c.flag}</span>
+                  <div className="text-left overflow-hidden">
+                    <p className="truncate font-bold">{c.name}</p>
+                    <p className="text-[10px] text-slate-500 font-mono font-medium">{c.dialCode}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 2. Moyen de Réception du pays sélectionné */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+                Moyen de retrait ({currentCountry.name})
+              </label>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                {currentCountry.flag} {currentCountry.methods.length} opérateur{currentCountry.methods.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            
             <div className="grid grid-cols-2 gap-2">
-              {(['Wave', 'Orange Money', 'MTN MoMo', 'Moov Money'] as const).map((m) => (
+              {currentCountry.methods.map((m) => (
                 <button
                   type="button"
                   key={m}
@@ -170,40 +239,40 @@ export default function WithdrawInfo() {
                       : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300'
                   }`}
                 >
-                  <span>{m}</span>
-                  {method === m && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                  <span className="truncate">{m}</span>
+                  {method === m && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 ml-1" />}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Numéro de réception */}
+          {/* 3. Numéro de réception */}
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
               Numéro de réception ({method})
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Phone className="w-4 h-4" />
-              </div>
+            <div className="flex bg-slate-50 border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-emerald-600 focus-within:bg-white transition-all min-h-[48px]">
+              <span className="flex items-center px-3.5 bg-slate-100 text-slate-800 font-mono font-black text-xs sm:text-sm border-r border-slate-200 select-none">
+                {currentCountry.flag} {currentCountry.dialCode}
+              </span>
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Ex: 0701020304"
-                className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-sm font-bold placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-600 transition-all"
+                onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="Ex: 90123456"
+                className="w-full px-3.5 py-3 bg-transparent text-slate-900 text-sm font-bold placeholder-slate-400 focus:outline-none tracking-wide"
                 required
               />
             </div>
             <p className="text-[11px] text-slate-500 font-medium">
-              Le numéro sur lequel vous recevrez les transferts d’argent.
+              Numéro officiel {method} enregistré dans votre pays ({currentCountry.name}).
             </p>
           </div>
 
-          {/* Nom et prénom du titulaire */}
+          {/* 4. Nom et prénom du titulaire */}
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
-              Nom et prénom du titulaire
+              Nom et prénom complet du titulaire
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -219,7 +288,7 @@ export default function WithdrawInfo() {
               />
             </div>
             <p className="text-[11px] text-slate-500 font-medium">
-              Le nom légal enregistré sur votre compte {method}.
+              Le nom légal de la pièce d’identité associée à la ligne {method}.
             </p>
           </div>
 
@@ -234,7 +303,7 @@ export default function WithdrawInfo() {
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>Enregistrer mes informations</span>
+                <span>Enregistrer mes coordonnées</span>
               </>
             )}
           </button>
