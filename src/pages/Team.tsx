@@ -50,30 +50,31 @@ export function Team() {
     setIsLoading(true);
 
     try {
+      const userRefCodes = [user.referral_code, user.id].filter(Boolean);
       const { data: level1Users } = await supabase
         .from('users')
-        .select('id, phone, created_at, investments(id, plan_amount, status)')
-        .eq('referrer_id', user.id);
+        .select('id, phone, referral_code, created_at, investments(id, plan_amount, status)')
+        .in('referred_by', userRefCodes);
 
       const l1 = level1Users || [];
       let l2: any[] = [];
       let l3: any[] = [];
 
       if (l1.length > 0) {
-        const l1Ids = l1.map(u => u.id);
+        const l1RefCodes = Array.from(new Set(l1.flatMap(u => [u.referral_code, u.id]).filter(Boolean)));
         const { data: level2Users } = await supabase
           .from('users')
-          .select('id, phone, created_at, investments(id, plan_amount, status)')
-          .in('referrer_id', l1Ids);
+          .select('id, phone, referral_code, created_at, investments(id, plan_amount, status)')
+          .in('referred_by', l1RefCodes);
         
         l2 = level2Users || [];
 
         if (l2.length > 0) {
-          const l2Ids = l2.map(u => u.id);
+          const l2RefCodes = Array.from(new Set(l2.flatMap(u => [u.referral_code, u.id]).filter(Boolean)));
           const { data: level3Users } = await supabase
             .from('users')
-            .select('id, phone, created_at, investments(id, plan_amount, status)')
-            .in('referrer_id', l2Ids);
+            .select('id, phone, referral_code, created_at, investments(id, plan_amount, status)')
+            .in('referred_by', l2RefCodes);
           
           l3 = level3Users || [];
         }

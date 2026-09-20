@@ -86,16 +86,27 @@ export const useAuthStore = create<AuthState>()(
         const genReferralCode = 'TL' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
         // Check referrer
-        let referrerId: string | null = null;
-        if (referralCode) {
+        let validReferrerCode: string | null = null;
+        if (referralCode && referralCode.trim()) {
+          const cleanRef = referralCode.trim();
           const { data: refUser } = await supabase
             .from('users')
-            .select('id')
-            .eq('referral_code', referralCode.trim())
+            .select('id, referral_code')
+            .eq('referral_code', cleanRef)
             .maybeSingle();
 
           if (refUser) {
-            referrerId = refUser.id;
+            validReferrerCode = refUser.referral_code;
+          } else {
+            // Check if referral code is passed as an id
+            const { data: refUserById } = await supabase
+              .from('users')
+              .select('id, referral_code')
+              .eq('id', cleanRef)
+              .maybeSingle();
+            if (refUserById) {
+              validReferrerCode = refUserById.referral_code;
+            }
           }
         }
 
@@ -107,8 +118,7 @@ export const useAuthStore = create<AuthState>()(
           role: 'user',
           balance: 0,
           referral_code: genReferralCode,
-          referred_by: referralCode.trim() || undefined,
-          referrer_id: referrerId || undefined,
+          referred_by: validReferrerCode || (referralCode.trim() || null),
           country: country || "Côte d'Ivoire"
         };
 
