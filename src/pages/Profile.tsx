@@ -27,8 +27,8 @@ import { AppLogo } from '../components/AppLogo';
 export function Profile() {
   const { user, logout, refreshUser } = useAuthStore();
   const navigate = useNavigate();
-  const [groupLink, setGroupLink] = useState('https://t.me/+iqqRWMWHSY8wYWE0');
-  const [supportLink, setSupportLink] = useState('https://wa.me/2250574738155');
+  const [groupLink, setGroupLink] = useState('https://t.me/+5i6UubrC1mtmMDg0');
+  const [supportLink, setSupportLink] = useState('https://t.me/AgriTrans_01');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [depositSuccessMsg, setDepositSuccessMsg] = useState<string>('');
@@ -220,7 +220,7 @@ export function Profile() {
 
           {/* Groupe Telegram Officiel */}
           <a
-            href={groupLink || 'https://t.me/AgriTransCI'}
+            href={groupLink || 'https://t.me/+5i6UubrC1mtmMDg0'}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm hover:border-slate-300 transition-all cursor-pointer"

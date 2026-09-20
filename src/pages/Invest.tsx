@@ -42,9 +42,26 @@ export function Invest() {
   });
   const [loading, setLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
+  const [activeCount, setActiveCount] = useState<number>(0);
 
   useEffect(() => {
     refreshUser();
+
+    if (user?.id) {
+      const fetchActiveCount = async () => {
+        try {
+          const { count } = await supabase
+            .from('investments')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('status', 'active');
+          if (typeof count === 'number') {
+            setActiveCount(count);
+          }
+        } catch (e) {}
+      };
+      fetchActiveCount();
+    }
 
     async function fetchPlans() {
       try {
@@ -265,6 +282,7 @@ export function Invest() {
       } catch (cacheErr) {}
 
       await refreshUser();
+      setActiveCount(prev => prev + 1);
 
       setMessage({
         type: 'success',
@@ -335,23 +353,40 @@ export function Invest() {
           </div>
         )}
 
-        {/* Balance Section - Direct Seamless Band */}
-        <div className="bg-white border-y border-slate-200 px-4 sm:px-6 py-4 flex items-center justify-between shadow-sm">
-          <div className="space-y-0.5">
-            <span className="text-slate-500 text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">
-              <Wallet className="w-4 h-4 text-emerald-600" />
-              Solde Disponible
-            </span>
-            <p className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              {formatCurrency(user?.balance || 0)}
-            </p>
-          </div>
+        {/* Mes Flottes actifs */}
+        <div className="px-4 sm:px-0">
           <Link
-            to="/deposit"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-md shadow-emerald-600/25 transition-all active:scale-95 cursor-pointer"
+            to="/activity"
+            className="w-full bg-white border border-slate-200 hover:border-emerald-500 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-sm hover:shadow transition-all group cursor-pointer active:scale-[0.99]"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>Recharger</span>
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-emerald-600/20 group-hover:scale-105 transition-transform">
+                <Truck className="w-6 h-6 text-white" />
+              </div>
+              <div className="space-y-0.5 text-left">
+                <div className="flex items-center gap-2">
+                  <span className="text-base sm:text-lg font-black tracking-tight text-slate-900">
+                    Mes Flottes actifs
+                  </span>
+                  {activeCount > 0 ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-black border border-emerald-200 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                      <span>{activeCount} en service</span>
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold">
+                      0 en service
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 font-medium">
+                  Suivi des véhicules en rotation et collecte des gains quotidiens
+                </p>
+              </div>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-slate-100 group-hover:bg-emerald-50 group-hover:text-emerald-700 text-slate-400 flex items-center justify-center shrink-0 transition-colors">
+              <ArrowRight className="w-4 h-4" />
+            </div>
           </Link>
         </div>
 

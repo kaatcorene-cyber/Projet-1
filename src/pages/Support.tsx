@@ -32,7 +32,7 @@ export function Support() {
     } catch (e) {}
     return [];
   });
-  const [supportLink, setSupportLink] = useState('https://wa.me/2250574738155');
+  const [supportLink, setSupportLink] = useState('https://t.me/AgriTrans_01');
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [verifState, setVerifState] = useState<VerifState>(() => {
@@ -206,12 +206,12 @@ export function Support() {
       } else if (lower.includes('bonjour') || lower.includes('salut') || lower.includes('coucou')) {
         responseText = "Bonjour ! Le Service Client AgriTrans est à votre entière disposition. Comment pouvons-nous vous aider aujourd'hui ?";
       } else {
-        const finalLink = supportLink ? (supportLink.startsWith('http') ? supportLink : `https://${supportLink}`) : 'https://wa.me/2250574738155';
+        const finalLink = supportLink ? (supportLink.startsWith('http') ? supportLink : `https://${supportLink}`) : 'https://t.me/AgriTrans_01';
         responseText = `
           <span>
-            Pour une assistance personnalisée directe, contactez un conseiller AgriTrans sur WhatsApp : <br/><br/>
-            <a href="${finalLink}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; background-color:#16a34a; color:white; padding:8px 14px; border-radius:10px; text-decoration:none; font-weight:bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              <span>Assistance Directe WhatsApp</span>
+            Pour une assistance personnalisée directe, contactez un conseiller AgriTrans sur Telegram : <br/><br/>
+            <a href="${finalLink}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; background-color:#0284c7; color:white; padding:8px 14px; border-radius:10px; text-decoration:none; font-weight:bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              <span>Assistance Directe Telegram</span>
             </a>
           </span>
         `;
@@ -290,12 +290,12 @@ export function Support() {
           </p>
         </div>
         <a
-          href={supportLink || 'https://wa.me/2250574738155'}
+          href={supportLink || 'https://t.me/AgriTrans_01'}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer"
+          className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer"
         >
-          <span>WhatsApp</span>
+          <span>Telegram</span>
           <Send className="w-3 h-3" />
         </a>
       </header>

@@ -56,7 +56,7 @@ export function Register() {
         '',
         formData.referralCode
       );
-      navigate('/dashboard');
+      navigate('/profile');
     } catch (err: any) {
       console.error('Registration error:', err);
       let msg = err?.message || "Une erreur est survenue lors de l'inscription.";

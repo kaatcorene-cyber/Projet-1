@@ -1,16 +1,35 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Truck, Users2, History as HistoryIcon, UserCircle2 } from 'lucide-react';
+import { Truck, Users2, History as HistoryIcon, UserCircle2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export function BottomNav() {
   const location = useLocation();
   
   const navItems = [
-    { icon: Home, label: 'Accueil', path: '/dashboard' },
-    { icon: Truck, label: 'Service', path: '/invest' },
-    { icon: UserCircle2, label: 'Compte', path: '/profile' },
-    { icon: Users2, label: 'Équipe', path: '/team' },
-    { icon: HistoryIcon, label: 'Historique', path: '/history' },
+    { 
+      icon: UserCircle2, 
+      label: 'Compte', 
+      path: '/profile',
+      matchPaths: ['/profile', '/deposit', '/withdraw', '/withdraw-info']
+    },
+    { 
+      icon: Truck, 
+      label: 'Service', 
+      path: '/invest',
+      matchPaths: ['/invest', '/activity']
+    },
+    { 
+      icon: Users2, 
+      label: 'Équipe', 
+      path: '/team',
+      matchPaths: ['/team', '/commissions']
+    },
+    { 
+      icon: HistoryIcon, 
+      label: 'Historiques', 
+      path: '/history',
+      matchPaths: ['/history']
+    },
   ];
 
   return (
@@ -21,7 +40,9 @@ export function BottomNav() {
           className="pointer-events-auto bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] px-1.5 py-1.5 flex items-center justify-around"
         >
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = item.matchPaths 
+              ? item.matchPaths.includes(location.pathname) 
+              : location.pathname === item.path;
             const Icon = item.icon;
 
             return (

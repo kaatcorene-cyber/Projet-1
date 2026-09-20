@@ -308,7 +308,7 @@ export function Activity() {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-base font-black text-slate-900 tracking-tight">Activité Flotte</h1>
+            <h1 className="text-base font-black text-slate-900 tracking-tight">Mes Flottes actifs</h1>
             <p className="text-[11px] font-medium text-slate-500">
               {activeInvestments.length} Véhicule(s) en service
             </p>

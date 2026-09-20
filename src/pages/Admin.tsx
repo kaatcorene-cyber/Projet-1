@@ -66,7 +66,7 @@ export function Admin() {
 
   useEffect(() => {
     if (user?.role !== 'admin') {
-      navigate('/dashboard');
+      navigate('/profile');
       return;
     }
     fetchData();
@@ -411,8 +411,8 @@ export function Admin() {
       if (error) throw error;
       setPlans(updatedPlans);
       try {
-        localStorage.setItem('cargill_investment_plans', JSON.stringify(updatedPlans));
-        window.dispatchEvent(new Event('cargill_plans_updated'));
+        localStorage.setItem('agritrans_investment_plans', JSON.stringify(updatedPlans));
+        window.dispatchEvent(new Event('agritrans_plans_updated'));
       } catch (e) {}
       setMessage({ type: 'success', text: "Plans de culture enregistrés et synchronisés avec l'application !" });
     } catch(err: any) {
@@ -1185,10 +1185,10 @@ export function Admin() {
                   />
                   <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center p-1 shrink-0">
                     <img 
-                      src={appLogo || '/logo.svg?v=cargill'} 
+                      src={appLogo || '/logo.svg?v=agritrans'} 
                       alt="Logo" 
                       className="max-h-full max-w-full object-contain" 
-                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg?v=cargill'; }} 
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg?v=agritrans'; }} 
                     />
                   </div>
                 </div>

@@ -94,7 +94,7 @@ export function History() {
       {/* Header Sticky */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex justify-between items-center transition-all">
         <div>
-          <h1 className="text-base font-black text-slate-900 tracking-tight">Historique</h1>
+          <h1 className="text-base font-black text-slate-900 tracking-tight">Historiques</h1>
           <p className="text-emerald-700 text-[10px] font-black uppercase tracking-wider">Journal des Opérations</p>
         </div>
         <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />

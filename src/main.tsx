@@ -12,7 +12,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// Register service worker for Cargill PWA auto-update
+// Register service worker for AgriTrans PWA auto-update
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {

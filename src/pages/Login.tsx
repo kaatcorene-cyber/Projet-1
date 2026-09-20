@@ -30,7 +30,7 @@ export function Login() {
     setLoading(true);
     try {
       await login(phone, password);
-      navigate('/dashboard');
+      navigate('/profile');
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err?.message || 'Identifiants invalides. Vérifiez votre numéro et mot de passe.');
