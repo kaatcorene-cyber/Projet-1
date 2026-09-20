@@ -14,7 +14,7 @@ export function BottomNav() {
     },
     { 
       icon: Truck, 
-      label: 'Service', 
+      label: 'Flotte', 
       path: '/invest',
       matchPaths: ['/invest', '/activity']
     },

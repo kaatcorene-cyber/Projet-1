@@ -145,8 +145,28 @@ export function Invest() {
       setLoading(key);
       setMessage(null);
 
-      const newBalance = currentBalance - requiredAmount;
+      const now = new Date();
+      const endsAt = new Date(now.getTime() + (plan.duration || 60) * 24 * 60 * 60 * 1000);
 
+      // 1. Enregistrement de l'investissement dans la table 'investments'
+      const { data: newInvest, error: investError } = await supabase
+        .from('investments')
+        .insert([{
+          user_id: user.id,
+          plan_amount: requiredAmount,
+          daily_yield: Number(plan.daily),
+          start_date: now.toISOString(),
+          end_date: endsAt.toISOString(),
+          last_paid_at: now.toISOString(),
+          status: 'active'
+        }])
+        .select()
+        .single();
+
+      if (investError) throw investError;
+
+      // 2. Déduction du solde utilisateur
+      const newBalance = currentBalance - requiredAmount;
       const { error: balanceError } = await supabase
         .from('users')
         .update({ balance: newBalance })
@@ -154,41 +174,13 @@ export function Invest() {
 
       if (balanceError) throw balanceError;
 
-      const now = new Date();
-      const nextClaim = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-      const endsAt = new Date(now.getTime() + (plan.duration || 60) * 24 * 60 * 60 * 1000);
-
-      const { data: newInvest, error: investError } = await supabase
-        .from('investments')
-        .insert([{
-          user_id: user.id,
-          plan_id: plan.id,
-          plan_name: plan.name,
-          amount: requiredAmount,
-          daily_yield: plan.daily,
-          total_return: plan.total,
-          duration_days: plan.duration || 60,
-          status: 'active',
-          claimed_amount: 0,
-          last_claim_date: now.toISOString(),
-          next_claim_date: nextClaim.toISOString(),
-          created_at: now.toISOString(),
-          ends_at: endsAt.toISOString(),
-          crop_type: plan.name,
-          daily_yield_percent: ((plan.daily / requiredAmount) * 100).toFixed(2),
-          total_yield_percent: ((plan.total / requiredAmount) * 100).toFixed(2)
-        }])
-        .select()
-        .single();
-
-      if (investError) throw investError;
-
+      // 3. Enregistrement de la transaction
       await supabase.from('transactions').insert([{
         user_id: user.id,
         type: 'investment',
         amount: requiredAmount,
         status: 'approved',
-        description: `Souscription: ${plan.name}`,
+        reference: `Souscription - ${plan.name}`,
         created_at: now.toISOString()
       }]);
 
@@ -274,7 +266,7 @@ export function Invest() {
           .from('investments')
           .select('*')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .order('start_date', { ascending: false });
 
         if (currentInvestments) {
           setInvestmentsCache(currentInvestments);

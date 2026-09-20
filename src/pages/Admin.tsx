@@ -400,6 +400,25 @@ export function Admin() {
     });
   };
 
+  const handleDeleteTransaction = async (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      message: "Voulez-vous vraiment supprimer cette transaction de l'historique ?",
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          await supabase.from('transactions').delete().eq('id', id);
+          fetchData();
+          setMessage({ type: 'success', text: "Transaction supprimée avec succès." });
+        } catch(err: any) {
+          setMessage({ type: 'error', text: "Erreur: " + err.message });
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
   // --- Plans Handlers ---
   const handleSavePlans = async (updatedPlans: CropPlan[]) => {
     setLoading(true);
@@ -799,12 +818,21 @@ export function Admin() {
                     <p className="text-xs text-gray-600 mt-1 font-mono">Ref: {tx.reference}</p>
                     <p className="text-[10px] text-gray-400 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
                   </div>
-                  <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
-                    tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                    tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                    'bg-red-50 text-red-700 border border-red-200'
-                  }`}>
-                    {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
+                      tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                      tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      'bg-red-50 text-red-700 border border-red-200'
+                    }`}>
+                      {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
+                    </span>
+                    <button 
+                      onClick={() => handleDeleteTransaction(tx.id)}
+                      title="Supprimer la transaction"
+                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
                 
@@ -855,12 +883,21 @@ export function Admin() {
                     <p className="text-xs text-gray-600 mt-1 font-mono">Ref/Numéro: {tx.reference}</p>
                     <p className="text-[10px] text-gray-400 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
                   </div>
-                  <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
-                    tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                    tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                    'bg-red-50 text-red-700 border border-red-200'
-                  }`}>
-                    {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
+                      tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                      tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      'bg-red-50 text-red-700 border border-red-200'
+                    }`}>
+                      {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
+                    </span>
+                    <button 
+                      onClick={() => handleDeleteTransaction(tx.id)}
+                      title="Supprimer la transaction"
+                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
                 
