@@ -17,6 +17,7 @@ export function Deposit() {
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [redirecting, setRedirecting] = useState<boolean>(false);
   const [automationStep, setAutomationStep] = useState<string>('');
+  const [readyPaymentUrl, setReadyPaymentUrl] = useState<string>('');
   const checkIntervalRef = useRef<any>(null);
 
   // Check and verify pending deposit on mount and poll if recent
@@ -78,10 +79,31 @@ export function Deposit() {
       return;
     }
 
-    const rawUserPhone = (user.phone || '0700000000').trim().replace(/\s+/g, '').replace(/[^0-9]/g, '');
-    const nationalNumber = rawUserPhone.startsWith('225') ? rawUserPhone.slice(3) : (rawUserPhone || '0700000000');
-    const fullPhone = `+225${nationalNumber}`;
-    const userEmail = `${nationalNumber}@agritrans-ci.com`;
+    // Détection dynamique du numéro et du code pays (support CI, Togo, Burkina, Bénin, Niger)
+    const userPhoneStr = (user.phone || '').trim().replace(/\s+/g, '');
+    let countryDial = '+225';
+    let nationalNumber = userPhoneStr.replace(/[^0-9]/g, '');
+
+    if (userPhoneStr.startsWith('+228') || userPhoneStr.startsWith('228') || user?.country === 'Togo') {
+      countryDial = '+228';
+      nationalNumber = userPhoneStr.replace(/^\+?228/, '');
+    } else if (userPhoneStr.startsWith('+226') || userPhoneStr.startsWith('226') || user?.country === 'Burkina Faso') {
+      countryDial = '+226';
+      nationalNumber = userPhoneStr.replace(/^\+?226/, '');
+    } else if (userPhoneStr.startsWith('+229') || userPhoneStr.startsWith('229') || user?.country === 'Bénin') {
+      countryDial = '+229';
+      nationalNumber = userPhoneStr.replace(/^\+?229/, '');
+    } else if (userPhoneStr.startsWith('+227') || userPhoneStr.startsWith('227') || user?.country === 'Niger') {
+      countryDial = '+227';
+      nationalNumber = userPhoneStr.replace(/^\+?227/, '');
+    } else if (userPhoneStr.startsWith('+225') || userPhoneStr.startsWith('225') || user?.country === "Côte d'Ivoire") {
+      countryDial = '+225';
+      nationalNumber = userPhoneStr.replace(/^\+?225/, '');
+    }
+
+    const cleanNational = nationalNumber || '0700000000';
+    const fullPhone = `${countryDial}${cleanNational}`;
+    const userEmail = `${cleanNational}@agritrans-ci.com`;
 
     setLoading(true);
     setRedirecting(true);
@@ -104,25 +126,50 @@ export function Deposit() {
         console.warn('Could not record pending transaction:', txErr);
       }
 
-      setAutomationStep('2/3 Remplissage automatique de la première page MoneyFusion...');
+      setAutomationStep('2/3 Initialisation sécurisée de la passerelle MoneyFusion...');
 
       const payload = {
         montant: numAmount,
         name: 'Dépôt de',
         phone: fullPhone,
         customerEmail: userEmail,
-        countryCode: '+225',
+        countryCode: countryDial,
         userId: user.id,
         txId: createdTxId
       };
 
       let directPaymentUrl = '';
       let directToken = '';
+      let lastErrorDetails = '';
 
-      // Perform background pre-fill call
-      for (let attempt = 1; attempt <= 2; attempt++) {
+      // Tentative 1 : Endpoint serveur principal /api/moneyfusion/init
+      try {
+        const response = await fetch('/api/moneyfusion/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const resData = await response.json();
+          if (resData.url) {
+            directPaymentUrl = resData.url;
+            directToken = resData.token || '';
+          } else if (resData.error) {
+            lastErrorDetails = resData.error;
+          }
+        } else {
+          const errData = await response.json().catch(() => null);
+          if (errData?.error) lastErrorDetails = errData.error;
+        }
+      } catch (err1) {
+        console.warn('Tentative 1 (/api/moneyfusion/init) échec:', err1);
+      }
+
+      // Tentative 2 : Endpoint alternatif /api/pay
+      if (!directPaymentUrl) {
         try {
-          const response = await fetch('/api/moneyfusion/init', {
+          const response = await fetch('/api/pay', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -130,21 +177,64 @@ export function Deposit() {
 
           if (response.ok) {
             const resData = await response.json();
-            if (resData.url && !resData.url.includes('my.moneyfusion.net')) {
+            if (resData.url) {
               directPaymentUrl = resData.url;
-              directToken = resData.token;
-              break;
+              directToken = resData.token || '';
             }
           }
-        } catch (fetchErr) {
-          console.warn(`Tentative ${attempt} échec:`, fetchErr);
+        } catch (err2) {
+          console.warn('Tentative 2 (/api/pay) échec:', err2);
+        }
+      }
+
+      // Tentative 3 : Fallback direct vers la passerelle MoneyFusion officielle (CORS public supporté)
+      if (!directPaymentUrl) {
+        try {
+          const mfDirectRes = await fetch('https://pay.moneyfusion.net/api/v2/links/init-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: '6a7da1aa655b3c8aa7379d96',
+              montant: String(numAmount),
+              name: 'Dépôt de',
+              phone: fullPhone,
+              customerEmail: userEmail,
+              countryCode: countryDial
+            })
+          });
+
+          if (mfDirectRes.ok) {
+            const mfData = await mfDirectRes.json();
+            if (mfData?.url) {
+              directPaymentUrl = mfData.url;
+              const tokenMatch = directPaymentUrl.match(/payment\/([a-zA-Z0-9_-]+)/i);
+              if (tokenMatch) {
+                directToken = tokenMatch[1];
+              }
+            } else if (mfData?.message) {
+              lastErrorDetails = mfData.message;
+            }
+          }
+        } catch (err3) {
+          console.warn('Tentative 3 (MoneyFusion Direct) échec:', err3);
         }
       }
 
       if (!directPaymentUrl) {
-        throw new Error("Impossible d'initialiser automatiquement la session de paiement direct. Veuillez vérifier votre connexion et réessayer.");
+        throw new Error(lastErrorDetails || "Impossible d'initialiser la session de paiement direct. Veuillez vérifier votre connexion et réessayer.");
       }
 
+      // Nettoyage esthétique du lien de paiement
+      try {
+        const paymentRegex = /(https:\/\/payin\.moneyfusion\.net\/payment\/[^\/]+\/[^\/]+\/)(.*)/i;
+        if (paymentRegex.test(directPaymentUrl)) {
+          directPaymentUrl = directPaymentUrl.replace(paymentRegex, '$1D%C3%A9p%C3%B4t%20de');
+        }
+      } catch (e) {
+        // En cas d'erreur de regex, garder l'URL intacte
+      }
+
+      // Sauvegarde du token local pour vérification du statut au retour
       if (directToken) {
         localStorage.setItem('agritrans_pending_deposit', JSON.stringify({
           token: directToken,
@@ -152,16 +242,31 @@ export function Deposit() {
           amount: numAmount,
           time: Date.now()
         }));
+
+        if (createdTxId) {
+          try {
+            await supabase.from('transactions').update({
+              reference: `MoneyFusion - ${directToken}`
+            }).eq('id', createdTxId);
+          } catch (dbErr) {
+            console.warn('Could not update pending tx reference:', dbErr);
+          }
+        }
       }
 
-      setAutomationStep('3/3 Accès direct à la sélection Mobile Money (Wave, Orange, MTN, Moov)...');
+      setReadyPaymentUrl(directPaymentUrl);
+      setAutomationStep('3/3 Redirection vers la sélection Mobile Money (Wave, Orange, MTN, Moov)...');
 
-      // Direct redirection to the payment selection page, bypassing the 1st page entirely
-      window.location.href = directPaymentUrl;
+      // Redirection immédiate
+      try {
+        window.location.href = directPaymentUrl;
+      } catch (redirectErr) {
+        window.open(directPaymentUrl, '_self');
+      }
 
     } catch (err: any) {
       console.error('Erreur lors de l’automatisation du paiement:', err);
-      setError(err.message || 'Une erreur est survenue lors de l’automatisation en arrière-plan.');
+      setError(err.message || 'Une erreur est survenue lors de l’initialisation de la passerelle.');
       setLoading(false);
       setRedirecting(false);
       setAutomationStep('');
@@ -288,12 +393,27 @@ export function Deposit() {
 
           {/* État d'avancement de l'automatisation en arrière-plan */}
           {redirecting && automationStep && (
-            <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-lg flex items-center gap-3 animate-pulse">
-              <Loader2 className="w-5 h-5 text-emerald-400 animate-spin shrink-0" />
-              <div>
-                <p className="text-xs font-black uppercase tracking-wider text-emerald-400">Automatisation MoneyFusion</p>
-                <p className="text-xs font-bold text-slate-200 mt-0.5">{automationStep}</p>
+            <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-lg flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-5 h-5 text-emerald-400 animate-spin shrink-0" />
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider text-emerald-400">Automatisation MoneyFusion</p>
+                  <p className="text-xs font-bold text-slate-200 mt-0.5">{automationStep}</p>
+                </div>
               </div>
+
+              {readyPaymentUrl && (
+                <div className="pt-2 border-t border-slate-800">
+                  <a
+                    href={readyPaymentUrl}
+                    target="_self"
+                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs flex items-center justify-center gap-2 shadow transition-all cursor-pointer"
+                  >
+                    <span>Cliquer ici pour accéder directement au paiement</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </div>
+              )}
             </div>
           )}
 

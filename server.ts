@@ -379,7 +379,10 @@ async function startServer() {
   const handleMoneyFusionInit = async (req: express.Request, res: express.Response) => {
     try {
       const { montant, name, phone, customerEmail, countryCode, userId, txId } = req.body;
-      const cleanPhone = phone ? (phone.startsWith('+') ? phone : `+225${phone.replace(/\s+/g, '')}`) : '+2250700000000';
+      const dialCode = countryCode && String(countryCode).startsWith('+') ? String(countryCode) : '+225';
+      const cleanPhone = phone 
+        ? (String(phone).startsWith('+') ? String(phone) : `${dialCode}${String(phone).replace(/\s+/g, '')}`) 
+        : `${dialCode}0700000000`;
       
       const payload = {
         id: "6a7da1aa655b3c8aa7379d96",
@@ -387,7 +390,7 @@ async function startServer() {
         name: "Dépôt de",
         phone: cleanPhone,
         customerEmail: customerEmail || "depot@agritrans-ci.com",
-        countryCode: countryCode || "+225"
+        countryCode: dialCode
       };
 
       const response = await fetch("https://pay.moneyfusion.net/api/v2/links/init-payment", {
@@ -424,7 +427,8 @@ async function startServer() {
       if (!cleanUrl) {
         return res.status(502).json({
           statut: false,
-          error: "Échec du pré-remplissage automatique en arrière-plan de la première page MoneyFusion."
+          error: data?.message || data?.error || "Échec de l'initialisation de la session de paiement.",
+          raw: data
         });
       }
 
