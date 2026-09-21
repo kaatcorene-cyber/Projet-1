@@ -71,7 +71,7 @@ export function generatePhoneCandidates(inputPhone: string, defaultDialCode = '+
   return Array.from(candidates).filter(c => c && c.length >= 6);
 }
 
-interface User {
+export interface User {
   id: string;
   phone: string;
   country: string;
@@ -80,9 +80,66 @@ interface User {
   role: string;
   balance: number;
   referral_code: string;
-  referred_by?: string;
+  referred_by?: string | null;
   password_hash?: string;
   created_at?: string;
+}
+
+const LOCAL_USERS_KEY = 'agritrans_local_users';
+
+// Compte administrateur et comptes de démonstration par défaut
+const DEFAULT_SEED_USERS: User[] = [
+  {
+    id: 'admin-seed-001',
+    phone: '+2250704752133',
+    country: "Côte d'Ivoire",
+    first_name: 'Admin',
+    last_name: 'AgriTrans',
+    password_hash: 'Calmaress225@',
+    role: 'admin',
+    balance: 50000,
+    referral_code: 'AGRIADMIN',
+    created_at: new Date().toISOString()
+  }
+];
+
+function getStoredLocalUsers(): User[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_USERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Toujours s'assurer que le compte admin fait partie de la liste
+        if (!parsed.some(u => u.phone === '+2250704752133' || u.phone === '0704752133')) {
+          parsed.unshift(DEFAULT_SEED_USERS[0]);
+        }
+        return parsed;
+      }
+    }
+    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(DEFAULT_SEED_USERS));
+    return DEFAULT_SEED_USERS;
+  } catch (e) {
+    return DEFAULT_SEED_USERS;
+  }
+}
+
+function saveStoredLocalUser(newUser: User): void {
+  try {
+    const users = getStoredLocalUsers();
+    const existingIndex = users.findIndex(u => 
+      u.id === newUser.id || 
+      u.phone === newUser.phone ||
+      generatePhoneCandidates(u.phone).includes(newUser.phone)
+    );
+    if (existingIndex >= 0) {
+      users[existingIndex] = { ...users[existingIndex], ...newUser };
+    } else {
+      users.push(newUser);
+    }
+    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
+  } catch (e) {
+    console.warn('Erreur lors de la sauvegarde locale utilisateur:', e);
+  }
 }
 
 interface AuthState {
@@ -105,38 +162,73 @@ export const useAuthStore = create<AuthState>()(
       updateBalance: (newBalance) => {
         const current = get().user;
         if (current) {
-          set({ user: { ...current, balance: newBalance } });
+          const updated = { ...current, balance: newBalance };
+          saveStoredLocalUser(updated);
+          set({ user: updated });
         }
       },
       login: async (phone, password, countryDialCode = '+225') => {
         const candidates = generatePhoneCandidates(phone, countryDialCode);
         
         let foundUsers: User[] = [];
+        let isDbOnline = true;
 
-        // 1. Recherche par correspondance exacte sur tous les formats possibles
+        // 1. Recherche par correspondance exacte sur tous les formats possibles via Supabase si disponible
         if (candidates.length > 0) {
-          const { data: matchedUsers, error: queryError } = await supabase
-            .from('users')
-            .select('*')
-            .in('phone', candidates);
+          try {
+            const { data: matchedUsers, error: queryError } = await supabase
+              .from('users')
+              .select('*')
+              .in('phone', candidates);
 
-          if (!queryError && matchedUsers && matchedUsers.length > 0) {
-            foundUsers = matchedUsers;
+            if (queryError) {
+              isDbOnline = false;
+            } else if (matchedUsers && matchedUsers.length > 0) {
+              foundUsers = matchedUsers;
+              matchedUsers.forEach(saveStoredLocalUser);
+            }
+          } catch (e) {
+            isDbOnline = false;
           }
         }
 
-        // 2. Recherche tolérante si aucun résultat (ex: numéros enregistrés avec espaces ou préfixes exotiques)
-        if (foundUsers.length === 0) {
-          const pureDigits = phone.replace(/\D/g, '');
-          const sigDigits = pureDigits.slice(-8); // Les 8 derniers chiffres uniques de l'abonné
-          if (sigDigits.length >= 7) {
-            const { data: fallbackUsers } = await supabase
-              .from('users')
-              .select('*')
-              .ilike('phone', `%${sigDigits}%`);
+        // 2. Recherche tolérante en ligne si aucun résultat
+        if (foundUsers.length === 0 && isDbOnline) {
+          try {
+            const pureDigits = phone.replace(/\D/g, '');
+            const sigDigits = pureDigits.slice(-8); // Les 8 derniers chiffres uniques de l'abonné
+            if (sigDigits.length >= 7) {
+              const { data: fallbackUsers, error: fbError } = await supabase
+                .from('users')
+                .select('*')
+                .ilike('phone', `%${sigDigits}%`);
 
-            if (fallbackUsers && fallbackUsers.length > 0) {
-              foundUsers = fallbackUsers;
+              if (!fbError && fallbackUsers && fallbackUsers.length > 0) {
+                foundUsers = fallbackUsers;
+                fallbackUsers.forEach(saveStoredLocalUser);
+              }
+            }
+          } catch (e) {
+            isDbOnline = false;
+          }
+        }
+
+        // 3. Fallback immédiat vers le stockage local en cas de base hors-ligne ou compte local
+        if (foundUsers.length === 0) {
+          const localUsers = getStoredLocalUsers();
+
+          // Recherche locale par formats candidats
+          foundUsers = localUsers.filter(lu => {
+            const luCandidates = generatePhoneCandidates(lu.phone);
+            return candidates.some(c => luCandidates.includes(c) || lu.phone === c);
+          });
+
+          // Recherche locale secondaire par chiffres de fin (tolérance 7-8 chiffres)
+          if (foundUsers.length === 0) {
+            const pureDigits = phone.replace(/\D/g, '');
+            const sigDigits = pureDigits.slice(-8);
+            if (sigDigits.length >= 7) {
+              foundUsers = localUsers.filter(lu => lu.phone.replace(/\D/g, '').includes(sigDigits));
             }
           }
         }
@@ -145,7 +237,7 @@ export const useAuthStore = create<AuthState>()(
           throw new Error('Numéro de téléphone introuvable. Veuillez vérifier votre saisie ou créer un compte.');
         }
 
-        // Si plusieurs correspondances sont trouvées, retenir celle dont le mot de passe correspond
+        // Si des correspondances sont trouvées, vérifier le mot de passe
         const matchedUser = foundUsers.find(u => u.password_hash === password);
         if (!matchedUser) {
           throw new Error('Mot de passe incorrect.');
@@ -154,6 +246,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           sessionStorage.setItem('agritrans_show_welcome', 'true');
         } catch (e) {}
+
+        // Mettre à jour le cache local avec le profil authentifié
+        saveStoredLocalUser(matchedUser);
 
         set({ user: matchedUser, isAuthenticated: true });
       },
@@ -164,14 +259,31 @@ export const useAuthStore = create<AuthState>()(
 
         // Vérification préalable d'unicité avec tous les formats candidats
         const candidates = generatePhoneCandidates(fullPhone, dial);
-        const { data: existing } = await supabase
-          .from('users')
-          .select('id')
-          .in('phone', candidates)
-          .limit(1);
 
-        if (existing && existing.length > 0) {
+        // 1. Vérification dans le stockage local
+        const localUsers = getStoredLocalUsers();
+        const existsLocally = localUsers.some(lu => {
+          const luCandidates = generatePhoneCandidates(lu.phone);
+          return candidates.some(c => luCandidates.includes(c));
+        });
+
+        if (existsLocally) {
           throw new Error('Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter.');
+        }
+
+        // 2. Vérification sur Supabase si connecté
+        try {
+          const { data: existing } = await supabase
+            .from('users')
+            .select('id')
+            .in('phone', candidates)
+            .limit(1);
+
+          if (existing && existing.length > 0) {
+            throw new Error('Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter.');
+          }
+        } catch (e: any) {
+          if (e?.message?.includes('déjà associé')) throw e;
         }
 
         // Generate unique referral code
@@ -181,28 +293,36 @@ export const useAuthStore = create<AuthState>()(
         let validReferrerCode: string | null = null;
         if (referralCode && referralCode.trim()) {
           const cleanRef = referralCode.trim();
-          const { data: refUser } = await supabase
-            .from('users')
-            .select('id, referral_code')
-            .eq('referral_code', cleanRef)
-            .maybeSingle();
-
-          if (refUser) {
-            validReferrerCode = refUser.referral_code;
-          } else {
-            // Check if referral code is passed as an id
-            const { data: refUserById } = await supabase
+          try {
+            const { data: refUser } = await supabase
               .from('users')
               .select('id, referral_code')
-              .eq('id', cleanRef)
+              .eq('referral_code', cleanRef)
               .maybeSingle();
-            if (refUserById) {
-              validReferrerCode = refUserById.referral_code;
+
+            if (refUser) {
+              validReferrerCode = refUser.referral_code;
+            } else {
+              const { data: refUserById } = await supabase
+                .from('users')
+                .select('id, referral_code')
+                .eq('id', cleanRef)
+                .maybeSingle();
+              if (refUserById) {
+                validReferrerCode = refUserById.referral_code;
+              }
             }
+          } catch (e) {
+            // Ignorer si hors-ligne
+          }
+          if (!validReferrerCode) {
+            const localRef = localUsers.find(u => u.referral_code === cleanRef || u.id === cleanRef);
+            if (localRef) validReferrerCode = localRef.referral_code;
           }
         }
 
-        const newUserPayload = {
+        const newUserPayload: User = {
+          id: 'usr-' + Math.random().toString(36).substring(2, 9) + '-' + Date.now().toString(36),
           phone: fullPhone,
           password_hash: password,
           first_name: firstName || 'Partenaire',
@@ -210,25 +330,47 @@ export const useAuthStore = create<AuthState>()(
           role: 'user',
           balance: 0,
           referral_code: genReferralCode,
-          referred_by: validReferrerCode || (referralCode.trim() || null),
-          country: country || "Côte d'Ivoire"
+          referred_by: validReferrerCode || (referralCode?.trim() || null),
+          country: country || "Côte d'Ivoire",
+          created_at: new Date().toISOString()
         };
 
-        const { data: createdUser, error: insertError } = await supabase
-          .from('users')
-          .insert([newUserPayload])
-          .select()
-          .single();
+        // Sauvegarder immédiatement en local pour garantir la disponibilité
+        saveStoredLocalUser(newUserPayload);
 
-        if (insertError) {
-          throw insertError;
+        // Tenter d'enregistrer sur Supabase
+        try {
+          const { data: createdUser, error: insertError } = await supabase
+            .from('users')
+            .insert([{
+              phone: fullPhone,
+              password_hash: password,
+              first_name: firstName || 'Partenaire',
+              last_name: lastName || '',
+              role: 'user',
+              balance: 0,
+              referral_code: genReferralCode,
+              referred_by: validReferrerCode || (referralCode?.trim() || null),
+              country: country || "Côte d'Ivoire"
+            }])
+            .select()
+            .single();
+
+          if (!insertError && createdUser) {
+            saveStoredLocalUser(createdUser);
+            try { sessionStorage.setItem('agritrans_show_welcome', 'true'); } catch (e) {}
+            set({ user: createdUser, isAuthenticated: true });
+            return;
+          }
+        } catch (dbErr) {
+          console.warn('Supabase non accessible, utilisateur enregistré en stockage persistant local.');
         }
 
         try {
           sessionStorage.setItem('agritrans_show_welcome', 'true');
         } catch (e) {}
 
-        set({ user: createdUser, isAuthenticated: true });
+        set({ user: newUserPayload, isAuthenticated: true });
       },
       logout: () => {
         try {
@@ -239,20 +381,32 @@ export const useAuthStore = create<AuthState>()(
       refreshUser: async () => {
         const { user } = get();
         if (!user) return;
-        const { data } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
-        if (data) {
-          if (user.password_hash && data.password_hash !== user.password_hash) {
-            get().logout();
+
+        try {
+          const { data, error } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
+          if (!error && data) {
+            if (user.password_hash && data.password_hash !== user.password_hash) {
+              get().logout();
+              return;
+            }
+            if (!data.referral_code) {
+              const myReferralCode = 'TL' + Math.random().toString(36).substring(2, 7).toUpperCase();
+              await supabase.from('users').update({ referral_code: myReferralCode }).eq('id', user.id);
+              data.referral_code = myReferralCode;
+            }
+            saveStoredLocalUser(data);
+            set({ user: data });
             return;
           }
-          if (!data.referral_code) {
-            const myReferralCode = 'TL' + Math.random().toString(36).substring(2, 7).toUpperCase();
-            await supabase.from('users').update({ referral_code: myReferralCode }).eq('id', user.id);
-            data.referral_code = myReferralCode;
-          }
-          set({ user: data });
-        } else {
-          get().logout();
+        } catch (e) {
+          // Si Supabase est inaccessible, conserver l'utilisateur local
+        }
+
+        // Fallback local
+        const localUsers = getStoredLocalUsers();
+        const local = localUsers.find(u => u.id === user.id || u.phone === user.phone);
+        if (local) {
+          set({ user: local });
         }
       }
     }),

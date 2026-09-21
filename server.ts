@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import * as url from 'url';
+import dns from 'dns';
 import TelegramBot from 'node-telegram-bot-api';
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
@@ -142,16 +143,62 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://gwkqmutjpxwjifaou
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3a3FtdXRqcHh3amlmYW91dG50Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5ODcwMCwiZXhwIjoyMDkzNzc0NzAwfQ.wRmfB0wyAd1dKhvsTTd1gFfTxiDCzIyzGH3HpE7CNVk';
 const supabase = createClient(SUPABASE_URL.replace('.supabase.com', '.supabase.co'), SUPABASE_KEY);
 
+let isSupabaseResolvable = false;
+let lastDnsCheckTime = 0;
+let lastSupabaseWarningLogged = 0;
+
+async function checkSupabaseAvailable(): Promise<boolean> {
+  const now = Date.now();
+  // Ne pas ré-interroger le DNS plus d'une fois toutes les 2 minutes si non résolvable
+  if (!isSupabaseResolvable && now - lastDnsCheckTime < 120000) {
+    return false;
+  }
+  // Si résolvable, ré-évaluer toutes les 5 minutes
+  if (isSupabaseResolvable && now - lastDnsCheckTime < 300000) {
+    return true;
+  }
+
+  lastDnsCheckTime = now;
+  try {
+    const host = new URL(SUPABASE_URL).hostname;
+    await new Promise((resolve, reject) => {
+      dns.lookup(host, (err, address) => {
+        if (err || !address) reject(err);
+        else resolve(address);
+      });
+    });
+    if (!isSupabaseResolvable) {
+      console.log(`✅ [Supabase] Connexion active avec ${SUPABASE_URL}`);
+    }
+    isSupabaseResolvable = true;
+    return true;
+  } catch (e: any) {
+    isSupabaseResolvable = false;
+    if (now - lastSupabaseWarningLogged > 900000) { // Log au plus une fois toutes les 15 minutes
+      lastSupabaseWarningLogged = now;
+      console.warn(`⚠️ [Supabase DB] Le serveur Supabase (${SUPABASE_URL}) est momentanément indisponible (ENOTFOUND). Les crons automatiques reprendront dès que l'instance sera accessible.`);
+    }
+    return false;
+  }
+}
+
 // GAINS AUTO CRON (Runs every minute)
 cron.schedule('* * * * *', async () => {
   try {
+    const isDbUp = await checkSupabaseAvailable();
+    if (!isDbUp) return;
+
     const now = new Date().getTime();
     
     // Fetch all active investments
     const { data: invs, error } = await supabase.from('investments').select('*').eq('status', 'active');
     
     if (error) {
-      console.error("Cron Error fetching investments:", error);
+      if (error.message?.includes('fetch failed') || (error as any)?.details?.includes('ENOTFOUND')) {
+        isSupabaseResolvable = false;
+        return;
+      }
+      console.error("Cron Error fetching investments:", error.message || error);
       return;
     }
     
@@ -214,7 +261,11 @@ cron.schedule('* * * * *', async () => {
       }
     }
   } catch (err: any) {
-    console.error("Cron Error processing gains:", err.message);
+    if (err?.message?.includes('fetch failed') || err?.message?.includes('ENOTFOUND')) {
+      isSupabaseResolvable = false;
+      return;
+    }
+    console.error("Cron Error processing gains:", err.message || err);
   }
 });
 
@@ -353,13 +404,23 @@ async function startServer() {
   // Automatic deposit validation cron (runs every 20 seconds)
   cron.schedule('*/20 * * * * *', async () => {
     try {
-      const { data: pendingDeposits } = await supabase
+      const isDbUp = await checkSupabaseAvailable();
+      if (!isDbUp) return;
+
+      const { data: pendingDeposits, error: depError } = await supabase
         .from('transactions')
         .select('*')
         .eq('type', 'deposit')
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
         .limit(15);
+
+      if (depError) {
+        if (depError.message?.includes('fetch failed') || (depError as any)?.details?.includes('ENOTFOUND')) {
+          isSupabaseResolvable = false;
+        }
+        return;
+      }
 
       if (!pendingDeposits || pendingDeposits.length === 0) return;
 
@@ -371,6 +432,9 @@ async function startServer() {
         }
       }
     } catch (cronErr: any) {
+      if (cronErr?.message?.includes('fetch failed') || cronErr?.message?.includes('ENOTFOUND')) {
+        isSupabaseResolvable = false;
+      }
       // Non-blocking
     }
   });
