@@ -149,7 +149,7 @@ export function Register() {
               >
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {c.flag} {c.dialCode} ({c.name})
+                    {c.dialCode}
                   </option>
                 ))}
               </select>
