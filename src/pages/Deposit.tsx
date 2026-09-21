@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
+import { saveLocalTransaction } from '../lib/dataStore';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Wallet, ArrowRight, ShieldCheck, Zap, Info, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
@@ -110,9 +111,20 @@ export function Deposit() {
     setAutomationStep('1/3 Enregistrement de la transaction...');
 
     try {
-      let createdTxId = '';
+      let createdTxId = 'tx_' + Date.now();
+      saveLocalTransaction({
+        id: createdTxId,
+        user_id: user.id,
+        type: 'deposit',
+        amount: numAmount,
+        reference: 'MoneyFusion - En attente',
+        status: 'pending',
+        created_at: new Date().toISOString()
+      });
+
       try {
         const { data: newTx } = await supabase.from('transactions').insert([{
+          id: createdTxId,
           user_id: user.id,
           type: 'deposit',
           amount: numAmount,
@@ -123,7 +135,7 @@ export function Deposit() {
           createdTxId = newTx.id;
         }
       } catch (txErr) {
-        console.warn('Could not record pending transaction:', txErr);
+        console.warn('Could not record pending transaction remotely:', txErr);
       }
 
       setAutomationStep('2/3 Initialisation sécurisée de la passerelle MoneyFusion...');

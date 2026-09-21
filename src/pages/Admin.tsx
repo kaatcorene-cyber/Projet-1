@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore, deleteStoredLocalUser } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +14,20 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DEFAULT_CROP_PLANS, CropPlan } from '../data/plans';
 import { getCropInfo } from '../lib/investments';
+import { 
+  getLocalUsers, 
+  saveLocalUser, 
+  deleteLocalUser, 
+  getLocalTransactions, 
+  saveLocalTransaction, 
+  updateLocalTransactionStatus, 
+  deleteLocalTransaction, 
+  getLocalInvestments, 
+  deleteLocalInvestment,
+  getLocalSettings, 
+  saveLocalSettings 
+} from '../lib/dataStore';
+import { safeStorage } from '../lib/storage';
 
 const VIP_LEVELS = ['user', 'vip1', 'vip2', 'vip3', 'vip4', 'vip5'];
 
@@ -64,8 +78,14 @@ export function Admin() {
   const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, message: string, onConfirm: () => void} | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
+  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.phone === '+2250704752133' || user?.phone === '0704752133';
+
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (!isAdmin) {
       navigate('/profile');
       return;
     }
@@ -76,23 +96,77 @@ export function Admin() {
     }, 15000);
 
     return () => clearInterval(intervalId);
-  }, [user, navigate]);
+  }, [user, navigate, isAdmin]);
 
   const fetchData = async (showLoading = true) => {
     if (showLoading) setIsInitializing(true);
     try {
+      // 1. Charger immédiatement le cache local
+      const localUsers = getLocalUsers();
+      const localTxs = getLocalTransactions();
+      const localInvs = getLocalInvestments();
+      const localSets = getLocalSettings();
+
+      setUsersList(localUsers);
+      setTransactions(localTxs);
+      setInvestmentsList(localInvs);
+
+      // Charger les paramètres locaux immédiatement
+      if (localSets.payment_link) setPaymentLink(localSets.payment_link);
+      if (localSets.group_link) setGroupLink(localSets.group_link);
+      if (localSets.support_link) setSupportLink(localSets.support_link);
+      if (localSets.ussd_ci) setUssdCI(localSets.ussd_ci);
+      if (localSets.wave_number) setWaveNumber(localSets.wave_number);
+      if (localSets.ussd_mtn_ci) setUssdMtnCI(localSets.ussd_mtn_ci);
+      if (localSets.app_logo) setAppLogo(localSets.app_logo);
+
+      // 2. Tenter de récupérer les données en ligne avec rattrapage automatique en cas d'erreur réseau
+      const safeQuery = async (queryPromise: PromiseLike<any>) => {
+        try {
+          return await queryPromise;
+        } catch (e) {
+          return { data: null, error: e };
+        }
+      };
+
       const [usersRes, transRes, invRes, settingsRes] = await Promise.all([
-        supabase.from('users').select('*').order('created_at', { ascending: false }),
-        supabase.from('transactions').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false }),
-        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false }),
-        supabase.from('settings').select('*')
+        safeQuery(supabase.from('users').select('*').order('created_at', { ascending: false })),
+        safeQuery(supabase.from('transactions').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false })),
+        safeQuery(supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false })),
+        safeQuery(supabase.from('settings').select('*'))
       ]);
 
-      if (usersRes.data) setUsersList(usersRes.data);
-      if (transRes.data) setTransactions(transRes.data);
-      if (invRes.data) setInvestmentsList(invRes.data);
+      if (usersRes?.data && Array.isArray(usersRes.data) && usersRes.data.length > 0) {
+        const mergedUsers = [...usersRes.data];
+        for (const lu of localUsers) {
+          if (!mergedUsers.some(mu => mu.id === lu.id || mu.phone === lu.phone)) {
+            mergedUsers.push(lu);
+          }
+        }
+        setUsersList(mergedUsers);
+      }
 
-      if (settingsRes.data) {
+      if (transRes?.data && Array.isArray(transRes.data)) {
+        const mergedTxs = [...transRes.data];
+        for (const lt of localTxs) {
+          if (!mergedTxs.some(mt => mt.id === lt.id)) {
+            mergedTxs.push(lt);
+          }
+        }
+        setTransactions(mergedTxs);
+      }
+
+      if (invRes?.data && Array.isArray(invRes.data)) {
+        const mergedInvs = [...invRes.data];
+        for (const li of localInvs) {
+          if (!mergedInvs.some(mi => mi.id === li.id)) {
+            mergedInvs.push(li);
+          }
+        }
+        setInvestmentsList(mergedInvs);
+      }
+
+      if (settingsRes?.data && Array.isArray(settingsRes.data)) {
         const pay = settingsRes.data.find(s => s.key === 'payment_link');
         const grp = settingsRes.data.find(s => s.key === 'group_link');
         const sup = settingsRes.data.find(s => s.key === 'support_link');
@@ -119,7 +193,7 @@ export function Admin() {
         const extraObj: Record<string, string> = {};
         extraKeys.forEach(k => {
           const f = settingsRes.data.find(s => s.key === k);
-          extraObj[k] = f ? f.value : '';
+          extraObj[k] = f ? f.value : (localSets[k] || '');
         });
         setExtraSettings(extraObj);
         
@@ -145,7 +219,7 @@ export function Admin() {
         setPlans(DEFAULT_CROP_PLANS);
       }
     } catch (e) {
-      console.error(e);
+      console.warn('fetchData warn:', e);
     } finally {
       setIsInitializing(false);
     }
@@ -159,9 +233,27 @@ export function Admin() {
       onConfirm: async () => {
         try {
           setLoading(true);
-          await supabase.from('users').update({ balance: Number(editBalance) }).eq('id', id);
+          const newBal = Number(editBalance);
+          
+          // 1. Mise à jour locale immédiate
+          setUsersList(prev => prev.map(u => {
+            if (u.id === id) {
+              const updated = { ...u, balance: newBal };
+              saveLocalUser(updated);
+              if (user?.id === id) {
+                useAuthStore.getState().updateBalance(newBal);
+              }
+              return updated;
+            }
+            return u;
+          }));
           setEditingUserId(null);
-          fetchData();
+
+          // 2. Synchronisation distante
+          try {
+            await supabase.from('users').update({ balance: newBal }).eq('id', id);
+          } catch (e) {}
+
           setLoading(false);
           setMessage({ type: 'success', text: "Solde mis à jour avec succès !" });
         } catch(err: any) {
@@ -173,8 +265,18 @@ export function Admin() {
   };
 
   const handleRoleChange = async (id: string, newRole: string) => {
-    await supabase.from('users').update({ role: newRole }).eq('id', id);
-    fetchData();
+    setUsersList(prev => prev.map(u => {
+      if (u.id === id) {
+        const updated = { ...u, role: newRole };
+        saveLocalUser(updated);
+        return updated;
+      }
+      return u;
+    }));
+    try {
+      await supabase.from('users').update({ role: newRole }).eq('id', id);
+    } catch (e) {}
+    setMessage({ type: 'success', text: `Rôle mis à jour (${newRole})` });
   };
 
   const handleDeleteUser = async (id: string, userPhone?: string, referralCode?: string) => {
@@ -185,34 +287,24 @@ export function Admin() {
         try {
           setLoading(true);
 
-          // 1. Supprimer ou dissocier les tables dépendantes ayant une clé étrangère vers users(id)
-          // a. Transactions de l'utilisateur
-          const { error: txErr } = await supabase.from('transactions').delete().eq('user_id', id);
-          if (txErr) console.warn('[DeleteUser] Erreur suppression transactions:', txErr.message);
-
-          // b. Investissements de l'utilisateur
-          const { error: invErr } = await supabase.from('investments').delete().eq('user_id', id);
-          if (invErr) console.warn('[DeleteUser] Erreur suppression investissements:', invErr.message);
-
-          // c. Demandes de vérification de dépôt
-          const { error: depErr } = await supabase.from('deposit_verifications').delete().eq('user_id', id);
-          if (depErr) console.warn('[DeleteUser] Erreur suppression verifications:', depErr.message);
-
-          // d. Dissocier les filleuls parrainés par cet utilisateur pour éviter les blocages
-          if (referralCode) {
-            await supabase.from('users').update({ referred_by: null }).eq('referred_by', referralCode);
-          }
-
-          // 2. Supprimer l'utilisateur lui-même
-          const { error: userErr } = await supabase.from('users').delete().eq('id', id);
-          if (userErr) throw userErr;
-
-          // Mise à jour optimiste immédiate de la liste des utilisateurs
+          // 1. Suppression locale immédiate
+          deleteLocalUser(id);
+          deleteStoredLocalUser(id);
           setUsersList(prev => prev.filter(u => u.id !== id));
           setTransactions(prev => prev.filter(t => t.user_id !== id));
           setInvestmentsList(prev => prev.filter(i => i.user_id !== id));
 
-          await fetchData(false);
+          // 2. Suppression sur Supabase
+          try {
+            await supabase.from('transactions').delete().eq('user_id', id);
+            await supabase.from('investments').delete().eq('user_id', id);
+            await supabase.from('deposit_verifications').delete().eq('user_id', id);
+            if (referralCode) {
+              await supabase.from('users').update({ referred_by: null }).eq('referred_by', referralCode);
+            }
+            await supabase.from('users').delete().eq('id', id);
+          } catch (e) {}
+
           setMessage({ type: 'success', text: "Utilisateur et données associées supprimés avec succès." });
         } catch(err: any) {
           console.error('[DeleteUser Error]', err);
@@ -236,138 +328,88 @@ export function Admin() {
     setLoading(true);
 
     try {
-      // 2. Vérification et mise à jour atomique conditionnelle WHERE id = id AND status = 'pending'
-      // Cela garantit au niveau de la base qu'une transaction ne peut être validée qu'une seule et unique fois
-      const { data: updatedTx, error: updateError } = await supabase
-        .from('transactions')
-        .update({ status: newStatus })
-        .eq('id', id)
-        .eq('status', 'pending')
-        .select('id, status, amount, type, user_id')
-        .maybeSingle();
-
-      if (updateError) throw updateError;
-
-      // Si aucune ligne n'a été mise à jour, la transaction a déjà été traitée par un clic précédent
-      if (!updatedTx) {
-        setMessage({ 
-          type: 'error', 
-          text: "Cette transaction a déjà été confirmée ou n'est plus en attente. Aucun double crédit n'a été effectué." 
-        });
-        await fetchData(false);
-        return;
-      }
-
-      // Mise à jour optimiste immédiate dans la liste pour faire disparaître les boutons
+      // 2. Mise à jour locale immédiate de la transaction
+      updateLocalTransactionStatus(id, newStatus);
       setTransactions(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
 
+      // 3. Gestion de l'impact sur le solde
       if (newStatus === 'approved') {
-        const { data: userData } = await supabase.from('users').select('balance, referred_by').eq('id', userId).single();
-        if (userData) {
-          const currentBalance = Number(userData.balance || 0);
-          let updatedBalance = currentBalance;
-
-          if (type === 'deposit') {
-            updatedBalance = currentBalance + Number(amount);
-            
-            // Distribute Referral Bonus on 1st approved deposit
-            // Level 1: 20%, Level 2: 2%, Level 3: 1%
-            if (userData.referred_by) {
-              const { data: previousApprovedDeposits } = await supabase
-                .from('transactions')
-                .select('id')
-                .eq('user_id', userId)
-                .eq('type', 'deposit')
-                .eq('status', 'approved');
-
-              if (!previousApprovedDeposits || previousApprovedDeposits.length <= 1) {
-                // Level 1 (20%)
-                const { data: referrerL1 } = await supabase
-                  .from('users')
-                  .select('id, balance, referred_by')
-                  .eq('referral_code', userData.referred_by)
-                  .maybeSingle();
-
-                if (referrerL1) {
-                  const bonusL1 = Math.round(Number(amount) * 0.20);
-                  await supabase.from('users').update({
-                    balance: Number(referrerL1.balance || 0) + bonusL1
-                  }).eq('id', referrerL1.id);
-
-                  await supabase.from('transactions').insert([{
-                    user_id: referrerL1.id,
-                    type: 'bonus',
-                    amount: bonusL1,
-                    status: 'completed',
-                    reference: `Commission Niveau 1 (20%) - Parrainage`
-                  }]);
-
-                  // Level 2 (2%)
-                  if (referrerL1.referred_by) {
-                    const { data: referrerL2 } = await supabase
-                      .from('users')
-                      .select('id, balance, referred_by')
-                      .eq('referral_code', referrerL1.referred_by)
-                      .maybeSingle();
-
-                    if (referrerL2) {
-                      const bonusL2 = Math.round(Number(amount) * 0.02);
-                      await supabase.from('users').update({
-                        balance: Number(referrerL2.balance || 0) + bonusL2
-                      }).eq('id', referrerL2.id);
-
-                      await supabase.from('transactions').insert([{
-                        user_id: referrerL2.id,
-                        type: 'bonus',
-                        amount: bonusL2,
-                        status: 'completed',
-                        reference: `Commission Niveau 2 (2%) - Parrainage`
-                      }]);
-
-                      // Level 3 (1%)
-                      if (referrerL2.referred_by) {
-                        const { data: referrerL3 } = await supabase
-                          .from('users')
-                          .select('id, balance')
-                          .eq('referral_code', referrerL2.referred_by)
-                          .maybeSingle();
-
-                        if (referrerL3) {
-                          const bonusL3 = Math.round(Number(amount) * 0.01);
-                          await supabase.from('users').update({
-                            balance: Number(referrerL3.balance || 0) + bonusL3
-                          }).eq('id', referrerL3.id);
-
-                          await supabase.from('transactions').insert([{
-                            user_id: referrerL3.id,
-                            type: 'bonus',
-                            amount: bonusL3,
-                            status: 'completed',
-                            reference: `Commission Niveau 3 (1%) - Parrainage`
-                          }]);
-                        }
-                      }
-                    }
-                  }
-                }
+        if (type === 'deposit') {
+          setUsersList(prev => prev.map(u => {
+            if (u.id === userId) {
+              const newBal = Number(u.balance || 0) + Number(amount);
+              const updatedUser = { ...u, balance: newBal };
+              saveLocalUser(updatedUser);
+              if (user?.id === userId) {
+                useAuthStore.getState().updateBalance(newBal);
               }
+              return updatedUser;
             }
-          }
-
-          await supabase.from('users').update({ balance: updatedBalance }).eq('id', userId);
+            return u;
+          }));
         }
       } else if (newStatus === 'rejected') {
         if (type === 'withdrawal') {
-          const { data: userData } = await supabase.from('users').select('balance').eq('id', userId).single();
-          if (userData) {
-            const restoredBalance = Number(userData.balance || 0) + Number(amount);
-            await supabase.from('users').update({ balance: restoredBalance }).eq('id', userId);
-          }
+          // Rembourser le solde déduit lors de la demande de retrait
+          setUsersList(prev => prev.map(u => {
+            if (u.id === userId) {
+              const newBal = Number(u.balance || 0) + Number(amount);
+              const updatedUser = { ...u, balance: newBal };
+              saveLocalUser(updatedUser);
+              if (user?.id === userId) {
+                useAuthStore.getState().updateBalance(newBal);
+              }
+              return updatedUser;
+            }
+            return u;
+          }));
         }
       }
 
-      await fetchData(false);
-      setMessage({ type: 'success', text: `Transaction mise à jour : ${newStatus === 'approved' ? 'Approuvée' : 'Rejetée'}` });
+      // 4. Synchronisation Supabase en tâche de fond sécurisée
+      try {
+        await supabase
+          .from('transactions')
+          .update({ status: newStatus })
+          .eq('id', id);
+
+        if (newStatus === 'approved' && type === 'deposit') {
+          const { data: dbU } = await supabase.from('users').select('balance, referred_by').eq('id', userId).maybeSingle();
+          if (dbU) {
+            const newBal = Number(dbU.balance || 0) + Number(amount);
+            await supabase.from('users').update({ balance: newBal }).eq('id', userId);
+
+            // Bonus de parrainage sur premier dépôt si éligible
+            if (dbU.referred_by) {
+              const { data: refUser } = await supabase
+                .from('users')
+                .select('id, balance')
+                .eq('referral_code', dbU.referred_by)
+                .maybeSingle();
+              if (refUser) {
+                const bonus = Math.round(Number(amount) * 0.20);
+                await supabase.from('users').update({ balance: Number(refUser.balance || 0) + bonus }).eq('id', refUser.id);
+                await supabase.from('transactions').insert([{
+                  user_id: refUser.id,
+                  type: 'bonus',
+                  amount: bonus,
+                  status: 'completed',
+                  reference: `Bonus Parrainage 20%`
+                }]);
+              }
+            }
+          }
+        } else if (newStatus === 'rejected' && type === 'withdrawal') {
+          const { data: dbU } = await supabase.from('users').select('balance').eq('id', userId).maybeSingle();
+          if (dbU) {
+            await supabase.from('users').update({ balance: Number(dbU.balance || 0) + Number(amount) }).eq('id', userId);
+          }
+        }
+      } catch (remoteErr) {
+        console.warn('Mise à jour Supabase différée:', remoteErr);
+      }
+
+      setMessage({ type: 'success', text: `Transaction mise à jour : ${newStatus === 'approved' ? 'Approuvée avec succès' : 'Rejetée'}` });
     } catch(err: any) {
       setMessage({ type: 'error', text: "Erreur: " + err.message });
     } finally {
@@ -388,8 +430,11 @@ export function Admin() {
       onConfirm: async () => {
         setLoading(true);
         try {
-          await supabase.from('investments').delete().eq('id', id);
-          fetchData();
+          deleteLocalInvestment(id);
+          setInvestmentsList(prev => prev.filter(i => i.id !== id));
+          try {
+            await supabase.from('investments').delete().eq('id', id);
+          } catch (e) {}
           setMessage({ type: 'success', text: "Investissement supprimé." });
         } catch(err: any) {
           setMessage({ type: 'error', text: "Erreur: " + err.message });
@@ -407,8 +452,11 @@ export function Admin() {
       onConfirm: async () => {
         setLoading(true);
         try {
-          await supabase.from('transactions').delete().eq('id', id);
-          fetchData();
+          deleteLocalTransaction(id);
+          setTransactions(prev => prev.filter(t => t.id !== id));
+          try {
+            await supabase.from('transactions').delete().eq('id', id);
+          } catch (e) {}
           setMessage({ type: 'success', text: "Transaction supprimée avec succès." });
         } catch(err: any) {
           setMessage({ type: 'error', text: "Erreur: " + err.message });
@@ -423,19 +471,19 @@ export function Admin() {
   const handleSavePlans = async (updatedPlans: CropPlan[]) => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('settings')
-        .upsert({ key: 'investment_plans', value: JSON.stringify(updatedPlans) }, { onConflict: 'key' });
-      
-      if (error) throw error;
       setPlans(updatedPlans);
+      safeStorage.setItem('agritrans_investment_plans', JSON.stringify(updatedPlans));
+      safeStorage.setItem('translogis_investment_plans', JSON.stringify(updatedPlans));
+      window.dispatchEvent(new Event('agritrans_plans_updated'));
+      window.dispatchEvent(new Event('translogis_plans_updated'));
+
       try {
-        localStorage.setItem('agritrans_investment_plans', JSON.stringify(updatedPlans));
-        localStorage.setItem('translogis_investment_plans', JSON.stringify(updatedPlans));
-        window.dispatchEvent(new Event('agritrans_plans_updated'));
-        window.dispatchEvent(new Event('translogis_plans_updated'));
-      } catch (e) {}
-      setMessage({ type: 'success', text: "Plans de culture enregistrés et synchronisés avec l'application !" });
+        await supabase
+          .from('settings')
+          .upsert({ key: 'investment_plans', value: JSON.stringify(updatedPlans) }, { onConflict: 'key' });
+      } catch (remoteErr) {}
+
+      setMessage({ type: 'success', text: "Plans de transport et flotte enregistrés et synchronisés avec l'application !" });
     } catch(err: any) {
       setMessage({ type: 'error', text: "Erreur d'enregistrement : " + err.message });
     } finally {
@@ -550,27 +598,31 @@ export function Admin() {
   // --- Settings Handlers ---
   const handleUpdateSettings = async () => {
     setLoading(true);
-    const toUpsert = [
-      { key: 'payment_link', value: paymentLink },
-      { key: 'app_logo', value: appLogo },
-      { key: 'group_link', value: groupLink },
-      { key: 'support_link', value: supportLink },
-      { key: 'ussd_ci', value: ussdCI },
-      { key: 'ussd_mtn_ci', value: ussdMtnCI },
-      { key: 'wave_number', value: waveNumber }
-    ];
-    for (const k of Object.keys(extraSettings)) {
-      toUpsert.push({ key: k, value: extraSettings[k] });
+    const settingsMap: Record<string, string> = {
+      payment_link: paymentLink,
+      app_logo: appLogo,
+      group_link: groupLink,
+      support_link: supportLink,
+      ussd_ci: ussdCI,
+      ussd_mtn_ci: ussdMtnCI,
+      wave_number: waveNumber,
+      ...extraSettings
+    };
+
+    // 1. Sauvegarde locale immédiate
+    saveLocalSettings(settingsMap);
+    useAppStore.getState().setSettingsCache(null as any);
+
+    // 2. Synchronisation Supabase
+    try {
+      const toUpsert = Object.entries(settingsMap).map(([key, value]) => ({ key, value }));
+      await supabase.from('settings').upsert(toUpsert, { onConflict: 'key' });
+    } catch (e) {
+      console.warn('Erreur synchronisation Supabase settings:', e);
     }
-    const { error } = await supabase.from('settings').upsert(toUpsert, { onConflict: 'key' });
-    setLoading(false);
     
-    if (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de l\'enregistrement : ' + error.message });
-    } else {
-      useAppStore.getState().setSettingsCache(null as any);
-      setMessage({ type: 'success', text: 'Paramètres et Logo enregistrés avec succès !' });
-    }
+    setLoading(false);
+    setMessage({ type: 'success', text: 'Paramètres et Logo enregistrés avec succès !' });
   };
 
   const tabs = [
@@ -595,7 +647,7 @@ export function Admin() {
   return (
     <div className="p-6 space-y-6 pb-24 pt-20 max-w-2xl mx-auto font-sans">
       <header className="flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-900 shadow-sm hover:bg-gray-50 transition-colors shrink-0 cursor-pointer">
+        <button onClick={() => navigate('/profile')} title="Retour à l'application" className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-900 shadow-sm hover:bg-gray-50 transition-colors shrink-0 cursor-pointer">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>

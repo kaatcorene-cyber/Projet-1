@@ -50,8 +50,9 @@ export default function WithdrawInfo() {
   // Load existing details
   useEffect(() => {
     if (!user) return;
-    const storageKey = `translogis_withdraw_info_${user.id}`;
-    const saved = localStorage.getItem(storageKey);
+    const saved = localStorage.getItem(`agritrans_withdraw_info_${user.id}`) ||
+                  localStorage.getItem(`translogis_withdraw_info_${user.id}`) ||
+                  localStorage.getItem(`withdrawal_account_${user.id}`);
     if (saved) {
       try {
         const parsed: WithdrawalDetails = JSON.parse(saved);
@@ -115,9 +116,11 @@ export default function WithdrawInfo() {
         savedAt: new Date().toISOString()
       };
 
-      // 1. Save in localStorage
-      const storageKey = `translogis_withdraw_info_${user.id}`;
-      localStorage.setItem(storageKey, JSON.stringify(details));
+      // 1. Save in localStorage (all legacy and active keys)
+      const dataStr = JSON.stringify(details);
+      localStorage.setItem(`agritrans_withdraw_info_${user.id}`, dataStr);
+      localStorage.setItem(`translogis_withdraw_info_${user.id}`, dataStr);
+      localStorage.setItem(`withdrawal_account_${user.id}`, dataStr);
 
       // 2. Also persist to Supabase in user address/metadata
       try {

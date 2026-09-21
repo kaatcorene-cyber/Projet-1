@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
+import { getLocalTransactionsForUser } from '../lib/dataStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { AppLogo } from '../components/AppLogo';
@@ -9,31 +10,55 @@ import { ArrowDownLeft, ArrowUpRight, Truck, Gift, History as HistoryIcon, Clock
 
 export function History() {
   const { user } = useAuthStore();
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>(() => {
+    return user ? getLocalTransactionsForUser(user.id) : [];
+  });
 
   useEffect(() => {
     fetchData();
 
     const intervalId = setInterval(() => {
       fetchData();
-    }, 60000);
+    }, 15000);
 
-    return () => clearInterval(intervalId);
+    const onTxUpdate = () => fetchData();
+    window.addEventListener('agritrans_tx_updated', onTxUpdate);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('agritrans_tx_updated', onTxUpdate);
+    };
   }, [user]);
 
   const fetchData = async () => {
     if (!user) return;
     
-    const { data: txData } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(100);
-    
-    if (txData) {
-      setTransactions(txData);
-    }
+    const localTxs = getLocalTransactionsForUser(user.id);
+    let remoteTxs: any[] = [];
+
+    try {
+      const { data: txData } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      
+      if (txData) {
+        remoteTxs = txData;
+      }
+    } catch (e) {}
+
+    // Combiner les transactions locales et distantes sans doublons d'ID
+    const txMap = new Map<string, any>();
+    localTxs.forEach(tx => txMap.set(tx.id, tx));
+    remoteTxs.forEach(tx => txMap.set(tx.id, tx));
+
+    const merged = Array.from(txMap.values()).sort(
+      (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+    );
+
+    setTransactions(merged);
   };
 
   const isPositive = (type: string) => {

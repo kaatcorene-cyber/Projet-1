@@ -44,10 +44,18 @@ export function Register() {
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/[^0-9]/g, '');
     
-    // Si l'utilisateur colle un numéro avec l'indicatif (ex: 22890123456 pour le Togo)
-    const dialDigits = currentCountry.dialCode.replace('+', '');
-    if (val.startsWith(dialDigits) && val.length > dialDigits.length) {
-      val = val.slice(dialDigits.length);
+    // Auto-détection si l'utilisateur colle un numéro complet avec indicatif pays
+    for (const c of COUNTRIES) {
+      const dialDigits = c.dialCode.replace('+', '');
+      if (val.startsWith(dialDigits) && val.length > dialDigits.length) {
+        setSelectedCountryCode(c.code);
+        val = val.slice(dialDigits.length);
+        const targetCountry = c;
+        const cleaned = val.slice(0, targetCountry.maxLength);
+        setFormData(prev => ({ ...prev, phone: cleaned }));
+        setError('');
+        return;
+      }
     }
 
     const cleaned = val.slice(0, currentCountry.maxLength);
@@ -141,7 +149,7 @@ export function Register() {
               >
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {c.dialCode}
+                    {c.flag} {c.dialCode} ({c.name})
                   </option>
                 ))}
               </select>

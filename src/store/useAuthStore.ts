@@ -103,9 +103,9 @@ const DEFAULT_SEED_USERS: User[] = [
   }
 ];
 
-function getStoredLocalUsers(): User[] {
+export function getStoredLocalUsers(): User[] {
   try {
-    const raw = localStorage.getItem(LOCAL_USERS_KEY);
+    const raw = safeStorage.getItem(LOCAL_USERS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -116,19 +116,19 @@ function getStoredLocalUsers(): User[] {
         return parsed;
       }
     }
-    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(DEFAULT_SEED_USERS));
+    safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(DEFAULT_SEED_USERS));
     return DEFAULT_SEED_USERS;
   } catch (e) {
     return DEFAULT_SEED_USERS;
   }
 }
 
-function saveStoredLocalUser(newUser: User): void {
+export function saveStoredLocalUser(newUser: User): void {
   try {
     const users = getStoredLocalUsers();
     const existingIndex = users.findIndex(u => 
       u.id === newUser.id || 
-      u.phone === newUser.phone ||
+      u.phone === newUser.phone || 
       generatePhoneCandidates(u.phone).includes(newUser.phone)
     );
     if (existingIndex >= 0) {
@@ -136,10 +136,17 @@ function saveStoredLocalUser(newUser: User): void {
     } else {
       users.push(newUser);
     }
-    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
+    safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
   } catch (e) {
     console.warn('Erreur lors de la sauvegarde locale utilisateur:', e);
   }
+}
+
+export function deleteStoredLocalUser(userId: string): void {
+  try {
+    const users = getStoredLocalUsers().filter(u => u.id !== userId);
+    safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
+  } catch (e) {}
 }
 
 interface AuthState {
@@ -147,7 +154,7 @@ interface AuthState {
   isAuthenticated: boolean;
   setUser: (user: User | null) => void;
   updateBalance: (newBalance: number) => void;
-  login: (phone: string, passwordHash: string, countryDialCode?: string) => Promise<void>;
+  login: (phone: string, passwordHash: string, countryDialCode?: string) => Promise<User>;
   register: (phone: string, passwordHash: string, firstName?: string, lastName?: string, referralCode?: string, country?: string, countryDialCode?: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -251,6 +258,7 @@ export const useAuthStore = create<AuthState>()(
         saveStoredLocalUser(matchedUser);
 
         set({ user: matchedUser, isAuthenticated: true });
+        return matchedUser;
       },
       register: async (phone, password, firstName = '', lastName = '', referralCode = '', country = "Côte d'Ivoire", countryDialCode = '+225') => {
         const cleanPhone = phone.trim().replace(/[\s\-\(\)\.]/g, '');

@@ -23,6 +23,7 @@ import {
   claimAllActiveYields,
   CultureTimerState 
 } from '../lib/investments';
+import { getLocalInvestments } from '../lib/dataStore';
 
 interface TransportCardProps {
   key?: any;
@@ -198,18 +199,39 @@ export function Activity() {
     try {
       supabase.functions.invoke('process-yields').catch(() => {});
 
-      const { data, error } = await supabase
-        .from('investments')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_date', { ascending: false });
+      const localInvs = getLocalInvestments(user.id);
+      let remoteInvs: any[] = [];
 
-      if (error) throw error;
-      const loaded = data || [];
-      setInvestments(loaded);
-      setInvestmentsCache(loaded);
+      try {
+        const { data, error } = await supabase
+          .from('investments')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('start_date', { ascending: false });
+
+        if (!error && data) {
+          remoteInvs = data;
+        }
+      } catch (remErr) {}
+
+      // Fusionner sans doublons (id)
+      const invMap = new Map<string, any>();
+      localInvs.forEach(i => invMap.set(i.id, i));
+      remoteInvs.forEach(i => invMap.set(i.id, i));
+
+      const merged = Array.from(invMap.values()).sort(
+        (a, b) => new Date(b.start_date || 0).getTime() - new Date(a.start_date || 0).getTime()
+      );
+
+      setInvestments(merged);
+      setInvestmentsCache(merged);
     } catch (e: any) {
       console.error('Fetch investments error:', e);
+      const fallbackLocal = getLocalInvestments(user.id);
+      if (fallbackLocal.length > 0) {
+        setInvestments(fallbackLocal);
+        setInvestmentsCache(fallbackLocal);
+      }
     } finally {
       if (showLoader) setLoading(false);
     }
@@ -219,8 +241,15 @@ export function Activity() {
     fetchInvestments();
     const interval = setInterval(() => {
       fetchInvestments(false);
-    }, 30000);
-    return () => clearInterval(interval);
+    }, 15000);
+
+    const onUpdated = () => fetchInvestments(false);
+    window.addEventListener('agritrans_inv_updated', onUpdated);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('agritrans_inv_updated', onUpdated);
+    };
   }, [fetchInvestments]);
 
   const handleClaimSingle = async (inv: any) => {

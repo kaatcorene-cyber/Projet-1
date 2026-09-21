@@ -19,7 +19,6 @@ import {
   Download,
   Smartphone,
   CheckCircle2,
-  Truck,
   X
 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
@@ -224,23 +223,6 @@ export function Profile() {
 
         {/* Navigation Menu Direct Rows */}
         <div className="space-y-2">
-          {/* Ma Flotte (Véhicules actifs & Gains) */}
-          <Link
-            to="/activity"
-            className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm hover:border-emerald-400 transition-all cursor-pointer"
-          >
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center shrink-0">
-                <Truck className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-slate-900 text-sm font-black block">Ma Flotte (Véhicules actifs)</span>
-                <span className="text-slate-500 text-xs font-medium">Rotation 24h & encaissement des gains journaliers</span>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
-          </Link>
-
           {/* Informations de Retrait */}
           <Link
             to="/withdraw-info"

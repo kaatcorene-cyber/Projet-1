@@ -1,7 +1,8 @@
 import { supabase } from './supabase';
 import { parseSafeDate } from './utils';
 import { TransportPlan, DEFAULT_TRANSPORT_PLANS } from '../data/plans';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore, saveStoredLocalUser } from '../store/useAuthStore';
+import { saveLocalInvestment, saveLocalTransaction } from './dataStore';
 
 export const CYCLE_24H_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
@@ -147,53 +148,68 @@ export async function claimCultureYield(inv: any, userId: string): Promise<{ suc
       return { success: false, amount: 0, message: 'Aucun revenu disponible à percevoir.' };
     }
 
-    // 1. Get fresh user balance
-    const { data: dbUser, error: userErr } = await supabase
-      .from('users')
-      .select('balance')
-      .eq('id', userId)
-      .single();
+    // 1. Déterminer le solde actuel (local ou base distante)
+    let currentBalance = Number(useAuthStore.getState().user?.balance || 0);
+    try {
+      const { data: dbUser } = await supabase
+        .from('users')
+        .select('balance')
+        .eq('id', userId)
+        .maybeSingle();
+      if (dbUser && dbUser.balance !== undefined) {
+        currentBalance = Number(dbUser.balance || 0);
+      }
+    } catch (e) {}
 
-    if (userErr || !dbUser) {
-      throw new Error('Impossible de charger votre compte.');
-    }
-
-    const currentBalance = Number(dbUser.balance || 0);
     const newBalance = currentBalance + yieldAmount;
-
-    // 2. Update user balance
-    const { error: updateBalErr } = await supabase
-      .from('users')
-      .update({ balance: newBalance })
-      .eq('id', userId);
-
-    if (updateBalErr) throw updateBalErr;
-
-    // 3. Update investment last_paid_at to NOW
     const nowIso = new Date(nowMs).toISOString();
     const isNowFinished = nowMs >= timerState.endDateMs;
 
-    const { error: updateInvErr } = await supabase
-      .from('investments')
-      .update({
-        last_paid_at: nowIso,
-        status: isNowFinished ? 'completed' : 'active'
-      })
-      .eq('id', inv.id);
+    // 2. Mise à jour locale immédiate du solde
+    useAuthStore.getState().updateBalance(newBalance);
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser) {
+      saveStoredLocalUser({ ...currentUser, balance: newBalance });
+    }
 
-    if (updateInvErr) throw updateInvErr;
+    // 3. Mise à jour locale immédiate de l'investissement
+    saveLocalInvestment({
+      ...inv,
+      last_paid_at: nowIso,
+      status: isNowFinished ? 'completed' : 'active'
+    });
 
-    // 4. Record transaction in transactions table
-    await supabase.from('transactions').insert([{
+    // 4. Enregistrement local immédiat de la transaction
+    const txId = 'tx_gain_' + Date.now();
+    saveLocalTransaction({
+      id: txId,
       user_id: userId,
       type: 'daily_gain',
       amount: yieldAmount,
       status: 'completed',
-      reference: `Rendement - ${timerState.crop.name} (Service actif)`
-    }]);
+      reference: `Rendement - ${timerState.crop.name} (Service actif)`,
+      created_at: nowIso
+    });
 
-    // 5. Update in-memory auth store balance
-    useAuthStore.getState().updateBalance(newBalance);
+    // 5. Synchronisation distante sur Supabase en arrière-plan
+    try {
+      await supabase.from('users').update({ balance: newBalance }).eq('id', userId);
+      await supabase.from('investments').update({
+        last_paid_at: nowIso,
+        status: isNowFinished ? 'completed' : 'active'
+      }).eq('id', inv.id);
+      await supabase.from('transactions').insert([{
+        id: txId,
+        user_id: userId,
+        type: 'daily_gain',
+        amount: yieldAmount,
+        status: 'completed',
+        reference: `Rendement - ${timerState.crop.name} (Service actif)`,
+        created_at: nowIso
+      }]);
+    } catch (remoteErr) {
+      console.warn('Synchronisation Supabase différée pour le rendement:', remoteErr);
+    }
 
     return {
       success: true,

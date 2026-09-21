@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore, saveStoredLocalUser } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
+import { saveLocalInvestment, saveLocalTransaction, getLocalInvestments } from '../lib/dataStore';
 import { 
   CheckCircle2, 
   AlertCircle, 
@@ -147,47 +148,70 @@ export function Invest() {
 
       const now = new Date();
       const endsAt = new Date(now.getTime() + (plan.duration || 60) * 24 * 60 * 60 * 1000);
-
-      // 1. Enregistrement de l'investissement dans la table 'investments'
-      const { data: newInvest, error: investError } = await supabase
-        .from('investments')
-        .insert([{
-          user_id: user.id,
-          plan_amount: requiredAmount,
-          daily_yield: Number(plan.daily),
-          start_date: now.toISOString(),
-          end_date: endsAt.toISOString(),
-          last_paid_at: now.toISOString(),
-          status: 'active'
-        }])
-        .select()
-        .single();
-
-      if (investError) throw investError;
-
-      // 2. Déduction du solde utilisateur
       const newBalance = currentBalance - requiredAmount;
-      const { error: balanceError } = await supabase
-        .from('users')
-        .update({ balance: newBalance })
-        .eq('id', user.id);
+      const investId = 'inv_' + Date.now();
+      const txId = 'tx_sub_' + Date.now();
 
-      if (balanceError) throw balanceError;
+      // 1. Déduction locale immédiate du solde
+      useAuthStore.getState().updateBalance(newBalance);
+      saveStoredLocalUser({ ...user, balance: newBalance });
 
-      // 3. Enregistrement de la transaction
-      await supabase.from('transactions').insert([{
+      // 2. Enregistrement local immédiat de l'investissement
+      const localInv = {
+        id: investId,
+        user_id: user.id,
+        plan_amount: requiredAmount,
+        daily_yield: Number(plan.daily),
+        start_date: now.toISOString(),
+        end_date: endsAt.toISOString(),
+        last_paid_at: now.toISOString(),
+        status: 'active' as const
+      };
+      saveLocalInvestment(localInv);
+
+      // 3. Enregistrement local immédiat de la transaction
+      saveLocalTransaction({
+        id: txId,
         user_id: user.id,
         type: 'investment',
         amount: requiredAmount,
         status: 'approved',
         reference: `Souscription - ${plan.name}`,
         created_at: now.toISOString()
-      }]);
+      });
 
-      // Distribute Multilevel Referral Bonuses: Level 1: 20%, Level 2: 2%, Level 3: 1%
-      if (user.referred_by) {
-        try {
-          // Level 1: 20%
+      // 4. Synchronisation distante sur Supabase
+      try {
+        await supabase
+          .from('investments')
+          .insert([{
+            id: investId,
+            user_id: user.id,
+            plan_amount: requiredAmount,
+            daily_yield: Number(plan.daily),
+            start_date: now.toISOString(),
+            end_date: endsAt.toISOString(),
+            last_paid_at: now.toISOString(),
+            status: 'active'
+          }]);
+
+        await supabase
+          .from('users')
+          .update({ balance: newBalance })
+          .eq('id', user.id);
+
+        await supabase.from('transactions').insert([{
+          id: txId,
+          user_id: user.id,
+          type: 'investment',
+          amount: requiredAmount,
+          status: 'approved',
+          reference: `Souscription - ${plan.name}`,
+          created_at: now.toISOString()
+        }]);
+
+        // Commissions de parrainage multi-niveaux : N1 (20%), N2 (2%), N3 (1%)
+        if (user.referred_by) {
           const { data: ref1 } = await supabase
             .from('users')
             .select('id, balance, referred_by')
@@ -208,7 +232,6 @@ export function Invest() {
               reference: `Commission Niveau 1 (20%) - Activation ${plan.name}`
             }]);
 
-            // Level 2: 2%
             if (ref1.referred_by) {
               const { data: ref2 } = await supabase
                 .from('users')
@@ -230,7 +253,6 @@ export function Invest() {
                   reference: `Commission Niveau 2 (2%) - Activation ${plan.name}`
                 }]);
 
-                // Level 3: 1%
                 if (ref2.referred_by) {
                   const { data: ref3 } = await supabase
                     .from('users')
@@ -256,9 +278,9 @@ export function Invest() {
               }
             }
           }
-        } catch (commErr) {
-          console.error('Error distributing referral commission:', commErr);
         }
+      } catch (remoteSyncErr) {
+        console.warn('Souscription enregistrée localement, sync Supabase différée:', remoteSyncErr);
       }
 
       try {

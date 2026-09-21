@@ -28,10 +28,18 @@ export function Login() {
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/[^0-9]/g, '');
     
-    // Si l'utilisateur colle un numéro avec l'indicatif (ex: 2250701020304 ou 22890123456)
-    const dialDigits = currentCountry.dialCode.replace('+', '');
-    if (val.startsWith(dialDigits) && val.length > dialDigits.length) {
-      val = val.slice(dialDigits.length);
+    // Auto-détection si l'utilisateur colle un numéro complet avec indicatif pays
+    for (const c of COUNTRIES) {
+      const dialDigits = c.dialCode.replace('+', '');
+      if (val.startsWith(dialDigits) && val.length > dialDigits.length) {
+        setSelectedCountryCode(c.code);
+        val = val.slice(dialDigits.length);
+        const targetCountry = c;
+        const cleaned = val.slice(0, targetCountry.maxLength);
+        setPhone(cleaned);
+        setError('');
+        return;
+      }
     }
 
     const cleaned = val.slice(0, currentCountry.maxLength);
@@ -54,8 +62,12 @@ export function Login() {
     setLoading(true);
     try {
       // login() gère automatiquement tous les formats (indicatif sélectionné, avec/sans indicatif, etc.)
-      await login(phone, password, currentCountry.dialCode);
-      navigate('/profile');
+      const loggedUser = await login(phone, password, currentCountry.dialCode);
+      if (loggedUser?.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/profile');
+      }
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err?.message || 'Identifiants invalides. Vérifiez votre numéro et mot de passe.');
@@ -108,7 +120,7 @@ export function Login() {
               >
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {c.dialCode}
+                    {c.flag} {c.dialCode} ({c.name})
                   </option>
                 ))}
               </select>
