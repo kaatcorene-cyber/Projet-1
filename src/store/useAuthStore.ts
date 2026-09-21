@@ -3,6 +3,74 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 import { safeStorage } from '../lib/storage';
 
+// Liste de tous les indicatifs supportés
+const ALL_DIAL_CODES = ['+225', '+228', '+226', '+229', '+227', '+223', '+221', '+237', '+224'];
+
+/**
+ * Génère l'ensemble exhaustif des formats possibles sous lesquels
+ * un numéro a pu être enregistré en base (avec/sans indicatif, avec/sans zéro, etc.).
+ */
+export function generatePhoneCandidates(inputPhone: string, defaultDialCode = '+225'): string[] {
+  const clean = inputPhone.trim().replace(/[\s\-\(\)\.]/g, '');
+  const pureDigits = clean.replace(/\D/g, '');
+  if (!pureDigits && !clean) return [];
+
+  const candidates = new Set<string>();
+
+  if (clean) candidates.add(clean);
+  if (pureDigits) {
+    candidates.add(pureDigits);
+    candidates.add(`+${pureDigits}`);
+  }
+
+  // Détection d'un indicatif déjà présent dans la saisie
+  let detectedDial = defaultDialCode.startsWith('+') ? defaultDialCode : `+${defaultDialCode}`;
+  let national = pureDigits;
+
+  for (const dial of ALL_DIAL_CODES) {
+    const dialDigits = dial.replace('+', '');
+    if (clean.startsWith(dial)) {
+      detectedDial = dial;
+      national = clean.slice(dial.length).replace(/\D/g, '');
+      break;
+    } else if (pureDigits.startsWith(dialDigits) && pureDigits.length > dialDigits.length + 5) {
+      detectedDial = dial;
+      national = pureDigits.slice(dialDigits.length);
+      break;
+    }
+  }
+
+  const nationalNoZero = national.replace(/^0+/, '');
+  const nationalWithZero = national ? (national.startsWith('0') ? national : `0${national}`) : '';
+
+  // Indicatifs prioritaires à tester (indicatif détecté, indicatif choisi, puis tous les indicatifs)
+  const priorityDials = Array.from(new Set([detectedDial, defaultDialCode, ...ALL_DIAL_CODES]));
+
+  for (const dial of priorityDials) {
+    const dialDigits = dial.replace('+', '');
+
+    if (national) {
+      candidates.add(`${dial}${national}`);
+      candidates.add(`${dialDigits}${national}`);
+    }
+    if (nationalNoZero) {
+      candidates.add(`${dial}${nationalNoZero}`);
+      candidates.add(`${dialDigits}${nationalNoZero}`);
+    }
+    if (nationalWithZero) {
+      candidates.add(`${dial}${nationalWithZero}`);
+      candidates.add(`${dialDigits}${nationalWithZero}`);
+    }
+  }
+
+  // Variantes nationales pures
+  if (national) candidates.add(national);
+  if (nationalNoZero) candidates.add(nationalNoZero);
+  if (nationalWithZero) candidates.add(nationalWithZero);
+
+  return Array.from(candidates).filter(c => c && c.length >= 6);
+}
+
 interface User {
   id: string;
   phone: string;
@@ -22,8 +90,8 @@ interface AuthState {
   isAuthenticated: boolean;
   setUser: (user: User | null) => void;
   updateBalance: (newBalance: number) => void;
-  login: (phone: string, passwordHash: string) => Promise<void>;
-  register: (phone: string, passwordHash: string, firstName?: string, lastName?: string, referralCode?: string, country?: string) => Promise<void>;
+  login: (phone: string, passwordHash: string, countryDialCode?: string) => Promise<void>;
+  register: (phone: string, passwordHash: string, firstName?: string, lastName?: string, referralCode?: string, country?: string, countryDialCode?: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -40,46 +108,70 @@ export const useAuthStore = create<AuthState>()(
           set({ user: { ...current, balance: newBalance } });
         }
       },
-      login: async (phone, password) => {
-        // Clean national number
-        const cleanPhone = phone.trim().replace(/\s+/g, '');
-        const fullPhone = cleanPhone.startsWith('+') ? cleanPhone : `+225${cleanPhone}`;
-        const rawDigits = cleanPhone.replace(/^\+\d{3}/, '');
+      login: async (phone, password, countryDialCode = '+225') => {
+        const candidates = generatePhoneCandidates(phone, countryDialCode);
+        
+        let foundUsers: User[] = [];
 
-        // Find user by phone in either format
-        const { data: user, error } = await supabase
-          .from('users')
-          .select('*')
-          .or(`phone.eq.${fullPhone},phone.eq.${cleanPhone},phone.eq.${rawDigits}`)
-          .maybeSingle();
+        // 1. Recherche par correspondance exacte sur tous les formats possibles
+        if (candidates.length > 0) {
+          const { data: matchedUsers, error: queryError } = await supabase
+            .from('users')
+            .select('*')
+            .in('phone', candidates);
 
-        if (error || !user) {
-          throw new Error('Numéro de téléphone introuvable');
+          if (!queryError && matchedUsers && matchedUsers.length > 0) {
+            foundUsers = matchedUsers;
+          }
         }
 
-        if (user.password_hash !== password) {
-          throw new Error('Mot de passe incorrect');
+        // 2. Recherche tolérante si aucun résultat (ex: numéros enregistrés avec espaces ou préfixes exotiques)
+        if (foundUsers.length === 0) {
+          const pureDigits = phone.replace(/\D/g, '');
+          const sigDigits = pureDigits.slice(-8); // Les 8 derniers chiffres uniques de l'abonné
+          if (sigDigits.length >= 7) {
+            const { data: fallbackUsers } = await supabase
+              .from('users')
+              .select('*')
+              .ilike('phone', `%${sigDigits}%`);
+
+            if (fallbackUsers && fallbackUsers.length > 0) {
+              foundUsers = fallbackUsers;
+            }
+          }
+        }
+
+        if (!foundUsers || foundUsers.length === 0) {
+          throw new Error('Numéro de téléphone introuvable. Veuillez vérifier votre saisie ou créer un compte.');
+        }
+
+        // Si plusieurs correspondances sont trouvées, retenir celle dont le mot de passe correspond
+        const matchedUser = foundUsers.find(u => u.password_hash === password);
+        if (!matchedUser) {
+          throw new Error('Mot de passe incorrect.');
         }
 
         try {
           sessionStorage.setItem('agritrans_show_welcome', 'true');
         } catch (e) {}
 
-        set({ user, isAuthenticated: true });
+        set({ user: matchedUser, isAuthenticated: true });
       },
-      register: async (phone, password, firstName = '', lastName = '', referralCode = '', country = "Côte d'Ivoire") => {
-        const cleanPhone = phone.trim().replace(/\s+/g, '');
-        const fullPhone = cleanPhone.startsWith('+') ? cleanPhone : `+225${cleanPhone}`;
+      register: async (phone, password, firstName = '', lastName = '', referralCode = '', country = "Côte d'Ivoire", countryDialCode = '+225') => {
+        const cleanPhone = phone.trim().replace(/[\s\-\(\)\.]/g, '');
+        const dial = countryDialCode || '+225';
+        const fullPhone = cleanPhone.startsWith('+') ? cleanPhone : `${dial}${cleanPhone}`;
 
-        // Check if user already exists
+        // Vérification préalable d'unicité avec tous les formats candidats
+        const candidates = generatePhoneCandidates(fullPhone, dial);
         const { data: existing } = await supabase
           .from('users')
           .select('id')
-          .or(`phone.eq.${fullPhone},phone.eq.${cleanPhone}`)
-          .maybeSingle();
+          .in('phone', candidates)
+          .limit(1);
 
-        if (existing) {
-          throw new Error('Ce numéro de téléphone est déjà associé à un compte.');
+        if (existing && existing.length > 0) {
+          throw new Error('Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter.');
         }
 
         // Generate unique referral code

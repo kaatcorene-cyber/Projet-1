@@ -146,17 +146,6 @@ export function Withdraw() {
       });
     }
 
-    const nowLocal = new Date();
-    const gmtDay = nowLocal.getUTCDay();
-    const gmtHour = nowLocal.getUTCHours();
-    
-    if (gmtDay === 0) {
-      return setMessage({ type: 'error', text: 'Opérations de retrait suspendues le dimanche.' });
-    }
-    if (gmtHour < 9 || gmtHour >= 17) {
-      return setMessage({ type: 'error', text: 'Horaires d’ouverture des retraits : 09:00 - 17:00 GMT.' });
-    }
-    
     const numAmount = Number(amount);
     if (!numAmount || numAmount < 2000) {
       return setMessage({ type: 'error', text: 'Le montant minimum de retrait est de 2 000 FCFA.' });
@@ -264,16 +253,9 @@ export function Withdraw() {
       <div className="pt-3 max-w-lg mx-auto space-y-4 px-3 sm:px-0">
         
         {/* Balance Direct Band */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 text-center space-y-2 shadow-sm">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Solde Retirable</p>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900">{formatCurrency(user?.balance || 0)}</h2>
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 rounded-full text-xs font-bold text-slate-700 border border-slate-200">
-            <span>Frais : 15%</span>
-            <span>•</span>
-            <span>Min : 2 000 FCFA</span>
-            <span>•</span>
-            <span>09h00 - 17h00 GMT</span>
-          </div>
+        <div className="bg-white border border-slate-200 rounded-xl py-3.5 px-4 text-center shadow-sm">
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Solde Retirable</p>
+          <h2 className="text-2xl font-black tracking-tight text-slate-900">{formatCurrency(user?.balance || 0)}</h2>
         </div>
 
         {checkingAccount ? (
