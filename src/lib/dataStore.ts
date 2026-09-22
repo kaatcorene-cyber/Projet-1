@@ -62,96 +62,12 @@ export const SEED_ADMIN: User = {
 };
 
 const SEED_USERS: User[] = [
-  SEED_ADMIN,
-  {
-    id: 'usr-demo-002',
-    phone: '+2250102030405',
-    country: "Côte d'Ivoire",
-    first_name: 'Kouamé',
-    last_name: 'Yao',
-    password_hash: 'AgriTrans2026@',
-    role: 'user',
-    balance: 24500,
-    referral_code: 'TL84920',
-    referred_by: 'AGRIADMIN',
-    created_at: new Date(Date.now() - 15 * 86400000).toISOString()
-  },
-  {
-    id: 'usr-demo-003',
-    phone: '+22890112233',
-    country: 'Togo',
-    first_name: 'Messan',
-    last_name: 'Lawson',
-    password_hash: 'AgriTrans2026@',
-    role: 'user',
-    balance: 12000,
-    referral_code: 'TL51294',
-    referred_by: 'AGRIADMIN',
-    created_at: new Date(Date.now() - 5 * 86400000).toISOString()
-  }
+  SEED_ADMIN
 ];
 
-const SEED_TRANSACTIONS: LocalTransaction[] = [
-  {
-    id: 'tx-seed-101',
-    user_id: 'usr-demo-002',
-    type: 'deposit',
-    amount: 50000,
-    status: 'approved',
-    reference: 'Wave CI - 0102030405 (Dépôt direct)',
-    description: 'Rechargement de compte via Wave',
-    created_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-    users: { first_name: 'Kouamé', last_name: 'Yao', phone: '+2250102030405' }
-  },
-  {
-    id: 'tx-seed-102',
-    user_id: 'usr-demo-002',
-    type: 'investment',
-    amount: 30000,
-    status: 'approved',
-    reference: 'Souscription - Camion Frigorifique Isuzu',
-    description: 'Activation de véhicule de transport',
-    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    users: { first_name: 'Kouamé', last_name: 'Yao', phone: '+2250102030405' }
-  },
-  {
-    id: 'tx-seed-103',
-    user_id: 'usr-demo-003',
-    type: 'deposit',
-    amount: 15000,
-    status: 'pending',
-    reference: 'Tmoney TG - 90112233',
-    description: 'Demande de rechargement en attente',
-    created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
-    users: { first_name: 'Messan', last_name: 'Lawson', phone: '+22890112233' }
-  },
-  {
-    id: 'tx-seed-104',
-    user_id: 'usr-demo-002',
-    type: 'withdrawal',
-    amount: 8000,
-    status: 'pending',
-    reference: '[Côte d\'Ivoire] Wave - +225 0102030405 (Kouamé Yao) | Net: 6800 FCFA (Frais 15%: 1200 FCFA)',
-    description: 'Demande de retrait vers Wave',
-    created_at: new Date(Date.now() - 45 * 60000).toISOString(),
-    users: { first_name: 'Kouamé', last_name: 'Yao', phone: '+2250102030405' }
-  }
-];
+const SEED_TRANSACTIONS: LocalTransaction[] = [];
 
-const SEED_INVESTMENTS: LocalInvestment[] = [
-  {
-    id: 'inv-seed-201',
-    user_id: 'usr-demo-002',
-    plan_amount: 30000,
-    daily_yield: 2100,
-    start_date: new Date(Date.now() - 3 * 86400000).toISOString(),
-    end_date: new Date(Date.now() + 57 * 86400000).toISOString(),
-    last_paid_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    status: 'active',
-    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    users: { first_name: 'Kouamé', last_name: 'Yao', phone: '+2250102030405' }
-  }
-];
+const SEED_INVESTMENTS: LocalInvestment[] = [];
 
 const SEED_SETTINGS: Record<string, string> = {
   payment_link: 'https://payin.moneyfusion.net',
@@ -363,4 +279,141 @@ export function saveLocalSettings(settings: Record<string, string>): void {
     const merged = { ...current, ...settings };
     safeStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(merged));
   } catch (e) {}
+}
+
+/**
+ * Supprime tous les comptes utilisateurs, toutes les transactions et tous les investissements
+ * de la plateforme, en ne conservant STRICTEMENT que le compte Administrateur.
+ */
+export async function purgePlatformDataExceptAdmin(): Promise<{ usersDeleted: number; transactionsDeleted: number; investmentsDeleted: number }> {
+  let usersDeleted = 0;
+  let transactionsDeleted = 0;
+  let investmentsDeleted = 0;
+
+  // 1. Nettoyage LocalStorage
+  try {
+    const currentUsers = getLocalUsers();
+    usersDeleted = Math.max(0, currentUsers.filter(u => u.role !== 'admin' && u.phone !== SEED_ADMIN.phone && u.id !== SEED_ADMIN.id).length);
+
+    const currentTxs = getLocalTransactions();
+    transactionsDeleted = currentTxs.length;
+
+    const currentInvs = getLocalInvestments();
+    investmentsDeleted = currentInvs.length;
+
+    // Réinitialiser les utilisateurs avec UNIQUEMENT l'administrateur
+    safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify([SEED_ADMIN]));
+    // Vider les transactions
+    safeStorage.setItem(LOCAL_TX_KEY, JSON.stringify([]));
+    // Vider les investissements
+    safeStorage.setItem(LOCAL_INV_KEY, JSON.stringify([]));
+
+    // Nettoyer tous les caches individuels, statistiques d'équipe et infos de retrait
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (
+          k.startsWith('agritrans_team_stats') ||
+          k.startsWith('agritrans_claimed_commissions') ||
+          k.startsWith('agritrans_withdraw_info') ||
+          k.startsWith('translogis_withdraw_info') ||
+          k.startsWith('withdrawal_account') ||
+          k.startsWith('agritrans_investments_cache') ||
+          k.startsWith('agritrans_tx_cache') ||
+          k.startsWith('agritrans_daily_collected_') ||
+          k.startsWith('agritrans_tx_history_') ||
+          k === 'agritrans_transactions_cache'
+        )) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k => safeStorage.removeItem(k));
+
+      // Déconnecter la session active si ce n'est pas l'administrateur
+      try {
+        const authRaw = safeStorage.getItem('translogis-auth');
+        if (authRaw) {
+          const authData = JSON.parse(authRaw);
+          const currentUser = authData?.state?.user;
+          if (currentUser && currentUser.role !== 'admin' && currentUser.phone !== '+2250704752133' && currentUser.phone !== '0704752133') {
+            safeStorage.removeItem('translogis-auth');
+          }
+        }
+      } catch (e) {}
+
+      // Émettre les événements pour mise à jour immédiate de tous les composants
+      window.dispatchEvent(new Event('agritrans_tx_updated'));
+      window.dispatchEvent(new Event('agritrans_inv_updated'));
+      window.dispatchEvent(new Event('agritrans_user_updated'));
+    }
+  } catch (e) {
+    console.warn('Erreur lors du nettoyage local:', e);
+  }
+
+  // 2. Nettoyage Distant Supabase (si connecté)
+  try {
+    await supabase.from('transactions').delete().gte('amount', 0);
+  } catch (e) {}
+
+  try {
+    await supabase.from('investments').delete().gte('plan_amount', 0);
+  } catch (e) {}
+
+  try {
+    await supabase.from('deposit_verifications').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  } catch (e) {}
+
+  try {
+    // Retirer les liens de parrainage avant suppression
+    await supabase.from('users').update({ referred_by: null }).neq('id', SEED_ADMIN.id);
+    // Supprimer tous les utilisateurs non-admins
+    await supabase.from('users').delete().neq('role', 'admin').neq('phone', '+2250704752133').neq('phone', '0704752133').neq('id', SEED_ADMIN.id);
+  } catch (e) {}
+
+  // 3. Garantir la présence de l'Administrateur sur Supabase
+  try {
+    await supabase.from('users').upsert({
+      id: SEED_ADMIN.id,
+      phone: SEED_ADMIN.phone,
+      country: SEED_ADMIN.country,
+      first_name: SEED_ADMIN.first_name,
+      last_name: SEED_ADMIN.last_name,
+      password_hash: SEED_ADMIN.password_hash,
+      role: 'admin',
+      balance: SEED_ADMIN.balance,
+      referral_code: SEED_ADMIN.referral_code
+    }, { onConflict: 'phone' });
+  } catch (e) {}
+
+  return { usersDeleted, transactionsDeleted, investmentsDeleted };
+}
+
+// Auto-nettoyage immédiat au chargement de l'application
+if (typeof window !== 'undefined') {
+  const PURGE_FLAG = 'agritrans_purge_all_except_admin_2026_done';
+  if (safeStorage.getItem(PURGE_FLAG) !== 'true') {
+    safeStorage.setItem(PURGE_FLAG, 'true');
+    // Réinitialisation locale immédiate et synchrone
+    safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify([SEED_ADMIN]));
+    safeStorage.setItem(LOCAL_TX_KEY, JSON.stringify([]));
+    safeStorage.setItem(LOCAL_INV_KEY, JSON.stringify([]));
+
+    // Déconnexion d'un éventuel compte non-admin
+    try {
+      const authRaw = safeStorage.getItem('translogis-auth');
+      if (authRaw) {
+        const authData = JSON.parse(authRaw);
+        const currentUser = authData?.state?.user;
+        if (currentUser && currentUser.role !== 'admin' && currentUser.phone !== '+2250704752133' && currentUser.phone !== '0704752133') {
+          safeStorage.removeItem('translogis-auth');
+        }
+      }
+    } catch (e) {}
+
+    // Nettoyage en arrière-plan Supabase
+    setTimeout(() => {
+      purgePlatformDataExceptAdmin().catch(() => {});
+    }, 100);
+  }
 }

@@ -25,7 +25,9 @@ import {
   getLocalInvestments, 
   deleteLocalInvestment,
   getLocalSettings, 
-  saveLocalSettings 
+  saveLocalSettings,
+  purgePlatformDataExceptAdmin,
+  SEED_ADMIN
 } from '../lib/dataStore';
 import { safeStorage } from '../lib/storage';
 
@@ -309,6 +311,34 @@ export function Admin() {
         } catch(err: any) {
           console.error('[DeleteUser Error]', err);
           setMessage({ type: 'error', text: "Erreur suppression: " + (err.message || 'Impossible de supprimer cet utilisateur.') });
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
+  const handlePurgeAllDataExceptAdmin = () => {
+    setConfirmModal({
+      isOpen: true,
+      message: "⚠️ ACTION CRITIQUE : Voulez-vous vraiment supprimer définitivement TOUS les comptes utilisateurs, TOUTES les transactions, et TOUS les investissements de la plateforme ? SEUL le compte Administrateur (+2250704752133) sera conservé. Cette action est irréversible.",
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          const result = await purgePlatformDataExceptAdmin();
+          setUsersList([SEED_ADMIN]);
+          setTransactions([]);
+          setInvestmentsList([]);
+          setMessage({
+            type: 'success',
+            text: `Plateforme nettoyée ! Comptes supprimés : ${result.usersDeleted}, transactions supprimées : ${result.transactionsDeleted}, investissements supprimés : ${result.investmentsDeleted}. Seul l'administrateur reste actif.`
+          });
+        } catch (err: any) {
+          console.error('[Purge Error]', err);
+          setMessage({
+            type: 'error',
+            text: "Erreur lors de la suppression : " + (err.message || 'Échec de la purge.')
+          });
         } finally {
           setLoading(false);
         }
@@ -745,6 +775,25 @@ export function Admin() {
                <p className="text-xl font-black text-emerald-600">{usersList.length}</p>
             </div>
           </div>
+
+          {/* Quick Platform Maintenance Card */}
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 shadow-sm space-y-3 mt-4">
+            <div className="flex items-center gap-2 text-red-800">
+              <ShieldAlert className="w-5 h-5 shrink-0" />
+              <h3 className="text-sm font-black uppercase tracking-wider">Maintenance & Remise à Zéro</h3>
+            </div>
+            <p className="text-xs text-red-700 leading-relaxed font-medium">
+              Supprime définitivement tous les comptes utilisateurs, historiques de transactions, dépôts, retraits et investissements. Seul le compte Administrateur ({SEED_ADMIN.phone}) est conservé.
+            </p>
+            <button
+              onClick={handlePurgeAllDataExceptAdmin}
+              disabled={loading}
+              className="w-full bg-red-600 hover:bg-red-700 active:scale-95 text-white py-2.5 px-4 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              Purger tous les comptes & historiques (Conserver uniquement l'Admin)
+            </button>
+          </div>
         </div>
       )}
 
@@ -802,7 +851,18 @@ export function Admin() {
       {/* CONTENT: USERS */}
       {activeTab === 'users' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-black text-gray-900 mb-2">Gestion des Utilisateurs ({usersList.length})</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-lg font-black text-gray-900">Gestion des Utilisateurs ({usersList.length})</h2>
+            <button
+              onClick={handlePurgeAllDataExceptAdmin}
+              disabled={loading}
+              className="text-xs bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              title="Supprimer tous les comptes sauf admin"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Tout purger</span>
+            </button>
+          </div>
           <div className="space-y-3">
             {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
               <div key={u.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative">
@@ -1402,6 +1462,26 @@ export function Admin() {
               >
                 Sauvegarder les paramètres
               </button>
+
+              <div className="pt-6 mt-6 border-t border-red-200">
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-red-800">
+                    <ShieldAlert className="w-5 h-5 shrink-0" />
+                    <h3 className="text-sm font-black uppercase tracking-wider">Zone Critique : Réinitialisation Totale</h3>
+                  </div>
+                  <p className="text-xs text-red-700 leading-relaxed font-medium">
+                    Supprime l'ensemble des comptes utilisateurs créés, toutes les transactions passées et tous les investissements. Seul le compte administrateur ({SEED_ADMIN.phone}) est conservé.
+                  </p>
+                  <button
+                    onClick={handlePurgeAllDataExceptAdmin}
+                    disabled={loading}
+                    className="w-full bg-red-600 hover:bg-red-700 active:scale-95 text-white py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Purger tous les comptes & historiques (Conserver uniquement l'Admin)
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
