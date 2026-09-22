@@ -46,7 +46,7 @@ export function usePWAInstall() {
     } else if (isIOS) {
        alert("Pour installer l'application sur iPhone :\n1. Appuyez sur l'icône de partage ⍗ en bas de l'écran\n2. Choisissez 'Sur l'écran d'accueil' ➕");
     } else {
-       alert("L'application est déjà installée ou votre navigateur ne supporte pas l'installation via ce bouton.");
+       alert("Pour installer l'application :\n1. Ouvrez le menu de votre navigateur (les 3 points en haut à droite)\n2. Sélectionnez 'Ajouter à l'écran d'accueil' ou 'Installer l'application'");
     }
   };
 

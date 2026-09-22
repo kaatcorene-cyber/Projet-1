@@ -1,85 +1,52 @@
 import fs from 'fs';
 
-const COUNTRIES = [
-  { name: "Cote d'Ivoire", code: "+225" },
-  { name: "Togo", code: "+228" },
-  { name: "Burkina Faso", code: "+226" }
-];
+// 1. Update src/constants.ts to only have the 6 countries if needed, OR just keep them and we filter in Login/Register.
+// Actually, let's just rewrite the countries list in Login.tsx and Register.tsx to only show those 6, 
+// and update constants.ts payment methods if needed. But constants.ts already has good payment methods for them.
+// "Burkina" -> Burkina Faso.
 
-// ----- Login.tsx -----
-let loginCode = fs.readFileSync('src/pages/Login.tsx', 'utf8');
+let login = fs.readFileSync('src/pages/Login.tsx', 'utf8');
+let register = fs.readFileSync('src/pages/Register.tsx', 'utf8');
 
-// Replace state
-loginCode = loginCode.replace(
-  /const \[country\] = useState\("Cote d'Ivoire"\);/,
-  `const [country, setCountry] = useState("Cote d'Ivoire");`
-);
+const ALLOWED_COUNTRIES = ["Côte d'Ivoire", "Togo", "Bénin", "Burkina", "Cameroun", "Niger"];
 
-// Add country select before phone
-const loginPhoneInputStr = `<div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-white/20 pr-3">+225</span>`;
+const loginSelectRegex = /<select[\s\S]*?<\/select>/;
 
-const loginCountrySelect = `<div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Pays</label>
-            <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium appearance-none"
-              required
-            >
-              <option value="Cote d'Ivoire">Côte d'Ivoire (+225)</option>
-              <option value="Togo">Togo (+228)</option>
-              <option value="Burkina Faso">Burkina Faso (+226)</option>
-            </select>
-          </div>
+const getSelectReplacement = (stateVar, setVar) => `<select
+                  value={${stateVar}}
+                  onChange={(e) => ${setVar}(e.target.value)}
+                  className="w-[120px] shrink-0 bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-bold text-sm"
+                >
+                  <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+                  <option value="Bénin">Bénin</option>
+                  <option value="Togo">Togo</option>
+                  <option value="Burkina">Burkina Faso</option>
+                  <option value="Niger">Niger</option>
+                  <option value="Cameroun">Cameroun</option>
+                </select>`;
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-gray-200 pr-3">
-                {country === "Cote d'Ivoire" ? '+225' : country === 'Togo' ? '+228' : '+226'}
-              </span>`;
+login = login.replace(loginSelectRegex, getSelectReplacement('country', 'setCountry'));
+register = register.replace(/<select[\s\S]*?<\/select>/, `<select
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  className="w-[120px] shrink-0 bg-slate-50 border-2 border-slate-100 rounded-xl px-3 py-2.5 text-slate-900 focus:outline-none focus:border-orange-600 focus:bg-white transition-all font-bold text-sm"
+                >
+                  <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+                  <option value="Bénin">Bénin</option>
+                  <option value="Togo">Togo</option>
+                  <option value="Burkina">Burkina Faso</option>
+                  <option value="Niger">Niger</option>
+                  <option value="Cameroun">Cameroun</option>
+                </select>`);
 
-loginCode = loginCode.replace(loginPhoneInputStr, loginCountrySelect);
-loginCode = loginCode.replace(/onChange=\{\(e\) => setPhone\(e\.target\.value\.replace\(\/^\+225\/, ''\)\)\}/, 
-  `onChange={(e) => setPhone(e.target.value.replace(/^\\+\\d+/, ''))}`); 
+// Fix the phone code span
+const codeLogic = `{country === 'Bénin' ? '+229' : country === 'Togo' ? '+228' : country === 'Burkina' ? '+226' : country === 'Niger' ? '+227' : country === 'Cameroun' ? '+237' : '+225'}`;
+const codeLogicRegister = `{formData.country === 'Bénin' ? '+229' : formData.country === 'Togo' ? '+228' : formData.country === 'Burkina' ? '+226' : formData.country === 'Niger' ? '+227' : formData.country === 'Cameroun' ? '+237' : '+225'}`;
 
-fs.writeFileSync('src/pages/Login.tsx', loginCode);
+login = login.replace(/\{country === 'Bénin'[^}]+\}/, codeLogic);
+register = register.replace(/\{formData\.country === 'Bénin'[^}]+\}/, codeLogicRegister);
 
-// ----- Register.tsx -----
-let regCode = fs.readFileSync('src/pages/Register.tsx', 'utf8');
-
-const regPhoneInputStr = `<div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-white/20 pr-3">+225</span>`;
-
-const regCountrySelect = `<div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Pays</label>
-            <select
-              name="country"
-              value={formData.country}
-              onChange={handleChange}
-              className="w-full bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500/50 transition-all font-medium appearance-none"
-              required
-            >
-              <option value="Cote d'Ivoire">Côte d'Ivoire (+225)</option>
-              <option value="Togo">Togo (+228)</option>
-              <option value="Burkina Faso">Burkina Faso (+226)</option>
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wider">Téléphone</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold border-r border-gray-200 pr-3">
-                {formData.country === "Cote d'Ivoire" ? '+225' : formData.country === 'Togo' ? '+228' : '+226'}
-              </span>`;
-
-regCode = regCode.replace(regPhoneInputStr, regCountrySelect);
-regCode = regCode.replace(/onChange=\{\(e\) => setFormData\(\{ \.\.\.formData, phone: e\.target\.value\.replace\(\/^\+225\/, ''\) \}\)\}/, 
-  `onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/^\\+\\d+/, '') })}`); 
-
-fs.writeFileSync('src/pages/Register.tsx', regCode);
+fs.writeFileSync('src/pages/Login.tsx', login);
+fs.writeFileSync('src/pages/Register.tsx', register);
+console.log("Updated Login and Register");

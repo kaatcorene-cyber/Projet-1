@@ -5,26 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function parseSafeDate(dateStr: string | Date | undefined | null): number {
-  if (!dateStr) return Date.now();
-  if (typeof dateStr === 'number') return dateStr;
-  if (dateStr instanceof Date) {
-    const t = dateStr.getTime();
-    return isNaN(t) ? Date.now() : t;
-  }
-  
-  let d = new Date(dateStr);
-  let t = d.getTime();
-  
-  if (isNaN(t)) {
-    const safeStr = String(dateStr).replace(' ', 'T') + 'Z';
-    d = new Date(safeStr);
-    t = d.getTime();
-  }
-  
-  return isNaN(t) ? Date.now() : t;
-}
-
 export function formatCurrency(amount: number) {
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
@@ -32,3 +12,26 @@ export function formatCurrency(amount: number) {
     minimumFractionDigits: 0,
   }).format(amount).replace('XOF', 'FCFA');
 }
+
+export function generateUserId(uuid: string | undefined) {
+  if (!uuid) return '000000';
+  let hash = 0;
+  for (let i = 0; i < uuid.length; i++) {
+    hash = uuid.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash).toString().substring(0, 6).padStart(6, '0');
+}
+
+export const getPlanName = (amount: number) => {
+  switch (amount) {
+    case 2000: return '🍓 Jus de Fraise';
+    case 5000: return '🍉 Jus de Pastèque';
+    case 8000: return '🥝 Jus de Kiwi';
+    case 15000: return '🍇 Vin de Raisin';
+    case 35000: return '🍒 Vin de Cerise';
+    case 80000: return '🍋 Jus de Citron';
+    case 200000: return '🍏 Jus de Pomme Verte';
+    case 500000: return '🍌 Jus de Banane';
+    default: return 'PACK INVESTISSEMENT';
+  }
+};

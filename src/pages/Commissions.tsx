@@ -1,376 +1,204 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
-import { 
-  ArrowLeft, 
-  Gift, 
-  CheckCircle2, 
-  Sparkles,
-  Loader2,
-  Users
-} from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
+import { Gift, ChevronLeft, Loader2, Trophy, CheckCircle2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
-interface CommissionTier {
-  id: number;
-  target: number;
-  reward: number;
-  rewardLabel: string;
-}
-
-const COMMISSION_TIERS: CommissionTier[] = [
-  { id: 1, target: 1, reward: 300, rewardLabel: '300 F' },
-  { id: 2, target: 3, reward: 1000, rewardLabel: '1 000 F' },
-  { id: 3, target: 7, reward: 3000, rewardLabel: '3 000 F' },
-  { id: 4, target: 15, reward: 10000, rewardLabel: '10 000 F' },
-  { id: 5, target: 30, reward: 25000, rewardLabel: '25 000 F' },
-  { id: 6, target: 45, reward: 40000, rewardLabel: '40 000 F' },
-  { id: 7, target: 70, reward: 70000, rewardLabel: '70 000 F' },
-  { id: 8, target: 100, reward: 100000, rewardLabel: '100 000 F' },
-  { id: 9, target: 150, reward: 160000, rewardLabel: '160 000 F' },
-  { id: 10, target: 250, reward: 300000, rewardLabel: '300 000 F' },
+const BONUS_LEVELS = [
+  { members: 1, amount: 200 },
+  { members: 5, amount: 1000 },
+  { members: 10, amount: 2000 },
+  { members: 30, amount: 6000 },
+  { members: 50, amount: 10000 },
+  { members: 100, amount: 30000 },
+  { members: 150, amount: 50000 },
+  { members: 300, amount: 110000 },
+  { members: 500, amount: 200000 },
 ];
 
 export function Commissions() {
+  const { user, setUser } = useAuthStore();
+  const [activeL1Count, setActiveL1Count] = useState(0);
+  const [claimedBonuses, setClaimedBonuses] = useState<number[]>([]);
+  const [loadingBonus, setLoadingBonus] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const [qualifiedCount, setQualifiedCount] = useState<number>(0);
-  const [claimedTiers, setClaimedTiers] = useState<number[]>([]);
-  const [claimingId, setClaimingId] = useState<number | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string>('');
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadCommissionData() {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // 1. Charger les paliers déjà réclamés depuis localStorage et transactions
-        const claimedSet = new Set<number>();
-        try {
-          const local = localStorage.getItem(`cargill_claimed_commissions_${user.id}`);
-          if (local) {
-            const parsed = JSON.parse(local);
-            if (Array.isArray(parsed)) {
-              parsed.forEach((id: number) => claimedSet.add(id));
-            }
-          }
-        } catch (e) {
-          console.warn('Erreur lecture localStorage:', e);
-        }
-
-        // Vérifier également dans les transactions Supabase
-        const { data: bonusTx } = await supabase
-          .from('transactions')
-          .select('reference')
-          .eq('user_id', user.id)
-          .eq('type', 'referral_bonus');
-
-        bonusTx?.forEach(tx => {
-          COMMISSION_TIERS.forEach(t => {
-            if (tx.reference && tx.reference.includes(`Palier ${t.id}`)) {
-              claimedSet.add(t.id);
-            }
-          });
-        });
-
-        setClaimedTiers(Array.from(claimedSet));
-
-        // 2. Compter uniquement les membres invités ayant rechargé au minimum 3000 F
-        if (user.referral_code) {
-          const { data: referredUsers } = await supabase
-            .from('users')
-            .select('id, balance')
-            .eq('referred_by', user.referral_code);
-
-          if (referredUsers && referredUsers.length > 0) {
-            const userIds = referredUsers.map(u => u.id);
-
-            // Vérifier les dépôts d'au moins 3 000 F
-            const { data: deposits } = await supabase
-              .from('transactions')
-              .select('user_id, amount')
-              .in('user_id', userIds)
-              .eq('type', 'deposit')
-              .gte('amount', 3000)
-              .neq('status', 'rejected');
-
-            // Vérifier les investissements d'au moins 3 000 F
-            const { data: investments } = await supabase
-              .from('investments')
-              .select('user_id, plan_amount')
-              .in('user_id', userIds)
-              .gte('plan_amount', 3000);
-
-            const qualifiedUserIds = new Set<string>();
-
-            deposits?.forEach(d => {
-              if (Number(d.amount) >= 3000) {
-                qualifiedUserIds.add(d.user_id);
-              }
-            });
-
-            investments?.forEach(i => {
-              if (Number(i.plan_amount) >= 3000) {
-                qualifiedUserIds.add(i.user_id);
-              }
-            });
-
-            referredUsers.forEach(u => {
-              if ((u.balance || 0) >= 3000) {
-                qualifiedUserIds.add(u.id);
-              }
-            });
-
-            setQualifiedCount(qualifiedUserIds.size);
-          } else {
-            setQualifiedCount(0);
-          }
-        }
-      } catch (err) {
-        console.error('Erreur chargement commissions:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadCommissionData();
+    fetchData();
   }, [user]);
 
-  const handleClaim = async (tier: CommissionTier) => {
-    if (!user || claimingId !== null || claimedTiers.includes(tier.id)) return;
-    if (qualifiedCount < tier.target) return;
-
-    setClaimingId(tier.id);
+  const fetchData = async () => {
+    if (!user) return;
     try {
-      const currentBalance = Number(user.balance || 0);
-      const newBalance = currentBalance + tier.reward;
-
-      // 1. Mettre à jour le solde dans Supabase
-      const { error: updateErr } = await supabase
+      const refCode = user.referral_code?.toUpperCase();
+      const legacyRefCode = parseInt(user.id.replace(/[^0-9]/g, '').slice(0, 6)).toString();
+      
+      let orConds = [];
+      if (refCode) orConds.push(`referred_by.eq.${refCode}`);
+      if (legacyRefCode) orConds.push(`referred_by.eq.${legacyRefCode}`);
+      
+      const { data: l1Data } = await supabase
         .from('users')
-        .update({ balance: newBalance })
-        .eq('id', user.id);
-
-      if (updateErr) {
-        throw updateErr;
+        .select('id')
+        .or(orConds.join(','));
+            
+      const l1Ids = l1Data?.map(u => u.id) || [];
+      if (l1Ids.length > 0) {
+        const { data: deposits } = await supabase
+          .from('transactions')
+          .select('user_id')
+          .eq('type', 'deposit')
+          .eq('status', 'approved')
+          .in('user_id', l1Ids);
+        const activeIds = new Set(deposits?.map(d => d.user_id));
+        setActiveL1Count(activeIds.size);
+      } else {
+        setActiveL1Count(0);
       }
 
-      // 2. Enregistrer la transaction du bonus
-      await supabase.from('transactions').insert([{
-        user_id: user.id,
-        type: 'referral_bonus',
-        amount: tier.reward,
-        status: 'completed',
-        reference: `Bonus Commission Palier ${tier.id} - ${tier.target} membres`
-      }]);
-
-      // 3. Mettre à jour l'état local et localStorage
-      const nextClaimed = [...claimedTiers, tier.id];
-      setClaimedTiers(nextClaimed);
-      try {
-        localStorage.setItem(`cargill_claimed_commissions_${user.id}`, JSON.stringify(nextClaimed));
-      } catch (e) {
-        console.warn('Erreur écriture localStorage:', e);
-      }
-
-      // 4. Mettre à jour le store d'authentification pour répercuter immédiatement le solde
-      useAuthStore.setState({
-        user: {
-          ...user,
-          balance: newBalance,
-        }
-      });
-
-      setSuccessMessage(`Félicitations ! Votre bonus de ${tier.rewardLabel} a été crédité sur votre solde principal.`);
-      setTimeout(() => {
-        setSuccessMessage('');
-      }, 5000);
-
-    } catch (err: any) {
-      console.error('Erreur réclamation bonus:', err);
-      alert('Une erreur est survenue lors de la réclamation du bonus. Veuillez réessayer.');
+      const { data: claims } = await supabase
+        .from('transactions')
+        .select('reference')
+        .eq('type', 'team_bonus')
+        .eq('user_id', user.id);
+      
+      const claimed = claims?.map(c => parseInt(c.reference.replace('bonus_', ''))).filter(n => !isNaN(n)) || [];
+      setClaimedBonuses(claimed);
+    } catch (e) {
+      console.error(e);
     } finally {
-      setClaimingId(null);
+      setIsLoading(false);
+    }
+  };
+
+  const claimBonus = async (level: typeof BONUS_LEVELS[0]) => {
+    if (loadingBonus === level.members || !user) return;
+    setLoadingBonus(level.members);
+    try {
+      const { data: existing } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('type', 'team_bonus')
+        .eq('user_id', user.id)
+        .eq('reference', `bonus_${level.members}`)
+        .maybeSingle();
+      
+      if (existing) {
+        toast.error("Bonus déjà réclamé");
+        setLoadingBonus(null);
+        return;
+      }
+      
+      const { error: txError } = await supabase.from('transactions').insert({
+        user_id: user.id,
+        type: 'team_bonus',
+        amount: level.amount,
+        status: 'approved',
+        reference: `bonus_${level.members}`
+      });
+      if (txError) throw txError;
+      
+      const { data: userData } = await supabase.from('users').select('balance').eq('id', user.id).single();
+      const newBalance = (userData?.balance || 0) + level.amount;
+      await supabase.from('users').update({ balance: newBalance }).eq('id', user.id);
+      
+      toast.success(`Bonus de ${formatCurrency(level.amount)} réclamé !`);
+      setClaimedBonuses(prev => [...prev, level.members]);
+      setUser({ ...user, balance: newBalance });
+    } catch (e: any) {
+      toast.error(e.message || "Erreur lors de la réclamation");
+    } finally {
+      setLoadingBonus(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28 font-sans text-gray-900 relative">
-      {/* Background Subtle Gradient */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/5 to-transparent -translate-y-1/2 translate-x-1/3"></div>
-      </div>
-
-      {/* Header épuré sans logo ni nom Cargill */}
-      <div className="bg-white px-5 pt-8 pb-4 shadow-sm border-b border-black/5 sticky top-0 z-30 flex items-center justify-between">
-        <button
-          onClick={() => navigate(-1)}
-          className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 hover:bg-black/10 transition-colors border border-black/5 cursor-pointer active:scale-95"
-          aria-label="Retour"
-        >
-          <ArrowLeft className="w-5 h-5" />
+    <div className="min-h-[100dvh] bg-[#03296c] p-4 pt-10 pb-32 font-sans text-white relative">
+      <header className="mb-6 flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-blue-200/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm shrink-0">
+          <ChevronLeft className="w-5 h-5" />
         </button>
-        <div className="text-center flex-1">
-          <h1 className="text-base font-black text-gray-900 tracking-tight">Commissions</h1>
-          <p className="text-[11px] text-gray-500 font-semibold">Paliers de parrainage & récompenses</p>
+        <div>
+          <h1 className="text-2xl font-black tracking-tight">Commissions</h1>
+          <p className="text-blue-200/60 text-xs font-semibold uppercase tracking-wider mt-0.5">Bonus d'invitation</p>
         </div>
-        <div className="w-10"></div>
+      </header>
+      
+      <div className="bg-white/10 rounded-2xl p-5 border border-white/20 shadow-sm flex flex-col justify-center mb-6">
+        <div className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-500 mb-2">
+           <Trophy className="w-5 h-5" />
+        </div>
+        <p className="text-blue-200/60 text-[10px] font-bold uppercase tracking-widest mb-1">Membres Actifs (Niveau 1)</p>
+        <p className="text-white font-black text-2xl">{isLoading ? <Loader2 className="w-6 h-6 animate-spin text-slate-400 mt-1" /> : activeL1Count}</p>
+        <p className="text-xs text-slate-400 font-medium mt-1">Seuls les membres ayant rechargé leur compte sont comptabilisés.</p>
       </div>
 
-      <div className="p-4 sm:p-5 space-y-4 max-w-md mx-auto relative z-10">
+      <div className="space-y-4">
+        {BONUS_LEVELS.map((level, idx) => {
+          const isClaimed = claimedBonuses.includes(level.members);
+          const isUnlocked = activeL1Count >= level.members;
+          const progress = Math.min(100, Math.max(0, (activeL1Count / level.members) * 100));
 
-        {/* Message de succès lors de la réclamation */}
-        {successMessage && (
-          <div className="p-3.5 bg-emerald-50 border border-emerald-500/30 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2.5 shadow-sm animate-in fade-in">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span>{successMessage}</span>
-          </div>
-        )}
-
-        {/* Bannière explicative : Niveau 1 uniquement */}
-        <div className="bg-emerald-50/80 border border-emerald-500/20 rounded-2xl p-3.5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                <Users className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-gray-900">Membres Niveau 1 qualifiés</p>
-                <p className="text-[10px] text-gray-500 font-medium">Seuls les filleuls directs avec recharge ≥ 3 000 F comptent</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="text-lg font-black text-emerald-700">{qualifiedCount}</span>
-              <span className="text-[10px] text-gray-500 block font-semibold">actif{qualifiedCount > 1 ? 's' : ''}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Liste des Paliers avec boutons Réclamer lorsque la barre est remplie */}
-        <div className="space-y-3 pt-1">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-xs font-black text-gray-500 uppercase tracking-wider">
-              Paliers de progression
-            </h2>
-            <span className="text-[11px] font-bold text-emerald-700">10 Paliers • Niveau 1</span>
-          </div>
-
-          <div className="space-y-3">
-            {COMMISSION_TIERS.map((tier) => {
-              const isFilled = qualifiedCount >= tier.target;
-              const isClaimed = claimedTiers.includes(tier.id);
-              const progressPct = Math.min(100, Math.round((qualifiedCount / tier.target) * 100));
-              const isClaimingThis = claimingId === tier.id;
-
-              return (
-                <div
-                  key={tier.id}
-                  className={`p-4 rounded-2xl border transition-all duration-200 bg-white ${
-                    isClaimed
-                      ? 'border-emerald-500/20 bg-emerald-50/30'
-                      : isFilled
-                      ? 'border-emerald-500 ring-2 ring-emerald-500/10 shadow-sm'
-                      : 'border-black/5 shadow-xs'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3 mb-2.5">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
-                        isClaimed
-                          ? 'bg-emerald-600 text-white'
-                          : isFilled
-                          ? 'bg-emerald-100 text-emerald-700 border border-emerald-500/30'
-                          : 'bg-gray-100 text-gray-500'
-                      }`}>
-                        {isClaimed ? <CheckCircle2 className="w-5 h-5" /> : `N°${tier.id}`}
-                      </div>
-
-                      <div className="text-left">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-gray-900">
-                            {tier.target} {tier.target === 1 ? 'filleul direct (Niveau 1)' : 'filleuls directs (Niveau 1)'}
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-gray-500 font-medium">
-                          Recharge min. 3 000 F / membre N1
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      <div className="px-3 py-1.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-300/60">
-                        <Gift className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span>{tier.rewardLabel}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Barre de progression */}
-                  <div className="space-y-1.5 pt-1">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-gray-500 font-medium">
-                        Progression : {Math.min(qualifiedCount, tier.target)} / {tier.target}
-                      </span>
-                      <span className="font-bold text-emerald-700">{progressPct}%</span>
-                    </div>
-
-                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isFilled ? 'bg-emerald-600' : 'bg-emerald-500'
-                        }`}
-                        style={{ width: `${progressPct}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {/* Zone d'action : Bouton Réclamer si la barre est remplie */}
-                  <div className="mt-3 pt-2.5 border-t border-gray-100">
-                    {isClaimed ? (
-                      <div className="flex items-center justify-between text-xs py-1 text-emerald-800 font-bold bg-emerald-50 px-3 rounded-xl border border-emerald-500/20">
-                        <span className="flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          Bonus crédité sur votre solde
-                        </span>
-                        <span className="font-black text-emerald-700">+{tier.rewardLabel}</span>
-                      </div>
-                    ) : isFilled ? (
-                      <button
-                        type="button"
-                        onClick={() => handleClaim(tier)}
-                        disabled={isClaimingThis}
-                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-xs shadow-md shadow-emerald-700/20 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer disabled:opacity-75"
-                      >
-                        {isClaimingThis ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Crédit en cours...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4 text-amber-300" />
-                            <span>Réclamer {tier.rewardLabel}</span>
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <div className="flex items-center justify-between text-[11px] text-gray-400 py-1 font-medium">
-                        <span>Encore {tier.target - qualifiedCount} filleul{tier.target - qualifiedCount > 1 ? 's' : ''} N1 (recharge ≥ 3 000 F)</span>
-                        <span className="text-gray-400 font-bold">À débloquer</span>
-                      </div>
-                    )}
-                  </div>
-
+          return (
+            <motion.div 
+              key={idx} 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              className={`bg-white/10 rounded-3xl p-5 border shadow-sm relative ${isClaimed ? 'border-brand-200 bg-brand-50/30' : isUnlocked ? 'border-brand-400' : 'border-white/20'}`}
+            >
+              {isClaimed && (
+                <div className="absolute top-4 right-4">
+                  <CheckCircle2 className="w-5 h-5 text-brand-500" />
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              )}
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isClaimed || isUnlocked ? 'bg-brand-100 text-brand-600' : 'bg-white/5 text-slate-400'}`}>
+                  <Gift className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className={`text-xs font-bold uppercase tracking-wider ${isClaimed || isUnlocked ? 'text-brand-600' : 'text-blue-200/60'}`}>
+                    {level.members} Membre{level.members > 1 ? 's' : ''} actif{level.members > 1 ? 's' : ''}
+                  </p>
+                  <p className="text-xl font-black text-white">{formatCurrency(level.amount)}</p>
+                </div>
+              </div>
 
+              <div className="mb-5">
+                <div className="flex justify-between items-end mb-1.5">
+                  <span className="text-[10px] font-bold text-blue-200/60 uppercase">Progression</span>
+                  <span className="text-xs font-black text-white/90">{activeL1Count}/{level.members}</span>
+                </div>
+                <div className="h-2.5 bg-white/5 rounded-full overflow-hidden">
+                  <motion.div 
+                    className={`h-full rounded-full ${isClaimed ? 'bg-brand-400' : isUnlocked ? 'bg-brand-500' : 'bg-slate-300'}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={() => claimBonus(level)}
+                disabled={!isUnlocked || isClaimed || loadingBonus === level.members}
+                className={`w-full py-3.5 rounded-2xl text-sm font-black transition-all flex items-center justify-center gap-2 ${
+                  isClaimed
+                    ? 'bg-brand-100 text-brand-600 cursor-not-allowed'
+                    : isUnlocked
+                      ? 'bg-brand-500 text-white hover:bg-brand-400 active:scale-95 shadow-lg shadow-brand-500/20'
+                      : 'bg-white/5 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                {loadingBonus === level.members ? <Loader2 className="w-5 h-5 animate-spin" /> : isClaimed ? 'Déjà réclamé' : 'Réclamer mon bonus'}
+              </button>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );
