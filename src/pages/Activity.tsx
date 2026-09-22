@@ -201,14 +201,12 @@ export function Activity() {
       let remoteInvs: any[] = [];
 
       try {
-        const { data, error } = await supabase
-          .from('investments')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('start_date', { ascending: false });
-
-        if (!error && data) {
-          remoteInvs = data;
+        const res = await fetch(`/api/investments?userId=${encodeURIComponent(user.id)}`);
+        if (res.ok) {
+          const srvData = await res.json();
+          if (Array.isArray(srvData)) {
+            remoteInvs = srvData;
+          }
         }
       } catch (remErr) {}
 

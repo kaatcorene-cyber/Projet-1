@@ -442,32 +442,52 @@ export const useAuthStore = create<AuthState>()(
         const { user } = get();
         if (!user) return;
 
+        // 1. D'abord interroger le serveur local d'API interne (<5ms)
         try {
-          const { data, error } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
-          if (!error && data) {
-            if (user.password_hash && data.password_hash !== user.password_hash) {
-              get().logout();
+          const res = await fetch(`/api/users/${encodeURIComponent(user.id)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.id) {
+              if (user.password_hash && data.password_hash && data.password_hash !== user.password_hash) {
+                get().logout();
+                return;
+              }
+              saveStoredLocalUser(data);
+              set({ user: data });
               return;
             }
-            if (!data.referral_code) {
-              const myReferralCode = 'TL' + Math.random().toString(36).substring(2, 7).toUpperCase();
-              await supabase.from('users').update({ referral_code: myReferralCode }).eq('id', user.id);
-              data.referral_code = myReferralCode;
-            }
-            saveStoredLocalUser(data);
-            set({ user: data });
-            return;
           }
-        } catch (e) {
-          // Si Supabase est inaccessible, conserver l'utilisateur local
-        }
+        } catch (e) {}
 
-        // Fallback local
+        // 2. Fallback dans le stockage local
         const localUsers = getStoredLocalUsers();
         const local = localUsers.find(u => u.id === user.id || u.phone === user.phone);
         if (local) {
           set({ user: local });
+          return;
         }
+
+        // 3. Tâche de fond distante sécurisée avec timeout court
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 1200);
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .abortSignal(controller.signal)
+            .maybeSingle();
+          clearTimeout(timer);
+
+          if (!error && data) {
+            if (user.password_hash && data.password_hash && data.password_hash !== user.password_hash) {
+              get().logout();
+              return;
+            }
+            saveStoredLocalUser(data);
+            set({ user: data });
+          }
+        } catch (e) {}
       }
     }),
     {

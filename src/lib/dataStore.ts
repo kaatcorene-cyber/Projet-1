@@ -85,16 +85,8 @@ const SEED_SETTINGS: Record<string, string> = {
   app_logo: '/agritrans-logo.png'
 };
 
-// Nettoyage immédiat au chargement pour supprimer tous les faux comptes démo et ne conserver que l'Admin
-try {
-  const CLEANUP_KEY = 'agritrans_purge_non_admin_v3';
-  if (typeof window !== 'undefined' && safeStorage.getItem(CLEANUP_KEY) !== 'done') {
-    safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify([SEED_ADMIN]));
-    safeStorage.setItem(LOCAL_TX_KEY, JSON.stringify([]));
-    safeStorage.setItem(LOCAL_INV_KEY, JSON.stringify([]));
-    safeStorage.setItem(CLEANUP_KEY, 'done');
-  }
-} catch (e) {}
+// Initialisation de la persistance locale sécurisée
+
 
 // --- USERS ---
 export function getLocalUsers(): User[] {

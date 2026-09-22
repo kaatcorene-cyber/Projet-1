@@ -51,14 +51,9 @@ export function Invest() {
     if (user?.id) {
       const fetchActiveCount = async () => {
         try {
-          const { count } = await supabase
-            .from('investments')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('status', 'active');
-          if (typeof count === 'number') {
-            setActiveCount(count);
-          }
+          const localInvs = getLocalInvestments(user.id);
+          const activeLocal = localInvs.filter(i => i.status === 'active').length;
+          setActiveCount(activeLocal);
         } catch (e) {}
       };
       fetchActiveCount();
@@ -66,29 +61,25 @@ export function Invest() {
 
     async function fetchPlans() {
       try {
-        const { data } = await supabase
-          .from('settings')
-          .select('value')
-          .eq('key', 'investment_plans')
-          .maybeSingle();
-
-        if (data?.value) {
-          const parsed = JSON.parse(data.value);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const formatted = parsed.map((p: any, idx: number) => ({
-              ...p,
-              id: p.id || `plan_${p.amount || idx}_${idx}`,
-              name: p.name || `Formule ${formatCurrency(p.amount)}`
-            }));
-            setPlans(formatted);
-            try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const settings = await res.json();
+          if (settings?.investment_plans) {
+            const parsed = JSON.parse(settings.investment_plans);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const formatted = parsed.map((p: any, idx: number) => ({
+                ...p,
+                id: p.id || `plan_${p.amount || idx}_${idx}`,
+                name: p.name || `Formule ${formatCurrency(p.amount)}`
+              }));
+              setPlans(formatted);
               localStorage.setItem('agritrans_investment_plans', JSON.stringify(formatted));
-              localStorage.setItem('translogis_investment_plans', JSON.stringify(formatted));
-            } catch (err) {}
+              return;
+            }
           }
         }
       } catch (e) {
-        // Garder les plans en cache en cas de souci réseau
+        // Fallback
       }
     }
     fetchPlans();
@@ -190,50 +181,59 @@ export function Invest() {
         console.warn('Erreur calcul commissions:', comErr);
       }
 
-      // 4. Synchronisation distante sur Supabase
+      // 4. Synchronisation instantanée sur le serveur d'API interne (<5ms)
       try {
-        await supabase
-          .from('investments')
-          .insert([{
-            id: investId,
-            user_id: user.id,
-            plan_amount: requiredAmount,
-            daily_yield: Number(plan.daily),
-            start_date: now.toISOString(),
-            end_date: endsAt.toISOString(),
-            last_paid_at: now.toISOString(),
-            status: 'active'
-          }]);
-
-        await supabase
-          .from('users')
-          .update({ balance: newBalance })
-          .eq('id', user.id);
-
-        await supabase.from('transactions').insert([{
-          id: txId,
-          user_id: user.id,
-          type: 'investment',
-          amount: requiredAmount,
-          status: 'approved',
-          reference: `Souscription - ${plan.name}`,
-          created_at: now.toISOString()
-        }]);
-      } catch (remoteSyncErr) {
-        console.warn('Souscription enregistrée localement, sync Supabase différée:', remoteSyncErr);
+        await Promise.all([
+          fetch('/api/investments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: investId,
+              user_id: user.id,
+              plan_amount: requiredAmount,
+              daily_yield: Number(plan.daily),
+              start_date: now.toISOString(),
+              end_date: endsAt.toISOString(),
+              last_paid_at: now.toISOString(),
+              status: 'active'
+            })
+          }),
+          fetch(`/api/users/${user.id}/balance`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ balance: newBalance })
+          }),
+          fetch('/api/transactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: txId,
+              user_id: user.id,
+              type: 'investment',
+              amount: requiredAmount,
+              status: 'approved',
+              reference: `Souscription - ${plan.name}`,
+              created_at: now.toISOString()
+            })
+          })
+        ]);
+      } catch (srvErr) {
+        console.warn('Erreur synchro serveur interne:', srvErr);
       }
 
-      try {
-        const { data: currentInvestments } = await supabase
-          .from('investments')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('start_date', { ascending: false });
-
-        if (currentInvestments) {
-          setInvestmentsCache(currentInvestments);
-        }
-      } catch (cacheErr) {}
+      // Synchronisation distante Supabase en tâche de fond discrète
+      Promise.resolve(
+        supabase.from('investments').insert([{
+          id: investId,
+          user_id: user.id,
+          plan_amount: requiredAmount,
+          daily_yield: Number(plan.daily),
+          start_date: now.toISOString(),
+          end_date: endsAt.toISOString(),
+          last_paid_at: now.toISOString(),
+          status: 'active'
+        }])
+      ).catch(() => {});
 
       await refreshUser();
       setActiveCount(prev => prev + 1);

@@ -88,14 +88,19 @@ export function Profile() {
   }, [user?.id, refreshUser]);
 
   useEffect(() => {
-    supabase.from('settings').select('*').in('key', ['telegram_link', 'whatsapp_support', 'support_link', 'official_group']).then(({ data }) => {
-      if (data) {
-        const group = data.find(s => s.key === 'telegram_link' || s.key === 'official_group');
-        const support = data.find(s => s.key === 'whatsapp_support' || s.key === 'support_link');
-        if (group && group.value) setGroupLink(group.value);
-        if (support && support.value) setSupportLink(support.value);
-      }
-    });
+    fetch('/api/settings')
+      .then(r => r.ok ? r.json() : null)
+      .then(settings => {
+        if (settings) {
+          if (settings.telegram_link || settings.group_link) {
+            setGroupLink(settings.telegram_link || settings.group_link);
+          }
+          if (settings.whatsapp_support || settings.support_link) {
+            setSupportLink(settings.whatsapp_support || settings.support_link);
+          }
+        }
+      })
+      .catch(() => {});
 
     const handler = (e: any) => {
       e.preventDefault();

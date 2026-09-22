@@ -215,25 +215,40 @@ export async function claimCultureYield(inv: any, userId: string): Promise<{ suc
       created_at: nowIso
     });
 
-    // 5. Synchronisation distante sur Supabase en arrière-plan
+    // 5. Synchronisation avec le serveur interne et tâche de fond Supabase
     try {
-      await supabase.from('users').update({ balance: newBalance }).eq('id', userId);
-      await supabase.from('investments').update({
+      fetch('/api/investments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...inv,
+          last_paid_at: newLastPaidIso,
+          status: isNowFinished ? 'completed' : 'active'
+        })
+      }).catch(() => {});
+
+      fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: txId,
+          user_id: userId,
+          type: 'daily_gain',
+          amount: yieldAmount,
+          status: 'completed',
+          reference: gainRef,
+          created_at: nowIso
+        })
+      }).catch(() => {});
+    } catch (e) {}
+
+    // Synchronisation distante Supabase discrète
+    Promise.resolve(
+      supabase.from('investments').update({
         last_paid_at: newLastPaidIso,
         status: isNowFinished ? 'completed' : 'active'
-      }).eq('id', inv.id);
-      await supabase.from('transactions').insert([{
-        id: txId,
-        user_id: userId,
-        type: 'daily_gain',
-        amount: yieldAmount,
-        status: 'completed',
-        reference: gainRef,
-        created_at: nowIso
-      }]);
-    } catch (remoteErr) {
-      console.warn('Synchronisation Supabase différée pour le rendement:', remoteErr);
-    }
+      }).eq('id', inv.id)
+    ).catch(() => {});
 
     return {
       success: true,

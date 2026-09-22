@@ -71,9 +71,14 @@ export function Support() {
   }, [verifState]);
 
   useEffect(() => {
-    supabase.from('settings').select('*').eq('key', 'support_link').single().then(({ data }) => {
-      if (data && data.value) setSupportLink(data.value);
-    });
+    fetch('/api/settings')
+      .then(r => r.ok ? r.json() : null)
+      .then(settings => {
+        if (settings && (settings.support_link || settings.whatsapp_support)) {
+          setSupportLink(settings.support_link || settings.whatsapp_support);
+        }
+      })
+      .catch(() => {});
 
     if (messages.length === 0) {
       setMessages([

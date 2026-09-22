@@ -8,6 +8,14 @@ import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
 import { serverDb } from './server/db.js';
 
+process.on('uncaughtException', (err) => {
+  console.error('[Server UncaughtException]:', err.message);
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  console.error('[Server UnhandledRejection]:', reason?.message || reason);
+});
+
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 // --- TELEGRAM BOT & CRON LOGIC ---
@@ -237,6 +245,17 @@ async function startServer() {
   app.get("/api/users", (req, res) => {
     try {
       res.json(serverDb.getUsers());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/users/:id", (req, res) => {
+    try {
+      const param = req.params.id;
+      const user = serverDb.getUserById(param) || serverDb.getUserByPhone(param);
+      if (user) return res.json(user);
+      res.status(404).json({ error: "Utilisateur non trouvé" });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }

@@ -279,10 +279,36 @@ export function Withdraw() {
         created_at: new Date().toISOString()
       });
 
-      // 5. Synchronisation Supabase en tâche de fond sécurisée
+      // 5. Synchronisation immédiate avec le serveur d'API interne (<5ms)
       try {
-        await supabase.from('users').update({ balance: newBalance }).eq('id', user.id);
-        await supabase.from('transactions').insert([{
+        await Promise.all([
+          fetch(`/api/users/${user.id}/balance`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ balance: newBalance })
+          }),
+          fetch('/api/transactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: newTxId,
+              user_id: user.id,
+              type: 'withdrawal',
+              amount: numAmount,
+              status: 'pending',
+              reference: referenceText,
+              description: `Retrait ${savedCountry ? `(${savedCountry}) ` : ''}vers ${savedMethod} ${dialLabel}${savedPhone}`,
+              created_at: new Date().toISOString()
+            })
+          })
+        ]);
+      } catch (srvErr) {
+        console.warn('Erreur synchronisation serveur interne:', srvErr);
+      }
+
+      // Synchronisation distante Supabase en tâche de fond discrète
+      Promise.resolve(
+        supabase.from('transactions').insert([{
           id: newTxId,
           user_id: user.id,
           type: 'withdrawal',
@@ -291,10 +317,8 @@ export function Withdraw() {
           reference: referenceText,
           description: `Retrait ${savedCountry ? `(${savedCountry}) ` : ''}vers ${savedMethod} ${dialLabel}${savedPhone}`,
           created_at: new Date().toISOString()
-        }]);
-      } catch (remoteErr) {
-        console.warn('Synchronisation Supabase différée pour le retrait:', remoteErr);
-      }
+        }])
+      ).catch(() => {});
 
       setMessage({
         type: 'success',

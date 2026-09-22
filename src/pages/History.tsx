@@ -37,15 +37,12 @@ export function History() {
     let remoteTxs: any[] = [];
 
     try {
-      const { data: txData } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      
-      if (txData) {
-        remoteTxs = txData;
+      const res = await fetch(`/api/transactions?userId=${encodeURIComponent(user.id)}`);
+      if (res.ok) {
+        const txData = await res.json();
+        if (Array.isArray(txData)) {
+          remoteTxs = txData;
+        }
       }
     } catch (e) {}
 
