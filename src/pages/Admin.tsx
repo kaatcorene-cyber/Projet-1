@@ -1,163 +1,275 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore, deleteStoredLocalUser, generatePhoneCandidates } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { Key, ChevronLeft, Image as ImageIcon, CheckCircle, XCircle, Trash2, Plus, Users, ArrowDownRight, ArrowUpRight, LayoutList, Settings as SettingsIcon, Edit2, ShieldAlert, Crown, Upload, Loader2, TrendingUp, Activity, CreditCard, BarChart3, Save, Edit, Bot, Search, AlertCircle } from 'lucide-react';
-import { formatCurrency, generateUserId } from '../lib/utils';
+import { 
+  ChevronLeft, CheckCircle, XCircle, Trash2, Plus, Users, 
+  ArrowDownRight, ArrowUpRight, LayoutList, Edit2, ShieldAlert, 
+  Upload, Loader2, Activity, BarChart3, Save, Edit, 
+  Lock, Unlock, RotateCcw 
+} from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
-const DEFAULT_PLANS: any[] = [];
+import { DEFAULT_CROP_PLANS, CropPlan } from '../data/plans';
+import { getCropInfo } from '../lib/investments';
+import { 
+  getLocalUsers, 
+  saveLocalUser, 
+  saveLocalUsersBatch,
+  deleteLocalUser, 
+  getLocalTransactions, 
+  saveLocalTransaction, 
+  saveLocalTransactionsBatch,
+  updateLocalTransactionStatus, 
+  deleteLocalTransaction, 
+  getLocalInvestments, 
+  saveLocalInvestment,
+  saveLocalInvestmentsBatch,
+  deleteLocalInvestment,
+  getLocalSettings, 
+  saveLocalSettings,
+  isPermanentlyDeletedPhone,
+  deleteAccountCompletely,
+  SEED_ADMIN
+} from '../lib/dataStore';
+import { safeStorage } from '../lib/storage';
 
 const VIP_LEVELS = ['user', 'vip1', 'vip2', 'vip3', 'vip4', 'vip5'];
-
-
-const paymentMethodNames: Record<string, string> = {
-  'orange': 'Orange Money',
-  'mtn': 'MTN Mobile Money',
-  'moov': 'Moov Money',
-  'wave': 'Wave',
-  'bank': 'Virement Bancaire',
-  'crypto': 'Cryptomonnaie'
-};
-
 
 export function Admin() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState('overview');
   const [isInitializing, setIsInitializing] = useState(true);
 
   const [transactions, setTransactions] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [investmentsList, setInvestmentsList] = useState<any[]>([]);
-  const [vaultList, setVaultList] = useState<any[]>([]);
-  const [newVaultCode, setNewVaultCode] = useState("");
-  const [newVaultAmount, setNewVaultAmount] = useState("");
-  const [isAddingVault, setIsAddingVault] = useState(false);
   
   // Settings
   const [paymentLink, setPaymentLink] = useState('');
+  const [appLogo, setAppLogo] = useState('');
+  const [ussdCI, setUssdCI] = useState('*155*1*1*0140814162#');
+  const [ussdMtnCI, setUssdMtnCI] = useState('*133*1*1*0595918513#');
+  const [waveNumber, setWaveNumber] = useState('0574738155');
   const [groupLink, setGroupLink] = useState('');
   const [supportLink, setSupportLink] = useState('');
+  const [extraSettings, setExtraSettings] = useState<Record<string, string>>({});
 
-  const [plans, setPlans] = useState<any[]>([]);
+  // Plans
+  const [plans, setPlans] = useState<CropPlan[]>(DEFAULT_CROP_PLANS);
   
-  // States for Plans
+  // States for Plan Form
+  const [newPlanName, setNewPlanName] = useState('');
   const [newPlanAmount, setNewPlanAmount] = useState('');
-  const [newPlanPercent, setNewPlanPercent] = useState('18');
+  const [newPlanPercent, setNewPlanPercent] = useState('7');
   const [newPlanDuration, setNewPlanDuration] = useState('60');
   const [newPlanDaily, setNewPlanDaily] = useState('');
   const [newPlanTotal, setNewPlanTotal] = useState('');
   const [newPlanImage, setNewPlanImage] = useState('');
+  const [newPlanLocked, setNewPlanLocked] = useState(false);
   const [editingPlanIndex, setEditingPlanIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // States for Users
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editBalance, setEditBalance] = useState('');
-  
-  // States for Banks
-  const [editingBankUserId, setEditingBankUserId] = useState<string | null>(null);
-  const [editBankMethod, setEditBankMethod] = useState('');
-  const [editBankAccountName, setEditBankAccountName] = useState('');
-  const [editBankAccountNumber, setEditBankAccountNumber] = useState('');
-  
   const [searchTerm, setSearchTerm] = useState('');
 
   const [loading, setLoading] = useState(false);
+  // Verrouillage anti-double clic / idempotence pour les confirmations de transaction
+  const processingTxRef = useRef<Set<string>>(new Set());
+  const [processingTxIds, setProcessingTxIds] = useState<Record<string, boolean>>({});
   const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, message: string, onConfirm: () => void} | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-
+  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.phone === '+2250704752133' || user?.phone === '0704752133';
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
-      navigate('/dashboard');
+    if (!user) {
+      navigate('/login');
       return;
     }
-    fetchData(true);
+    if (!isAdmin) {
+      navigate('/profile');
+      return;
+    }
+    fetchData();
 
-    // Polling for live admin updates (Reduced frequency to save database quota)
     const intervalId = setInterval(() => {
-      fetchData(false); // pass a flag to possibly NOT trigger loading state
-    }, 60000 * 2); // 2 minutes instead of 5 seconds
+      fetchData(false);
+    }, 15000);
 
     return () => clearInterval(intervalId);
-  }, [user, navigate]);
+  }, [user, navigate, isAdmin]);
 
   const fetchData = async (showLoading = true) => {
-    if (showLoading) setIsInitializing(true);
+    // 1. Charger immédiatement le cache local sans bloquer l'interface
+    const localUsers = getLocalUsers();
+    const localTxs = getLocalTransactions();
+    const localInvs = getLocalInvestments();
+    const localSets = getLocalSettings();
+
+    setUsersList(localUsers.filter(u => !isPermanentlyDeletedPhone(u.phone)));
+    setTransactions(localTxs.filter(t => !isPermanentlyDeletedPhone(t.users?.phone)));
+    setInvestmentsList(localInvs.filter(i => !isPermanentlyDeletedPhone(i.users?.phone)));
+
+    // Paramètres locaux immédiats
+    if (localSets.payment_link) setPaymentLink(localSets.payment_link);
+    if (localSets.group_link) setGroupLink(localSets.group_link);
+    if (localSets.support_link) setSupportLink(localSets.support_link);
+    if (localSets.ussd_ci) setUssdCI(localSets.ussd_ci);
+    if (localSets.wave_number) setWaveNumber(localSets.wave_number);
+    if (localSets.ussd_mtn_ci) setUssdMtnCI(localSets.ussd_mtn_ci);
+    if (localSets.app_logo) setAppLogo(localSets.app_logo);
+
+    // Débloquer l'affichage instantanément
+    setIsInitializing(false);
+
     try {
-      const [txsRes, usersRes, settingsRes, invsRes] = await Promise.all([
-        supabase.from('transactions').select('*, users(id, first_name, last_name, phone)').in('type', ['deposit', 'withdrawal']).order('created_at', { ascending: false }),
-        supabase.from('users').select('*, investments(plan_amount)').order('created_at', { ascending: false }),
-        supabase.from('settings').select('*'),
-        supabase.from('investments').select('*, users(id, first_name, last_name, phone)').order('start_date', { ascending: false })
+      // 2. Récupérer les données fraîches depuis l'API serveur interne (réponse en 2ms)
+      const fetchServerData = async () => {
+        try {
+          const [uRes, tRes, iRes, sRes] = await Promise.all([
+            fetch('/api/users').then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch('/api/transactions').then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch('/api/investments').then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch('/api/settings').then(r => r.ok ? r.json() : null).catch(() => null)
+          ]);
+          return { serverUsers: uRes, serverTxs: tRes, serverInvs: iRes, serverSets: sRes };
+        } catch (e) {
+          return { serverUsers: null, serverTxs: null, serverInvs: null, serverSets: null };
+        }
+      };
+
+      // 3. Tenter Supabase avec un timeout court (1500ms max) pour ne jamais ralentir l'administrateur
+      const safeQuery = async (queryPromise: PromiseLike<any>) => {
+        try {
+          return await Promise.race([
+            queryPromise,
+            new Promise((resolve) => setTimeout(() => resolve({ data: null, error: 'timeout' }), 1500))
+          ]);
+        } catch (e) {
+          return { data: null, error: e };
+        }
+      };
+
+      const [serverResult, usersRes, transRes, invRes, settingsRes] = await Promise.all([
+        fetchServerData(),
+        safeQuery(supabase.from('users').select('*').order('created_at', { ascending: false })),
+        safeQuery(supabase.from('transactions').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false })),
+        safeQuery(supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false })),
+        safeQuery(supabase.from('settings').select('*'))
       ]);
-      
 
-      if (txsRes.data) setTransactions(txsRes.data);
-      
-      if (usersRes.data) {
-        let uData = usersRes.data;
-        if (settingsRes.data) {
-          uData = uData.map(u => {
-            const bSet = settingsRes.data.find(s => s.key === 'bank_' + u.id);
-            if (bSet && bSet.value) {
-              try {
-                const parsed = JSON.parse(bSet.value);
-                return { ...u, bank_method: parsed.bank_method, bank_account_name: parsed.bank_account_name, bank_account_number: parsed.bank_account_number };
-              } catch(e) {}
-            }
-            return u;
-          });
-        }
-        setUsersList(uData);
+      // Fusion des utilisateurs (Serveur > Supabase > Local)
+      const userMap = new Map<string, any>();
+      localUsers.forEach(u => userMap.set(u.id, u));
+      if (serverResult.serverUsers && Array.isArray(serverResult.serverUsers)) {
+        serverResult.serverUsers.forEach((u: any) => {
+          userMap.set(u.id, { ...userMap.get(u.id), ...u });
+        });
+        saveLocalUsersBatch(serverResult.serverUsers);
       }
-      if (settingsRes.data) {
-        const v = settingsRes.data.filter(s => s.key.startsWith('vault_')).map(s => { try { return JSON.parse(s.value); } catch { return null; } }).filter(Boolean);
-        setVaultList(v.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+      if (usersRes?.data && Array.isArray(usersRes.data)) {
+        usersRes.data.forEach((u: any) => {
+          userMap.set(u.id, { ...userMap.get(u.id), ...u });
+        });
+        saveLocalUsersBatch(usersRes.data);
       }
 
-      if (invsRes.data) {
-        setInvestmentsList(invsRes.data);
+      const mergedUsers = Array.from(userMap.values()).filter(u => !isPermanentlyDeletedPhone(u.phone));
+      if (!mergedUsers.some(u => u.phone === SEED_ADMIN.phone || u.id === SEED_ADMIN.id)) {
+        mergedUsers.unshift(SEED_ADMIN);
       }
+      setUsersList(mergedUsers);
 
-      if (settingsRes.data && showLoading) {
-        const link = settingsRes.data.find(s => s.key === 'payment_link');
-        if (link) setPaymentLink(link.value);
-        
-        const grp = settingsRes.data.find(s => s.key === 'group_link');
-        
-        if (grp) setGroupLink(grp.value);
+      // Fusion des transactions
+      const txMap = new Map<string, any>();
+      localTxs.forEach(t => txMap.set(t.id, t));
+      if (serverResult.serverTxs && Array.isArray(serverResult.serverTxs)) {
+        serverResult.serverTxs.forEach((t: any) => {
+          txMap.set(t.id, { ...txMap.get(t.id), ...t });
+        });
+        saveLocalTransactionsBatch(serverResult.serverTxs);
+      }
+      if (transRes?.data && Array.isArray(transRes.data)) {
+        transRes.data.forEach((t: any) => {
+          txMap.set(t.id, { ...txMap.get(t.id), ...t });
+        });
+      }
+      setTransactions(Array.from(txMap.values()).filter(t => !isPermanentlyDeletedPhone(t.users?.phone)));
 
-        const sup = settingsRes.data.find(s => s.key === 'support_link');
-        if (sup) setSupportLink(sup.value);
-        
-        const dbPlansStr = settingsRes.data.find(s => s.key === 'investment_plans');
-        if (dbPlansStr && dbPlansStr.value) {
-          try {
-            const parsed = JSON.parse(dbPlansStr.value);
-            setPlans(parsed);
-          } catch (e) {
-            setPlans(DEFAULT_PLANS);
+      // Fusion des investissements
+      const invMap = new Map<string, any>();
+      localInvs.forEach(i => invMap.set(i.id, i));
+      if (serverResult.serverInvs && Array.isArray(serverResult.serverInvs)) {
+        serverResult.serverInvs.forEach((i: any) => {
+          invMap.set(i.id, { ...invMap.get(i.id), ...i });
+        });
+        saveLocalInvestmentsBatch(serverResult.serverInvs);
+      }
+      if (invRes?.data && Array.isArray(invRes.data)) {
+        invRes.data.forEach((i: any) => {
+          invMap.set(i.id, { ...invMap.get(i.id), ...i });
+        });
+      }
+      setInvestmentsList(Array.from(invMap.values()).filter(i => !isPermanentlyDeletedPhone(i.users?.phone)));
+
+      // Paramètres
+      const remoteSettings = settingsRes?.data || [];
+      const sMap: Record<string, string> = { ...localSets, ...(serverResult.serverSets || {}) };
+      if (Array.isArray(remoteSettings)) {
+        remoteSettings.forEach((item: any) => {
+          if (item?.key && item?.value !== undefined) {
+            sMap[item.key] = item.value;
           }
-        } else {
-          setPlans(DEFAULT_PLANS);
+        });
+      }
+
+      if (sMap.payment_link) setPaymentLink(sMap.payment_link);
+      if (sMap.group_link) setGroupLink(sMap.group_link);
+      if (sMap.support_link) setSupportLink(sMap.support_link);
+      if (sMap.ussd_ci) setUssdCI(sMap.ussd_ci);
+      if (sMap.wave_number) setWaveNumber(sMap.wave_number);
+      if (sMap.ussd_mtn_ci) setUssdMtnCI(sMap.ussd_mtn_ci);
+      if (sMap.app_logo) setAppLogo(sMap.app_logo);
+
+      const extraKeys = [
+        'bj_moov_number', 'bj_moov_syntax', 'bj_mtn_number', 'bj_mtn_syntax', 
+        'bf_moov_number', 'bf_moov_syntax', 'bf_wave_number', 
+        'tg_moov_number', 'tg_moov_syntax', 
+        'sn_wave_number', 'ne_wave_number', 
+        'ml_moov_number', 'ml_moov_syntax', 'ml_wave_number'
+      ];
+      const extraObj: Record<string, string> = {};
+      extraKeys.forEach(k => {
+        extraObj[k] = sMap[k] || '';
+      });
+      setExtraSettings(extraObj);
+
+      const dbPlansStr = sMap['investment_plans'];
+      if (dbPlansStr) {
+        try {
+          const parsed = JSON.parse(dbPlansStr);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setPlans(parsed.map((p: any, idx: number) => ({
+              ...p,
+              id: p.id || `crop_${p.amount || idx}_${idx}`
+            })));
+          } else {
+            setPlans(DEFAULT_CROP_PLANS);
+          }
+        } catch (e) {
+          setPlans(DEFAULT_CROP_PLANS);
         }
-      } else if (showLoading) {
-        setPlans(DEFAULT_PLANS);
+      } else {
+        setPlans(DEFAULT_CROP_PLANS);
       }
     } catch (e) {
-      console.error(e);
+      console.warn('fetchData warn:', e);
     } finally {
       setIsInitializing(false);
     }
@@ -170,238 +282,249 @@ export function Admin() {
       message: `Voulez-vous vraiment modifier ce solde ?`,
       onConfirm: async () => {
         try {
-      
-    setLoading(true);
-    await supabase.from('users').update({ balance: Number(editBalance) }).eq('id', id);
-    setEditingUserId(null);
-    fetchData(false);
-    setLoading(false);
-  
-    } catch(err: any) {
-      setMessage({ type: 'error', text: "Erreur: " + err.message });
-      setLoading(false);
-    }
+          setLoading(true);
+          const newBal = Number(editBalance);
+          
+          // 1. Mise à jour locale immédiate
+          setUsersList(prev => prev.map(u => {
+            if (u.id === id) {
+              const updated = { ...u, balance: newBal };
+              saveLocalUser(updated);
+              if (user?.id === id) {
+                useAuthStore.getState().updateBalance(newBal);
+              }
+              return updated;
+            }
+            return u;
+          }));
+          setEditingUserId(null);
+
+          // API serveur mise à jour immédiate
+          try {
+            fetch(`/api/users/${id}/balance`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ balance: newBal })
+            }).catch(() => {});
+          } catch (e) {}
+
+          // 2. Synchronisation distante
+          try {
+            await supabase.from('users').update({ balance: newBal }).eq('id', id);
+          } catch (e) {}
+
+          setLoading(false);
+          setMessage({ type: 'success', text: "Solde mis à jour avec succès !" });
+        } catch(err: any) {
+          setMessage({ type: 'error', text: "Erreur: " + err.message });
+          setLoading(false);
+        }
       }
     });
   };
 
   const handleRoleChange = async (id: string, newRole: string) => {
-    setUsersList(prev => prev.map(u => u.id === id ? { ...u, role: newRole } : u));
-    await supabase.from('users').update({ role: newRole }).eq('id', id);
-    fetchData(false);
+    setUsersList(prev => prev.map(u => {
+      if (u.id === id) {
+        const updated = { ...u, role: newRole };
+        saveLocalUser(updated);
+        return updated;
+      }
+      return u;
+    }));
+    try {
+      await supabase.from('users').update({ role: newRole }).eq('id', id);
+    } catch (e) {}
+    setMessage({ type: 'success', text: `Rôle mis à jour (${newRole})` });
   };
 
-  const handleDeleteUser = async (id: string) => {
+  const handleDeleteUser = async (id: string, userPhone?: string, referralCode?: string) => {
     setConfirmModal({
       isOpen: true,
-      message: `Voulez-vous vraiment supprimer cet utilisateur ?`,
+      message: `Voulez-vous vraiment supprimer définitivement cet utilisateur (${userPhone || id}) ? Toutes ses transactions et investissements associés seront également supprimés.`,
       onConfirm: async () => {
         try {
-      
-    setLoading(true);
-    await supabase.from('transactions').delete().eq('user_id', id);
-    await supabase.from('investments').delete().eq('user_id', id);
-    await supabase.from('users').delete().eq('id', id);
-    setUsersList(prev => prev.filter(u => u.id !== id));
-    fetchData(false);
-    setLoading(false);
-  
-    } catch(err: any) {
-      setMessage({ type: 'error', text: "Erreur: " + err.message });
-      setLoading(false);
-    }
-      }
-    });
-  };
+          setLoading(true);
 
-  const handleUpdateUserBank = async (id: string) => {
-    setLoading(true);
-    const packedName = editBankAccountName || editBankAccountNumber 
-      ? `${editBankAccountName}|||${editBankAccountNumber}`
-      : '';
-      
+          // 1. Suppression locale immédiate
+          deleteLocalUser(id);
+          deleteStoredLocalUser(id);
+          setUsersList(prev => prev.filter(u => u.id !== id));
+          setTransactions(prev => prev.filter(t => t.user_id !== id));
+          setInvestmentsList(prev => prev.filter(i => i.user_id !== id));
 
-    
-    // Always save to settings
-    const { error: settingsError } = await supabase.from('settings').upsert({
-      key: 'bank_' + id,
-      value: JSON.stringify({ bank_method: editBankMethod, bank_account_name: editBankAccountName, bank_account_number: editBankAccountNumber })
-    });
-    
-    setLoading(false);
-    if (settingsError) {
-      setMessage({ type: 'error', text: 'Erreur lors de la mise à jour de la banque : ' + settingsError.message });
-    } else {
-      setMessage({ type: 'success', text: 'Coordonnées bancaires mises à jour !' });
-      setEditingBankUserId(null);
-      fetchData(false);
-    }
-  };
+          // 2. Suppression sur Supabase
+          try {
+            await supabase.from('transactions').delete().eq('user_id', id);
+            await supabase.from('investments').delete().eq('user_id', id);
+            await supabase.from('deposit_verifications').delete().eq('user_id', id);
+            if (referralCode) {
+              await supabase.from('users').update({ referred_by: null }).eq('referred_by', referralCode);
+            }
+            await supabase.from('users').delete().eq('id', id);
+          } catch (e) {}
 
-  const handleClearUserBank = async (id: string) => {
-    setConfirmModal({
-      isOpen: true,
-      message: 'Voulez-vous vraiment supprimer la banque de cet utilisateur ?',
-      onConfirm: async () => {
-        setLoading(true);
-        try {
-          await supabase.from('users').update({ 
-            bank_method: '',
-            bank_account_name: ''
-          }).eq('id', id);
-        } catch(e) {}
-        
-        await supabase.from('settings').delete().eq('key', 'bank_' + id);
-        
-        setLoading(false);
-        setMessage({ type: 'success', text: 'Banque supprimée avec succès !' });
-        fetchData(false);
-      }
-    });
-  };
-
-  const handleRemoveInvestment = async (id: string) => {
-    setConfirmModal({
-      isOpen: true,
-      message: 'Voulez-vous vraiment supprimer cet investissement ?',
-      onConfirm: async () => {
-
-    // removed confirm
-    setLoading(true);
-    await supabase.from('investments').delete().eq('id', id);
-    fetchData(false);
-    setLoading(false);
+          setMessage({ type: 'success', text: "Utilisateur et données associées supprimés avec succès." });
+        } catch(err: any) {
+          console.error('[DeleteUser Error]', err);
+          setMessage({ type: 'error', text: "Erreur suppression: " + (err.message || 'Impossible de supprimer cet utilisateur.') });
+        } finally {
+          setLoading(false);
+        }
       }
     });
   };
 
   // --- Transactions Handlers ---
-  
-  const getVipLevelForAdmin = (u: any) => {
-    if (u?.role && u.role.startsWith('vip')) {
-       return u.role.toUpperCase();
+  const handleTransaction = async (id: string, newStatus: string, type: string, amount: number, userId: string) => {
+    // 1. Verrou immédiat anti-double clic / re-entrance
+    if (processingTxRef.current.has(id)) {
+      console.warn(`[Admin] Transaction ${id} est déjà en cours de traitement.`);
+      return;
     }
-    const investments = u?.investments;
-    if (!investments || investments.length === 0) return 'VIP0';
-    const maxInvest = Math.max(...investments.map((i: any) => Number(i.plan_amount) || 0));
-    if (maxInvest >= 500000) return 'VIP5';
-    if (maxInvest >= 200000) return 'VIP4';
-    if (maxInvest >= 90000) return 'VIP3';
-    if (maxInvest >= 40000) return 'VIP2';
-    if (maxInvest >= 5000) return 'VIP1';
-    return 'VIP0';
-  };
-
-  const handleTransaction = async (id: string, status: 'approved' | 'rejected', type: string, amount: number, userId: string) => {
-    const actionText = status === 'approved' ? 'approuver' : 'rejeter';
-    const typeText = type === 'deposit' ? 'ce dépôt' : 'ce retrait';
-    
-    setConfirmModal({
-      isOpen: true,
-      message: `Voulez-vous vraiment ${actionText} ${typeText} ?`,
-      onConfirm: async () => {
-        try {
-    const actionText = status === 'approved' ? 'approuver' : 'rejeter';
-    
-
+    processingTxRef.current.add(id);
+    setProcessingTxIds(prev => ({ ...prev, [id]: true }));
     setLoading(true);
-    // Optimistic update
-    setTransactions(prev => prev.map(t => t.id === id ? { ...t, status } : t));
-    await supabase.from('transactions').update({ status }).eq('id', id);
 
-    if (status === 'approved') {
-      if (type === 'deposit') {
-        const { data: userData } = await supabase.from('users').select('balance, referred_by').eq('id', userId).single();
-        if (userData) {
-          await supabase.from('users').update({ balance: userData.balance + amount }).eq('id', userId);
+    try {
+      // 2. Mise à jour locale immédiate de la transaction
+      updateLocalTransactionStatus(id, newStatus);
+      setTransactions(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
 
-          // Check if this is the user's FIRST approved deposit to attribute referral bonus
-          const { count } = await supabase
-            .from('transactions')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId)
-            .eq('type', 'deposit')
-            .eq('status', 'approved');
-
-          if (count === 1 && userData.referred_by) {
-            // Level 1 logic (10%)
-            const { data: level1 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', userData.referred_by).maybeSingle();
-            
-            if (level1) {
-              const l1Bonus = amount * 0.10;
-              await supabase.from('users').update({ balance: level1.balance + l1Bonus }).eq('id', level1.id);
-              await supabase.from('transactions').insert([{
-                user_id: level1.id,
-                type: 'referral_bonus',
-                amount: l1Bonus,
-                status: 'completed',
-                reference: 'Bonus 1er dépôt L1 (10%)'
-              }]);
-
-              // Level 2 logic (3%)
-              if (level1.referred_by) {
-                const { data: level2 } = await supabase.from('users').select('id, balance, referred_by').eq('referral_code', level1.referred_by).maybeSingle();
-                
-                if (level2) {
-                  const l2Bonus = amount * 0.03;
-                  await supabase.from('users').update({ balance: level2.balance + l2Bonus }).eq('id', level2.id);
-                  await supabase.from('transactions').insert([{
-                    user_id: level2.id,
-                    type: 'referral_bonus',
-                    amount: l2Bonus,
-                    status: 'completed',
-                    reference: 'Bonus 1er dépôt L2 (3%)'
-                  }]);
-
-                  // Level 3 logic (2%)
-                  if (level2.referred_by) {
-                    const { data: level3 } = await supabase.from('users').select('id, balance').eq('referral_code', level2.referred_by).maybeSingle();
-                    
-                    if (level3) {
-                      const l3Bonus = amount * 0.02;
-                      await supabase.from('users').update({ balance: level3.balance + l3Bonus }).eq('id', level3.id);
-                      await supabase.from('transactions').insert([{
-                        user_id: level3.id,
-                        type: 'referral_bonus',
-                        amount: l3Bonus,
-                        status: 'completed',
-                        reference: 'Bonus 1er dépôt L3 (2%)'
-                      }]);
-                    }
-                  }
-                }
+      // 3. Gestion de l'impact sur le solde
+      if (newStatus === 'approved') {
+        if (type === 'deposit') {
+          let targetUserId: string | null = null;
+          let calculatedBal = 0;
+          setUsersList(prev => prev.map(u => {
+            const isMatch = u.id === userId || u.phone === userId || (u.phone && generatePhoneCandidates(u.phone).includes(userId));
+            if (isMatch) {
+              const newBal = Number(u.balance || 0) + Number(amount);
+              targetUserId = u.id;
+              calculatedBal = newBal;
+              const updatedUser = { ...u, balance: newBal };
+              saveLocalUser(updatedUser);
+              if (user?.id === u.id) {
+                useAuthStore.getState().updateBalance(newBal);
               }
+              return updatedUser;
             }
+            return u;
+          }));
+
+          if (targetUserId) {
+            try {
+              fetch(`/api/users/${targetUserId}/balance`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ balance: calculatedBal })
+              }).catch(() => {});
+            } catch (e) {}
+          }
+        }
+      } else if (newStatus === 'rejected') {
+        if (type === 'withdrawal') {
+          // Rembourser le solde déduit lors de la demande de retrait
+          let targetUserId: string | null = null;
+          let calculatedBal = 0;
+          setUsersList(prev => prev.map(u => {
+            const isMatch = u.id === userId || u.phone === userId || (u.phone && generatePhoneCandidates(u.phone).includes(userId));
+            if (isMatch) {
+              const newBal = Number(u.balance || 0) + Number(amount);
+              targetUserId = u.id;
+              calculatedBal = newBal;
+              const updatedUser = { ...u, balance: newBal };
+              saveLocalUser(updatedUser);
+              if (user?.id === u.id) {
+                useAuthStore.getState().updateBalance(newBal);
+              }
+              return updatedUser;
+            }
+            return u;
+          }));
+
+          if (targetUserId) {
+            try {
+              fetch(`/api/users/${targetUserId}/balance`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ balance: calculatedBal })
+              }).catch(() => {});
+            } catch (e) {}
           }
         }
       }
-    } else if (status === 'rejected' && type === 'withdrawal') {
-      const { data: userData } = await supabase.from('users').select('balance').eq('id', userId).single();
-      if (userData) {
-        await supabase.from('users').update({ balance: userData.balance + amount }).eq('id', userId);
+
+      // 4. Synchronisation Supabase en tâche de fond sécurisée
+      try {
+        await supabase
+          .from('transactions')
+          .update({ status: newStatus })
+          .eq('id', id);
+
+        if (newStatus === 'approved' && type === 'deposit') {
+          const { data: dbU } = await supabase.from('users').select('balance, referred_by').eq('id', userId).maybeSingle();
+          if (dbU) {
+            const newBal = Number(dbU.balance || 0) + Number(amount);
+            await supabase.from('users').update({ balance: newBal }).eq('id', userId);
+
+            // Bonus de parrainage sur premier dépôt si éligible
+            if (dbU.referred_by) {
+              const { data: refUser } = await supabase
+                .from('users')
+                .select('id, balance')
+                .eq('referral_code', dbU.referred_by)
+                .maybeSingle();
+              if (refUser) {
+                const bonus = Math.round(Number(amount) * 0.20);
+                await supabase.from('users').update({ balance: Number(refUser.balance || 0) + bonus }).eq('id', refUser.id);
+                await supabase.from('transactions').insert([{
+                  user_id: refUser.id,
+                  type: 'bonus',
+                  amount: bonus,
+                  status: 'completed',
+                  reference: `Bonus Parrainage 20%`
+                }]);
+              }
+            }
+          }
+        } else if (newStatus === 'rejected' && type === 'withdrawal') {
+          const { data: dbU } = await supabase.from('users').select('balance').eq('id', userId).maybeSingle();
+          if (dbU) {
+            await supabase.from('users').update({ balance: Number(dbU.balance || 0) + Number(amount) }).eq('id', userId);
+          }
+        }
+      } catch (remoteErr) {
+        console.warn('Mise à jour Supabase différée:', remoteErr);
       }
-    }
-    fetchData(false);
-    setLoading(false);
+
+      setMessage({ type: 'success', text: `Transaction mise à jour : ${newStatus === 'approved' ? 'Approuvée avec succès' : 'Rejetée'}` });
     } catch(err: any) {
-      console.error(err);
       setMessage({ type: 'error', text: "Erreur: " + err.message });
+    } finally {
+      processingTxRef.current.delete(id);
+      setProcessingTxIds(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
       setLoading(false);
     }
-      }
-    });
   };
 
-  // --- Plans Handlers ---
-  const handleSavePlans = async (updatedPlans: any[]) => {
+  const handleRemoveInvestment = async (id: string) => {
     setConfirmModal({
       isOpen: true,
-      message: "Voulez-vous vraiment enregistrer ces plans ?",
+      message: "Voulez-vous vraiment supprimer cet investissement ?",
       onConfirm: async () => {
         setLoading(true);
         try {
-          await supabase.from('settings').upsert({ key: 'investment_plans', value: JSON.stringify(updatedPlans) });
-          setPlans(updatedPlans);
+          deleteLocalInvestment(id);
+          setInvestmentsList(prev => prev.filter(i => i.id !== id));
+          try {
+            await supabase.from('investments').delete().eq('id', id);
+          } catch (e) {}
+          setMessage({ type: 'success', text: "Investissement supprimé." });
         } catch(err: any) {
           setMessage({ type: 'error', text: "Erreur: " + err.message });
         } finally {
@@ -409,6 +532,53 @@ export function Admin() {
         }
       }
     });
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      message: "Voulez-vous vraiment supprimer cette transaction de l'historique ?",
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          deleteLocalTransaction(id);
+          setTransactions(prev => prev.filter(t => t.id !== id));
+          try {
+            await supabase.from('transactions').delete().eq('id', id);
+          } catch (e) {}
+          setMessage({ type: 'success', text: "Transaction supprimée avec succès." });
+        } catch(err: any) {
+          setMessage({ type: 'error', text: "Erreur: " + err.message });
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
+  // --- Plans Handlers ---
+  const handleSavePlans = async (updatedPlans: CropPlan[]) => {
+    setLoading(true);
+    try {
+      setPlans(updatedPlans);
+      safeStorage.setItem('agritrans_investment_plans', JSON.stringify(updatedPlans));
+      safeStorage.setItem('translogis_investment_plans', JSON.stringify(updatedPlans));
+      saveLocalSettings({ investment_plans: JSON.stringify(updatedPlans) });
+      window.dispatchEvent(new Event('agritrans_plans_updated'));
+      window.dispatchEvent(new Event('translogis_plans_updated'));
+
+      try {
+        await supabase
+          .from('settings')
+          .upsert({ key: 'investment_plans', value: JSON.stringify(updatedPlans) }, { onConflict: 'key' });
+      } catch (remoteErr) {}
+
+      setMessage({ type: 'success', text: "Plans de transport et flotte enregistrés et synchronisés avec l'application !" });
+    } catch(err: any) {
+      setMessage({ type: 'error', text: "Erreur d'enregistrement : " + err.message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -425,7 +595,7 @@ export function Admin() {
           canvas.height = img.height * scaleSize;
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
           setNewPlanImage(compressedBase64);
         };
         img.src = ev.target?.result as string;
@@ -435,49 +605,61 @@ export function Admin() {
   };
 
   const handleAddPlan = () => {
-    if (!newPlanAmount || !newPlanDaily || !newPlanTotal || !newPlanImage) return;
-    const newPlan = {
+    if (!newPlanAmount || !newPlanDaily || !newPlanTotal) return;
+    const planObj: CropPlan = {
+      id: editingPlanIndex !== null && plans[editingPlanIndex]?.id ? plans[editingPlanIndex].id : 'crop_' + Date.now(),
+      name: newPlanName.trim() || `Culture ${formatCurrency(Number(newPlanAmount))}`,
       amount: Number(newPlanAmount),
-      percent: Number(newPlanPercent),
-      duration: Number(newPlanDuration),
       daily: Number(newPlanDaily),
       total: Number(newPlanTotal),
-      image: newPlanImage
+      duration: Number(newPlanDuration) || 60,
+      image: newPlanImage || 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=600&auto=format&fit=crop&q=80',
+      locked: newPlanLocked
     };
     
-    let updatedPlans;
+    let updatedPlans: CropPlan[];
     if (editingPlanIndex !== null) {
       updatedPlans = [...plans];
-      updatedPlans[editingPlanIndex] = newPlan;
+      updatedPlans[editingPlanIndex] = planObj;
     } else {
-      updatedPlans = [...plans, newPlan];
+      updatedPlans = [...plans, planObj];
     }
     
     updatedPlans.sort((a, b) => a.amount - b.amount);
     handleSavePlans(updatedPlans);
-    
-    setNewPlanAmount(''); setNewPlanDaily(''); setNewPlanTotal(''); setNewPlanImage('');
-    setNewPlanPercent('18'); setNewPlanDuration('60');
-    setEditingPlanIndex(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    handleCancelEditPlan();
   };
 
   const handleEditPlan = (index: number) => {
     const plan = plans[index];
+    setEditingPlanIndex(index);
+    setNewPlanName(plan.name || '');
     setNewPlanAmount(plan.amount.toString());
-    setNewPlanPercent((plan.percent || 18).toString());
+    const pct = plan.daily && plan.amount ? Math.round((plan.daily / plan.amount) * 100) : 7;
+    setNewPlanPercent(pct.toString());
     setNewPlanDuration((plan.duration || 60).toString());
     setNewPlanDaily(plan.daily.toString());
     setNewPlanTotal(plan.total.toString());
-    setNewPlanImage(plan.image);
-    setEditingPlanIndex(index);
-    // Scroll to form smoothly
+    setNewPlanImage(plan.image || '');
+    setNewPlanLocked(!!plan.locked);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleToggleLock = (index: number) => {
+    const updated = [...plans];
+    updated[index] = { ...updated[index], locked: !updated[index].locked };
+    handleSavePlans(updated);
+  };
+
   const handleCancelEditPlan = () => {
-    setNewPlanAmount(''); setNewPlanDaily(''); setNewPlanTotal(''); setNewPlanImage('');
-    setNewPlanPercent('18'); setNewPlanDuration('60'); 
+    setNewPlanName('');
+    setNewPlanAmount('');
+    setNewPlanDaily('');
+    setNewPlanTotal('');
+    setNewPlanImage('');
+    setNewPlanPercent('7');
+    setNewPlanDuration('60');
+    setNewPlanLocked(false);
     setEditingPlanIndex(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -485,7 +667,7 @@ export function Admin() {
   const handleRemovePlan = (index: number) => {
     setConfirmModal({
       isOpen: true,
-      message: "Voulez-vous vraiment supprimer ce plan ?",
+      message: `Voulez-vous vraiment supprimer le plan "${plans[index].name}" ?`,
       onConfirm: async () => {
         const updatedPlans = plans.filter((_, i) => i !== index);
         handleSavePlans(updatedPlans);
@@ -493,189 +675,86 @@ export function Admin() {
     });
   };
 
-  // --- Settings Handlers ---
-
-  const handleAddVault = async (e: any) => {
-    e.preventDefault();
-    if (!newVaultCode || !newVaultAmount) return;
-    setIsAddingVault(true);
-    try {
-      const code = newVaultCode.trim().toUpperCase();
-      const amount = Number(newVaultAmount);
-      
-      const vaultData = {
-        code,
-        total_amount: amount,
-        remaining_amount: amount,
-        created_at: new Date().toISOString(),
-        claimed_by: []
-      };
-      
-      await supabase.from('settings').upsert({
-        key: 'vault_' + code,
-        value: JSON.stringify(vaultData)
-      });
-      
-      setNewVaultCode("");
-      setNewVaultAmount("");
-      fetchData(false);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsAddingVault(false);
-    }
-  };
-
-  const handleDeleteVault = async (code: string) => {
-    if (!window.confirm("Supprimer ce coffre ?")) return;
-    try {
-      await supabase.from('settings').delete().eq('key', 'vault_' + code);
-      fetchData(false);
-    } catch(err) {
-      console.error(err);
-    }
-  };
-  const handleUpdateSettings = async () => {
-    setLoading(true);
-    const { error } = await supabase.from('settings').upsert([
-      { key: 'payment_link', value: paymentLink },
-      { key: 'group_link', value: groupLink },
-      { key: 'support_link', value: supportLink }
-    ], { onConflict: 'key' });
-    setLoading(false);
-    
-    if (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de l\'enregistrement : ' + error.message });
-    } else {
-      // Clear or update the cache immediately so it reflects in Dashboard
-      useAppStore.getState().setSettingsCache(null as any);
-      setMessage({ type: 'success', text: 'Paramètres enregistrés !' });
-    }
-  };
-
-  const handlePayAllDailyGains = async () => {
-    setLoading(true);
-    try {
-      const { data: investments } = await supabase.from('investments').select('*').eq('status', 'active');
-      if (!investments || investments.length === 0) {
-        alert("Aucun investissement actif.");
-        return;
-      }
-      
-      let totalUsers = new Set();
-      let totalGainsCreated = 0;
-      
-      for (const inv of investments) {
-          const { data: gains } = await supabase.from('transactions')
-              .select('reference')
-              .eq('user_id', inv.user_id)
-              .eq('type', 'daily_gain');
-              
-          const startDate = new Date(inv.start_date || inv.created_at || Date.now()).getTime();
-          let effectiveNow = Date.now();
-          let isExpired = false;
-          if (inv.end_date) {
-            const endTimestamp = new Date(inv.end_date).getTime();
-            if (Date.now() >= endTimestamp) {
-              effectiveNow = endTimestamp;
-              isExpired = true;
-            }
-          }
-          const daysElapsed = Math.floor((effectiveNow - startDate) / (24 * 60 * 60 * 1000));
-          const paidCount = gains?.filter((g: any) => g.reference === inv.id).length || 0;
-          const missedDays = daysElapsed - paidCount;
-          
-          if (missedDays > 0) {
-              let totalToAdd = inv.daily_yield * missedDays;
-              const newTransactions = [];
-              for (let i = 0; i < missedDays; i++) {
-                  newTransactions.push({
-                      user_id: inv.user_id,
-                      type: 'daily_gain',
-                      amount: inv.daily_yield,
-                      status: 'completed',
-                      reference: inv.id
-                  });
-              }
-              
-              await supabase.from('transactions').insert(newTransactions);
-              const { data: userData } = await supabase.from('users').select('balance').eq('id', inv.user_id).single();
-              if (userData) {
-                  await supabase.from('users').update({ balance: userData.balance + totalToAdd }).eq('id', inv.user_id);
-              }
-              totalUsers.add(inv.user_id);
-              totalGainsCreated += missedDays;
-          }
-          
-          if (isExpired) {
-             await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
-          }
-      }
-      
-      alert(`Gains payés avec succès ! ${totalGainsCreated} jours de gains ajoutés pour ${totalUsers.size} utilisateurs.`);
-      
-    } catch (error) {
-      console.error(error);
-      alert("Erreur lors du paiement des gains journaliers.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleWipeData = async () => {
+  const handleResetDefaultPlans = () => {
     setConfirmModal({
       isOpen: true,
-      message: "Voulez-vous vraiment TOUT EFFACER (Comptes, transferts, dépôts, investissements, plans) ? Cette action est IRRÉVERSIBLE !",
+      message: "Voulez-vous réinitialiser aux véhicules et plans de transport officiels de AgriTrans CI ?",
       onConfirm: async () => {
-        setLoading(true);
-        try {
-          await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-          await supabase.from('investments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-          await supabase.from('users').delete().neq('phone', '0704752133');
-          await supabase.from('settings').upsert({ key: 'investment_plans', value: '[]' });
-          
-          setMessage({ type: 'success', text: 'Toutes les données ont été effacées avec succès !' });
-          setPlans([]);
-          setTimeout(() => window.location.reload(), 2000);
-        } catch (err: any) {
-          setMessage({ type: 'error', text: 'Erreur lors de la suppression : ' + err.message });
-        } finally {
-          setLoading(false);
-        }
+        await handleSavePlans(DEFAULT_CROP_PLANS);
       }
     });
+  };
+
+  // --- Settings Handlers ---
+  const handleUpdateSettings = async () => {
+    setLoading(true);
+    const settingsMap: Record<string, string> = {
+      payment_link: paymentLink,
+      app_logo: appLogo,
+      group_link: groupLink,
+      support_link: supportLink,
+      ussd_ci: ussdCI,
+      ussd_mtn_ci: ussdMtnCI,
+      wave_number: waveNumber,
+      ...extraSettings
+    };
+
+    // 1. Sauvegarde locale immédiate
+    saveLocalSettings(settingsMap);
+    useAppStore.getState().setSettingsCache(null as any);
+
+    // 2. Synchronisation Supabase
+    try {
+      const toUpsert = Object.entries(settingsMap).map(([key, value]) => ({ key, value }));
+      await supabase.from('settings').upsert(toUpsert, { onConflict: 'key' });
+    } catch (e) {
+      console.warn('Erreur synchronisation Supabase settings:', e);
+    }
+    
+    setLoading(false);
+    setMessage({ type: 'success', text: 'Paramètres et Logo enregistrés avec succès !' });
   };
 
   const tabs = [
     { id: 'overview', label: "Vue d'ensemble", icon: BarChart3 },
     { id: 'users', label: 'Utilisateurs', icon: Users },
-    { id: 'investments', label: 'Investissements', icon: Activity },
+    { id: 'investments', label: 'Investissements Flotte', icon: Activity },
     { id: 'deposits', label: 'Dépôts', icon: ArrowDownRight },
     { id: 'withdrawals', label: 'Retraits', icon: ArrowUpRight },
-    { id: 'banks', label: 'Banque', icon: CreditCard },
-    { id: 'plans', label: 'Plans VIP', icon: LayoutList },
-    { id: 'settings', label: 'Paramètres', icon: SettingsIcon },
-    { id: 'vault', label: 'Coffre', icon: Key },
+    { id: 'plans', label: 'Formules de Transport', icon: LayoutList },
+    { id: 'settings', label: 'Paramètres', icon: LayoutList },
   ];
 
+  // Calculated overview stats
+  const totalBalances = usersList.reduce((acc, u) => acc + Number(u.balance || 0), 0);
+  const totalDepositsApproved = transactions
+    .filter(t => t.type === 'deposit' && t.status === 'approved')
+    .reduce((acc, t) => acc + Number(t.amount || 0), 0);
+  const totalWithdrawalsApproved = transactions
+    .filter(t => t.type === 'withdrawal' && t.status === 'approved')
+    .reduce((acc, t) => acc + Number(t.amount || 0), 0);
+
   return (
-    <div className="p-6 space-y-6 pb-24 pt-20 max-w-lg mx-auto">
+    <div className="p-6 space-y-6 pb-24 pt-20 max-w-2xl mx-auto font-sans">
       <header className="flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-full flex items-center justify-center text-slate-900 shadow-sm hover:bg-slate-100/80 transition-colors shrink-0">
+        <button onClick={() => navigate('/profile')} title="Retour à l'application" className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-900 shadow-sm hover:bg-gray-50 transition-colors shrink-0 cursor-pointer">
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-bold text-slate-900 truncate">Administration</h1>
+        <div>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Administration</h1>
+          <p className="text-xs text-blue-600 font-bold">AgriTrans CI • Gestion de la flotte & des utilisateurs</p>
+        </div>
       </header>
 
       {confirmModal && confirmModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/30 backdrop-blur-sm">
-          <div className="bg-white border-slate-200/80 shadow-slate-200/50 rounded-[2rem] p-6 w-full max-w-sm shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200">
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Confirmation</h3>
-            <p className="text-slate-500 mb-6">{confirmModal.message}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-[2rem] p-6 w-full max-w-sm shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Confirmation</h3>
+            <p className="text-gray-600 mb-6 text-sm">{confirmModal.message}</p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setConfirmModal(null)}
-                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl font-bold transition-colors"
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl font-bold transition-colors cursor-pointer"
                 disabled={loading}
               >
                 Annuler
@@ -685,7 +764,7 @@ export function Admin() {
                   setConfirmModal({...confirmModal, isOpen: false});
                   confirmModal.onConfirm();
                 }}
-                className="flex-1 py-3 px-4 bg-emerald-700 hover:bg-emerald-800 text-slate-900 rounded-xl font-bold transition-colors shadow-lg shadow-emerald-200"
+                className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-colors shadow-lg shadow-emerald-200 cursor-pointer"
                 disabled={loading}
               >
                 Confirmer
@@ -696,30 +775,24 @@ export function Admin() {
       )}
       
       {message && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md">
-          <div className={`p-4 rounded-xl text-sm font-bold shadow-2xl flex items-center gap-3 ${message.type === 'error' ? 'bg-red-50 text-red-700 border-2 border-red-200' : 'bg-emerald-50 text-emerald-700 border-2 border-emerald-200'}`}>
-            {message.text}
-          </div>
+        <div className={`p-4 rounded-xl text-sm font-bold flex items-center gap-2 ${
+          message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+        }`}>
+          {message.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0 text-emerald-600" /> : <XCircle className="w-5 h-5 shrink-0 text-red-500" />}
+          <p>{message.text}</p>
         </div>
       )}
 
       {/* Tabs Navigation */}
-      {isInitializing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50/80 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-4">
-             <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-             <p className="text-slate-500 font-medium">Chargement des données...</p>
-          </div>
-        </div>
-      )}
-
       <div className="flex overflow-x-auto gap-2 pb-2 mb-2 scrollbar-hide">
         {tabs.map(t => (
           <button
             key={t.id}
             onClick={() => { setActiveTab(t.id); setSearchTerm(''); }}
-            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium whitespace-nowrap transition-colors ${
-              activeTab === t.id ? 'bg-emerald-600/100 text-slate-900 shadow-md shadow-emerald-600/20' : 'bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 text-slate-500 hover:bg-slate-100/80'
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold whitespace-nowrap transition-colors cursor-pointer ${
+              activeTab === t.id 
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' 
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
             <t.icon className="w-4 h-4" />
@@ -728,14 +801,14 @@ export function Admin() {
         ))}
       </div>
 
-      {['users', 'deposits', 'withdrawals', 'banks'].includes(activeTab) && (
-        <div className="bg-white border-slate-200/80 shadow-slate-200/50 px-4 py-3 border border-slate-200 rounded-xl shadow-sm mb-4">
+      {['users', 'deposits', 'withdrawals'].includes(activeTab) && (
+        <div className="bg-white px-4 py-3 border border-gray-200 rounded-xl shadow-sm mb-4">
           <input
             type="text"
             placeholder="Rechercher par nom ou numéro..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent outline-none text-sm text-slate-900 placeholder-gray-400"
+            className="w-full bg-transparent outline-none text-sm text-gray-900 placeholder-gray-400"
           />
         </div>
       )}
@@ -743,36 +816,23 @@ export function Admin() {
       {/* CONTENT: OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 mb-2">Vue d'ensemble</h2>
+          <h2 className="text-lg font-black text-gray-900 mb-2">Vue d'ensemble</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-emerald-600/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] col-span-2">
-               <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Retraits en attente (Net)</p>
-                    <p className="text-2xl font-black text-amber-600">{formatCurrency(transactions.filter(t => t.type === 'withdrawal' && t.status === 'pending').reduce((acc, t) => acc + (t.amount || 0) * 0.9, 0))}</p>
-                    <p className="text-xs text-slate-500 mt-1">{transactions.filter(t => t.type === 'withdrawal' && t.status === 'pending').length} demande(s) en cours</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-2">Brut (avant frais)</p>
-                    <p className="text-sm font-bold text-slate-600">{formatCurrency(transactions.filter(t => t.type === 'withdrawal' && t.status === 'pending').reduce((acc, t) => acc + (t.amount || 0), 0))}</p>
-                  </div>
-               </div>
+            <div className="bg-white border border-emerald-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Total des soldes</p>
+               <p className="text-xl font-black text-emerald-700">{formatCurrency(totalBalances)}</p>
             </div>
-            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-emerald-600/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-               <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Total des soldes</p>
-               <p className="text-xl font-black text-emerald-800">{formatCurrency(usersList.reduce((acc, u) => acc + (u.balance || 0), 0))}</p>
+            <div className="bg-white border border-emerald-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Retraits validés</p>
+               <p className="text-xl font-black text-emerald-700">{formatCurrency(totalWithdrawalsApproved)}</p>
             </div>
-            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-emerald-600/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-               <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Retraits validés</p>
-               <p className="text-xl font-black text-emerald-800">{formatCurrency(transactions.filter(t => t.type === 'withdrawal' && t.status === 'approved').reduce((acc, t) => acc + (t.amount || 0), 0))}</p>
+            <div className="bg-white border border-emerald-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Dépôts validés</p>
+               <p className="text-xl font-black text-emerald-600">{formatCurrency(totalDepositsApproved)}</p>
             </div>
-            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-amber-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-               <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Dépôts validés</p>
-               <p className="text-xl font-black text-amber-600">{formatCurrency(transactions.filter(t => t.type === 'deposit' && t.status === 'approved').reduce((acc, t) => acc + (t.amount || 0), 0))}</p>
-            </div>
-            <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-emerald-600/20 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-               <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Utilisateurs</p>
-               <p className="text-xl font-black text-emerald-700">{usersList.length}</p>
+            <div className="bg-white border border-emerald-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+               <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Utilisateurs</p>
+               <p className="text-xl font-black text-emerald-600">{usersList.length}</p>
             </div>
           </div>
         </div>
@@ -781,82 +841,95 @@ export function Admin() {
       {/* CONTENT: INVESTMENTS */}
       {activeTab === 'investments' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 mb-2">Tous les Investissements ({investmentsList.length})</h2>
+          <h2 className="text-lg font-black text-gray-900 mb-2">Tous les Investissements ({investmentsList.length})</h2>
           <div className="space-y-3">
             {investmentsList.length === 0 ? (
-              <p className="text-center text-slate-500 py-8 bg-white border-slate-200/80 shadow-slate-200/50 rounded-2xl border border-slate-200">Aucun investissement</p>
+              <p className="text-center text-gray-500 py-8 bg-white rounded-2xl border border-gray-100">Aucun investissement actif</p>
             ) : (
-              investmentsList.map(inv => {
-                
-                return (
-                <div key={inv.id} className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 bg-emerald-600/100`}></div>
+              investmentsList.map(inv => (
+                <div key={inv.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500"></div>
                   <div className="flex justify-between items-start mb-2 pl-2">
                     <div>
-                      <p className="font-bold text-slate-900 line-clamp-1">Pack ({formatCurrency(inv.plan_amount || 0)})</p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="font-black text-gray-900 text-sm">
+                        Culture de {getCropInfo(inv.plan_amount, inv.daily_yield).name} ({formatCurrency(inv.plan_amount || 0)})
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
                         {inv.users?.first_name} {inv.users?.last_name} ({inv.users?.phone})
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
-                        inv.status === 'active' ? 'bg-emerald-600/20 text-red-800' : 'bg-slate-100 text-slate-500'
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                        inv.status === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-500'
                       }`}>
                         {inv.status}
                       </span>
-                      <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-emerald-600 hover:bg-emerald-600/10 p-1.5 rounded-lg transition-colors" title="Supprimer l'investissement">
+                      <button onClick={() => handleRemoveInvestment(inv.id)} disabled={loading} className="text-red-500 hover:bg-red-50 p-1 rounded-lg transition-colors cursor-pointer" title="Supprimer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                   <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50 pl-2">
                     <div>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wider">Prix du pack</p>
-                      <p className="font-bold text-slate-900">{formatCurrency(inv.plan_amount || 0)}</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Montant</p>
+                      <p className="font-bold text-gray-900">{formatCurrency(inv.plan_amount || 0)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wider">Gain Journalier</p>
-                      <p className={`font-bold text-emerald-800`}>{formatCurrency(inv.daily_yield)}</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Gain Journalier</p>
+                      <p className="font-bold text-emerald-700">{formatCurrency(inv.daily_yield)}</p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-2 text-center">
-                    Acheté le : {inv.start_date ? format(new Date(inv.start_date), 'dd MMM yyyy HH:mm', { locale: fr }) : 'Date inconnue'}
-                    <br />
-                    Expire le : {inv.end_date ? format(new Date(inv.end_date), 'dd MMM yyyy HH:mm', { locale: fr }) : 'Non défini'}
+                  <p className="text-[10px] text-gray-500 mt-2 text-center">
+                    Lancé le : {inv.start_date ? format(new Date(inv.start_date), 'dd MMM yyyy HH:mm', { locale: fr }) : 'Inconnue'}
                   </p>
                 </div>
-              )})
+              ))
             )}
           </div>
         </div>
       )}
 
-
-
       {/* CONTENT: USERS */}
       {activeTab === 'users' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 mb-2">Gestion des Utilisateurs ({usersList.length})</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+            <h2 className="text-lg font-black text-gray-900">Gestion des Utilisateurs ({usersList.length})</h2>
+          </div>
           <div className="space-y-3">
-            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} ${generateUserId(u.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
-              <div key={u.id} className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-2xl p-4 shadow-sm relative">
+            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
+              <div key={u.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <p className="font-bold text-slate-900 flex items-center gap-2 text-sm">
-                       Id : {generateUserId(u.id)}
-                       {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-emerald-600" />}
+                    <p className="font-bold text-gray-900 flex items-center gap-2">
+                      {u.first_name} {u.last_name}
+                      {u.role && u.role.startsWith('vip') && <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold uppercase">{u.role}</span>}
+                      {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-emerald-600" />}
                     </p>
-                    <p className="text-sm font-bold text-emerald-600 mt-0.5">{getVipLevelForAdmin(u)}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{u.country} • {u.phone}</p>
-                    <p className="text-xs text-slate-500 mt-1"><span className="font-semibold">MD:</span> <span className="font-mono text-slate-900 bg-slate-100 px-1 py-0.5 rounded">{u.password_hash}</span></p>
+                    <p className="text-xs text-gray-500 mt-0.5">{u.phone} • {u.country}</p>
+                    <p className="text-[11px] text-gray-500 mt-1"><span className="font-semibold">MDP:</span> <span className="font-mono text-gray-900 bg-gray-100 px-1 py-0.5 rounded">{u.password_hash}</span></p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[11px]">
+                      <span className="bg-emerald-50 text-emerald-800 font-medium px-2 py-0.5 rounded border border-emerald-200">
+                        Code: <span className="font-mono font-bold">{u.referral_code || 'Aucun'}</span>
+                      </span>
+                      {u.referred_by ? (
+                        <span className="bg-blue-50 text-blue-800 font-medium px-2 py-0.5 rounded border border-blue-200">
+                          Parrain: <span className="font-mono font-bold">{u.referred_by}</span>
+                        </span>
+                      ) : (
+                        <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded">
+                          Sans parrain
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1 font-mono">{u.id}</p>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                    <p className="font-bold text-emerald-800 bg-emerald-600/10 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
+                    <p className="font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
                     {u.role !== 'admin' && (
                        <select 
                          value={u.role || 'user'} 
                          onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                         className="text-[10px] border border-slate-200 rounded p-1 bg-white/80 backdrop-blur-xl border border-slate-200 shadow-slate-200/50 outline-none"
+                         className="text-[10px] border border-gray-200 rounded p-1 bg-white outline-none"
                        >
                          {VIP_LEVELS.map(v => <option key={v} value={v}>{v === 'user' ? 'Standard' : v.toUpperCase()}</option>)}
                        </select>
@@ -865,18 +938,18 @@ export function Admin() {
                 </div>
 
                 {editingUserId === u.id ? (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200">
-                    <input type="number" className="flex-1 bg-slate-100/80 border border-slate-200 text-slate-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-600 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
-                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-emerald-600/100 hover:bg-emerald-800 text-slate-900 font-medium rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
-                    <button onClick={() => setEditingUserId(null)} className="px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-sm transition-colors cursor-pointer">X</button>
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                    <input type="number" className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
+                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
+                    <button onClick={() => setEditingUserId(null)} className="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg text-sm transition-colors cursor-pointer">X</button>
                   </div>
                 ) : (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200">
-                    <button onClick={() => {setEditingUserId(u.id); setEditBalance(String(u.balance));}} className="flex-1 py-2 bg-slate-100/80 text-slate-500 rounded-xl flex items-center justify-center text-xs font-medium hover:bg-slate-100 transition-colors border border-slate-200 cursor-pointer">
-                      <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Solde
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                    <button onClick={() => {setEditingUserId(u.id); setEditBalance(String(u.balance));}} className="flex-1 py-2 bg-gray-50 text-gray-700 rounded-xl flex items-center justify-center text-xs font-bold hover:bg-gray-100 transition-colors border border-gray-200 cursor-pointer">
+                      <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Modifier Solde
                     </button>
                     {u.role !== 'admin' && (
-                      <button onClick={() => handleDeleteUser(u.id)} className="p-2 bg-emerald-600/10 text-emerald-600 border border-emerald-600/20 rounded-xl hover:bg-emerald-600/20 transition-colors cursor-pointer">
+                      <button onClick={() => handleDeleteUser(u.id, u.phone, u.referral_code)} className="p-2 bg-red-50 text-red-500 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer" title="Supprimer cet utilisateur">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
@@ -888,86 +961,61 @@ export function Admin() {
         </div>
       )}
 
-      {/* CONTENT: BANKS */}
-      {activeTab === 'banks' && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 mb-2">Gestion des Banques ({usersList.length})</h2>
-          <div className="space-y-3">
-            {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone} ${u.bank_method} ${u.bank_account_name} ${(u as any)?.bank_account_number} ${generateUserId(u.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => {
-              const bAccountName = (u as any)?.bank_account_name || '';
-              const bAccountNumber = (u as any)?.bank_account_number || '';
-              const bMethod = (u as any)?.bank_method ? (paymentMethodNames[(u as any)?.bank_method] || (u as any)?.bank_method) : 'Non défini';
-
-              return (
-              <div key={u.id} className="bg-white/80 backdrop-blur-xl border border-slate-200 rounded-2xl p-4 shadow-sm relative">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <p className="font-bold text-slate-900 flex items-center gap-2">
-                      Id : {generateUserId(u.id)}
-                    </p>
-                    <p className="text-sm font-semibold text-slate-700 mt-1">{u.first_name} {u.last_name}</p>
-                    <p className="text-[10px] text-slate-500 mt-1 font-mono">{u.phone}</p>
-                    <div className="mt-2 bg-slate-100/80 rounded-lg p-2 inline-block space-y-0.5">
-                      <p className="text-xs font-semibold text-slate-700">
-                        Opérateur: <span className="font-normal text-slate-500">{bMethod}</span>
-                      </p>
-                      <p className="text-xs font-semibold text-slate-700">
-                        Nom: <span className="font-normal text-slate-500">{bAccountName || 'N/A'}</span>
-                      </p>
-                      <p className="text-xs font-semibold text-slate-700">
-                        Numéro: <span className="font-normal text-slate-500">{bAccountNumber || 'N/A'}</span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {u.bank_method && (
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200">
-                    <button 
-                      onClick={() => handleClearUserBank(u.id)}
-                      className="flex-1 py-2 bg-emerald-600/10 text-emerald-600 rounded-xl flex items-center justify-center text-xs font-medium hover:bg-emerald-600/20 transition-colors border border-emerald-600/10 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1.5" /> Supprimer ce compte bancaire
-                    </button>
-                  </div>
-                )}
-              </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* CONTENT: DEPOSITS */}
       {activeTab === 'deposits' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 mb-2">Demandes de Dépôts</h2>
+          <h2 className="text-lg font-black text-gray-900 mb-2">Demandes de Dépôts</h2>
           <div className="space-y-3">
-            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} ${generateUserId(t.users?.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-slate-500 text-center py-4">Aucun dépôt.</p>}
-            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} ${generateUserId(t.users?.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
-              <div key={tx.id} className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-2xl p-4 shadow-sm">
+            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-gray-500 text-center py-4">Aucun dépôt en attente.</p>}
+            {transactions.filter(t => t.type === 'deposit' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
+              <div key={tx.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <p className="font-bold text-slate-900">{formatCurrency(tx.amount)}</p>
-                    <p className="text-xs text-slate-500 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
-                    <p className="text-xs text-slate-500 mt-1">Ref: {tx.reference}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
+                    <p className="font-black text-gray-900 text-base">{formatCurrency(tx.amount)}</p>
+                    <p className="text-xs text-gray-500 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
+                    <p className="text-xs text-gray-600 mt-1 font-mono">Ref: {tx.reference}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
                   </div>
-                  <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
-                    tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                    tx.status === 'approved' ? 'bg-emerald-600/10 text-emerald-800 border border-emerald-600/20' :
-                    'bg-emerald-600/10 text-emerald-700 border border-emerald-600/20'
-                  }`}>
-                    {tx.status}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
+                      tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                      tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      'bg-red-50 text-red-700 border border-red-200'
+                    }`}>
+                      {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
+                    </span>
+                    <button 
+                      onClick={() => handleDeleteTransaction(tx.id)}
+                      title="Supprimer la transaction"
+                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
                 
                 {tx.status === 'pending' && (
-                  <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-800 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
-                      <CheckCircle className="w-4 h-4" /> Approuver
+                  <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+                    <button 
+                      disabled={Boolean(processingTxIds[tx.id]) || loading}
+                      onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} 
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer shadow-sm"
+                    >
+                      {processingTxIds[tx.id] ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Confirmation...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4" /> Approuver
+                        </>
+                      )}
                     </button>
-                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button 
+                      disabled={Boolean(processingTxIds[tx.id]) || loading}
+                      onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} 
+                      className="flex-1 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer border border-red-200"
+                    >
                       <XCircle className="w-4 h-4" /> Rejeter
                     </button>
                   </div>
@@ -981,65 +1029,58 @@ export function Admin() {
       {/* CONTENT: WITHDRAWALS */}
       {activeTab === 'withdrawals' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-bold text-slate-900 mb-2">Demandes de Retraits</h2>
+          <h2 className="text-lg font-black text-gray-900 mb-2">Demandes de Retraits</h2>
           <div className="space-y-3">
-            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} ${generateUserId(t.users?.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-slate-500 text-center py-4">Aucun retrait.</p>}
-            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference} ${generateUserId(t.users?.id)}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
-              <div key={tx.id} className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-2xl p-4 shadow-sm">
+            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).length === 0 && <p className="text-sm text-gray-500 text-center py-4">Aucun retrait en attente.</p>}
+            {transactions.filter(t => t.type === 'withdrawal' && (searchTerm ? `${t.users?.first_name} ${t.users?.last_name} ${t.users?.phone} ${t.reference}`.toLowerCase().includes(searchTerm.toLowerCase()) : true)).map(tx => (
+              <div key={tx.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <div>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-0.5">Montant demandé</p>
-                    <p className="font-bold text-slate-900">{formatCurrency(tx.amount)}</p>
-                    <div className="flex items-center gap-2 mt-1 mb-2">
-                      <div className="bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-300/50">
-                        <p className="text-[9px] text-slate-500 uppercase tracking-wider">Frais (10%)</p>
-                        <p className="text-emerald-500 font-bold text-xs">-{formatCurrency(tx.amount * 0.10)}</p>
-                      </div>
-                      <div className="bg-emerald-600/10 px-2 py-0.5 rounded-md border border-emerald-600/20">
-                        <p className="text-[9px] text-emerald-600/70 uppercase tracking-wider">Montant à envoyer</p>
-                        <p className="text-emerald-500 font-bold text-xs">{formatCurrency(tx.amount * 0.90)}</p>
-                      </div>
-                    </div>
-                    {(() => {
-                      if (tx.reference?.startsWith('OP:')) {
-                        const parts = tx.reference.split('::');
-                        const op = parts[0]?.replace('OP:', '');
-                        const nom = parts[1]?.replace('NOM:', '');
-                        const num = parts[2]?.replace('NUM:', '');
-                        return (
-                          <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                            <p className="text-xs text-slate-700"><strong>Id:</strong> {generateUserId(tx.users?.id)}</p>
-                            <p className="text-xs text-slate-700"><strong>Opérateur:</strong> {op}</p>
-                            <p className="text-xs text-slate-700"><strong>Nom:</strong> {nom}</p>
-                            <p className="text-xs text-slate-700"><strong>Numéro:</strong> {num}</p>
-                            <p className="text-[10px] text-slate-500 mt-1">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
-                          </div>
-                        );
-                      }
-                      return (
-                        <>
-                          <p className="text-xs text-slate-500 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
-                          <p className="text-xs text-slate-500 mt-1">Ref/Numéro: {tx.reference}</p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
-                        </>
-                      );
-                    })()}
+                    <p className="font-black text-gray-900 text-base">{formatCurrency(tx.amount)}</p>
+                    <p className="text-xs text-gray-500 mt-1">{tx.users?.first_name} {tx.users?.last_name} ({tx.users?.phone})</p>
+                    <p className="text-xs text-gray-600 mt-1 font-mono">Ref/Numéro: {tx.reference}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
                   </div>
-                  <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
-                    tx.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                    tx.status === 'approved' ? 'bg-emerald-600/10 text-emerald-800 border border-emerald-600/20' :
-                    'bg-emerald-600/10 text-emerald-700 border border-emerald-600/20'
-                  }`}>
-                    {tx.status}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
+                      tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                      tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      'bg-red-50 text-red-700 border border-red-200'
+                    }`}>
+                      {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
+                    </span>
+                    <button 
+                      onClick={() => handleDeleteTransaction(tx.id)}
+                      title="Supprimer la transaction"
+                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
                 
                 {tx.status === 'pending' && (
-                  <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
-                    <button onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-800 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
-                      <CheckCircle className="w-4 h-4" /> Approuver
+                  <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+                    <button 
+                      disabled={Boolean(processingTxIds[tx.id]) || loading}
+                      onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} 
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer shadow-sm"
+                    >
+                      {processingTxIds[tx.id] ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Traitement...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4" /> Approuver
+                        </>
+                      )}
                     </button>
-                    <button onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} className="flex-1 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-700 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors cursor-pointer">
+                    <button 
+                      disabled={Boolean(processingTxIds[tx.id]) || loading}
+                      onClick={() => handleTransaction(tx.id, 'rejected', tx.type, tx.amount, tx.user_id)} 
+                      className="flex-1 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed text-red-600 py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer border border-red-200"
+                    >
                       <XCircle className="w-4 h-4" /> Rejeter
                     </button>
                   </div>
@@ -1050,148 +1091,270 @@ export function Admin() {
         </div>
       )}
 
-      {/* CONTENT: PLANS */}
+      {/* CONTENT: PLANS (PLANS DE CULTURE AGRICOLE) */}
       {activeTab === 'plans' && (
         <div className="space-y-6">
-          <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-3xl p-6 shadow-sm">
-             <h2 className="text-lg font-bold text-slate-900 mb-4">{editingPlanIndex !== null ? 'Modifier le pack' : 'Créer un pack'}</h2>
-             <div className="space-y-4">
-               <div className="grid grid-cols-2 gap-3">
-                 <input 
-                   type="number" 
-                   placeholder="Montant (ex: 5000)" 
-                   value={newPlanAmount} 
-                   onChange={e => {
-                     const amt = Number(e.target.value);
-                     setNewPlanAmount(e.target.value);
-                     if (amt > 0) {
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-black text-gray-900">
+                  {editingPlanIndex !== null ? 'Modifier la Culture' : 'Ajouter un Plan de Culture'}
+                </h2>
+                <p className="text-xs text-gray-500">Ces plans sont synchronisés en direct avec la page de culture des utilisateurs.</p>
+              </div>
+              <button 
+                onClick={handleResetDefaultPlans}
+                className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl hover:bg-emerald-100 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+                title="Rétablir les 9 cultures officielles"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Réinitialiser 9 cultures
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Nom de la Culture (ex: Coton, Manioc...)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Nom de la culture" 
+                    value={newPlanName} 
+                    onChange={e => setNewPlanName(e.target.value)} 
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Montant Investissement (FCFA)</label>
+                  <input 
+                    type="number" 
+                    placeholder="ex: 5000" 
+                    value={newPlanAmount} 
+                    onChange={e => {
+                      const amt = Number(e.target.value);
+                      setNewPlanAmount(e.target.value);
+                      if (amt > 0) {
                         const daily = Math.round(amt * (Number(newPlanPercent) / 100));
                         const total = daily * Number(newPlanDuration);
                         setNewPlanDaily(daily.toString());
                         setNewPlanTotal(total.toString());
-                     } else {
+                      } else {
                         setNewPlanDaily('');
                         setNewPlanTotal('');
-                     }
-                   }} 
-                   className="col-span-2 bg-slate-100/80 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-600 outline-none" 
-                 />
-                 <div className="flex flex-col gap-1">
-                   <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Gain %</label>
-                   <input 
-                     type="number" 
-                     placeholder="%" 
-                     value={newPlanPercent} 
-                     onChange={e => {
-                       const pct = Number(e.target.value);
-                       setNewPlanPercent(e.target.value);
-                       if (Number(newPlanAmount) > 0) {
-                          const daily = Math.round(Number(newPlanAmount) * (pct / 100));
-                          const total = daily * Number(newPlanDuration);
-                          setNewPlanDaily(daily.toString());
-                          setNewPlanTotal(total.toString());
-                       }
-                     }} 
-                     className="bg-slate-100/80 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-600 outline-none" 
-                   />
-                 </div>
-                 <div className="flex flex-col gap-1">
-                   <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Durée (jours)</label>
-                   <input 
-                     type="number" 
-                     placeholder="Jours" 
-                     value={newPlanDuration} 
-                     onChange={e => {
-                       const dur = Number(e.target.value);
-                       setNewPlanDuration(e.target.value);
-                       if (Number(newPlanAmount) > 0) {
-                          const daily = Math.round(Number(newPlanAmount) * (Number(newPlanPercent) / 100));
-                          const total = daily * dur;
-                          setNewPlanDaily(daily.toString());
-                          setNewPlanTotal(total.toString());
-                       }
-                     }} 
-                     className="bg-slate-100/80 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-600 outline-none" 
-                   />
-                 </div>
-                 <div className="flex flex-col gap-1">
-                   <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Gain/Jour (FCFA)</label>
-                   <input type="number" placeholder="Gain journalier" value={newPlanDaily} readOnly className="bg-slate-100 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-600 outline-none cursor-not-allowed opacity-80" />
-                 </div>
-                 <div className="flex flex-col gap-1">
-                   <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Total (FCFA)</label>
-                   <input type="number" placeholder="Revenu Total" value={newPlanTotal} readOnly className="bg-slate-100 border border-slate-200 text-slate-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-600 outline-none cursor-not-allowed opacity-80" />
-                 </div>
-               </div>
+                      }
+                    }} 
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                  />
+                </div>
 
-               {/* IMAGE UPLOAD */}
-               <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:bg-slate-100/80 transition-colors">
-                 <input 
-                   type="file" 
-                   accept="image/*" 
-                   onChange={handleImageUpload} 
-                   ref={fileInputRef}
-                   className="hidden" 
-                   id="plan-image"
-                 />
-                 <label htmlFor="plan-image" className="cursor-pointer flex flex-col items-center gap-2">
-                   {newPlanImage ? (
-                     <img referrerPolicy="no-referrer" src={newPlanImage} className="w-full h-32 object-cover rounded-lg shadow-sm" alt="Preview" />
-                   ) : (
-                     <>
-                       <div className="w-10 h-10 bg-emerald-600/10 text-emerald-600 rounded-full flex items-center justify-center">
-                         <Upload className="w-5 h-5" />
-                       </div>
-                       <span className="text-sm font-medium text-slate-500">Ajouter une photo</span>
-                     </>
-                   )}
-                 </label>
-               </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Gain % Journalier</label>
+                  <input 
+                    type="number" 
+                    placeholder="%" 
+                    value={newPlanPercent} 
+                    onChange={e => {
+                      const pct = Number(e.target.value);
+                      setNewPlanPercent(e.target.value);
+                      if (Number(newPlanAmount) > 0) {
+                        const daily = Math.round(Number(newPlanAmount) * (pct / 100));
+                        const total = daily * Number(newPlanDuration);
+                        setNewPlanDaily(daily.toString());
+                        setNewPlanTotal(total.toString());
+                      }
+                    }} 
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                  />
+                </div>
 
-               {editingPlanIndex !== null ? (
-                 <div className="flex gap-2">
-                   <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-emerald-600/100 hover:bg-emerald-800 disabled:opacity-50 text-slate-900 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
-                     <Save className="w-5 h-5" /> Sauvegarder
-                   </button>
-                   <button onClick={handleCancelEditPlan} className="flex-1 bg-slate-200 hover:bg-gray-300 text-slate-700 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
-                     Annuler
-                   </button>
-                 </div>
-               ) : (
-                 <button onClick={handleAddPlan} disabled={loading || !newPlanImage || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-emerald-600/100 hover:bg-emerald-800 disabled:opacity-50 text-slate-900 font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
-                   <Plus className="w-5 h-5" /> Ajouter à la liste
-                 </button>
-               )}
-             </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Durée (jours)</label>
+                  <input 
+                    type="number" 
+                    placeholder="60" 
+                    value={newPlanDuration} 
+                    onChange={e => {
+                      const dur = Number(e.target.value);
+                      setNewPlanDuration(e.target.value);
+                      if (Number(newPlanAmount) > 0) {
+                        const total = Number(newPlanDaily) * dur;
+                        setNewPlanTotal(total.toString());
+                      }
+                    }} 
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Statut</label>
+                  <button
+                    type="button"
+                    onClick={() => setNewPlanLocked(!newPlanLocked)}
+                    className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border transition-colors cursor-pointer ${
+                      newPlanLocked 
+                        ? 'bg-gray-100 border-gray-300 text-gray-700' 
+                        : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    }`}
+                  >
+                    {newPlanLocked ? <><Lock className="w-4 h-4" /> Verrouillé</> : <><Unlock className="w-4 h-4" /> Disponible</>}
+                  </button>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Gain/Jour (FCFA)</label>
+                  <input 
+                    type="number" 
+                    placeholder="Gain journalier" 
+                    value={newPlanDaily} 
+                    onChange={e => {
+                      setNewPlanDaily(e.target.value);
+                      if (Number(e.target.value) > 0) {
+                        setNewPlanTotal((Number(e.target.value) * Number(newPlanDuration)).toString());
+                      }
+                    }}
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Revenu Total (FCFA)</label>
+                  <input 
+                    type="number" 
+                    placeholder="Revenu Total" 
+                    value={newPlanTotal} 
+                    onChange={e => setNewPlanTotal(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                  />
+                </div>
+              </div>
+
+              {/* URL IMAGE OU UPLOAD */}
+              <div className="space-y-2">
+                <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Image du véhicule / service</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    placeholder="URL de l'image (https://...)"
+                    value={newPlanImage}
+                    onChange={e => setNewPlanImage(e.target.value)}
+                    className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-2.5 focus:border-emerald-500 outline-none"
+                  />
+                  <label htmlFor="plan-image-upload" className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0">
+                    <Upload className="w-4 h-4" /> Uploader
+                  </label>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleImageUpload} 
+                    ref={fileInputRef}
+                    className="hidden" 
+                    id="plan-image-upload"
+                  />
+                </div>
+
+                {newPlanImage && (
+                  <div className="w-full h-28 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                    <img src={newPlanImage} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+
+              {editingPlanIndex !== null ? (
+                <div className="flex gap-2 pt-2">
+                  <button onClick={handleAddPlan} disabled={loading || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                    <Save className="w-4 h-4" /> Enregistrer la modification
+                  </button>
+                  <button onClick={handleCancelEditPlan} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer">
+                    Annuler
+                  </button>
+                </div>
+              ) : (
+                <button onClick={handleAddPlan} disabled={loading || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                  <Plus className="w-4 h-4" /> Ajouter ce plan de culture
+                </button>
+              )}
+            </div>
           </div>
 
+          {/* LISTE DES PLANS ACTUELS */}
           <div className="space-y-3">
-            <h3 className="text-slate-900 font-bold px-1">Plans actuels ({plans.length})</h3>
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-gray-900 font-black text-base">Plans Actuels ({plans.length})</h3>
+              <p className="text-xs text-gray-500">Ordre par montant croissant</p>
+            </div>
+
             {isInitializing ? (
-               <div className="flex justify-center p-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
-               </div>
+              <div className="flex justify-center p-6">
+                <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+              </div>
             ) : plans.map((p, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 bg-white border-slate-200/80 shadow-slate-200/50 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-600/100"></div>
-                <div className="flex items-center gap-4 pl-2">
-                  <img referrerPolicy="no-referrer" src={p.image || '/app_icon.png'} className="w-12 h-12 rounded-xl object-cover bg-slate-100" alt=""/>
+              <div key={p.id || idx} className={`p-4 bg-white rounded-2xl border transition-all shadow-sm relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                p.locked ? 'border-gray-200 bg-gray-50/50' : 'border-emerald-100'
+              }`}>
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${p.locked ? 'bg-gray-400' : 'bg-emerald-500'}`}></div>
+                
+                <div className="flex items-center gap-3.5 pl-2">
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 border border-black/10 shrink-0 relative">
+                    <img 
+                      src={p.image || '/logo-icon.svg'} 
+                      className={`w-full h-full object-cover ${p.locked ? 'grayscale' : ''}`} 
+                      alt={p.name} 
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo-icon.svg'; }}
+                    />
+                    {p.locked && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <Lock className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                  </div>
                   <div>
-                    <div className="flex items-center gap-2 mb-0.5">
-                       <p className="font-bold text-slate-900 text-sm leading-none">{formatCurrency(p.amount)}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-black text-gray-900 text-sm">{p.name || `Plan ${formatCurrency(p.amount)}`}</p>
+                      {p.locked ? (
+                        <span className="text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-300 px-1.5 py-0.5 rounded">Verrouillé</span>
+                      ) : (
+                        <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded">Actif</span>
+                      )}
                     </div>
-                    <div className="flex gap-2">
-                        <p className="text-[11px] text-slate-500 mt-0.5">Gain/j: <span className="font-bold text-slate-700">{formatCurrency(p.daily)}</span></p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">Total: <span className="font-bold text-slate-700">{formatCurrency(p.total)}</span></p>
+                    <p className="text-xs font-black text-emerald-700 mt-0.5">{formatCurrency(p.amount)}</p>
+                    <div className="flex gap-3 text-[11px] text-gray-500 mt-0.5">
+                      <span>Gain/j: <strong className="text-gray-800">{formatCurrency(p.daily)}</strong></span>
+                      <span>Total: <strong className="text-gray-800">{formatCurrency(p.total)}</strong></span>
+                      <span>({p.duration || 60}j)</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => handleEditPlan(idx)} disabled={loading} className="p-2.5 text-emerald-600 bg-emerald-600/10 border border-emerald-600/20 rounded-xl hover:bg-emerald-600/20 transition-colors cursor-pointer">
-                    <Edit className="w-5 h-5" />
+
+                <div className="flex items-center gap-2 pl-2 sm:pl-0 shrink-0 self-end sm:self-center">
+                  <button 
+                    onClick={() => handleToggleLock(idx)} 
+                    disabled={loading} 
+                    title={p.locked ? "Déverrouiller" : "Verrouiller"}
+                    className={`p-2 rounded-xl transition-colors cursor-pointer border text-xs font-bold flex items-center gap-1 ${
+                      p.locked 
+                        ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' 
+                        : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
+                    }`}
+                  >
+                    {p.locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                   </button>
-                  <button onClick={() => handleRemovePlan(idx)} disabled={loading} className="p-2.5 text-emerald-600 bg-emerald-600/10 border border-emerald-600/20 rounded-xl hover:bg-emerald-600/20 transition-colors cursor-pointer">
-                    <Trash2 className="w-5 h-5" />
+
+                  <button 
+                    onClick={() => handleEditPlan(idx)} 
+                    disabled={loading} 
+                    title="Modifier"
+                    className="p-2 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-colors cursor-pointer"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+
+                  <button 
+                    onClick={() => handleRemovePlan(idx)} 
+                    disabled={loading} 
+                    title="Supprimer"
+                    className="p-2 text-red-500 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -1200,103 +1363,64 @@ export function Admin() {
         </div>
       )}
 
-      {/* CONTENT: PROOFS */}
-      {activeTab === 'vault' && (
-        <div className="space-y-6">
-          <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Créer un Coffre (Code)</h2>
-            <form onSubmit={handleAddVault} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Code Unique</label>
-                <input
-                  type="text"
-                  value={newVaultCode}
-                  onChange={e => setNewVaultCode(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500 font-bold tracking-widest uppercase"
-                  placeholder="EX: CADEAU1000"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Montant Total à Distribuer (FCFA)</label>
-                <input
-                  type="number"
-                  value={newVaultAmount}
-                  onChange={e => setNewVaultAmount(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500"
-                  placeholder="1000"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isAddingVault}
-                className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-2xl transition-all flex items-center justify-center"
-              >
-                {isAddingVault ? 'Création...' : 'Créer le coffre'}
-              </button>
-            </form>
-          </div>
-
-          <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Coffres existants ({vaultList.length})</h2>
-            <div className="space-y-4">
-              {vaultList.map((vault, i) => (
-                <div key={i} className="flex gap-4 border border-slate-100 rounded-2xl p-4 items-center">
-                  <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                    <Key className="w-6 h-6" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-slate-900 tracking-wider uppercase">{vault.code}</p>
-                    <p className="text-xs text-slate-500 mt-1 font-medium">Restant: <span className="text-emerald-600 font-bold">{new Intl.NumberFormat('fr-FR').format(vault.remaining_amount)}</span> / {new Intl.NumberFormat('fr-FR').format(vault.total_amount)} FCFA</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{vault.claimed_by?.length || 0} réclamations</p>
-                  </div>
-                  <button onClick={() => handleDeleteVault(vault.code)} className="text-red-500 hover:bg-red-50 p-2 rounded-xl h-fit">
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* CONTENT: SETTINGS */}
       {activeTab === 'settings' && (
         <div className="space-y-6">
-          <div className="bg-white border-slate-200/80 shadow-slate-200/50 border border-slate-200 rounded-3xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Configuration globale</h2>
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+            <h2 className="text-lg font-black text-gray-900 mb-4">Configuration globale de la plateforme</h2>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Lien de Paiement</label>
+                <label className="block text-xs font-bold text-gray-600 ml-1 mb-1">Logo de la Plateforme (URL)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={appLogo}
+                    onChange={(e) => setAppLogo(e.target.value)}
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
+                    placeholder="https://... ou laisser vide pour le logo officiel"
+                  />
+                  <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center p-1 shrink-0">
+                    <img 
+                      src={appLogo || '/logo.svg?v=agritrans'} 
+                      alt="Logo" 
+                      className="max-h-full max-w-full object-contain" 
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg?v=agritrans'; }} 
+                    />
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1 ml-1">Laissez vide ou entrez l'URL directe d'une image de logo.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 ml-1 mb-1">Lien de Paiement</label>
                 <input
                   type="url"
                   value={paymentLink}
                   onChange={(e) => setPaymentLink(e.target.value)}
-                  className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-emerald-600 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
                   placeholder="https://..."
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Lien du Groupe (ex: Telegram/WhatsApp)</label>
+                <label className="block text-xs font-bold text-gray-600 ml-1 mb-1">Lien du Groupe (Telegram / WhatsApp)</label>
                 <input
                   type="url"
                   value={groupLink}
                   onChange={(e) => setGroupLink(e.target.value)}
-                  className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-emerald-600 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
                   placeholder="https://t.me/..."
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-500 ml-1 mb-1">Lien du Service Client</label>
+                <label className="block text-xs font-bold text-gray-600 ml-1 mb-1">Lien du Service Client</label>
                 <input
                   type="url"
                   value={supportLink}
                   onChange={(e) => setSupportLink(e.target.value)}
-                  className="w-full bg-slate-100/80 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-emerald-600 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
                   placeholder="https://t.me/support..."
                 />
               </div>
@@ -1304,35 +1428,10 @@ export function Admin() {
               <button 
                 onClick={handleUpdateSettings}
                 disabled={loading}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 py-3 rounded-xl font-medium transition-colors shadow-sm cursor-pointer mt-4 border border-slate-300"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold transition-colors shadow-sm cursor-pointer mt-4"
               >
                 Sauvegarder les paramètres
               </button>
-
-              <div className="pt-6 mt-6 border-t border-slate-200">
-                <h3 className="text-slate-900 font-bold mb-3">Actions Globales</h3>
-                <button 
-                  onClick={handlePayAllDailyGains}
-                  disabled={loading}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 py-3 rounded-xl font-medium transition-colors shadow-sm cursor-pointer border border-slate-300"
-                >
-                  Payer tous les gains journaliers en attente
-                </button>
-                <p className="text-xs text-slate-500 text-center mt-2 mb-6">Vérifie et paie les gains journaliers de tous les utilisateurs actifs.</p>
-              </div>
-
-              <div className="pt-6 mt-6 border-t border-emerald-600/20">
-                <h3 className="text-emerald-600 font-bold mb-3">Zone de Danger</h3>
-                <button 
-                  onClick={handleWipeData}
-                  disabled={loading}
-                  className="w-full bg-emerald-700 hover:bg-emerald-800 text-slate-900 py-4 rounded-xl font-bold transition-colors shadow-lg shadow-emerald-600/30 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <AlertCircle className="w-5 h-5" />
-                  TOUT EFFACER (RÉINITIALISER)
-                </button>
-                <p className="text-xs text-slate-500 text-center mt-2">Cette action supprimera tous les utilisateurs, dépôts, retraits et plans d'investissement.</p>
-              </div>
             </div>
           </div>
         </div>

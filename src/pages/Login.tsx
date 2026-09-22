@@ -1,178 +1,204 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { supabase, checkDbSetup } from '../lib/supabase';
-import { Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { AppLogo } from '../components/AppLogo';
+import { Loader2, ArrowRight, ShieldCheck, Lock, Phone, CheckCircle2 } from 'lucide-react';
+import { COUNTRIES, CountryConfig, getPhoneRequirementLabel, validatePhoneForCountry } from '../data/countries';
 
 export function Login() {
+  const [selectedCountryCode, setSelectedCountryCode] = useState('CI');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { setUser } = useAuthStore();
+  
   const navigate = useNavigate();
+  const { login } = useAuthStore();
+  const currentCountry: CountryConfig = COUNTRIES.find(c => c.code === selectedCountryCode) || COUNTRIES[0];
 
-  useEffect(() => {
-    checkDbSetup().then(setup => {
-      if (!setup) navigate('/setup');
-    });
-  }, [navigate]);
+  const handleCountryChange = (newCountryCode: string) => {
+    setSelectedCountryCode(newCountryCode);
+    const newCountry = COUNTRIES.find(c => c.code === newCountryCode) || COUNTRIES[0];
+    if (phone.length > newCountry.maxLength) {
+      setPhone(phone.slice(0, newCountry.maxLength));
+    }
+    setError('');
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/[^0-9]/g, '');
+    
+    // Auto-détection si l'utilisateur colle un numéro complet avec indicatif pays
+    for (const c of COUNTRIES) {
+      const dialDigits = c.dialCode.replace('+', '');
+      if (val.startsWith(dialDigits) && val.length > dialDigits.length) {
+        setSelectedCountryCode(c.code);
+        val = val.slice(dialDigits.length);
+        const targetCountry = c;
+        const cleaned = val.slice(0, targetCountry.maxLength);
+        setPhone(cleaned);
+        setError('');
+        return;
+      }
+    }
+
+    const cleaned = val.slice(0, currentCountry.maxLength);
+    setPhone(cleaned);
+    setError('');
+  };
+
+  const isPhoneValid = phone.length >= currentCountry.minLength && phone.length <= currentCountry.maxLength;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const validation = validatePhoneForCountry(phone, currentCountry);
+    if (!validation.valid) {
+      setError(validation.message || 'Veuillez renseigner un numéro de téléphone valide');
+      return;
+    }
+
     setLoading(true);
-    
     try {
-      const cleanPhone = phone.replace(/\s/g, '');
-      
-      // Auto-create/force admin if it matches
-      if (cleanPhone === '0704752133' && password === 'Calmaress225@') {
-         const { data: adminData } = await supabase.from('users').select('*').eq('phone', '0704752133').single();
-         if (!adminData) {
-             const { data: newAdmin } = await supabase.from('users').insert({
-                 phone: '0704752133',
-                 country: "Côte d'Ivoire",
-                 first_name: 'Admin',
-                 last_name: 'ElevFinAi',
-                 password_hash: 'Calmaress225@',
-                 role: 'admin',
-                 balance: 0
-             }).select().single();
-             if (newAdmin) {
-                 sessionStorage.removeItem('welcome_shown');
-                 setUser(newAdmin);
-                 navigate('/dashboard');
-                 return;
-             }
-         } else {
-             await supabase.from('users').update({ password_hash: 'Calmaress225@', role: 'admin' }).eq('phone', '0704752133');
-             adminData.password_hash = 'Calmaress225@';
-             adminData.role = 'admin';
-             sessionStorage.removeItem('welcome_shown');
-             setUser(adminData);
-             navigate('/dashboard');
-             return;
-         }
-      }
-
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('phone', cleanPhone)
-        .eq('password_hash', password.trim())
-        .single();
-
-      if (error || !data) {
-        if (error?.message?.includes('Could not find the table') || error?.code === 'PGRST205') {
-            navigate('/setup');
-            return;
-        }
-        setError('Identifiant ou mot de passe incorrect.');
+      // login() gère automatiquement tous les formats (indicatif sélectionné, avec/sans indicatif, etc.)
+      const loggedUser = await login(phone, password, currentCountry.dialCode);
+      if (loggedUser?.role === 'admin') {
+        navigate('/admin');
       } else {
-        sessionStorage.removeItem('welcome_shown');
-        setUser(data);
-        navigate('/dashboard');
+        navigate('/profile');
       }
     } catch (err: any) {
-      setError('Erreur réseau. Veuillez réessayer.');
+      console.error('Login error:', err);
+      setError(err?.message || 'Identifiants invalides. Vérifiez votre numéro et mot de passe.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center font-sans relative overflow-hidden bg-slate-900">
-      <div className="absolute inset-0 z-0">
-        <img 
-          src="https://images.unsplash.com/photo-1639322537228-f710d846310a?q=80&w=1000&auto=format&fit=crop" 
-          alt="Background" 
-          className="w-full h-full object-cover opacity-30"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/80 to-slate-900"></div>
-      </div>
+    <div className="min-h-[100dvh] w-full flex flex-col justify-center items-center px-4 py-8 max-w-md mx-auto bg-slate-50 text-slate-900 font-sans select-none">
       
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md mx-auto relative z-10 px-6 py-10"
-      >
-        <div className="text-center mb-8 mt-4">
-           <p className="text-yellow-400 font-bold text-lg">Connectez-vous à votre espace</p>
+      {/* Header / Brand Logo - Direct on page */}
+      <div className="text-center mb-8 flex flex-col items-center w-full">
+        <div className="mb-4">
+          <AppLogo imgClassName="h-11 w-auto object-contain max-h-12" />
         </div>
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+          Connexion à votre compte
+        </h1>
+        <p className="text-slate-600 font-medium text-xs sm:text-sm mt-1.5">
+          Réseau Agro-Logistique & Transport AgriTrans
+        </p>
+      </div>
 
-        <div className="w-full">
-          <form onSubmit={handleLogin} className="space-y-5">
-            {error && (
-              <motion.div 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="p-4 bg-red-500/20 border border-red-500/30 rounded-2xl text-red-200 text-sm font-medium text-center"
+      {/* Main Form - Direct on the page (no card encapsulation) */}
+      <div className="w-full bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm">
+        <form onSubmit={handleLogin} className="space-y-4">
+          {error && (
+            <div className="p-3.5 bg-red-50 border border-red-300 rounded-xl text-red-900 text-xs font-bold text-center animate-in fade-in">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                Numéro Mobile Money
+              </label>
+            </div>
+
+            <div className={`flex bg-white border-2 rounded-xl overflow-hidden transition-all min-h-[50px] ${
+              isPhoneValid ? 'border-emerald-500' : 'border-slate-200 focus-within:border-emerald-600'
+            }`}>
+              <select
+                value={selectedCountryCode}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className="bg-slate-100 text-slate-900 font-bold text-sm px-3 border-r border-slate-200 outline-none cursor-pointer"
+                title="Sélectionner l'indicatif"
               >
-                {error}
-              </motion.div>
-            )}
-            
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-widest pl-2">Téléphone</label>
-              <div className="relative flex items-center">
-                <span className="absolute left-5 text-yellow-500 font-bold text-base">+225</span>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                    setPhone(val);
-                  }}
-                  maxLength={10}
-                  className="w-full bg-slate-800/80 border border-white/10 rounded-2xl pl-16 pr-5 py-4 text-white focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all font-semibold placeholder:text-slate-500 text-base"
-                  placeholder="01 02 03 04 05"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-widest pl-2">Mot de passe</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-800/80 border border-white/10 rounded-2xl pl-5 pr-14 py-4 text-white focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all font-semibold placeholder:text-slate-500 text-base"
-                  placeholder="••••••••"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-yellow-400 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-slate-900 font-black py-4 rounded-2xl mt-4 transition-all shadow-lg shadow-yellow-500/25 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
-            >
-              {loading ? 'Connexion...' : (
-                <>Se connecter <ArrowRight className="w-5 h-5" /></>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.dialCode}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={currentCountry.maxLength}
+                value={phone}
+                onChange={handlePhoneChange}
+                className="w-full px-3.5 py-3 text-slate-900 focus:outline-none bg-transparent placeholder:text-slate-400 font-bold tracking-wide text-base"
+                placeholder={`Ex: ${currentCountry.placeholder}`}
+                required
+              />
+              {isPhoneValid && (
+                <div className="flex items-center pr-3 text-emerald-600">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
               )}
-            </button>
-          </form>
-          
-          <p className="text-center text-slate-400 text-sm mt-8 font-medium">
-            Nouveau sur ElevFinAi ?{' '}
-            <Link to="/register" className="text-yellow-400 hover:text-yellow-300 font-bold transition-colors">
+            </div>
+
+            <div className="flex items-center justify-between px-1 text-[11px] font-medium text-slate-500">
+              <span>Format attendu : <strong className="text-slate-700 font-bold">{getPhoneRequirementLabel(currentCountry)}</strong></span>
+              <span className={`font-mono font-bold ${isPhoneValid ? 'text-emerald-600' : 'text-slate-500'}`}>
+                {phone.length}/{currentCountry.phoneLength} chiffres
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-emerald-600" />
+              Mot de passe
+            </label>
+            <div className="flex items-center bg-white border-2 border-slate-200 rounded-xl px-4 py-3 focus-within:border-emerald-600 transition-all min-h-[50px]">
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full text-slate-900 focus:outline-none bg-transparent placeholder:text-slate-400 font-bold tracking-wide text-base"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-md shadow-emerald-600/25 active:scale-98 disabled:opacity-50 text-sm cursor-pointer flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Connexion en cours...</span>
+              </>
+            ) : (
+              <>
+                <span>Se connecter</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="mt-6 pt-5 border-t border-slate-100 text-center space-y-3">
+          <p className="text-slate-600 text-xs sm:text-sm font-medium">
+            Pas encore de compte ?{' '}
+            <Link to="/register" className="text-emerald-700 hover:text-emerald-800 font-black tracking-wide underline underline-offset-2">
               Créer un compte
             </Link>
           </p>
+
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-semibold">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Connexion cryptée et sécurisée</span>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

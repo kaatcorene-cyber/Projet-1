@@ -1,111 +1,53 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { useAppStore } from '../store/useAppStore';
 import { BottomNav } from './BottomNav';
-import { FloatingSupport } from './FloatingSupport';
-import { LogOut, Settings, Download } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { Settings, Download } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
-
-let isProcessingYields = false;
 
 export function Layout() {
   const { isAuthenticated, user, logout, refreshUser } = useAuthStore();
-  const { fetchConfig, setInvestmentsCache } = useAppStore();
   const navigate = useNavigate();
-  const hasCheckedYields = useRef(false);
   const { isInstallable, installPWA } = usePWAInstall();
 
   useEffect(() => {
-    fetchConfig();
-  }, []);
-
-  useEffect(() => {
-    if (user?.id) {
-      if (!hasCheckedYields.current) {
-        hasCheckedYields.current = true;
-        processDailyYields(user.id);
-        preloadInvestments(user.id);
-      }
-      
-      const interval = setInterval(() => {
-        processDailyYields(user.id);
-      }, 60000 * 5); // every 5 minutes instead of 5 seconds
-      
-      return () => clearInterval(interval);
+    if (isAuthenticated) {
+      refreshUser();
     }
-  }, [user?.id]);
-
-  const preloadInvestments = async (userId: string) => {
-    try {
-      const { data } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
-      if (data) {
-        setInvestmentsCache(data);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const processDailyYields = async (userId: string) => {
-    if (isProcessingYields) return;
-    isProcessingYields = true;
-    try {
-      const { data: investments } = await supabase.from('investments').select('*').eq('user_id', userId).eq('status', 'active');
-      if (!investments || investments.length === 0) return;
-
-      const completedInvestments: string[] = [];
-      for (const inv of investments) {
-          if (inv.end_date) {
-            const endTimestamp = new Date(inv.end_date).getTime();
-            if (Date.now() >= endTimestamp) {
-              completedInvestments.push(inv.id);
-            }
-          }
-      }
-
-      if (completedInvestments.length > 0) {
-          for (const id of completedInvestments) {
-              await supabase.from('investments').update({ status: 'completed' }).eq('id', id);
-          }
-      }
-    } catch (e) {
-      console.error("Failed to process yields", e);
-    } finally {
-      isProcessingYields = false;
-    }
-  };
+  }, [isAuthenticated, refreshUser]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('telegramModalShown');
-    logout();
-    navigate('/login');
-  };
-
   return (
-    <div className="min-h-screen text-slate-200 pb-20 font-sans bg-slate-900">
-      <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden pb-8">
-        {/* Top Mini Header for Admin */}
-        <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
+    <div className="min-h-screen text-slate-900 bg-slate-50 pb-20 font-sans selection:bg-emerald-600 selection:text-white">
+      <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden bg-slate-50">
+        {/* Top Mini Header for Admin and PWA */}
+        <div className="absolute top-3 right-4 flex items-center gap-2 z-50">
+          {isInstallable && (
+            <button 
+              onClick={installPWA}
+              className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex items-center gap-1.5 text-[11px] font-bold shadow-md shadow-emerald-600/25 transition-all cursor-pointer active:scale-95"
+              title="Installer l'application"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Installer PWA</span>
+            </button>
+          )}
           {user?.role === 'admin' && (
             <button 
               onClick={() => navigate('/admin')}
-              className="w-10 h-10 bg-slate-800/80 backdrop-blur-md border-yellow-500/50 shadow-yellow-500/20 border rounded-full flex items-center justify-center text-yellow-400 shadow-sm hover:bg-slate-700 transition-colors"
+              className="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-700 shadow-sm hover:text-emerald-600 hover:border-emerald-500 transition-colors cursor-pointer active:scale-95"
+              title="Panneau d'administration"
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-4 h-4" />
             </button>
           )}
         </div>
 
         <Outlet />
       </main>
-
-      <FloatingSupport />
       <BottomNav />
     </div>
   );

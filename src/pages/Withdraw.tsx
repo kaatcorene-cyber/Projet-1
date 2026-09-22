@@ -1,362 +1,523 @@
-import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useAuthStore, saveStoredLocalUser } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
-import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Info, Wallet, Lock, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { saveLocalTransaction, getLocalTransactions } from '../lib/dataStore';
+import { useNavigate, Link } from 'react-router-dom';
+import { 
+  ChevronLeft, 
+  AlertCircle, 
+  CheckCircle2, 
+  ShieldCheck, 
+  Loader2, 
+  CreditCard,
+  ArrowRight,
+  Edit2,
+  Lock
+} from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
-import { motion } from 'framer-motion';
+import { AppLogo } from '../components/AppLogo';
 
-const availableMethods = [
-  { id: 'orange', name: 'Orange Money' },
-  { id: 'mtn', name: 'MTN Mobile Money' },
-  { id: 'moov', name: 'Moov Money' },
-  { id: 'wave', name: 'Wave' },
-  { id: 'bank', name: 'Virement Bancaire' },
-  { id: 'crypto', name: 'Cryptomonnaie' },
-];
+interface ResolvedWithdrawalAccount {
+  country: string | null;
+  dialCode: string | null;
+  method: string;
+  phone: string;
+  fullName: string;
+}
+
+function resolveWithdrawalAccount(user: any): ResolvedWithdrawalAccount | null {
+  if (!user || !user.id) return null;
+
+  // 1. Vérification locale immédiate (clés de cache agritrans / translogis / withdrawal_account)
+  const keys = [
+    `agritrans_withdraw_info_${user.id}`,
+    `translogis_withdraw_info_${user.id}`,
+    `withdrawal_account_${user.id}`
+  ];
+
+  for (const k of keys) {
+    try {
+      const raw = localStorage.getItem(k);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p.method && p.phone) {
+          return {
+            country: p.country || user.country || null,
+            dialCode: p.dialCode || null,
+            method: p.method,
+            phone: p.phone,
+            fullName: p.fullName || p.recipientName || `${user.first_name || ''} ${user.last_name || ''}`.trim()
+          };
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 2. Vérification immédiate dans le profil (champ address)
+  if (user.address) {
+    try {
+      const p = JSON.parse(user.address);
+      if (p.method && p.phone) {
+        return {
+          country: p.country || user.country || null,
+          dialCode: p.dialCode || null,
+          method: p.method,
+          phone: p.phone,
+          fullName: p.fullName || `${user.first_name || ''} ${user.last_name || ''}`.trim()
+        };
+      }
+    } catch (e) {}
+  }
+
+  // 3. Vérification immédiate dans l'historique des transactions locales
+  try {
+    const localTxs = getLocalTransactions();
+    const lastWithdrawal = localTxs.find(tx => 
+      (tx.user_id === user.id || tx.user_id === user.phone) && 
+      tx.type === 'withdrawal' && 
+      tx.reference
+    );
+    if (lastWithdrawal && lastWithdrawal.reference) {
+      const ref = lastWithdrawal.reference;
+      const countryMatch = ref.match(/^\[([^\]]+)\]\s*/);
+      const country = countryMatch ? countryMatch[1] : user.country || null;
+      const cleanRef = ref.replace(/^\[[^\]]+\]\s*/, '');
+      const parts = cleanRef.split(' - ');
+      if (parts.length >= 2) {
+        const m = parts[0].trim();
+        const remainder = parts.slice(1).join(' - ');
+        const phoneMatch = remainder.match(/^(\+?[0-9\s]+)(?:\s*\(([^)]+)\))?/);
+        if (phoneMatch) {
+          const p = phoneMatch[1].trim();
+          const n = phoneMatch[2]?.trim() || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+          return {
+            country,
+            dialCode: null,
+            method: m,
+            phone: p,
+            fullName: n
+          };
+        }
+      }
+    }
+  } catch (e) {}
+
+  return null;
+}
 
 export function Withdraw() {
-  const { user, refreshUser } = useAuthStore();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
+
+  // Résolution synchrone instantanée (0ms de latence au chargement)
+  const initialResolved = useMemo(() => resolveWithdrawalAccount(user), [user]);
+  
   const [amount, setAmount] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(''), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
-  const [success, setSuccess] = useState(false);
+  const [checkingAccount, setCheckingAccount] = useState<boolean>(false);
   
-  const [withdrawalInfo, setWithdrawalInfo] = useState<{paymentMethod: string, accountNumber: string, accountHolder: string} | null>(null);
-  const [infoLoaded, setInfoLoaded] = useState(false);
-  const [maxWithdrawable, setMaxWithdrawable] = useState<number | null>(null);
-  const [hasActivePack, setHasActivePack] = useState<boolean | null>(null);
+  // Saved withdrawal info
+  const [savedCountry, setSavedCountry] = useState<string | null>(initialResolved?.country || null);
+  const [savedDialCode, setSavedDialCode] = useState<string | null>(initialResolved?.dialCode || null);
+  const [savedMethod, setSavedMethod] = useState<string | null>(initialResolved?.method || null);
+  const [savedPhone, setSavedPhone] = useState<string | null>(initialResolved?.phone || null);
+  const [savedFullName, setSavedFullName] = useState<string | null>(initialResolved?.fullName || null);
+  const [isConfigured, setIsConfigured] = useState(Boolean(initialResolved?.method && initialResolved?.phone));
+  
+  const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
+  // Synchronisation distante discrète en tâche de fond si non configuré localement
   useEffect(() => {
-    if (user?.id) {
-      const loadInfo = async () => {
-        let hasLocalData = false;
-        const savedInfo = localStorage.getItem('withdrawal_info_v4_' + user.id);
-        if (savedInfo) {
-          try {
-            const parsed = JSON.parse(savedInfo);
-            if (parsed.accountNumber) {
-              setWithdrawalInfo({
-                ...parsed,
-                paymentMethod: parsed.paymentMethod || parsed.bank_method || parsed.bank_name || 'orange'
-              });
-              hasLocalData = true;
-            }
-          } catch (e) {}
-        }
-        
-        if (!hasLocalData) {
-          const { data } = await supabase.from('settings').select('value').eq('key', `bank_${user.id}`).maybeSingle();
-            if (data && data.value) {
-              try {
-                const parsed = JSON.parse(data.value);
-                if (parsed.bank_account_number) {
-                  setWithdrawalInfo({
-                    paymentMethod: parsed.bank_method || parsed.paymentMethod || parsed.bank_name || 'orange',
-                    accountNumber: parsed.bank_account_number,
-                    accountHolder: parsed.bank_account_name || user.first_name || ''
-                  });
-                }
-              } catch(e) {}
-            }
-        }
+    if (!user) return;
 
-        const { data: txData } = await supabase
-          .from('transactions')
-          .select('amount, status, type')
-          .eq('user_id', user.id);
-
-        let totalEarnings = 0;
-        let pendingWithdrawals = 0;
-
-        if (txData) {
-           txData.forEach(tx => {
-             if (tx.status === 'approved' && (tx.type === 'daily_revenue' || tx.type === 'referral_bonus' || tx.type === 'admin_bonus')) {
-               totalEarnings += Number(tx.amount);
-             }
-             if (tx.type === 'withdrawal' && tx.status === 'pending') {
-               pendingWithdrawals += Number(tx.amount);
-             }
-           });
-        }
-        const available = Math.max(0, totalEarnings - pendingWithdrawals);
-        
-        setMaxWithdrawable(Math.min(available, Number(user.balance)));
-
-        // Check for active pack
-        const { data: invData } = await supabase.from('investments').select('id').eq('user_id', user.id);
-        setHasActivePack(invData && invData.length > 0);
-
-        setInfoLoaded(true);
-      };
-      loadInfo();
+    const resolved = resolveWithdrawalAccount(user);
+    if (resolved) {
+      setSavedCountry(resolved.country);
+      setSavedDialCode(resolved.dialCode);
+      setSavedMethod(resolved.method);
+      setSavedPhone(resolved.phone);
+      setSavedFullName(resolved.fullName);
+      setIsConfigured(true);
+      return;
     }
+
+    // Requête légère avec timeout strict de 700ms pour ne jamais bloquer l'écran
+    let isCancelled = false;
+    const checkRemote = async () => {
+      try {
+        const timeoutPromise = new Promise<{ data: null }>((resolve) => 
+          setTimeout(() => resolve({ data: null }), 700)
+        );
+        const queryPromise = supabase
+          .from('transactions')
+          .select('reference')
+          .eq('user_id', user.id)
+          .eq('type', 'withdrawal')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const { data } = await Promise.race([queryPromise, timeoutPromise]);
+        if (!isCancelled && data && data.length > 0 && data[0].reference) {
+          const ref = data[0].reference;
+          const countryMatch = ref.match(/^\[([^\]]+)\]\s*/);
+          const country = countryMatch ? countryMatch[1] : null;
+          const cleanRef = ref.replace(/^\[[^\]]+\]\s*/, '');
+          const parts = cleanRef.split(' - ');
+          if (parts.length >= 2) {
+            const m = parts[0].trim();
+            const remainder = parts.slice(1).join(' - ');
+            const phoneMatch = remainder.match(/^(\+?[0-9\s]+)(?:\s*\(([^)]+)\))?/);
+            if (phoneMatch) {
+              const p = phoneMatch[1].trim();
+              const n = phoneMatch[2]?.trim() || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+              setSavedCountry(country);
+              setSavedMethod(m);
+              setSavedPhone(p);
+              setSavedFullName(n);
+              setIsConfigured(true);
+              localStorage.setItem(`agritrans_withdraw_info_${user.id}`, JSON.stringify({
+                country,
+                method: m,
+                phone: p,
+                fullName: n
+              }));
+            }
+          }
+        }
+      } catch (err) {
+      } finally {
+        if (!isCancelled) setCheckingAccount(false);
+      }
+    };
+
+    checkRemote();
+    return () => { isCancelled = true; };
   }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
-    if (!user || !withdrawalInfo) return;
-
-    if (!amount || Number(amount) < 1000) {
-      setError('Le montant minimum de retrait est de 1000 FCFA.');
-      return;
-    }
+    if (!user) return;
     
-    if (hasActivePack === false) {
-       setError('Vous devez avoir acheté au moins un pack actif avant de pouvoir retirer vos gains.');
-       return;
+    if (!isConfigured || !savedMethod || !savedPhone) {
+      return setMessage({
+        type: 'error',
+        text: 'Veuillez d’abord renseigner vos informations de retrait avant de continuer.'
+      });
     }
 
-    // removed maxWithdrawable check
-
-    if (Number(amount) > Number(user.balance)) {
-      setError('Solde insuffisant.');
-      return;
+    const numAmount = Number(amount);
+    if (!numAmount || numAmount < 2000) {
+      return setMessage({ type: 'error', text: 'Le montant minimum de retrait est de 2 000 FCFA.' });
     }
 
     if (!password) {
-      setError('Veuillez entrer votre mot de passe pour confirmer.');
-      return;
+      return setMessage({ type: 'error', text: 'Veuillez saisir votre mot de passe pour valider le retrait.' });
     }
 
     setLoading(true);
-    setError('');
+    setMessage(null);
 
     try {
-      const { data: passData, error: passError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', user.id)
-        .eq('password_hash', password.trim())
-        .single();
+      // 1. Vérification du mot de passe avec fallback instantané
+      let verifiedPasswordHash = user.password_hash;
+      let currentBalance = Number(user.balance || 0);
 
-      if (passError || !passData) throw new Error('Mot de passe incorrect.');
+      try {
+        const timeoutPromise = new Promise<any>((res) => setTimeout(() => res({ data: null }), 700));
+        const userQuery = supabase
+          .from('users')
+          .select('id, balance, password_hash')
+          .eq('id', user.id)
+          .maybeSingle();
 
-      const { error: txError } = await supabase.from('transactions').insert([{
+        const { data: dbUser } = await Promise.race([userQuery, timeoutPromise]);
+        if (dbUser) {
+          if (dbUser.password_hash) verifiedPasswordHash = dbUser.password_hash;
+          if (dbUser.balance !== undefined) currentBalance = Number(dbUser.balance || 0);
+        }
+      } catch (e) {}
+
+      if (verifiedPasswordHash && verifiedPasswordHash !== password) {
+        throw new Error('Mot de passe incorrect. Veuillez réessayer.');
+      }
+
+      if (currentBalance < numAmount) {
+        throw new Error(`Solde insuffisant. Votre solde actuel est de ${formatCurrency(currentBalance)}.`);
+      }
+
+      // 2. Déduction immédiate du solde en local & sur le serveur
+      const newBalance = currentBalance - numAmount;
+      useAuthStore.getState().updateBalance(newBalance);
+      saveStoredLocalUser({ ...user, balance: newBalance });
+
+      try {
+        fetch(`/api/users/${user.id}/balance`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ balance: newBalance })
+        }).catch(() => {});
+      } catch (e) {}
+
+      // 3. Calcul des frais réglementaires : 15%
+      const fee = Math.round(numAmount * 0.15);
+      const netAmount = numAmount - fee;
+      const countryLabel = savedCountry ? `[${savedCountry}] ` : '';
+      const dialLabel = savedDialCode ? `${savedDialCode} ` : '';
+      const referenceText = `${countryLabel}${savedMethod} - ${dialLabel}${savedPhone} (${savedFullName || 'Titulaire'}) | Net: ${netAmount} FCFA (Frais 15%: ${fee} FCFA)`;
+
+      // 4. Enregistrement local immédiat de la transaction
+      const newTxId = 'tx_' + Date.now();
+      saveLocalTransaction({
+        id: newTxId,
         user_id: user.id,
         type: 'withdrawal',
-        amount: Number(amount),
+        amount: numAmount,
         status: 'pending',
-        reference: `Retrait vers ${withdrawalInfo.paymentMethod} (${withdrawalInfo.accountNumber})`
-      }]);
+        reference: referenceText,
+        description: `Retrait ${savedCountry ? `(${savedCountry}) ` : ''}vers ${savedMethod} ${dialLabel}${savedPhone}`,
+        created_at: new Date().toISOString()
+      });
 
-      if (txError) throw txError;
+      // 5. Synchronisation Supabase en tâche de fond sécurisée
+      try {
+        await supabase.from('users').update({ balance: newBalance }).eq('id', user.id);
+        await supabase.from('transactions').insert([{
+          id: newTxId,
+          user_id: user.id,
+          type: 'withdrawal',
+          amount: numAmount,
+          status: 'pending',
+          reference: referenceText,
+          description: `Retrait ${savedCountry ? `(${savedCountry}) ` : ''}vers ${savedMethod} ${dialLabel}${savedPhone}`,
+          created_at: new Date().toISOString()
+        }]);
+      } catch (remoteErr) {
+        console.warn('Synchronisation Supabase différée pour le retrait:', remoteErr);
+      }
 
-      const newBalance = Number(user.balance) - Number(amount);
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ balance: newBalance })
-        .eq('id', user.id);
+      setMessage({
+        type: 'success',
+        text: `Demande de retrait de ${formatCurrency(numAmount)} enregistrée avec succès. Virement en cours de traitement.`
+      });
+      setAmount('');
+      setPassword('');
 
-      if (updateError) throw updateError;
-      
-      await refreshUser();
-      setSuccess(true);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Une erreur est survenue lors de la demande de retrait.');
+      console.error('Withdraw error:', err);
+      setMessage({
+        type: 'error',
+        text: err?.message || 'Une erreur est survenue lors de la demande de retrait.'
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  if (!infoLoaded) {
-    return <div className="min-h-screen bg-slate-50 flex items-center justify-center"></div>;
-  }
-
-  if (!withdrawalInfo) {
-    return (
-      <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
-        <header className="mb-6 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">Retrait</h1>
-            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Configuration requise</p>
-          </div>
-        </header>
-
-        <div className="max-w-md mx-auto bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-200">
-          <div className="w-16 h-16 bg-slate-50 border border-slate-200 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Wallet className="w-8 h-8" />
-          </div>
-          <h2 className="text-xl font-black text-slate-900 mb-2">Compte de retrait manquant</h2>
-          <p className="text-slate-500 mb-8 text-sm">Veuillez d'abord configurer vos informations de retrait avant de pouvoir retirer vos gains.</p>
-          <button onClick={() => navigate('/bank')} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all">
-            Configurer mon compte
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (hasActivePack === false) {
-    return (
-      <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
-        <header className="mb-6 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">Retrait bloqué</h1>
-          </div>
-        </header>
-
-        <div className="max-w-md mx-auto bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-200">
-          <div className="w-16 h-16 bg-red-50 border border-red-200 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-8 h-8" />
-          </div>
-          <h2 className="text-xl font-black text-slate-900 mb-2">Achat de pack requis</h2>
-          <p className="text-slate-500 mb-8 text-sm">Vous devez avoir acheté au moins un pack actif avant de pouvoir retirer vos gains.</p>
-          <button onClick={() => navigate('/products')} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all">
-            Voir les packs
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50 p-4 pt-10 pb-32 font-sans text-slate-900 relative">
-      <header className="mb-6 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors shadow-sm shrink-0">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">Retrait</h1>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mt-0.5">Retirer vos gains</p>
+    <div className="min-h-screen pb-28 font-sans text-slate-900 bg-slate-50 overflow-x-hidden">
+      {/* Header Bar */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between transition-all">
+        <div className="flex items-center gap-2.5">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors active:scale-95 cursor-pointer"
+            aria-label="Retour"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-base font-black text-slate-900 tracking-tight">Retrait</h1>
+            <p className="text-emerald-700 text-[10px] uppercase font-black tracking-wider">Paiement Mobile Money</p>
+          </div>
         </div>
+        <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />
       </header>
 
-      <div className="max-w-md mx-auto space-y-6">
-      
-      {success ? (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-3xl p-8 text-center shadow-sm border border-slate-200"
-        >
-          <div className="w-20 h-20 bg-emerald-50 border border-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 relative">
-            <CheckCircle2 className="w-10 h-10 text-emerald-500 relative z-10" />
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Demande envoyée !</h2>
-          <p className="text-slate-500 text-sm mb-8 leading-relaxed">
-            Votre demande de retrait a été enregistrée avec succès. Vous la recevrez sur votre compte sous peu.
-          </p>
-          <button 
-            onClick={() => navigate('/history')}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-2xl font-bold transition-colors shadow-lg shadow-slate-900/20"
-          >
-            Voir l'historique
-          </button>
-        </motion.div>
-      ) : (
-        <div className="space-y-6">
+      <div className="pt-3 max-w-lg mx-auto space-y-4 px-3 sm:px-0">
         
-        {/* Balance Card */}
-        <div className="bg-emerald-500 rounded-3xl p-6 text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-[30px] -mr-10 -mt-10 pointer-events-none"></div>
-          
-          <div className="flex items-start justify-between relative z-10">
-            <div>
-               <p className="text-emerald-100 text-[10px] font-bold uppercase tracking-widest mb-1">Solde Retirable</p>
-               <h2 className="text-3xl font-black tracking-tight">{formatCurrency(Number(user?.balance || 0))}</h2>
-            </div>
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-inner shrink-0">
-               <Wallet className="w-6 h-6 text-white" />
-            </div>
-          </div>
+        {/* Balance Direct Band */}
+        <div className="bg-white border border-slate-200 rounded-xl py-3.5 px-4 text-center shadow-sm">
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Solde Retirable</p>
+          <h2 className="text-2xl font-black tracking-tight text-slate-900">{formatCurrency(user?.balance || 0)}</h2>
         </div>
 
-        {error && (
-         <motion.div 
-           initial={{ opacity: 0, scale: 0.95 }}
-           animate={{ opacity: 1, scale: 1 }}
-           className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm font-medium flex items-start gap-3 shadow-sm"
-         >
-           <Info className="w-5 h-5 shrink-0 mt-0.5" />
-           <p>{error}</p>
-         </motion.div>
+        {checkingAccount ? (
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center shadow-sm">
+            <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
+            <p className="text-xs text-slate-600 font-bold">Vérification de vos informations de retrait...</p>
+          </div>
+        ) : !isConfigured ? (
+          /* Missing withdrawal info: prompt user to go configure it */
+          <div className="bg-white border-2 border-dashed border-amber-300 rounded-2xl p-6 text-center space-y-3 shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200">
+              <CreditCard className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-black text-slate-900">
+              Informations de retrait non renseignées
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              Pour des raisons de sécurité, vous devez d’abord renseigner votre moyen de réception, votre numéro et le nom du titulaire avant d’effectuer un retrait.
+            </p>
+            <Link
+              to="/withdraw-info"
+              className="inline-flex items-center justify-center gap-2 w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-600/25 cursor-pointer"
+            >
+              <span>Renseigner mes informations de retrait</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        ) : (
+          /* Ready: User already saved info -> only Amount & Password requested */
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {message && (
+              <div className={`p-3.5 rounded-xl text-xs font-bold flex items-center gap-2.5 animate-in fade-in shadow-sm ${
+                message.type === 'success' ? 'bg-emerald-100 border border-emerald-300 text-emerald-950' : 'bg-red-50 border border-red-300 text-red-900'
+              }`}>
+                {message.type === 'success' ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                )}
+                <span>{message.text}</span>
+              </div>
+            )}
+
+            {/* Encadré Récapitulatif Coordonnées de Réception */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-2.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                  Destination du virement
+                </span>
+                <Link
+                  to="/withdraw-info"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-white border border-emerald-300 px-2.5 py-1 rounded-lg shadow-2xs cursor-pointer"
+                >
+                  <Edit2 className="w-3 h-3" />
+                  <span>Modifier</span>
+                </Link>
+              </div>
+
+              <div className="bg-white rounded-xl p-3 border border-emerald-100 space-y-1.5 text-xs">
+                {savedCountry && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 font-medium">Pays :</span>
+                    <span className="font-black text-slate-900 flex items-center gap-1">
+                      <span>{savedCountry}</span>
+                      {savedDialCode && <span className="text-slate-500 text-[11px] font-mono">({savedDialCode})</span>}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-medium">Moyen :</span>
+                  <span className="font-black text-slate-900">{savedMethod}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-medium">Numéro :</span>
+                  <span className="font-mono font-black text-emerald-800">
+                    {savedDialCode ? `${savedDialCode} ` : ''}{savedPhone}
+                  </span>
+                </div>
+                {savedFullName && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 font-medium">Titulaire :</span>
+                    <span className="font-bold text-slate-900 uppercase">{savedFullName}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Formulaire simplifié : Montant + Mot de passe */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
+              {/* 1. Montant */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black uppercase tracking-wider text-slate-800">
+                  Montant à retirer (FCFA)
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3.5 text-2xl font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 transition-all"
+                    placeholder="Ex: 5000"
+                    required
+                    min="2000"
+                  />
+                  <span className="absolute right-4 text-xs font-black text-slate-500 uppercase tracking-wider pointer-events-none">
+                    FCFA
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
+                  <span>Minimum de retrait : <strong className="text-slate-900 font-black">2 000 FCFA</strong></span>
+                  <span>Frais de retrait : <strong className="text-slate-900 font-black">15%</strong></span>
+                </div>
+
+                {/* Calcul en direct des frais et du net reçu */}
+                {Number(amount) >= 2000 && (
+                  <div className="mt-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs animate-in fade-in">
+                    <div className="flex justify-between items-center text-slate-600">
+                      <span>Montant brut demandé :</span>
+                      <span className="font-bold text-slate-900">{formatCurrency(Number(amount))}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-amber-700">
+                      <span>Frais de retrait (15%) :</span>
+                      <span className="font-bold">- {formatCurrency(Math.round(Number(amount) * 0.15))}</span>
+                    </div>
+                    <div className="pt-1.5 border-t border-slate-200 flex justify-between items-center text-emerald-800">
+                      <span className="font-black">Montant net viré sur votre compte :</span>
+                      <span className="text-sm font-black text-emerald-700">
+                        {formatCurrency(Number(amount) - Math.round(Number(amount) * 0.15))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Mot de passe */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black uppercase tracking-wider text-slate-800">
+                  Mot de passe du compte
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 transition-all"
+                    placeholder="Saisissez votre mot de passe"
+                    required
+                  />
+                  <span className="absolute right-4 text-slate-400 pointer-events-none">
+                    <Lock className="w-4 h-4" />
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium">Sécurité renforcée pour authentifier votre demande.</p>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 rounded-xl text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/25 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Traitement sécurisé en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Confirmer le retrait</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 space-y-6">
-          
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between mb-2">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Compte de réception</p>
-              <p className="font-black text-slate-900 text-sm">{availableMethods.find(m => m.id === withdrawalInfo.paymentMethod)?.name.toUpperCase() || withdrawalInfo.paymentMethod.toUpperCase()}</p>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">{withdrawalInfo.accountNumber}</p>
-            </div>
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-slate-400 border border-slate-200 shrink-0">
-              <Wallet className="w-5 h-5" />
-            </div>
-          </div>
-           
-           <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Montant à retirer</label>
-             <div className="bg-slate-50 border border-slate-200 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
-                <span className="text-slate-400 font-black text-2xl mr-3">FCFA</span>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-3xl font-black text-slate-900 placeholder-slate-300 outline-none"
-                  placeholder="0"
-                  required
-                />
-             </div>
-           </div>
-
-           {amount && Number(amount) >= 1000 && (
-             <div className="px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
-                 <span className="text-slate-500 font-medium">Frais (15%): <span className="font-bold text-red-500">-{formatCurrency(Number(amount) * 0.15)}</span></span>
-                 <span className="text-slate-500 font-medium">Vous recevrez: <span className="font-bold text-emerald-600">{formatCurrency(Number(amount) * 0.85)}</span></span>
-             </div>
-           )}
-           
-           <div className="space-y-2">
-             <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 px-1">Mot de passe</label>
-             <div className="bg-slate-50 border border-slate-200 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 rounded-2xl p-4 transition-all duration-300 flex items-center shadow-inner">
-                <Lock className="w-5 h-5 text-slate-400 mr-3" />
-                <input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-transparent border-none p-0 focus:ring-0 text-lg font-bold text-slate-900 placeholder-slate-300 outline-none tracking-widest"
-                  required
-                />
-             </div>
-           </div>
-           
-           <div className="pt-2">
-             <button
-               type="submit"
-               disabled={loading}
-               className="w-full py-4 rounded-2xl font-bold transition-all duration-300 disabled:opacity-50 text-white bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20 active:scale-[0.98] flex justify-center items-center gap-2"
-             >
-               {loading ? 'Traitement...' : 'Confirmer le retrait'}
-             </button>
-           </div>
-           
-           <div className="flex items-center justify-center gap-1.5 text-slate-400">
-             <ShieldCheck className="w-4 h-4" />
-             <span className="text-[10px] font-bold uppercase tracking-wider">Transaction Sécurisée</span>
-          </div>
-       </form>
-      </div>
-      )}
       </div>
     </div>
   );

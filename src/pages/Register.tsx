@@ -1,224 +1,276 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { supabase, checkDbSetup } from '../lib/supabase';
-import { Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { AppLogo } from '../components/AppLogo';
+import { Loader2, ArrowRight, ShieldCheck, Lock, Gift, Phone, CheckCircle2, X } from 'lucide-react';
+import { COUNTRIES, CountryConfig, getPhoneRequirementLabel, validatePhoneForCountry } from '../data/countries';
 
 export function Register() {
   const [searchParams] = useSearchParams();
-  const refCodeFromUrl = searchParams.get('ref') || '';
-
+  const [selectedCountryCode, setSelectedCountryCode] = useState('CI');
   const [formData, setFormData] = useState({
     phone: '',
-    country: "Côte d'Ivoire",
     password: '',
-    referralCode: refCodeFromUrl,
+    referralCode: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { setUser } = useAuthStore();
+  
   const navigate = useNavigate();
+  const { register } = useAuthStore();
+  const currentCountry: CountryConfig = COUNTRIES.find(c => c.code === selectedCountryCode) || COUNTRIES[0];
+
   useEffect(() => {
-    const code = searchParams.get('ref');
-    if (code) {
-      setFormData(prev => ({ ...prev, referralCode: code }));
+    const ref = searchParams.get('ref') || searchParams.get('code');
+    if (ref) {
+      setFormData(prev => ({ ...prev, referralCode: ref.trim().toUpperCase() }));
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    checkDbSetup().then(setup => {
-      if (!setup) navigate('/setup');
-    });
-  }, [navigate]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    let value = e.target.value;
-    setFormData({ ...formData, [e.target.name]: value });
+  // When country changes, adjust phone if it exceeds the new country's max length
+  const handleCountryChange = (newCountryCode: string) => {
+    setSelectedCountryCode(newCountryCode);
+    const newCountry = COUNTRIES.find(c => c.code === newCountryCode) || COUNTRIES[0];
+    if (formData.phone.length > newCountry.maxLength) {
+      setFormData(prev => ({ ...prev, phone: prev.phone.slice(0, newCountry.maxLength) }));
+    }
+    setError('');
   };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/[^0-9]/g, '');
+    
+    // Auto-détection si l'utilisateur colle un numéro complet avec indicatif pays
+    for (const c of COUNTRIES) {
+      const dialDigits = c.dialCode.replace('+', '');
+      if (val.startsWith(dialDigits) && val.length > dialDigits.length) {
+        setSelectedCountryCode(c.code);
+        val = val.slice(dialDigits.length);
+        const targetCountry = c;
+        const cleaned = val.slice(0, targetCountry.maxLength);
+        setFormData(prev => ({ ...prev, phone: cleaned }));
+        setError('');
+        return;
+      }
+    }
+
+    const cleaned = val.slice(0, currentCountry.maxLength);
+    setFormData(prev => ({ ...prev, phone: cleaned }));
+    setError('');
+  };
+
+  const isPhoneValid = formData.phone.length >= currentCountry.minLength && formData.phone.length <= currentCountry.maxLength;
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const validation = validatePhoneForCountry(formData.phone, currentCountry);
+    if (!validation.valid) {
+      setError(validation.message || 'Numéro de téléphone invalide');
+      return;
+    }
+
+    if (formData.password.length < 4) {
+      setError('Le mot de passe doit comporter au moins 4 caractères');
+      return;
+    }
+
     setLoading(true);
-    
-    const cleanPhone = formData.phone.replace(/\s/g, ''); 
-    
     try {
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('phone', cleanPhone)
-        .maybeSingle();
-
-      if (existingUser) {
-        setError('Ce numéro est déjà utilisé');
-        setLoading(false);
-        return;
-      }
-      
-      const generateRef = () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let res = '';
-        for (let i = 0; i < 6; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
-        return res;
-      };
-      
-      let finalCode = generateRef();
-      let codeUnique = false;
-      
-      while(!codeUnique) {
-          const { data: existingRef } = await supabase.from('users').select('id').eq('referral_code', finalCode).maybeSingle();
-          if (existingRef) {
-              finalCode = generateRef();
-          } else {
-              codeUnique = true;
-          }
-      }
-
-      const { data, error: insertError } = await supabase
-        .from('users')
-        .insert([
-          {
-            first_name: cleanPhone,
-            last_name: '',
-            phone: cleanPhone,
-            country: formData.country,
-            password_hash: formData.password, 
-            referral_code: finalCode,
-            referred_by: formData.referralCode ? formData.referralCode.trim().toUpperCase() : null,
-            balance: 0 
-          }
-        ])
-        .select()
-        .single();
-
-      if (insertError || !data) {
-        if (insertError?.message?.includes('Could not find the table') || insertError?.code === 'PGRST205') {
-            navigate('/setup');
-            return;
-        }
-        if (insertError?.code === '23505') {
-            setError('Ce numéro de téléphone est déjà pris.');
-        } else {
-            setError(`Erreur Serveur: ${insertError?.message || 'Impossible de créer le compte'}`);
-        }
-      } else {
-        sessionStorage.removeItem('welcome_shown');
-        setUser(data);
-        navigate('/dashboard');
-      }
+      const fullPhone = `${currentCountry.dialCode}${formData.phone}`;
+      await register(
+        fullPhone,
+        formData.password,
+        '',
+        '',
+        formData.referralCode,
+        currentCountry.name,
+        currentCountry.dialCode
+      );
+      navigate('/profile');
     } catch (err: any) {
-      setError('Erreur réseau. Veuillez réessayer.');
+      console.error('Registration error:', err);
+      let msg = err?.message || "Une erreur est survenue lors de l'inscription.";
+      if (msg.includes('duplicate key') || msg.includes('already exists') || msg.includes('unique constraint') || msg.includes('users_phone_key')) {
+        msg = 'Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter.';
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center font-sans relative overflow-hidden bg-slate-900 py-10">
-      <div className="absolute inset-0 z-0">
-        <img 
-          src="https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=1000&auto=format&fit=crop" 
-          alt="Background" 
-          className="w-full h-full object-cover opacity-20"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-slate-900/40"></div>
-      </div>
+    <div className="min-h-[100dvh] w-full flex flex-col justify-center items-center px-4 py-8 max-w-md mx-auto bg-slate-50 text-slate-900 font-sans select-none">
       
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md mx-auto relative z-10 px-6 py-6"
-      >
-        <div className="text-center mb-8 mt-4">
-           <p className="text-yellow-400 font-bold text-lg">Créez votre compte en quelques secondes</p>
+      {/* Header / Brand Logo - Direct on page */}
+      <div className="text-center mb-8 flex flex-col items-center w-full">
+        <div className="mb-4">
+          <AppLogo imgClassName="h-11 w-auto object-contain max-h-12" />
         </div>
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+          Créer un Compte
+        </h1>
+        <p className="text-slate-600 font-medium text-xs sm:text-sm mt-1.5">
+          Rejoignez le réseau agro-logistique & transport AgriTrans
+        </p>
+      </div>
 
-        <div className="w-full">
-          <form onSubmit={handleRegister} className="space-y-4">
-            {error && (
-              <motion.div 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="p-4 bg-red-500/20 border border-red-500/30 rounded-2xl text-red-200 text-sm font-medium text-center"
+      {/* Main Form - Direct on the page */}
+      <div className="w-full bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm">
+        <form onSubmit={handleRegister} className="space-y-4">
+          {error && (
+            <div className="p-3.5 bg-red-50 border border-red-300 rounded-xl text-red-900 text-xs font-bold text-center animate-in fade-in">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                Numéro Mobile Money
+              </label>
+            </div>
+
+            <div className={`flex bg-white border-2 rounded-xl overflow-hidden transition-all min-h-[50px] ${
+              isPhoneValid ? 'border-emerald-500' : 'border-slate-200 focus-within:border-emerald-600'
+            }`}>
+              <select
+                value={selectedCountryCode}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className="bg-slate-100 text-slate-900 font-bold text-sm px-3 border-r border-slate-200 outline-none cursor-pointer"
+                title="Sélectionner l'indicatif"
               >
-                {error}
-              </motion.div>
-            )}
-            
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-widest pl-2">Téléphone</label>
-              <div className="relative flex items-center">
-                <span className="absolute left-5 text-yellow-500 font-bold text-base">+225</span>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                    setFormData({ ...formData, phone: val });
-                  }}
-                  maxLength={10}
-                  className="w-full bg-slate-800/80 border border-white/10 rounded-2xl pl-16 pr-5 py-4 text-white focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all font-semibold placeholder:text-slate-500 text-base"
-                  placeholder="01 02 03 04 05"
-                  required
-                />
-              </div>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.dialCode}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="tel"
+                inputMode="numeric"
+                name="phone"
+                maxLength={currentCountry.maxLength}
+                value={formData.phone}
+                onChange={handlePhoneChange}
+                className="w-full px-3.5 py-3 text-slate-900 focus:outline-none bg-transparent placeholder:text-slate-400 font-bold tracking-wide text-base"
+                placeholder={`Ex: ${currentCountry.placeholder}`}
+                required
+              />
+              {isPhoneValid && (
+                <div className="flex items-center pr-3 text-emerald-600">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+              )}
             </div>
-            
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-widest pl-2">Mot de passe</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full bg-slate-800/80 border border-white/10 rounded-2xl pl-5 pr-14 py-4 text-white focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all font-semibold placeholder:text-slate-500 text-base"
-                  placeholder="••••••••"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-yellow-400 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
+
+            <div className="flex items-center justify-between px-1 text-[11px] font-medium text-slate-500">
+              <span>Format attendu : <strong className="text-slate-700 font-bold">{getPhoneRequirementLabel(currentCountry)}</strong></span>
+              <span className={`font-mono font-bold ${isPhoneValid ? 'text-emerald-600' : 'text-slate-500'}`}>
+                {formData.phone.length}/{currentCountry.phoneLength} chiffres
+              </span>
             </div>
-            
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300 uppercase tracking-widest pl-2">Code d'invitation</label>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-emerald-600" />
+              Mot de passe
+            </label>
+            <div className="flex items-center bg-white border-2 border-slate-200 rounded-xl px-4 py-3 focus-within:border-emerald-600 transition-all min-h-[50px]">
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full text-slate-900 focus:outline-none bg-transparent placeholder:text-slate-400 font-bold tracking-wide text-base"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Gift className="w-3.5 h-3.5 text-emerald-600" />
+                Code Parrain
+              </span>
+              <span className="text-slate-500 lowercase font-medium text-[11px]">facultatif</span>
+            </label>
+            <div className="relative flex items-center bg-slate-50 border border-slate-200 focus-within:border-emerald-600 focus-within:bg-white rounded-xl px-4 py-2.5 min-h-[50px] transition-all">
               <input
                 type="text"
                 name="referralCode"
                 value={formData.referralCode}
-                readOnly={true}
-                className="w-full bg-slate-900/30 border border-white/5 rounded-2xl px-5 py-4 text-slate-400 font-semibold cursor-not-allowed text-base"
+                onChange={(e) => setFormData(prev => ({ ...prev, referralCode: e.target.value.toUpperCase().replace(/\s+/g, '') }))}
+                placeholder="Ex: AGRIADMIN ou code ami"
+                className="w-full text-emerald-800 focus:outline-none bg-transparent placeholder:text-slate-400 font-mono font-bold uppercase tracking-wider text-sm pr-16"
               />
+              {formData.referralCode ? (
+                <div className="flex items-center gap-1 shrink-0 ml-2">
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    Actif
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, referralCode: '' }))}
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer transition-colors"
+                    title="Effacer le code parrain"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : null}
             </div>
-            
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-slate-900 font-black py-4 rounded-2xl mt-6 transition-all shadow-lg shadow-yellow-500/25 active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
-            >
-              {loading ? 'Création...' : (
-                <>Créer mon compte <ArrowRight className="w-5 h-5" /></>
-              )}
-            </button>
-          </form>
-          
-          <p className="text-center text-slate-400 text-sm mt-8 font-medium">
-            Déjà un compte ?{' '}
-            <Link to="/login" className="text-yellow-400 hover:text-yellow-300 font-bold transition-colors">
+            {formData.referralCode && (
+              <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 pl-1">
+                ✓ Vous serez affilié à votre parrain pour bénéficier des bonus d'équipe.
+              </p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-md shadow-emerald-600/25 active:scale-98 disabled:opacity-50 text-sm cursor-pointer flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Création de votre compte...</span>
+              </>
+            ) : (
+              <>
+                <span>Valider mon inscription</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="mt-6 pt-5 border-t border-slate-100 text-center space-y-3">
+          <p className="text-slate-600 text-xs sm:text-sm font-medium">
+            Déjà inscrit sur AgriTrans ?{' '}
+            <Link to="/login" className="text-emerald-700 hover:text-emerald-800 font-black tracking-wide underline underline-offset-2">
               Se connecter
             </Link>
           </p>
+
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-semibold">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Données confidentielles et sécurisées</span>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -1,166 +1,384 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
-import { useAppStore } from '../store/useAppStore';
-import { LogOut, Settings, Wallet, ArrowDownLeft, ArrowUpRight, Landmark, Info, ChevronRight, X, Share, PlusSquare, Apple, Users, Server, ShieldCheck, Database, HardDrive, Cpu, Terminal } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { usePWAInstall } from '../hooks/usePWAInstall';
+import { supabase } from '../lib/supabase';
+import { useNavigate, Link } from 'react-router-dom';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { 
+  Wallet, 
+  ChevronRight,
+  PlusCircle,
+  Banknote,
+  Users,
+  ExternalLink,
+  LogOut,
+  PhoneCall,
+  Phone,
+  Calendar,
+  CreditCard,
+  Download,
+  Smartphone,
+  CheckCircle2,
+  X
+} from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
+import { AppLogo } from '../components/AppLogo';
+import { WelcomeModal } from '../components/WelcomeModal';
 
 export function Profile() {
-  const { user, logout } = useAuthStore();
-  const { config } = useAppStore();
+  const { user, logout, refreshUser } = useAuthStore();
   const navigate = useNavigate();
-  const balance = user?.balance || 0;
-  const { isInstallable, installPWA, isIOS } = usePWAInstall();
-  const [showIOSOverlay, setShowIOSOverlay] = useState(false);
+  const [groupLink, setGroupLink] = useState('https://t.me/+5i6UubrC1mtmMDg0');
+  const [supportLink, setSupportLink] = useState('https://t.me/AgriTrans_01');
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [depositSuccessMsg, setDepositSuccessMsg] = useState<string>('');
+
+  // Check if welcome message should be displayed on login
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const shouldShow = sessionStorage.getItem('agritrans_show_welcome');
+      const shownForSession = sessionStorage.getItem('agritrans_welcome_shown_for_session');
+      if (shouldShow === 'true' || !shownForSession) {
+        setShowWelcomeModal(true);
+      }
+    } catch (e) {}
+  }, [user]);
+
+  const handleCloseWelcomeModal = () => {
+    setShowWelcomeModal(false);
+    try {
+      sessionStorage.removeItem('agritrans_show_welcome');
+      sessionStorage.setItem('agritrans_welcome_shown_for_session', 'true');
+    } catch (e) {}
+  };
+
+  // Auto verify pending MoneyFusion deposit
+  useEffect(() => {
+    async function checkDeposit() {
+      const saved = localStorage.getItem('agritrans_pending_deposit');
+      if (!saved) return;
+      try {
+        const data = JSON.parse(saved);
+        if (!data || !data.token) return;
+
+        const res = await fetch(`/api/moneyfusion/verify?token=${data.token}&txId=${data.txId || ''}&userId=${user?.id || ''}`);
+        if (res.ok) {
+          const result = await res.json();
+          if (result.credited || result.status === 'already_completed') {
+            await refreshUser();
+            setDepositSuccessMsg(`Dépôt de ${formatCurrency(data.amount || 0)} validé automatiquement avec succès !`);
+            localStorage.removeItem('agritrans_pending_deposit');
+          }
+        }
+      } catch (e) {
+        console.warn('Profile deposit check error:', e);
+      }
+    }
+
+    checkDeposit();
+    const interval = setInterval(checkDeposit, 6000);
+    const timeout = setTimeout(() => clearInterval(interval), 30000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [user?.id, refreshUser]);
+
+  useEffect(() => {
+    supabase.from('settings').select('*').in('key', ['telegram_link', 'whatsapp_support', 'support_link', 'official_group']).then(({ data }) => {
+      if (data) {
+        const group = data.find(s => s.key === 'telegram_link' || s.key === 'official_group');
+        const support = data.find(s => s.key === 'whatsapp_support' || s.key === 'support_link');
+        if (group && group.value) setGroupLink(group.value);
+        if (support && support.value) setSupportLink(support.value);
+      }
+    });
+
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const handleSupportRedirect = () => {
+    navigate('/support');
+  };
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setShowDownloadModal(false);
+      }
+    } else {
+      // Show instructional modal
+      setShowDownloadModal(true);
+    }
+  };
+
+  const formattedDate = user?.created_at 
+    ? format(new Date(user.created_at), 'dd/MM/yyyy', { locale: fr })
+    : 'Récemment';
+
+  const displayPhone = user?.phone 
+    ? (user.phone.startsWith('+') ? user.phone : `+225 ${user.phone}`)
+    : 'Numéro non renseigné';
 
   return (
-    <div className="px-4 pt-10 min-h-[100dvh] bg-slate-900 font-sans relative overflow-hidden text-slate-200">
-      
-      {/* Background Cyber Effects */}
-      <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-yellow-500/10 to-transparent pointer-events-none"></div>
-      <div className="absolute top-10 right-10 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl pointer-events-none"></div>
-      
-      {/* Header Profile Section */}
-      <div className="relative z-10 flex flex-col items-center mb-8">
-         <div className="w-24 h-24 rounded-3xl bg-slate-800 border-2 border-yellow-500/30 p-1 shadow-xl shadow-yellow-500/10 mb-4 relative">
-             <div className="w-full h-full rounded-2xl bg-slate-900 flex items-center justify-center overflow-hidden relative">
-                <Terminal className="w-10 h-10 text-yellow-400 absolute opacity-20" />
-                <span className="text-3xl font-black text-white relative z-10">{user?.first_name?.charAt(0) || 'U'}</span>
-             </div>
-             <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-800 border-2 border-yellow-500/50 rounded-xl flex items-center justify-center shadow-lg text-yellow-400">
-                <ShieldCheck className="w-4 h-4" />
-             </div>
-         </div>
-         <h1 className="text-2xl font-black text-white tracking-tight">{user?.first_name} {user?.last_name}</h1>
-         <div className="bg-slate-800/80 px-3 py-1 rounded-lg border border-white/5 mt-2 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="font-mono text-slate-300 text-xs tracking-wider">ID: {user?.phone}</span>
-         </div>
-      </div>
+    <div className="min-h-screen pb-28 font-sans text-slate-900 bg-slate-50 overflow-x-hidden">
+      {/* Header Sticky */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex justify-between items-center transition-all">
+        <div>
+          <h1 className="text-base font-black text-slate-900 tracking-tight">Mon Compte</h1>
+          <p className="text-emerald-700 text-[10px] font-black uppercase tracking-wider">Espace Partenaire AgriTrans</p>
+        </div>
+        <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />
+      </header>
 
-      {/* Main Balance Node */}
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-yellow-500/20 rounded-3xl p-6 shadow-2xl relative overflow-hidden mb-6 z-10">
-         <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-            <Server className="w-32 h-32 text-yellow-400" />
-         </div>
-         
-         <div className="flex flex-col gap-6 relative z-10">
-            <div className="flex justify-between items-end">
-               <div>
-                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1"><Database className="w-3.5 h-3.5 text-yellow-500"/> Ressources Actives</p>
-                  <h2 className="text-4xl font-black tracking-tight flex items-baseline gap-1.5 text-white">
-                    {new Intl.NumberFormat('fr-FR').format(balance)}
-                    <span className="text-xl font-bold text-yellow-500">FCFA</span>
-                  </h2>
-               </div>
+      <div className="pt-3 max-w-lg mx-auto space-y-4 px-3 sm:px-0">
+        
+        {/* Success Deposit Alert */}
+        {depositSuccessMsg && (
+          <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-900 text-xs font-bold flex items-center justify-between shadow-sm animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
+              <span>{depositSuccessMsg}</span>
             </div>
-            
-            <div className="flex gap-3 mt-2">
-               <Link to="/deposit" className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-slate-900 rounded-2xl py-3 flex items-center justify-center gap-2 transition-colors active:scale-95 font-black text-sm shadow-lg shadow-yellow-500/20">
-                 <ArrowDownLeft className="w-5 h-5" />
-                 Alimenter
-               </Link>
-               <Link to="/withdraw" className="flex-1 bg-slate-800 hover:bg-slate-700 text-white border border-white/10 rounded-2xl py-3 flex items-center justify-center gap-2 transition-colors active:scale-95 font-bold text-sm">
-                 <ArrowUpRight className="w-5 h-5 text-yellow-500" />
-                 Extraire
-               </Link>
+            <button 
+              onClick={() => setDepositSuccessMsg('')} 
+              className="text-emerald-700 hover:text-emerald-900 ml-2"
+              aria-label="Fermer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* User Identity Direct Band */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white font-black text-lg flex items-center justify-center shadow-sm">
+              <Phone className="w-5 h-5" />
             </div>
-         </div>
-      </div>
+            <div>
+              <h2 className="text-base font-black text-slate-900 font-mono tracking-tight">
+                {displayPhone}
+              </h2>
+              <p className="text-xs font-semibold text-slate-500 mt-0.5 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>Date d’inscription : {formattedDate}</span>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 text-xs font-black rounded-full border border-emerald-200">
+            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+            <span>Actif</span>
+          </div>
+        </div>
 
-      {/* Unified Menu List */}
-      <div className="space-y-3 z-10 relative mb-10">
-         <Link to="/bank" className="flex items-center p-4 bg-slate-800 hover:bg-slate-700/80 rounded-2xl transition-colors group shadow-lg border border-white/5">
-           <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center text-yellow-500 mr-4 shrink-0 border border-yellow-500/20">
-             <Landmark className="w-5 h-5" />
-           </div>
-           <span className="font-bold text-white flex-1 text-sm">Compte de Réception</span>
-           <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-yellow-400 transition-colors" />
-         </Link>
-         
-         <a href={config?.group_link || "https://t.me/+6Po4wpvKD-QzYWVk"} target="_blank" rel="noopener noreferrer" className="flex items-center p-4 bg-slate-800 hover:bg-slate-700/80 rounded-2xl transition-colors group shadow-lg border border-white/5">
-           <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 mr-4 shrink-0 border border-blue-500/20">
-             <Users className="w-5 h-5" />
-           </div>
-           <span className="font-bold text-white flex-1 text-sm">Réseau Officiel</span>
-           <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
-         </a>
+        {/* Main Balance Direct Band */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="text-slate-500 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Wallet className="w-4 h-4 text-emerald-600" />
+                Solde Disponible
+              </span>
+              <h2 className="text-3xl font-black tracking-tight text-slate-900 mt-1">
+                {formatCurrency(Number(user?.balance) || 0)}
+              </h2>
+            </div>
+          </div>
 
-         <Link to="/about" className="w-full flex items-center p-4 bg-slate-800 hover:bg-slate-700/80 rounded-2xl transition-colors group shadow-lg border border-white/5 text-left">
-           <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 mr-4 shrink-0 border border-purple-500/20">
-             <Info className="w-5 h-5" />
-           </div>
-           <span className="font-bold text-white flex-1 text-sm">Protocole / À propos</span>
-           <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-purple-400 transition-colors" />
-         </Link>
+          {/* Actions Recharger / Retirer */}
+          <div className="grid grid-cols-2 gap-2.5 pt-1">
+            <Link 
+              to="/deposit" 
+              className="bg-emerald-600 hover:bg-emerald-700 text-white transition-all py-3 px-4 rounded-xl flex items-center justify-center gap-2 font-black text-xs shadow-sm active:scale-98 cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Recharger</span>
+            </Link>
+            <Link 
+              to="/withdraw" 
+              className="bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition-all py-3 px-4 rounded-xl flex items-center justify-center gap-2 font-black text-xs active:scale-98 cursor-pointer"
+            >
+              <Banknote className="w-4 h-4 text-emerald-700" />
+              <span>Retirer</span>
+            </Link>
+          </div>
+        </div>
 
-         <button onClick={() => { logout(); navigate('/login'); }} className="w-full flex items-center p-4 bg-slate-800 hover:bg-red-500/10 rounded-2xl transition-colors group shadow-lg border border-white/5 text-left">
-           <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 mr-4 shrink-0 border border-red-500/20">
-             <LogOut className="w-5 h-5" />
-           </div>
-           <span className="font-bold text-red-400 flex-1 text-sm">Déconnexion Serveur</span>
-           <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-red-400 transition-colors" />
-         </button>
-      </div>
-
-      {/* Full Screen iOS Install Overlay */}
-      <AnimatePresence>
-        {showIOSOverlay && (
-          <motion.div
-            initial={{ opacity: 0, y: "100%" }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-50 bg-slate-900 flex flex-col p-6 text-slate-200"
+        {/* Navigation Menu Direct Rows */}
+        <div className="space-y-2">
+          {/* Informations de Retrait */}
+          <Link
+            to="/withdraw-info"
+            className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm hover:border-emerald-400 transition-all cursor-pointer"
           >
-            <div className="flex justify-end mb-8">
-              <button 
-                onClick={() => setShowIOSOverlay(false)}
-                className="w-10 h-10 bg-slate-800 rounded-full shadow-sm border border-white/10 flex items-center justify-center text-slate-400 hover:text-white"
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center shrink-0">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-slate-900 text-sm font-black block">Informations de Retrait</span>
+                <span className="text-slate-500 text-xs font-medium">Moyen de réception, numéro & titulaire</span>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+          </Link>
+
+          {/* Groupe Telegram Officiel */}
+          <a
+            href={groupLink || 'https://t.me/+5i6UubrC1mtmMDg0'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm hover:border-slate-300 transition-all cursor-pointer"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-200 text-sky-700 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-slate-900 text-sm font-black block">Canal Officiel</span>
+                <span className="text-slate-500 text-xs font-medium">Communauté Telegram AgriTrans</span>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-slate-400 shrink-0" />
+          </a>
+
+          {/* Télécharger l'Application */}
+          <button
+            onClick={handleInstallApp}
+            className="w-full bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between text-left shadow-sm hover:border-emerald-400 transition-all cursor-pointer"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center shrink-0">
+                <Download className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-slate-900 text-sm font-black block">Télécharger l’application</span>
+                <span className="text-slate-500 text-xs font-medium">Application mobile</span>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-black border border-emerald-200">
+              PWA
+            </span>
+          </button>
+
+          {/* Se Déconnecter */}
+          <button
+            onClick={handleLogout}
+            className="w-full bg-white border border-red-200 rounded-xl p-4 flex items-center justify-between text-left shadow-sm hover:bg-red-50/50 transition-all cursor-pointer"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 text-red-600 flex items-center justify-center shrink-0">
+                <LogOut className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-red-700 text-sm font-black block">Se déconnecter</span>
+                <span className="text-slate-500 text-xs font-medium">Fermer votre session en toute sécurité</span>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-red-400 shrink-0" />
+          </button>
+        </div>
+
+      </div>
+
+      {/* Modal Guide Télécharger l'application */}
+      {showDownloadModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <h3 className="font-black text-slate-900 text-base">Installer AgriTrans</h3>
+              </div>
+              <button
+                onClick={() => setShowDownloadModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center cursor-pointer"
               >
-                <X className="w-6 h-6" />
+                <X className="w-4 h-4" />
               </button>
             </div>
-            
-            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
-              <div className="w-20 h-20 bg-slate-800 rounded-3xl flex items-center justify-center text-yellow-400 mb-6 shadow-sm border border-white/10 self-center">
-                <Apple className="w-10 h-10" />
-              </div>
-              
-              <h2 className="text-2xl font-black text-white tracking-tight text-center mb-2">Installation iOS</h2>
-              <p className="text-slate-400 text-center mb-10 text-sm">Déployez l'application sur votre système iOS pour une expérience optimale.</p>
-              
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-400 font-bold flex items-center justify-center shrink-0">1</div>
-                  <div>
-                    <p className="text-white font-bold mb-1">Appuyez sur Partager</p>
-                    <p className="text-slate-400 text-sm">Appuyez sur l'icône <Share className="w-4 h-4 inline-block mx-1 text-slate-300" /> dans la barre de navigation Safari.</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-400 font-bold flex items-center justify-center shrink-0">2</div>
-                  <div>
-                    <p className="text-white font-bold mb-1">Ajouter à l'écran d'accueil</p>
-                    <p className="text-slate-400 text-sm">Faites défiler le menu et sélectionnez l'option <strong className="text-slate-200">"Sur l'écran d'accueil"</strong> <PlusSquare className="w-4 h-4 inline-block mx-1 text-slate-300" />.</p>
-                  </div>
-                </div>
 
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-400 font-bold flex items-center justify-center shrink-0">3</div>
-                  <div>
-                    <p className="text-white font-bold mb-1">Confirmer</p>
-                    <p className="text-slate-400 text-sm">Appuyez sur <strong className="text-slate-200">Ajouter</strong> en haut à droite de votre écran.</p>
-                  </div>
-                </div>
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              Profitez d’une expérience fluide et rapide en installant l’application AgriTrans directement sur votre écran d’accueil :
+            </p>
+
+            <div className="space-y-3 pt-1">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <p className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                  <span>🤖</span>
+                  <span>Sur Android (Google Chrome) :</span>
+                </p>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Appuyez sur le menu (<strong>⋮</strong> en haut à droite), puis sélectionnez <strong>« Installer l’application »</strong> ou <strong>« Ajouter à l'écran d'accueil »</strong>.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <p className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                  <span>🍎</span>
+                  <span>Sur iPhone / iPad (Safari) :</span>
+                </p>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Appuyez sur le bouton de partage (<strong>⎋</strong> en bas), puis faites défiler et choisissez <strong>« Sur l'écran d'accueil »</strong>.
+                </p>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
+            <button
+              onClick={() => setShowDownloadModal(false)}
+              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider transition-all cursor-pointer"
+            >
+              J’ai compris
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Full Screen Welcome Modal on Login */}
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={handleCloseWelcomeModal}
+        userName={user?.first_name || user?.phone || 'Partenaire'}
+        telegramLink={groupLink}
+      />
+
+      {/* Floating Customer Support Button */}
+      <div className="fixed bottom-24 right-5 z-40">
+        <button
+          onClick={handleSupportRedirect}
+          className="group relative flex items-center justify-center w-12 h-12 rounded-2xl bg-white border border-slate-200 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer p-1"
+          title="Assistance 24/7"
+          aria-label="Assistance Client AgriTrans"
+        >
+          <div className="w-full h-full rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700">
+            <PhoneCall className="w-5 h-5" />
+          </div>
+
+          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-white"></span>
+          </span>
+        </button>
+      </div>
     </div>
   );
 }

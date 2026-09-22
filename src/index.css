@@ -1,27 +1,50 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @layer base {
-  body {
-    @apply text-slate-900 bg-slate-50;
-    font-family: 'Outfit', sans-serif;
+  * {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
-  
-  h1, h2, h3, h4, h5, h6, .grotesk {
-    font-family: 'Outfit', sans-serif;
+
+  body {
+    @apply text-slate-900 antialiased selection:bg-emerald-600 selection:text-white bg-slate-50;
+    min-height: 100vh;
   }
 }
 
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+@layer utilities {
+  /* Direct page-flow items (not cards, direct seamless page items) */
+  .direct-section {
+    @apply bg-white border-y sm:border sm:rounded-2xl border-slate-200/80 transition-all;
+  }
+  .direct-row {
+    @apply bg-white border-b border-slate-100 transition-colors hover:bg-slate-50/80;
+  }
+  .direct-flat {
+    @apply bg-white border border-slate-200/90 rounded-2xl;
+  }
+
+  /* Backward compatibility alias if needed, but redesigned flat and bright */
+  .tl-card {
+    @apply bg-white border border-slate-200/90 rounded-2xl shadow-sm transition-all text-slate-900;
+  }
+  .tl-card-interactive {
+    @apply bg-white border border-slate-200/90 rounded-2xl shadow-sm transition-all hover:border-emerald-500/50 hover:bg-slate-50/50 active:scale-[0.99] text-slate-900;
+  }
+  .glass-card {
+    @apply bg-white/95 backdrop-blur-md border border-slate-200 shadow-sm rounded-2xl text-slate-900;
+  }
+
+  .agri-gradient {
+    @apply bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white;
+  }
+  .agri-text-gradient {
+    @apply bg-gradient-to-r from-emerald-600 to-teal-700 bg-clip-text text-transparent font-black;
+  }
 }
 
 @theme {
-  --font-sans: 'Outfit', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --animate-fade-in: fade-in 0.35s ease-out forwards;
-  --animate-slide-up: slide-up 0.45s ease-out forwards;
+  --animate-fade-in: fade-in 0.25s ease-out forwards;
+  --animate-slide-up: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes fade-in {
@@ -29,23 +52,7 @@
   to { opacity: 1; }
 }
 
-@layer utilities {
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-@keyframes marquee-y {
-  from { transform: translateY(0); }
-  to { transform: translateY(-50%); }
-}
-.animate-marquee-y {
-  animation: marquee-y 20s linear infinite;
-}
-.animate-marquee-y:hover {
-  animation-play-state: paused;
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }

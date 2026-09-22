@@ -1,6 +1,8 @@
 {
-  "name": "ElevFinAi",
-  "description": "Plateforme d'investissement agricole ElevFinAi.",
+  "name": "AgriTrans",
+  "description": "Plateforme d'investissement et de logistique agro-pastorale et de transport AgriTrans en Afrique de l'Ouest (Côte d'Ivoire, Togo, Burkina Faso, Bénin, Niger).",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

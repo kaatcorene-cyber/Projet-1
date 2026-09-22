@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="iconAgriGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="iconHarvestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+
+  <!-- App Icon Base -->
+  <rect width="64" height="64" rx="16" fill="url(#iconAgriGrad)" />
+
+  <g transform="translate(10, 10)">
+    <!-- Sun / Harvest Arc -->
+    <circle cx="34" cy="10" r="5" fill="url(#iconHarvestGrad)" />
+
+    <!-- Stylized Leaf & Road Arrow -->
+    <path d="M10 28 C10 16, 20 8, 36 8 C36 22, 28 30, 16 32 Z" fill="#ffffff" opacity="0.95" />
+    <path d="M12 30 C20 22, 30 18, 38 18" stroke="#047857" stroke-width="2.5" stroke-linecap="round" />
+    <path d="M6 36 L26 36 L36 26" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>
