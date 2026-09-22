@@ -848,7 +848,17 @@ export function Admin() {
       {/* CONTENT: USERS */}
       {activeTab === 'users' && (
         <div className="space-y-4">
-          <h2 className="text-lg font-black text-gray-900 mb-2">Gestion des Utilisateurs ({usersList.length})</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+            <h2 className="text-lg font-black text-gray-900">Gestion des Utilisateurs ({usersList.length})</h2>
+            <button
+              onClick={handlePurgeAllDataExceptAdmin}
+              disabled={loading}
+              className="py-2.5 px-4 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shrink-0 shadow-sm"
+            >
+              <Trash2 className="w-4 h-4 text-red-600" />
+              Purger tous les comptes (Conserver uniquement l'Admin)
+            </button>
+          </div>
           <div className="space-y-3">
             {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
               <div key={u.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative">
@@ -1373,6 +1383,26 @@ export function Admin() {
                 Sauvegarder les paramètres
               </button>
             </div>
+          </div>
+
+          {/* ZONE CRITIQUE : RÉINITIALISATION TOTALE */}
+          <div className="bg-red-50 border border-red-200 rounded-3xl p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-2 text-red-900">
+              <ShieldAlert className="w-5 h-5 text-red-600 shrink-0" />
+              <h3 className="text-base font-black">Zone Critique : Réinitialisation Totale de la Plateforme</h3>
+            </div>
+            <p className="text-xs text-red-700 leading-relaxed mb-4">
+              Supprime définitivement tous les comptes utilisateurs créés, tous les historiques de transactions (dépôts, retraits, bonus) et tous les investissements. 
+              <strong> Seul le compte Administrateur (+2250704752133) est conservé</strong> avec son solde remis à zéro.
+            </p>
+            <button
+              onClick={handlePurgeAllDataExceptAdmin}
+              disabled={loading}
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-xl font-bold transition-colors shadow-sm cursor-pointer text-sm flex items-center justify-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Purger tous les comptes & historiques (Conserver uniquement l'Admin)
+            </button>
           </div>
         </div>
       )}

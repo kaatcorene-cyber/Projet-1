@@ -1,7 +1,14 @@
 import { safeStorage } from './storage';
 import { supabase } from './supabase';
-import { generatePhoneCandidates, User } from '../store/useAuthStore';
+import type { User } from '../store/useAuthStore';
 import { DEFAULT_CROP_PLANS, CropPlan } from '../data/plans';
+import { 
+  generatePhoneCandidates, 
+  isPermanentlyDeletedPhone, 
+  BANNED_PHONES 
+} from './phoneUtils';
+
+export { generatePhoneCandidates, isPermanentlyDeletedPhone, BANNED_PHONES };
 
 export interface LocalTransaction {
   id: string;
@@ -77,19 +84,6 @@ const SEED_SETTINGS: Record<string, string> = {
   whatsapp_support: 'https://wa.me/2250704752133',
   app_logo: '/agritrans-logo.png'
 };
-
-// Liste des comptes supprimés définitivement à la demande de l'administrateur
-export const BANNED_PHONES = ['2250574641956', '0574641956'];
-
-export function isPermanentlyDeletedPhone(phone?: string | null): boolean {
-  if (!phone) return false;
-  const digits = phone.replace(/\D/g, '');
-  if (!digits) return false;
-  return digits === '2250574641956' || 
-         digits === '0574641956' || 
-         digits.endsWith('0574641956') || 
-         digits.endsWith('574641956');
-}
 
 // --- USERS ---
 export function getLocalUsers(): User[] {
@@ -370,11 +364,11 @@ export async function purgePlatformDataExceptAdmin(): Promise<{ usersDeleted: nu
 
   // 2. Nettoyage Distant Supabase (si connecté)
   try {
-    await supabase.from('transactions').delete().gte('amount', 0);
+    await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   } catch (e) {}
 
   try {
-    await supabase.from('investments').delete().gte('plan_amount', 0);
+    await supabase.from('investments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   } catch (e) {}
 
   try {
@@ -382,13 +376,21 @@ export async function purgePlatformDataExceptAdmin(): Promise<{ usersDeleted: nu
   } catch (e) {}
 
   try {
-    // Retirer les liens de parrainage avant suppression
-    await supabase.from('users').update({ referred_by: null }).neq('id', SEED_ADMIN.id);
+    await supabase.from('payment_methods').delete().neq('user_id', SEED_ADMIN.id);
+  } catch (e) {}
+
+  try {
+    await supabase.from('notifications').delete().neq('user_id', SEED_ADMIN.id);
+  } catch (e) {}
+
+  try {
+    // Retirer tous les liens de parrainage avant suppression
+    await supabase.from('users').update({ referred_by: null }).neq('id', '00000000-0000-0000-0000-000000000000');
     // Supprimer tous les utilisateurs non-admins
     await supabase.from('users').delete().neq('role', 'admin').neq('phone', '+2250704752133').neq('phone', '0704752133').neq('id', SEED_ADMIN.id);
   } catch (e) {}
 
-  // 3. Garantir la présence de l'Administrateur sur Supabase
+  // 3. Garantir la présence et le solde à zéro de l'Administrateur sur Supabase
   try {
     await supabase.from('users').upsert({
       id: SEED_ADMIN.id,
@@ -398,7 +400,7 @@ export async function purgePlatformDataExceptAdmin(): Promise<{ usersDeleted: nu
       last_name: SEED_ADMIN.last_name,
       password_hash: SEED_ADMIN.password_hash,
       role: 'admin',
-      balance: SEED_ADMIN.balance,
+      balance: 0,
       referral_code: SEED_ADMIN.referral_code
     }, { onConflict: 'phone' });
   } catch (e) {}
@@ -714,4 +716,31 @@ export async function deleteAccountCompletely(targetPhoneOrId: string): Promise<
 // Suppression immédiate et automatique du compte 2250574641956 demandée par l'administrateur
 if (typeof window !== 'undefined') {
   deleteAccountCompletely('2250574641956');
+}
+
+// Remise à zéro intégrale de la plateforme demandée par l'administrateur (Plateforme vierge - uniquement l'admin)
+export const PLATFORM_VIRGIN_FLAG = 'agritrans_platform_virgin_v5';
+if (typeof window !== 'undefined') {
+  if (safeStorage.getItem(PLATFORM_VIRGIN_FLAG) !== 'true') {
+    safeStorage.setItem(PLATFORM_VIRGIN_FLAG, 'true');
+    // Réinitialisation synchrone immédiate du stockage local
+    safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify([SEED_ADMIN]));
+    safeStorage.setItem(LOCAL_TX_KEY, JSON.stringify([]));
+    safeStorage.setItem(LOCAL_INV_KEY, JSON.stringify([]));
+
+    // Déconnexion immédiate si la session active n'est pas l'administrateur
+    try {
+      const authRaw = safeStorage.getItem('translogis-auth');
+      if (authRaw) {
+        const authData = JSON.parse(authRaw);
+        const currentUser = authData?.state?.user;
+        if (currentUser && currentUser.role !== 'admin' && currentUser.phone !== '+2250704752133' && currentUser.phone !== '0704752133') {
+          safeStorage.removeItem('translogis-auth');
+        }
+      }
+    } catch (e) {}
+
+    // Exécution du nettoyage asynchrone approfondi (Supabase et caches individuels)
+    purgePlatformDataExceptAdmin();
+  }
 }
