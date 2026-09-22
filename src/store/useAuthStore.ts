@@ -86,6 +86,16 @@ export function saveStoredLocalUser(newUser: User): void {
       users.push(newUser);
     }
     safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
+
+    // Notifier immédiatement l'interface et le serveur interne
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('agritrans_user_updated'));
+      fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser)
+      }).catch(() => {});
+    }
   } catch (e) {
     console.warn('Erreur lors de la sauvegarde locale utilisateur:', e);
   }
@@ -95,6 +105,11 @@ export function deleteStoredLocalUser(userId: string): void {
   try {
     const users = getStoredLocalUsers().filter(u => u.id !== userId);
     safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('agritrans_user_updated'));
+      fetch(`/api/users/${userId}`, { method: 'DELETE' }).catch(() => {});
+    }
   } catch (e) {}
 }
 
@@ -180,37 +195,57 @@ export const useAuthStore = create<AuthState>()(
           return matchedUser;
         }
 
-        // 2. Si l'utilisateur n'est pas dans le cache local, interroger Supabase (timeout 2.5s)
+        // 2. Si l'utilisateur n'est pas dans le cache local, interroger le serveur local d'abord (<5ms)
         let remoteUser: User | null = null;
         try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 2500);
-
-          const { data: matchedUsers, error: queryError } = await supabase
-            .from('users')
-            .select('*')
-            .in('phone', candidates)
-            .abortSignal(controller.signal);
-
-          clearTimeout(timer);
-
-          if (!queryError && matchedUsers && matchedUsers.length > 0) {
-            remoteUser = matchedUsers[0];
-          } else {
-            const pureDigits = phone.replace(/\D/g, '');
-            const sigDigits = pureDigits.slice(-8);
-            if (sigDigits.length >= 7) {
-              const { data: fallbackUsers } = await supabase
-                .from('users')
-                .select('*')
-                .ilike('phone', `%${sigDigits}%`)
-                .limit(1);
-              if (fallbackUsers && fallbackUsers.length > 0) {
-                remoteUser = fallbackUsers[0];
+          const sRes = await fetch('/api/users');
+          if (sRes.ok) {
+            const serverUsers = await sRes.json();
+            if (Array.isArray(serverUsers)) {
+              const matchedInServer = serverUsers.find((u: any) => {
+                const uCandidates = generatePhoneCandidates(u.phone);
+                return candidates.some(c => uCandidates.includes(c));
+              });
+              if (matchedInServer) {
+                remoteUser = matchedInServer;
+                saveStoredLocalUser(matchedInServer);
               }
             }
           }
         } catch (e) {}
+
+        // 3. Si toujours non trouvé, interroger Supabase avec timeout
+        if (!remoteUser) {
+          try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 2000);
+
+            const { data: matchedUsers, error: queryError } = await supabase
+              .from('users')
+              .select('*')
+              .in('phone', candidates)
+              .abortSignal(controller.signal);
+
+            clearTimeout(timer);
+
+            if (!queryError && matchedUsers && matchedUsers.length > 0) {
+              remoteUser = matchedUsers[0];
+            } else {
+              const pureDigits = phone.replace(/\D/g, '');
+              const sigDigits = pureDigits.slice(-8);
+              if (sigDigits.length >= 7) {
+                const { data: fallbackUsers } = await supabase
+                  .from('users')
+                  .select('*')
+                  .ilike('phone', `%${sigDigits}%`)
+                  .limit(1);
+                if (fallbackUsers && fallbackUsers.length > 0) {
+                  remoteUser = fallbackUsers[0];
+                }
+              }
+            }
+          } catch (e) {}
+        }
 
         if (!remoteUser) {
           throw new Error('Numéro de téléphone introuvable. Veuillez vérifier votre saisie ou créer un compte.');
@@ -248,10 +283,29 @@ export const useAuthStore = create<AuthState>()(
           throw new Error('Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter.');
         }
 
-        // 2. Vérification sur Supabase avec timeout de sécurité
+        // 2. Vérification sur le serveur local
+        try {
+          const sRes = await fetch('/api/users');
+          if (sRes.ok) {
+            const serverUsers = await sRes.json();
+            if (Array.isArray(serverUsers)) {
+              const existsOnServer = serverUsers.some((su: any) => {
+                const suCandidates = generatePhoneCandidates(su.phone);
+                return candidates.some(c => suCandidates.includes(c));
+              });
+              if (existsOnServer) {
+                throw new Error('Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter.');
+              }
+            }
+          }
+        } catch (e: any) {
+          if (e?.message?.includes('déjà associé')) throw e;
+        }
+
+        // 3. Vérification sur Supabase avec timeout de sécurité (1.5s)
         try {
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 2000);
+          const timer = setTimeout(() => controller.abort(), 1500);
           const { data: existing } = await supabase
             .from('users')
             .select('id')
@@ -285,22 +339,42 @@ export const useAuthStore = create<AuthState>()(
           if (localRef && localRef.referral_code) {
             validReferrerCode = localRef.referral_code;
           } else {
-            // Recherche distante Supabase avec timeout
+            // Recherche sur le serveur local (<5ms)
             try {
-              const controller = new AbortController();
-              const timer = setTimeout(() => controller.abort(), 2000);
-              const { data: refUser } = await supabase
-                .from('users')
-                .select('id, referral_code')
-                .or(`referral_code.ilike.${cleanRef},id.eq.${referralCode.trim()}`)
-                .abortSignal(controller.signal)
-                .maybeSingle();
-              clearTimeout(timer);
-
-              if (refUser && refUser.referral_code) {
-                validReferrerCode = refUser.referral_code;
+              const res = await fetch('/api/users');
+              if (res.ok) {
+                const sUsers = await res.json();
+                if (Array.isArray(sUsers)) {
+                  const sRef = sUsers.find((u: any) =>
+                    (u.referral_code && u.referral_code.toUpperCase() === cleanRef) ||
+                    (u.id && u.id === referralCode.trim()) ||
+                    (u.phone && (u.phone === cleanRef || generatePhoneCandidates(u.phone).includes(cleanRef)))
+                  );
+                  if (sRef && sRef.referral_code) {
+                    validReferrerCode = sRef.referral_code;
+                  }
+                }
               }
             } catch (e) {}
+
+            // Recherche distante Supabase avec timeout
+            if (!validReferrerCode) {
+              try {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 1500);
+                const { data: refUser } = await supabase
+                  .from('users')
+                  .select('id, referral_code')
+                  .or(`referral_code.ilike.${cleanRef},id.eq.${referralCode.trim()}`)
+                  .abortSignal(controller.signal)
+                  .maybeSingle();
+                clearTimeout(timer);
+
+                if (refUser && refUser.referral_code) {
+                  validReferrerCode = refUser.referral_code;
+                }
+              } catch (e) {}
+            }
           }
 
           if (!validReferrerCode) {

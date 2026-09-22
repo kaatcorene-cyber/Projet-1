@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { AppLogo } from '../components/AppLogo';
 import { Link } from 'react-router-dom';
-import { getLocalUsers, getLocalInvestments, getLocalTransactions } from '../lib/dataStore';
+import { getLocalUsers, getLocalInvestments, getLocalTransactions, saveLocalUser, saveLocalInvestment, saveLocalTransaction } from '../lib/dataStore';
 
 type TeamMember = {
   id: string;
@@ -56,6 +56,7 @@ const computeLocalTeam = (user: User): TeamStatsCache => {
     });
 
     const cleanStr = (s?: string | null) => (s || '').trim().toUpperCase();
+    const normalizeCode = (s?: string | null) => (s || '').trim().toUpperCase().replace(/[\s\-\(\)\.]/g, '');
 
     const attachInvestments = (u: any): TeamMember => ({
       id: u.id,
@@ -67,17 +68,35 @@ const computeLocalTeam = (user: User): TeamStatsCache => {
     });
 
     const userCodes = new Set<string>();
-    if (user.referral_code) userCodes.add(cleanStr(user.referral_code));
-    if (user.id) userCodes.add(cleanStr(user.id));
+    if (user.referral_code) {
+      userCodes.add(cleanStr(user.referral_code));
+      userCodes.add(normalizeCode(user.referral_code));
+    }
+    if (user.id) {
+      userCodes.add(cleanStr(user.id));
+      userCodes.add(normalizeCode(user.id));
+    }
     if (user.phone) {
       userCodes.add(cleanStr(user.phone));
-      generatePhoneCandidates(user.phone).forEach(c => userCodes.add(cleanStr(c)));
+      userCodes.add(normalizeCode(user.phone));
+      generatePhoneCandidates(user.phone).forEach(c => {
+        userCodes.add(cleanStr(c));
+        userCodes.add(normalizeCode(c));
+      });
     }
 
     const matchesCodes = (referredBy: string | null | undefined, codeSet: Set<string>): boolean => {
       if (!referredBy) return false;
       const cleanRef = cleanStr(referredBy);
-      return codeSet.has(cleanRef);
+      const normRef = normalizeCode(referredBy);
+      if (codeSet.has(cleanRef) || codeSet.has(normRef)) return true;
+      const refDigits = cleanRef.replace(/\D/g, '');
+      if (refDigits.length >= 8) {
+        for (const code of codeSet) {
+          if (code.replace(/\D/g, '') === refDigits) return true;
+        }
+      }
+      return false;
     };
 
     // Niveau 1
@@ -87,11 +106,21 @@ const computeLocalTeam = (user: User): TeamStatsCache => {
     // Niveau 2
     const l1Codes = new Set<string>();
     l1.forEach(u => {
-      if (u.referral_code) l1Codes.add(cleanStr(u.referral_code));
-      if (u.id) l1Codes.add(cleanStr(u.id));
+      if (u.referral_code) {
+        l1Codes.add(cleanStr(u.referral_code));
+        l1Codes.add(normalizeCode(u.referral_code));
+      }
+      if (u.id) {
+        l1Codes.add(cleanStr(u.id));
+        l1Codes.add(normalizeCode(u.id));
+      }
       if (u.phone) {
         l1Codes.add(cleanStr(u.phone));
-        generatePhoneCandidates(u.phone).forEach(c => l1Codes.add(cleanStr(c)));
+        l1Codes.add(normalizeCode(u.phone));
+        generatePhoneCandidates(u.phone).forEach(c => {
+          l1Codes.add(cleanStr(c));
+          l1Codes.add(normalizeCode(c));
+        });
       }
     });
     const l2Raw = localUsers.filter(u => u.id !== user.id && !l1Raw.some(l1u => l1u.id === u.id) && matchesCodes(u.referred_by, l1Codes));
@@ -100,11 +129,21 @@ const computeLocalTeam = (user: User): TeamStatsCache => {
     // Niveau 3
     const l2Codes = new Set<string>();
     l2.forEach(u => {
-      if (u.referral_code) l2Codes.add(cleanStr(u.referral_code));
-      if (u.id) l2Codes.add(cleanStr(u.id));
+      if (u.referral_code) {
+        l2Codes.add(cleanStr(u.referral_code));
+        l2Codes.add(normalizeCode(u.referral_code));
+      }
+      if (u.id) {
+        l2Codes.add(cleanStr(u.id));
+        l2Codes.add(normalizeCode(u.id));
+      }
       if (u.phone) {
         l2Codes.add(cleanStr(u.phone));
-        generatePhoneCandidates(u.phone).forEach(c => l2Codes.add(cleanStr(c)));
+        l2Codes.add(normalizeCode(u.phone));
+        generatePhoneCandidates(u.phone).forEach(c => {
+          l2Codes.add(cleanStr(c));
+          l2Codes.add(normalizeCode(c));
+        });
       }
     });
     const l3Raw = localUsers.filter(u => u.id !== user.id && !l1Raw.some(l1u => l1u.id === u.id) && !l2Raw.some(l2u => l2u.id === u.id) && matchesCodes(u.referred_by, l2Codes));
@@ -141,27 +180,39 @@ export function Team() {
 
   const fetchTeamData = useCallback(async (isSilent = false) => {
     if (!user) return;
-    if (!isSilent && teamStats.level1.length === 0 && teamStats.totalBonus === 0) {
-      setIsSyncing(true);
-    }
 
     try {
-      // 1. Calcul local ultra-rapide en premier plan
+      // 1. Calcul local ultra-rapide en premier plan (0ms)
       const localData = computeLocalTeam(user);
-      if (localData.level1.length > 0 || localData.totalBonus > 0) {
-        setTeamStats(prev => ({
-          level1: prev.level1.length > 0 ? prev.level1 : localData.level1,
-          level2: prev.level2.length > 0 ? prev.level2 : localData.level2,
-          level3: prev.level3.length > 0 ? prev.level3 : localData.level3,
-          totalBonus: Math.max(prev.totalBonus, localData.totalBonus)
-        }));
-      }
+      setTeamStats(localData);
 
-      // 2. Requête distante ultra-optimisée avec timeout de sécurité (4s max)
-      const fetchRemote = async (): Promise<TeamStatsCache | null> => {
+      // 2. Synchronisation instantanée avec l'API serveur interne (<5ms)
+      try {
+        const [serverUsers, serverInvs, serverTxs] = await Promise.all([
+          fetch('/api/users').then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch('/api/investments').then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`/api/transactions?userId=${user.id}`).then(r => r.ok ? r.json() : []).catch(() => [])
+        ]);
+
+        if (Array.isArray(serverUsers) && serverUsers.length > 0) {
+          serverUsers.forEach(u => saveLocalUser(u));
+        }
+        if (Array.isArray(serverInvs) && serverInvs.length > 0) {
+          serverInvs.forEach(i => saveLocalInvestment(i));
+        }
+        if (Array.isArray(serverTxs) && serverTxs.length > 0) {
+          serverTxs.forEach(t => saveLocalTransaction(t));
+        }
+
+        const freshData = computeLocalTeam(user);
+        setTeamStats(freshData);
+        setTeamStatsCache(user.id, freshData);
+      } catch (e) {}
+
+      // 3. Tentative d'arrière-plan Supabase avec timeout très court (1000ms max)
+      const fetchRemote = async (): Promise<void> => {
         const userRefCodes = [user.referral_code, user.id].filter(Boolean);
 
-        // Lancer la requête de commission et le niveau 1 en PARALLÈLE (sans jointure lourde)
         const [bonusRes, l1Res] = await Promise.all([
           supabase
             .from('transactions')
@@ -170,136 +221,47 @@ export function Team() {
             .in('type', ['referral_bonus', 'commission', 'bonus', 'parrainage']),
           supabase
             .from('users')
-            .select('id, phone, referral_code, created_at')
+            .select('*')
             .in('referred_by', userRefCodes)
         ]);
 
-        let remoteBonus = 0;
-        if (bonusRes.data && Array.isArray(bonusRes.data)) {
-          remoteBonus = bonusRes.data.reduce((sum: number, tx: any) => sum + (Number(tx.amount) || 0), 0);
+        if (l1Res.data && Array.isArray(l1Res.data)) {
+          l1Res.data.forEach((u: any) => saveLocalUser(u));
         }
-
-        const l1Users = l1Res.data || [];
-        let l2Users: any[] = [];
-        let l3Users: any[] = [];
-
-        if (l1Users.length > 0) {
-          const l1RefCodes = Array.from(new Set(l1Users.flatMap(u => [u.referral_code, u.id]).filter(Boolean)));
-          const { data: l2Data } = await supabase
-            .from('users')
-            .select('id, phone, referral_code, created_at')
-            .in('referred_by', l1RefCodes);
-          l2Users = l2Data || [];
-
-          if (l2Users.length > 0) {
-            const l2RefCodes = Array.from(new Set(l2Users.flatMap(u => [u.referral_code, u.id]).filter(Boolean)));
-            const { data: l3Data } = await supabase
-              .from('users')
-              .select('id, phone, referral_code, created_at')
-              .in('referred_by', l2RefCodes);
-            l3Users = l3Data || [];
-          }
-        }
-
-        // Récupérer les investissements de TOUS les membres en UNE seule requête groupée rapide
-        const allMemberIds = Array.from(new Set([
-          ...l1Users.map(u => u.id),
-          ...l2Users.map(u => u.id),
-          ...l3Users.map(u => u.id)
-        ]));
-
-        const invMap = new Map<string, Array<{ id: string; plan_amount: number; status?: string }>>();
-        if (allMemberIds.length > 0) {
-          const { data: invData } = await supabase
-            .from('investments')
-            .select('id, user_id, plan_amount, status')
-            .in('user_id', allMemberIds);
-
-          if (invData) {
-            invData.forEach(inv => {
-              const cur = invMap.get(inv.user_id) || [];
-              cur.push({ id: inv.id, plan_amount: Number(inv.plan_amount || 0), status: inv.status });
-              invMap.set(inv.user_id, cur);
-            });
-          }
-        }
-
-        // Fusionner avec les investissements locaux
-        const localInvs = getLocalInvestments();
-        localInvs.forEach(inv => {
-          const cur = invMap.get(inv.user_id) || [];
-          if (!cur.some(i => i.id === inv.id)) {
-            cur.push({ id: inv.id, plan_amount: Number(inv.plan_amount || 0), status: inv.status });
-            invMap.set(inv.user_id, cur);
-          }
-        });
-
-        const formatMember = (u: any): TeamMember => ({
-          id: u.id,
-          phone: u.phone,
-          referral_code: u.referral_code,
-          created_at: u.created_at || new Date().toISOString(),
-          investments: invMap.get(u.id) || []
-        });
-
-        // Fusionner utilisateurs distants et locaux
-        const mergeUsers = (remoteList: any[], localList: TeamMember[]): TeamMember[] => {
-          const map = new Map<string, TeamMember>();
-          remoteList.forEach(u => map.set(u.id, formatMember(u)));
-          localList.forEach(u => {
-            if (!map.has(u.id)) map.set(u.id, u);
-          });
-          return Array.from(map.values()).sort(
-            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
-        };
-
-        const finalL1 = mergeUsers(l1Users, localData.level1);
-        const finalL2 = mergeUsers(l2Users, localData.level2);
-        const finalL3 = mergeUsers(l3Users, localData.level3);
-        const finalBonus = Math.max(remoteBonus, localData.totalBonus);
-
-        return {
-          level1: finalL1,
-          level2: finalL2,
-          level3: finalL3,
-          totalBonus: finalBonus
-        };
+        const updated = computeLocalTeam(user);
+        setTeamStats(updated);
+        setTeamStatsCache(user.id, updated);
       };
 
-      // Timeout de 4 secondes pour que l'interface ne reste jamais bloquée
-      const result = await Promise.race([
+      await Promise.race([
         fetchRemote(),
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000))
+        new Promise<void>((resolve) => setTimeout(() => resolve(), 1000))
       ]);
-
-      if (result) {
-        setTeamStats(result);
-        setTeamStatsCache(user.id, result);
-      }
     } catch (e) {
-      console.warn('Sync réseau partiel (mode local actif):', e);
+      console.warn('Sync partiel:', e);
     } finally {
       setIsSyncing(false);
     }
   }, [user]);
 
   useEffect(() => {
-    fetchTeamData(false);
+    fetchTeamData(true);
 
-    // Actualisation discrète toutes les 25s
+    // Actualisation discrète toutes les 15s
     const interval = setInterval(() => {
       fetchTeamData(true);
-    }, 25000);
+    }, 15000);
 
     const onUpdate = () => fetchTeamData(true);
     window.addEventListener('agritrans_tx_updated', onUpdate);
     window.addEventListener('agritrans_inv_updated', onUpdate);
+    window.addEventListener('agritrans_user_updated', onUpdate);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('agritrans_tx_updated', onUpdate);
       window.removeEventListener('agritrans_inv_updated', onUpdate);
+      window.removeEventListener('agritrans_user_updated', onUpdate);
     };
   }, [fetchTeamData]);
 

@@ -6,6 +6,7 @@ import dns from 'dns';
 import TelegramBot from 'node-telegram-bot-api';
 import cron from 'node-cron';
 import { createClient } from '@supabase/supabase-js';
+import { serverDb } from './server/db.js';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
@@ -184,12 +185,58 @@ async function checkSupabaseAvailable(): Promise<boolean> {
 
 // GAINS AUTO CRON (Runs every minute)
 cron.schedule('* * * * *', async () => {
+  const now = new Date().getTime();
+
+  // 1. Traitement des gains automatiques sur la base serveur locale (100% fiable et instantané)
+  try {
+    const localInvs = serverDb.getInvestments().filter(i => i.status === 'active');
+    for (const inv of localInvs) {
+      const start = new Date(inv.start_date || inv.created_at || Date.now()).getTime();
+      const lastPaid = new Date(inv.last_paid_at || inv.created_at || Date.now()).getTime();
+      const totalDaysElapsed = Math.floor((now - start) / (24 * 60 * 60 * 1000));
+      const lastPaidDaysElapsed = Math.floor((lastPaid - start) / (24 * 60 * 60 * 1000));
+      const missingDays = totalDaysElapsed - lastPaidDaysElapsed;
+
+      if (missingDays > 0) {
+        let endT = inv.end_date ? new Date(inv.end_date).getTime() : null;
+        let totalExpectedDays = endT ? Math.round((endT - start) / (24 * 60 * 60 * 1000)) : Infinity;
+        let daysToAdd = Math.min(missingDays, Math.max(0, totalExpectedDays - lastPaidDaysElapsed));
+
+        if (daysToAdd > 0) {
+          const newLastPaid = new Date(Math.min(now, lastPaid + daysToAdd * 24 * 60 * 60 * 1000)).toISOString();
+          const amountToAdd = Number(inv.daily_yield) * daysToAdd;
+
+          serverDb.updateInvestment(inv.id, { last_paid_at: newLastPaid });
+          serverDb.upsertTransaction({
+            id: `tx_gain_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            user_id: inv.user_id,
+            type: 'daily_gain',
+            amount: amountToAdd,
+            status: 'completed',
+            reference: `Gain du plan (x${daysToAdd}) (Auto)`,
+            created_at: new Date().toISOString()
+          });
+
+          const usr = serverDb.getUserById(inv.user_id);
+          if (usr) {
+            serverDb.updateUserBalance(inv.user_id, Number(usr.balance || 0) + amountToAdd);
+          }
+        }
+
+        if (endT && (lastPaidDaysElapsed + daysToAdd >= totalExpectedDays || now >= endT)) {
+          serverDb.updateInvestment(inv.id, { status: 'completed' });
+        }
+      }
+    }
+  } catch (localCronErr: any) {
+    console.warn("Erreur cron gains serveur local:", localCronErr.message);
+  }
+
+  // 2. Traitement miroir Supabase (si disponible)
   try {
     const isDbUp = await checkSupabaseAvailable();
     if (!isDbUp) return;
 
-    const now = new Date().getTime();
-    
     // Fetch all active investments
     const { data: invs, error } = await supabase.from('investments').select('*').eq('status', 'active');
     
@@ -198,7 +245,6 @@ cron.schedule('* * * * *', async () => {
         isSupabaseResolvable = false;
         return;
       }
-      console.error("Cron Error fetching investments:", error.message || error);
       return;
     }
     
@@ -215,7 +261,6 @@ cron.schedule('* * * * *', async () => {
       if (missingDays > 0) {
         let endT = inv.end_date ? new Date(inv.end_date).getTime() : null;
         let totalExpectedDays = endT ? Math.round((endT - start) / (24 * 60 * 60 * 1000)) : Infinity;
-        
         let daysToAdd = missingDays;
         
         if (lastPaidDaysElapsed + daysToAdd > totalExpectedDays) {
@@ -229,7 +274,6 @@ cron.schedule('* * * * *', async () => {
           
           const amountToAdd = Number(inv.daily_yield) * daysToAdd;
 
-          // Transactions array to run them sequentially and ensure they commit properly
           await supabase.from('investments').update({ last_paid_at: newLastPaid }).eq('id', inv.id);
           
           await supabase.from('transactions').insert({
@@ -244,11 +288,9 @@ cron.schedule('* * * * *', async () => {
           if (usr) {
             await supabase.from('users').update({ balance: Number(usr.balance) + amountToAdd }).eq('id', inv.user_id);
           }
-          console.log(`✅ [CRON] Credited ${amountToAdd} FCFA to user ${inv.user_id} for ${daysToAdd} days.`);
         }
       }
       
-      // Check expiration
       if (inv.end_date) {
         const endT = new Date(inv.end_date).getTime();
         const totalExpectedDays = Math.round((endT - start) / (24 * 60 * 60 * 1000));
@@ -256,16 +298,13 @@ cron.schedule('* * * * *', async () => {
         
         if (currentLastPaid >= totalExpectedDays || now >= endT) {
           await supabase.from('investments').update({ status: 'completed' }).eq('id', inv.id);
-          console.log(`✅ [CRON] Marked investment ${inv.id} as completed.`);
         }
       }
     }
   } catch (err: any) {
     if (err?.message?.includes('fetch failed') || err?.message?.includes('ENOTFOUND')) {
       isSupabaseResolvable = false;
-      return;
     }
-    console.error("Cron Error processing gains:", err.message || err);
   }
 });
 
@@ -312,6 +351,245 @@ async function startServer() {
 
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  // --- DATABASE REST API ---
+  // Users
+  app.get("/api/users", (req, res) => {
+    try {
+      res.json(serverDb.getUsers());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  const safeRemote = (p: any) => Promise.resolve(p).catch(() => {});
+
+  app.post("/api/users", (req, res) => {
+    try {
+      const user = req.body;
+      if (!user || !user.phone) {
+        return res.status(400).json({ error: "Numéro de téléphone requis" });
+      }
+      const saved = serverDb.upsertUser(user);
+
+      // Tenter une synchronisation discrète avec Supabase si actif
+      checkSupabaseAvailable().then(isUp => {
+        if (isUp) {
+          safeRemote(supabase.from('users').upsert({
+            id: saved.id,
+            phone: saved.phone,
+            country: saved.country,
+            first_name: saved.first_name,
+            last_name: saved.last_name,
+            password_hash: saved.password_hash,
+            role: saved.role,
+            balance: saved.balance,
+            referral_code: saved.referral_code,
+            referred_by: saved.referred_by
+          }, { onConflict: 'phone' }));
+        }
+      }).catch(() => {});
+
+      res.json(saved);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/users/:id/balance", (req, res) => {
+    try {
+      const { balance } = req.body;
+      const updated = serverDb.updateUserBalance(req.params.id, Number(balance));
+      if (!updated) return res.status(404).json({ error: "Utilisateur non trouvé" });
+
+      checkSupabaseAvailable().then(isUp => {
+        if (isUp) {
+          safeRemote(supabase.from('users').update({ balance: Number(balance) }).eq('id', req.params.id));
+        }
+      }).catch(() => {});
+
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/users/:id/role", (req, res) => {
+    try {
+      const { role } = req.body;
+      const updated = serverDb.updateUserRole(req.params.id, String(role));
+      if (!updated) return res.status(404).json({ error: "Utilisateur non trouvé" });
+
+      checkSupabaseAvailable().then(isUp => {
+        if (isUp) {
+          safeRemote(supabase.from('users').update({ role: String(role) }).eq('id', req.params.id));
+        }
+      }).catch(() => {});
+
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete("/api/users/:id", (req, res) => {
+    try {
+      const deleted = serverDb.deleteUser(req.params.id);
+
+      checkSupabaseAvailable().then(isUp => {
+        if (isUp) {
+          safeRemote(supabase.from('users').delete().eq('id', req.params.id));
+        }
+      }).catch(() => {});
+
+      res.json({ success: deleted });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Transactions
+  app.get("/api/transactions", (req, res) => {
+    try {
+      const userId = req.query.userId as string | undefined;
+      res.json(serverDb.getTransactions(userId));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/transactions", (req, res) => {
+    try {
+      const tx = req.body;
+      if (!tx || !tx.user_id) {
+        return res.status(400).json({ error: "Transaction invalide" });
+      }
+      const saved = serverDb.upsertTransaction(tx);
+
+      checkSupabaseAvailable().then(isUp => {
+        if (isUp) {
+          safeRemote(supabase.from('transactions').upsert(tx));
+        }
+      }).catch(() => {});
+
+      res.json(saved);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/transactions/:id/status", (req, res) => {
+    try {
+      const { status } = req.body;
+      const updated = serverDb.updateTransactionStatus(req.params.id, status);
+      if (!updated) return res.status(404).json({ error: "Transaction non trouvée" });
+
+      checkSupabaseAvailable().then(isUp => {
+        if (isUp) {
+          safeRemote(supabase.from('transactions').update({ status }).eq('id', req.params.id));
+        }
+      }).catch(() => {});
+
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete("/api/transactions/:id", (req, res) => {
+    try {
+      const deleted = serverDb.deleteTransaction(req.params.id);
+
+      checkSupabaseAvailable().then(isUp => {
+        if (isUp) {
+          safeRemote(supabase.from('transactions').delete().eq('id', req.params.id));
+        }
+      }).catch(() => {});
+
+      res.json({ success: deleted });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Investments
+  app.get("/api/investments", (req, res) => {
+    try {
+      const userId = req.query.userId as string | undefined;
+      res.json(serverDb.getInvestments(userId));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/investments", (req, res) => {
+    try {
+      const inv = req.body;
+      if (!inv || !inv.user_id) {
+        return res.status(400).json({ error: "Investissement invalide" });
+      }
+      const saved = serverDb.upsertInvestment(inv);
+
+      checkSupabaseAvailable().then(isUp => {
+        if (isUp) {
+          safeRemote(supabase.from('investments').upsert(inv));
+        }
+      }).catch(() => {});
+
+      res.json(saved);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Settings
+  app.get("/api/settings", (req, res) => {
+    try {
+      res.json(serverDb.getSettings());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/settings", (req, res) => {
+    try {
+      const settings = req.body;
+      const updated = serverDb.updateSettings(settings);
+
+      checkSupabaseAvailable().then(isUp => {
+        if (isUp) {
+          const rows = Object.entries(settings).map(([key, value]) => ({ key, value: String(value) }));
+          safeRemote(supabase.from('settings').upsert(rows, { onConflict: 'key' }));
+        }
+      }).catch(() => {});
+
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Purge (Admin Only)
+  app.post("/api/admin/purge", async (req, res) => {
+    try {
+      const result = serverDb.purgeAllExceptAdmin();
+
+      checkSupabaseAvailable().then(async isUp => {
+        if (isUp) {
+          try {
+            await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            await supabase.from('investments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            await supabase.from('users').delete().neq('role', 'admin').neq('phone', '+2250704752133').neq('phone', '0704752133');
+            await supabase.from('users').update({ balance: 0 }).eq('phone', '+2250704752133');
+          } catch (e) {}
+        }
+      }).catch(() => {});
+
+      res.json({ success: true, ...result });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // Helper to ensure payment recipient/name is displayed as "Dépôt de" on MoneyFusion

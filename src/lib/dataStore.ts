@@ -126,6 +126,15 @@ export function saveLocalUser(user: User): void {
       users.unshift(user);
     }
     safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('agritrans_user_updated'));
+      // Synchronisation avec l'API serveur en arrière-plan
+      fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user)
+      }).catch(() => {});
+    }
   } catch (e) {
     console.warn('saveLocalUser error:', e);
   }
@@ -139,6 +148,11 @@ export function deleteLocalUser(userId: string): void {
     // Supprimer également les transactions et investissements locaux liés
     deleteLocalTransactionsForUser(userId);
     deleteLocalInvestmentsForUser(userId);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('agritrans_user_updated'));
+      fetch(`/api/users/${userId}`, { method: 'DELETE' }).catch(() => {});
+    }
   } catch (e) {}
 }
 
@@ -179,6 +193,11 @@ export function saveLocalTransaction(tx: LocalTransaction): void {
     safeStorage.setItem(LOCAL_TX_KEY, JSON.stringify(list));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('agritrans_tx_updated'));
+      fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tx)
+      }).catch(() => {});
     }
   } catch (e) {}
 }
@@ -192,6 +211,11 @@ export function updateLocalTransactionStatus(txId: string, status: string): Loca
       safeStorage.setItem(LOCAL_TX_KEY, JSON.stringify(list));
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('agritrans_tx_updated'));
+        fetch(`/api/transactions/${txId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        }).catch(() => {});
       }
       return list[idx];
     }
@@ -249,6 +273,11 @@ export function saveLocalInvestment(inv: LocalInvestment): void {
     safeStorage.setItem(LOCAL_INV_KEY, JSON.stringify(list));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('agritrans_inv_updated'));
+      fetch('/api/investments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(inv)
+      }).catch(() => {});
     }
   } catch (e) {}
 }
@@ -289,6 +318,13 @@ export function saveLocalSettings(settings: Record<string, string>): void {
     const current = getLocalSettings();
     const merged = { ...current, ...settings };
     safeStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(merged));
+    if (typeof window !== 'undefined') {
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(merged)
+      }).catch(() => {});
+    }
   } catch (e) {}
 }
 
@@ -301,16 +337,29 @@ export async function purgePlatformDataExceptAdmin(): Promise<{ usersDeleted: nu
   let transactionsDeleted = 0;
   let investmentsDeleted = 0;
 
-  // 1. Nettoyage LocalStorage
+  // 1. Purge via l'API serveur centrale (garantit que tous les appareils sont réinitialisés)
+  try {
+    const apiRes = await fetch('/api/admin/purge', { method: 'POST' });
+    if (apiRes.ok) {
+      const apiData = await apiRes.json();
+      usersDeleted = apiData.usersDeleted || 0;
+      transactionsDeleted = apiData.txDeleted || 0;
+      investmentsDeleted = apiData.invDeleted || 0;
+    }
+  } catch (apiErr) {
+    console.warn('Purge API error (fallback local):', apiErr);
+  }
+
+  // 2. Nettoyage LocalStorage
   try {
     const currentUsers = getLocalUsers();
-    usersDeleted = Math.max(0, currentUsers.filter(u => u.role !== 'admin' && u.phone !== SEED_ADMIN.phone && u.id !== SEED_ADMIN.id).length);
-
+    if (!usersDeleted) {
+      usersDeleted = Math.max(0, currentUsers.filter(u => u.role !== 'admin' && u.phone !== SEED_ADMIN.phone && u.id !== SEED_ADMIN.id).length);
+    }
     const currentTxs = getLocalTransactions();
-    transactionsDeleted = currentTxs.length;
-
+    if (!transactionsDeleted) transactionsDeleted = currentTxs.length;
     const currentInvs = getLocalInvestments();
-    investmentsDeleted = currentInvs.length;
+    if (!investmentsDeleted) investmentsDeleted = currentInvs.length;
 
     // Réinitialiser les utilisateurs avec UNIQUEMENT l'administrateur
     safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify([SEED_ADMIN]));
@@ -718,29 +767,39 @@ if (typeof window !== 'undefined') {
   deleteAccountCompletely('2250574641956');
 }
 
-// Remise à zéro intégrale de la plateforme demandée par l'administrateur (Plateforme vierge - uniquement l'admin)
-export const PLATFORM_VIRGIN_FLAG = 'agritrans_platform_virgin_v5';
-if (typeof window !== 'undefined') {
-  if (safeStorage.getItem(PLATFORM_VIRGIN_FLAG) !== 'true') {
-    safeStorage.setItem(PLATFORM_VIRGIN_FLAG, 'true');
-    // Réinitialisation synchrone immédiate du stockage local
-    safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify([SEED_ADMIN]));
-    safeStorage.setItem(LOCAL_TX_KEY, JSON.stringify([]));
-    safeStorage.setItem(LOCAL_INV_KEY, JSON.stringify([]));
+// Synchronisation centralisée avec le serveur Express
+export async function syncAllDataWithServer(): Promise<void> {
+  try {
+    const [usersRes, txRes, invRes, setRes] = await Promise.all([
+      fetch('/api/users').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/transactions').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/investments').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/settings').then(r => r.ok ? r.json() : null).catch(() => null)
+    ]);
 
-    // Déconnexion immédiate si la session active n'est pas l'administrateur
-    try {
-      const authRaw = safeStorage.getItem('translogis-auth');
-      if (authRaw) {
-        const authData = JSON.parse(authRaw);
-        const currentUser = authData?.state?.user;
-        if (currentUser && currentUser.role !== 'admin' && currentUser.phone !== '+2250704752133' && currentUser.phone !== '0704752133') {
-          safeStorage.removeItem('translogis-auth');
-        }
-      }
-    } catch (e) {}
-
-    // Exécution du nettoyage asynchrone approfondi (Supabase et caches individuels)
-    purgePlatformDataExceptAdmin();
+    if (usersRes && Array.isArray(usersRes) && usersRes.length > 0) {
+      safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(usersRes));
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('agritrans_user_updated'));
+    }
+    if (txRes && Array.isArray(txRes)) {
+      safeStorage.setItem(LOCAL_TX_KEY, JSON.stringify(txRes));
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('agritrans_tx_updated'));
+    }
+    if (invRes && Array.isArray(invRes)) {
+      safeStorage.setItem(LOCAL_INV_KEY, JSON.stringify(invRes));
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('agritrans_inv_updated'));
+    }
+    if (setRes && typeof setRes === 'object') {
+      const currentSets = getLocalSettings();
+      safeStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify({ ...currentSets, ...setRes }));
+    }
+  } catch (e) {
+    // Non-bloquant
   }
+}
+
+// Lancement automatique de la synchronisation en arrière-plan
+if (typeof window !== 'undefined') {
+  syncAllDataWithServer();
+  setInterval(syncAllDataWithServer, 15000);
 }

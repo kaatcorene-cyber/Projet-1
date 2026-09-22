@@ -23,6 +23,7 @@ import {
   updateLocalTransactionStatus, 
   deleteLocalTransaction, 
   getLocalInvestments, 
+  saveLocalInvestment,
   deleteLocalInvestment,
   getLocalSettings, 
   saveLocalSettings,
@@ -103,137 +104,166 @@ export function Admin() {
   }, [user, navigate, isAdmin]);
 
   const fetchData = async (showLoading = true) => {
-    if (showLoading) setIsInitializing(true);
+    // 1. Charger immédiatement le cache local sans bloquer l'interface
+    const localUsers = getLocalUsers();
+    const localTxs = getLocalTransactions();
+    const localInvs = getLocalInvestments();
+    const localSets = getLocalSettings();
+
+    setUsersList(localUsers.filter(u => !isPermanentlyDeletedPhone(u.phone)));
+    setTransactions(localTxs.filter(t => !isPermanentlyDeletedPhone(t.users?.phone)));
+    setInvestmentsList(localInvs.filter(i => !isPermanentlyDeletedPhone(i.users?.phone)));
+
+    // Paramètres locaux immédiats
+    if (localSets.payment_link) setPaymentLink(localSets.payment_link);
+    if (localSets.group_link) setGroupLink(localSets.group_link);
+    if (localSets.support_link) setSupportLink(localSets.support_link);
+    if (localSets.ussd_ci) setUssdCI(localSets.ussd_ci);
+    if (localSets.wave_number) setWaveNumber(localSets.wave_number);
+    if (localSets.ussd_mtn_ci) setUssdMtnCI(localSets.ussd_mtn_ci);
+    if (localSets.app_logo) setAppLogo(localSets.app_logo);
+
+    // Débloquer l'affichage instantanément
+    setIsInitializing(false);
+
     try {
-      // 1. Charger immédiatement le cache local
-      const localUsers = getLocalUsers();
-      const localTxs = getLocalTransactions();
-      const localInvs = getLocalInvestments();
-      const localSets = getLocalSettings();
+      // 2. Récupérer les données fraîches depuis l'API serveur interne (réponse en 2ms)
+      const fetchServerData = async () => {
+        try {
+          const [uRes, tRes, iRes, sRes] = await Promise.all([
+            fetch('/api/users').then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch('/api/transactions').then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch('/api/investments').then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch('/api/settings').then(r => r.ok ? r.json() : null).catch(() => null)
+          ]);
+          return { serverUsers: uRes, serverTxs: tRes, serverInvs: iRes, serverSets: sRes };
+        } catch (e) {
+          return { serverUsers: null, serverTxs: null, serverInvs: null, serverSets: null };
+        }
+      };
 
-      setUsersList(localUsers);
-      setTransactions(localTxs);
-      setInvestmentsList(localInvs);
-
-      // Charger les paramètres locaux immédiatement
-      if (localSets.payment_link) setPaymentLink(localSets.payment_link);
-      if (localSets.group_link) setGroupLink(localSets.group_link);
-      if (localSets.support_link) setSupportLink(localSets.support_link);
-      if (localSets.ussd_ci) setUssdCI(localSets.ussd_ci);
-      if (localSets.wave_number) setWaveNumber(localSets.wave_number);
-      if (localSets.ussd_mtn_ci) setUssdMtnCI(localSets.ussd_mtn_ci);
-      if (localSets.app_logo) setAppLogo(localSets.app_logo);
-
-      // 2. Tenter de récupérer les données en ligne avec rattrapage automatique en cas d'erreur réseau
+      // 3. Tenter Supabase avec un timeout court (1500ms max) pour ne jamais ralentir l'administrateur
       const safeQuery = async (queryPromise: PromiseLike<any>) => {
         try {
-          return await queryPromise;
+          return await Promise.race([
+            queryPromise,
+            new Promise((resolve) => setTimeout(() => resolve({ data: null, error: 'timeout' }), 1500))
+          ]);
         } catch (e) {
           return { data: null, error: e };
         }
       };
 
-      const [usersRes, transRes, invRes, settingsRes] = await Promise.all([
+      const [serverResult, usersRes, transRes, invRes, settingsRes] = await Promise.all([
+        fetchServerData(),
         safeQuery(supabase.from('users').select('*').order('created_at', { ascending: false })),
         safeQuery(supabase.from('transactions').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false })),
         safeQuery(supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false })),
         safeQuery(supabase.from('settings').select('*'))
       ]);
 
-      if (usersRes?.data && Array.isArray(usersRes.data) && usersRes.data.length > 0) {
-        const mergedUsers = [...usersRes.data];
-        for (const lu of localUsers) {
-          if (!mergedUsers.some(mu => mu.id === lu.id || mu.phone === lu.phone)) {
-            mergedUsers.push(lu);
-          }
-        }
-        
-        // Filtrer les comptes définitivement supprimés
-        const cleanUsers = mergedUsers.filter(u => !isPermanentlyDeletedPhone(u.phone));
-        if (cleanUsers.length !== mergedUsers.length) {
-          deleteAccountCompletely('2250574641956');
-        }
-        setUsersList(cleanUsers);
-      } else {
-        setUsersList(localUsers.filter(u => !isPermanentlyDeletedPhone(u.phone)));
-      }
-
-      if (transRes?.data && Array.isArray(transRes.data)) {
-        const mergedTxs = [...transRes.data];
-        for (const lt of localTxs) {
-          if (!mergedTxs.some(mt => mt.id === lt.id)) {
-            mergedTxs.push(lt);
-          }
-        }
-        const cleanTxs = mergedTxs.filter(t => !isPermanentlyDeletedPhone(t.users?.phone));
-        setTransactions(cleanTxs);
-      } else {
-        setTransactions(localTxs.filter(t => !isPermanentlyDeletedPhone(t.users?.phone)));
-      }
-
-      if (invRes?.data && Array.isArray(invRes.data)) {
-        const mergedInvs = [...invRes.data];
-        for (const li of localInvs) {
-          if (!mergedInvs.some(mi => mi.id === li.id)) {
-            mergedInvs.push(li);
-          }
-        }
-        const cleanInvs = mergedInvs.filter(i => !isPermanentlyDeletedPhone(i.users?.phone));
-        setInvestmentsList(cleanInvs);
-      } else {
-        setInvestmentsList(localInvs.filter(i => !isPermanentlyDeletedPhone(i.users?.phone)));
-      }
-
-      if (settingsRes?.data && Array.isArray(settingsRes.data)) {
-        const pay = settingsRes.data.find(s => s.key === 'payment_link');
-        const grp = settingsRes.data.find(s => s.key === 'group_link');
-        const sup = settingsRes.data.find(s => s.key === 'support_link');
-        const uc = settingsRes.data.find(s => s.key === 'ussd_ci');
-        const wn = settingsRes.data.find(s => s.key === 'wave_number');
-        const u_mtn_ci = settingsRes.data.find(s => s.key === 'ussd_mtn_ci');
-        const logo = settingsRes.data.find(s => s.key === 'app_logo');
-
-        if (pay) setPaymentLink(pay.value);
-        if (grp) setGroupLink(grp.value);
-        if (sup) setSupportLink(sup.value);
-        if (uc) setUssdCI(uc.value);
-        if (wn) setWaveNumber(wn.value);
-        if (u_mtn_ci) setUssdMtnCI(u_mtn_ci.value);
-        if (logo) setAppLogo(logo.value);
-
-        const extraKeys = [
-          'bj_moov_number', 'bj_moov_syntax', 'bj_mtn_number', 'bj_mtn_syntax', 
-          'bf_moov_number', 'bf_moov_syntax', 'bf_wave_number', 
-          'tg_moov_number', 'tg_moov_syntax', 
-          'sn_wave_number', 'ne_wave_number', 
-          'ml_moov_number', 'ml_moov_syntax', 'ml_wave_number'
-        ];
-        const extraObj: Record<string, string> = {};
-        extraKeys.forEach(k => {
-          const f = settingsRes.data.find(s => s.key === k);
-          extraObj[k] = f ? f.value : (localSets[k] || '');
+      // Fusion des utilisateurs (Serveur > Supabase > Local)
+      const userMap = new Map<string, any>();
+      localUsers.forEach(u => userMap.set(u.id, u));
+      if (serverResult.serverUsers && Array.isArray(serverResult.serverUsers)) {
+        serverResult.serverUsers.forEach((u: any) => {
+          userMap.set(u.id, { ...userMap.get(u.id), ...u });
+          saveLocalUser(u);
         });
-        setExtraSettings(extraObj);
-        
-        const dbPlansStr = settingsRes.data.find(s => s.key === 'investment_plans');
-        if (dbPlansStr && dbPlansStr.value) {
-          try {
-            const parsed = JSON.parse(dbPlansStr.value);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setPlans(parsed.map((p: any, idx: number) => ({
-                ...p,
-                id: p.id || `crop_${p.amount || idx}_${idx}`
-              })));
-            } else {
-              setPlans(DEFAULT_CROP_PLANS);
-            }
-          } catch (e) {
+      }
+      if (usersRes?.data && Array.isArray(usersRes.data)) {
+        usersRes.data.forEach((u: any) => {
+          userMap.set(u.id, { ...userMap.get(u.id), ...u });
+          saveLocalUser(u);
+        });
+      }
+
+      const mergedUsers = Array.from(userMap.values()).filter(u => !isPermanentlyDeletedPhone(u.phone));
+      if (!mergedUsers.some(u => u.phone === SEED_ADMIN.phone || u.id === SEED_ADMIN.id)) {
+        mergedUsers.unshift(SEED_ADMIN);
+      }
+      setUsersList(mergedUsers);
+
+      // Fusion des transactions
+      const txMap = new Map<string, any>();
+      localTxs.forEach(t => txMap.set(t.id, t));
+      if (serverResult.serverTxs && Array.isArray(serverResult.serverTxs)) {
+        serverResult.serverTxs.forEach((t: any) => {
+          txMap.set(t.id, { ...txMap.get(t.id), ...t });
+          saveLocalTransaction(t);
+        });
+      }
+      if (transRes?.data && Array.isArray(transRes.data)) {
+        transRes.data.forEach((t: any) => {
+          txMap.set(t.id, { ...txMap.get(t.id), ...t });
+        });
+      }
+      setTransactions(Array.from(txMap.values()).filter(t => !isPermanentlyDeletedPhone(t.users?.phone)));
+
+      // Fusion des investissements
+      const invMap = new Map<string, any>();
+      localInvs.forEach(i => invMap.set(i.id, i));
+      if (serverResult.serverInvs && Array.isArray(serverResult.serverInvs)) {
+        serverResult.serverInvs.forEach((i: any) => {
+          invMap.set(i.id, { ...invMap.get(i.id), ...i });
+          saveLocalInvestment(i);
+        });
+      }
+      if (invRes?.data && Array.isArray(invRes.data)) {
+        invRes.data.forEach((i: any) => {
+          invMap.set(i.id, { ...invMap.get(i.id), ...i });
+        });
+      }
+      setInvestmentsList(Array.from(invMap.values()).filter(i => !isPermanentlyDeletedPhone(i.users?.phone)));
+
+      // Paramètres
+      const remoteSettings = settingsRes?.data || [];
+      const sMap: Record<string, string> = { ...localSets, ...(serverResult.serverSets || {}) };
+      if (Array.isArray(remoteSettings)) {
+        remoteSettings.forEach((item: any) => {
+          if (item?.key && item?.value !== undefined) {
+            sMap[item.key] = item.value;
+          }
+        });
+      }
+
+      if (sMap.payment_link) setPaymentLink(sMap.payment_link);
+      if (sMap.group_link) setGroupLink(sMap.group_link);
+      if (sMap.support_link) setSupportLink(sMap.support_link);
+      if (sMap.ussd_ci) setUssdCI(sMap.ussd_ci);
+      if (sMap.wave_number) setWaveNumber(sMap.wave_number);
+      if (sMap.ussd_mtn_ci) setUssdMtnCI(sMap.ussd_mtn_ci);
+      if (sMap.app_logo) setAppLogo(sMap.app_logo);
+
+      const extraKeys = [
+        'bj_moov_number', 'bj_moov_syntax', 'bj_mtn_number', 'bj_mtn_syntax', 
+        'bf_moov_number', 'bf_moov_syntax', 'bf_wave_number', 
+        'tg_moov_number', 'tg_moov_syntax', 
+        'sn_wave_number', 'ne_wave_number', 
+        'ml_moov_number', 'ml_moov_syntax', 'ml_wave_number'
+      ];
+      const extraObj: Record<string, string> = {};
+      extraKeys.forEach(k => {
+        extraObj[k] = sMap[k] || '';
+      });
+      setExtraSettings(extraObj);
+
+      const dbPlansStr = sMap['investment_plans'];
+      if (dbPlansStr) {
+        try {
+          const parsed = JSON.parse(dbPlansStr);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setPlans(parsed.map((p: any, idx: number) => ({
+              ...p,
+              id: p.id || `crop_${p.amount || idx}_${idx}`
+            })));
+          } else {
             setPlans(DEFAULT_CROP_PLANS);
           }
-        } else {
+        } catch (e) {
           setPlans(DEFAULT_CROP_PLANS);
         }
-      } else if (showLoading) {
+      } else {
         setPlans(DEFAULT_CROP_PLANS);
       }
     } catch (e) {
