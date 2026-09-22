@@ -27,6 +27,8 @@ import {
   getLocalSettings, 
   saveLocalSettings,
   purgePlatformDataExceptAdmin,
+  isPermanentlyDeletedPhone,
+  deleteAccountCompletely,
   SEED_ADMIN
 } from '../lib/dataStore';
 import { safeStorage } from '../lib/storage';
@@ -145,7 +147,15 @@ export function Admin() {
             mergedUsers.push(lu);
           }
         }
-        setUsersList(mergedUsers);
+        
+        // Filtrer les comptes définitivement supprimés
+        const cleanUsers = mergedUsers.filter(u => !isPermanentlyDeletedPhone(u.phone));
+        if (cleanUsers.length !== mergedUsers.length) {
+          deleteAccountCompletely('2250574641956');
+        }
+        setUsersList(cleanUsers);
+      } else {
+        setUsersList(localUsers.filter(u => !isPermanentlyDeletedPhone(u.phone)));
       }
 
       if (transRes?.data && Array.isArray(transRes.data)) {
@@ -155,7 +165,10 @@ export function Admin() {
             mergedTxs.push(lt);
           }
         }
-        setTransactions(mergedTxs);
+        const cleanTxs = mergedTxs.filter(t => !isPermanentlyDeletedPhone(t.users?.phone));
+        setTransactions(cleanTxs);
+      } else {
+        setTransactions(localTxs.filter(t => !isPermanentlyDeletedPhone(t.users?.phone)));
       }
 
       if (invRes?.data && Array.isArray(invRes.data)) {
@@ -165,7 +178,10 @@ export function Admin() {
             mergedInvs.push(li);
           }
         }
-        setInvestmentsList(mergedInvs);
+        const cleanInvs = mergedInvs.filter(i => !isPermanentlyDeletedPhone(i.users?.phone));
+        setInvestmentsList(cleanInvs);
+      } else {
+        setInvestmentsList(localInvs.filter(i => !isPermanentlyDeletedPhone(i.users?.phone)));
       }
 
       if (settingsRes?.data && Array.isArray(settingsRes.data)) {

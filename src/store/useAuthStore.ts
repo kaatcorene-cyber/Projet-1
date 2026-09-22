@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 import { safeStorage } from '../lib/storage';
+import { isPermanentlyDeletedPhone } from '../lib/dataStore';
 
 // Liste de tous les indicatifs supportés
 const ALL_DIAL_CODES = ['+225', '+228', '+226', '+229', '+227', '+223', '+221', '+237', '+224'];
@@ -109,11 +110,12 @@ export function getStoredLocalUsers(): User[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        const filtered = parsed.filter(u => !isPermanentlyDeletedPhone(u.phone));
         // Toujours s'assurer que le compte admin fait partie de la liste
-        if (!parsed.some(u => u.phone === '+2250704752133' || u.phone === '0704752133')) {
-          parsed.unshift(DEFAULT_SEED_USERS[0]);
+        if (!filtered.some(u => u.phone === '+2250704752133' || u.phone === '0704752133')) {
+          filtered.unshift(DEFAULT_SEED_USERS[0]);
         }
-        return parsed;
+        return filtered;
       }
     }
     safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(DEFAULT_SEED_USERS));
@@ -124,6 +126,9 @@ export function getStoredLocalUsers(): User[] {
 }
 
 export function saveStoredLocalUser(newUser: User): void {
+  if (isPermanentlyDeletedPhone(newUser.phone)) {
+    return;
+  }
   try {
     const users = getStoredLocalUsers();
     const existingIndex = users.findIndex(u => 
@@ -175,6 +180,9 @@ export const useAuthStore = create<AuthState>()(
         }
       },
       login: async (phone, password, countryDialCode = '+225') => {
+        if (isPermanentlyDeletedPhone(phone)) {
+          throw new Error('Ce compte a été définitivement supprimé de la plateforme.');
+        }
         const candidates = generatePhoneCandidates(phone, countryDialCode);
         const localUsers = getStoredLocalUsers();
 
@@ -277,6 +285,10 @@ export const useAuthStore = create<AuthState>()(
         const cleanPhone = phone.trim().replace(/[\s\-\(\)\.]/g, '');
         const dial = countryDialCode || '+225';
         const fullPhone = cleanPhone.startsWith('+') ? cleanPhone : `${dial}${cleanPhone}`;
+
+        if (isPermanentlyDeletedPhone(cleanPhone) || isPermanentlyDeletedPhone(fullPhone)) {
+          throw new Error('Ce compte a été définitivement supprimé de la plateforme.');
+        }
 
         // Vérification préalable d'unicité avec tous les formats candidats
         const candidates = generatePhoneCandidates(fullPhone, dial);

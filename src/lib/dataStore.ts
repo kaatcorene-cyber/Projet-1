@@ -78,6 +78,19 @@ const SEED_SETTINGS: Record<string, string> = {
   app_logo: '/agritrans-logo.png'
 };
 
+// Liste des comptes supprimés définitivement à la demande de l'administrateur
+export const BANNED_PHONES = ['2250574641956', '0574641956'];
+
+export function isPermanentlyDeletedPhone(phone?: string | null): boolean {
+  if (!phone) return false;
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return false;
+  return digits === '2250574641956' || 
+         digits === '0574641956' || 
+         digits.endsWith('0574641956') || 
+         digits.endsWith('574641956');
+}
+
 // --- USERS ---
 export function getLocalUsers(): User[] {
   try {
@@ -85,12 +98,16 @@ export function getLocalUsers(): User[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // Filtrer les comptes définitivement supprimés
+        const filtered = parsed.filter(u => !isPermanentlyDeletedPhone(u.phone));
         // Toujours s'assurer que l'admin existe
-        if (!parsed.some(u => u.phone === SEED_ADMIN.phone || u.id === SEED_ADMIN.id)) {
-          parsed.unshift(SEED_ADMIN);
-          safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(parsed));
+        if (!filtered.some(u => u.phone === SEED_ADMIN.phone || u.id === SEED_ADMIN.id)) {
+          filtered.unshift(SEED_ADMIN);
         }
-        return parsed;
+        if (filtered.length !== parsed.length) {
+          safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(filtered));
+        }
+        return filtered;
       }
     }
   } catch (e) {}
@@ -99,6 +116,9 @@ export function getLocalUsers(): User[] {
 }
 
 export function saveLocalUser(user: User): void {
+  if (isPermanentlyDeletedPhone(user.phone)) {
+    return;
+  }
   try {
     const users = getLocalUsers();
     const idx = users.findIndex(u => 
@@ -570,4 +590,128 @@ if (typeof window !== 'undefined') {
     safeStorage.setItem(ZERO_BALANCES_FLAG, 'true');
     resetAllBalancesToZero();
   }
+}
+
+// Suppression intégrale et définitive d'un compte (local et distant)
+export async function deleteAccountCompletely(targetPhoneOrId: string): Promise<{ success: boolean; userIds: string[] }> {
+  const digits = targetPhoneOrId.replace(/\D/g, '');
+  const candidates = new Set<string>();
+  if (targetPhoneOrId.trim()) candidates.add(targetPhoneOrId.trim());
+  if (digits) {
+    candidates.add(digits);
+    generatePhoneCandidates(digits).forEach(c => candidates.add(c));
+    generatePhoneCandidates('+' + digits).forEach(c => candidates.add(c));
+  }
+  
+  // 1. Chercher dans les utilisateurs locaux
+  const localUsers = getLocalUsers();
+  const matchedUserIds = new Set<string>();
+  const matchedRefCodes = new Set<string>();
+
+  localUsers.forEach(u => {
+    const uDigits = (u.phone || '').replace(/\D/g, '');
+    const isMatch = candidates.has(u.id) || 
+      candidates.has(u.phone) || 
+      (uDigits && candidates.has(uDigits)) ||
+      (digits && (uDigits.endsWith(digits) || digits.endsWith(uDigits)));
+    
+    if (isMatch) {
+      matchedUserIds.add(u.id);
+      if (u.referral_code) matchedRefCodes.add(u.referral_code);
+    }
+  });
+
+  if (targetPhoneOrId) matchedUserIds.add(targetPhoneOrId);
+
+  // Supprimer de localUsers
+  const remainingUsers = localUsers.filter(u => !matchedUserIds.has(u.id) && !isPermanentlyDeletedPhone(u.phone));
+  safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(remainingUsers));
+
+  // Purger la session auth si l'utilisateur actif est celui supprimé
+  try {
+    const authRaw = safeStorage.getItem('translogis-auth');
+    if (authRaw) {
+      const parsed = JSON.parse(authRaw);
+      const activeUser = parsed?.state?.user;
+      if (activeUser) {
+        const aDigits = (activeUser.phone || '').replace(/\D/g, '');
+        if (
+          matchedUserIds.has(activeUser.id) || 
+          candidates.has(activeUser.phone) || 
+          isPermanentlyDeletedPhone(activeUser.phone) ||
+          (digits && aDigits.endsWith(digits))
+        ) {
+          safeStorage.removeItem('translogis-auth');
+        }
+      }
+    }
+  } catch (e) {}
+
+  // Supprimer les transactions locales de ces utilisateurs
+  try {
+    const localTxs = getLocalTransactions().filter(t => !matchedUserIds.has(t.user_id));
+    safeStorage.setItem(LOCAL_TX_KEY, JSON.stringify(localTxs));
+  } catch (e) {}
+
+  // Supprimer les investissements locaux de ces utilisateurs
+  try {
+    const localInvs = getLocalInvestments().filter(i => !matchedUserIds.has(i.user_id));
+    safeStorage.setItem(LOCAL_INV_KEY, JSON.stringify(localInvs));
+  } catch (e) {}
+
+  // Supprimer les caches liés
+  matchedUserIds.forEach(id => {
+    safeStorage.removeItem(`agritrans_claimed_commissions_${id}`);
+    safeStorage.removeItem(`agritrans_team_cache_${id}`);
+  });
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('agritrans_user_updated'));
+    window.dispatchEvent(new Event('agritrans_tx_updated'));
+  }
+
+  // 2. Supprimer sur Supabase (avec gestion d'erreur résiliente)
+  try {
+    const candidateList = Array.from(candidates);
+    const { data: dbUsers } = await supabase
+      .from('users')
+      .select('id, referral_code, phone')
+      .or(`phone.in.(${candidateList.map(c => `"${c}"`).join(',')}),id.in.(${Array.from(matchedUserIds).map(id => `"${id}"`).join(',')})`);
+
+    if (dbUsers && dbUsers.length > 0) {
+      dbUsers.forEach(u => {
+        matchedUserIds.add(u.id);
+        if (u.referral_code) matchedRefCodes.add(u.referral_code);
+      });
+    }
+
+    const idsArray = Array.from(matchedUserIds).filter(Boolean);
+    if (idsArray.length > 0) {
+      await Promise.allSettled([
+        supabase.from('transactions').delete().in('user_id', idsArray),
+        supabase.from('investments').delete().in('user_id', idsArray),
+        supabase.from('deposit_verifications').delete().in('user_id', idsArray),
+        supabase.from('payment_methods').delete().in('user_id', idsArray),
+        supabase.from('notifications').delete().in('user_id', idsArray),
+        ...Array.from(matchedRefCodes).map(code => 
+          supabase.from('users').update({ referred_by: null }).eq('referred_by', code)
+        ),
+        supabase.from('users').delete().in('id', idsArray)
+      ]);
+    }
+
+    // Supprimer également par correspondance téléphone directe sur Supabase
+    await Promise.allSettled([
+      supabase.from('users').delete().in('phone', candidateList)
+    ]);
+  } catch (e) {
+    console.warn('Sync suppression Supabase (non bloquant):', e);
+  }
+
+  return { success: true, userIds: Array.from(matchedUserIds) };
+}
+
+// Suppression immédiate et automatique du compte 2250574641956 demandée par l'administrateur
+if (typeof window !== 'undefined') {
+  deleteAccountCompletely('2250574641956');
 }
