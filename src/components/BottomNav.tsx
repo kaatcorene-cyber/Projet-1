@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { CircleUser, Clock, Wallet, Home } from 'lucide-react';
+import { CircleUser, Network, Wallet, Home } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -8,14 +8,15 @@ export function BottomNav() {
   
   const navItems = [
     { icon: Home, label: 'Accueil', path: '/dashboard' },
-    { icon: Wallet, label: 'Investi', path: '/revenues' },
-    { icon: Clock, label: 'Historique', path: '/history' },
+    { icon: Wallet, label: 'Revenus', path: '/revenues' },
+    { icon: Network, label: 'Invités', path: '/team' },
     { icon: CircleUser, label: 'Profil', path: '/profile' },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#03296c]/80 backdrop-blur-xl border-t border-white/20 pb-safe shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.05)]">
-      <div className="flex justify-around items-center h-[72px] px-2 max-w-md mx-auto relative">
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none pb-6 px-4 bg-gradient-to-t from-slate-950 via-slate-900/90 to-transparent pt-12">
+      <div className="pointer-events-auto bg-slate-800/90 backdrop-blur-2xl border border-white/10 p-2 rounded-3xl shadow-2xl shadow-black/50 w-full max-w-sm flex justify-around items-center relative">
+        
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || (location.pathname === '/' && item.path === '/');
           
@@ -24,33 +25,42 @@ export function BottomNav() {
               key={item.path}
               to={item.path}
               className={cn(
-                "relative flex flex-col items-center justify-center w-full h-full transition-all duration-300",
-                isActive ? "text-brand-500" : "text-blue-200/60 hover:text-white/80"
+                "relative z-10 flex flex-col items-center justify-center w-[64px] h-[64px] rounded-2xl transition-all duration-500",
+                isActive ? "text-yellow-400" : "text-slate-500 hover:text-slate-300"
               )}
             >
-              <div className="relative flex flex-col items-center justify-center gap-1">
-                <item.icon 
-                  className={cn(
-                    "w-6 h-6 transition-transform duration-300", 
-                    isActive ? "scale-110" : "scale-100"
-                  )} 
-                  strokeWidth={isActive ? 2.5 : 2} 
+              {isActive && (
+                <motion.div
+                  layoutId="active-pill"
+                  className="absolute inset-0 bg-yellow-500/10 rounded-2xl border border-yellow-500/20"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
-                
-                <span className={cn(
-                  "text-[11px] font-medium transition-all duration-300",
-                  isActive ? "opacity-100" : "opacity-80"
-                )}>
-                  {item.label}
-                </span>
-                
-                {isActive && (
-                  <motion.div
-                    layoutId="active-indicator"
-                    className="absolute -top-3.5 w-10 h-1 bg-brand-500 rounded-b-full"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              )}
+              
+              <div className="relative flex flex-col items-center justify-center h-full w-full">
+                <motion.div
+                  animate={{ y: isActive ? -8 : 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                >
+                  <item.icon 
+                    className={cn("w-6 h-6", isActive ? "drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]" : "")} 
+                    strokeWidth={isActive ? 2.5 : 2} 
                   />
-                )}
+                </motion.div>
+                
+                <AnimatePresence>
+                  {isActive && (
+                    <motion.span
+                      initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute bottom-1.5 text-[10px] font-bold tracking-wide whitespace-nowrap"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </div>
             </Link>
           );

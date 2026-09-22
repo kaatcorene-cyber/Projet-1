@@ -88,14 +88,14 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen text-white pb-20 font-sans bg-[#03296c]">
+    <div className="min-h-screen text-slate-200 pb-20 font-sans bg-slate-900">
       <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden pb-8">
         {/* Top Mini Header for Admin */}
         <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
           {user?.role === 'admin' && (
             <button 
               onClick={() => navigate('/admin')}
-              className="w-10 h-10 bg-white/80 backdrop-blur-md border-brand-500/50 shadow-brand-500/20 border rounded-full flex items-center justify-center text-brand-400 shadow-sm hover:bg-slate-700 transition-colors"
+              className="w-10 h-10 bg-slate-800/80 backdrop-blur-md border-yellow-500/50 shadow-yellow-500/20 border rounded-full flex items-center justify-center text-yellow-400 shadow-sm hover:bg-slate-700 transition-colors"
             >
               <Settings className="w-5 h-5" />
             </button>

@@ -23,15 +23,14 @@ export function generateUserId(uuid: string | undefined) {
 }
 
 export const getPlanName = (amount: number) => {
-  switch (amount) {
-    case 2000: return '🍓 Jus de Fraise';
-    case 5000: return '🍉 Jus de Pastèque';
-    case 8000: return '🥝 Jus de Kiwi';
-    case 15000: return '🍇 Vin de Raisin';
-    case 35000: return '🍒 Vin de Cerise';
-    case 80000: return '🍋 Jus de Citron';
-    case 200000: return '🍏 Jus de Pomme Verte';
-    case 500000: return '🍌 Jus de Banane';
-    default: return 'PACK INVESTISSEMENT';
-  }
+  const amt = Number(amount);
+  if (amt === 3000) return 'Cloud Node Alpha';
+  if (amt === 7000) return 'Cloud Node Beta';
+  if (amt === 15000) return 'Serveur IA Standard';
+  if (amt === 31000) return 'Serveur IA Premium';
+  if (amt === 63000) return 'Cluster Data Pro';
+  if (amt === 125000) return 'Cluster Data Max';
+  if (amt === 249000) return 'Supercalculateur V1';
+  if (amt === 497000) return 'Quantum Node V2';
+  return 'Serveur Tech';
 };

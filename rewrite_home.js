@@ -1,148 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
-import { useAppStore } from '../store/useAppStore';
-import { supabase } from '../lib/supabase';
-import { usePWAInstall } from '../hooks/usePWAInstall';
-import { Link, useNavigate } from 'react-router-dom';
-import { Server, Cpu, Database, Network, HardDrive, CheckCircle2, AlertCircle, Loader2, Info, ArrowDownToLine, Gift, Key, Zap, Clock , Smartphone, Download, Package, ShieldCheck, TrendingUp, Leaf, X , Share , PlusSquare , Apple } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import fs from 'fs';
 
-const BANNER_IMAGES = [
-  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800", // Cyber / Servers
-  "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=800", // Motherboard/Chip
-  "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=800", // Planet/Tech
-  "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&q=80&w=800"  // AI Network
-];
+let code = fs.readFileSync('src/pages/Home.tsx', 'utf8');
 
-export function Home() {
-  const navigate = useNavigate();
-  const { installPWA, isIOS } = usePWAInstall();
-  const [showIOSOverlay, setShowIOSOverlay] = useState(false);
-  const { user, setUser } = useAuthStore();
-  const { config } = useAppStore();
-  const [loading, setLoading] = useState<number | null>(null);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+const regex = /return \([\s\S]*?\n  \);\n\}/m;
 
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [activePlans, setActivePlans] = useState<any[]>([]);
-    const [showJoinModal, setShowJoinModal] = useState(true);
-
-  const closeJoinModal = () => {
-    setShowJoinModal(false);
-  };
-
-  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
-  
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-    
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % BANNER_IMAGES.length);
-    }, 4000);
-    
-  
-  return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const { data } = await supabase.from('settings').select('value').eq('key', 'investment_plans').single();
-        if (data && data.value) {
-          const plans = JSON.parse(data.value);
-          const active = plans.filter((p: any) => p.isActive !== false);
-          active.sort((a: any, b: any) => Number(String(a.amount).replace(/\D/g, '')) - Number(String(b.amount).replace(/\D/g, '')));
-          setActivePlans(active);
-        } else setActivePlans([]);
-      } catch (err) {
-        console.error("Error fetching plans", err);
-      } finally {
-        setIsLoadingPlans(false);
-      }
-    };
-    fetchPlans();
-  }, []);
-
-  const handleInvest = async (plan: any, index: number) => {
-    if (!user) return;
-    setLoading(index);
-    setMessage(null);
-
-    const planAmount = Number(String(plan.amount).replace(/\D/g, ''));
-    const planDaily = Number(String(plan.daily).replace(/\D/g, ''));
-
-    if (user.balance < planAmount) {
-      setMessage({ type: 'error', text: 'Solde insuffisant pour ce pack.' });
-      setLoading(null);
-      return;
-    }
-
-    try {
-      const newBalance = user.balance - planAmount;
-      const { error: userError } = await supabase.from('users').update({ balance: newBalance }).eq('id', user.id);
-      if (userError) throw userError;
-
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + (plan.duration || 60));
-
-      const { error: investError } = await supabase.from('investments').insert([{
-        user_id: user.id, plan_amount: planAmount, daily_yield: planDaily, end_date: endDate.toISOString(), status: 'active'
-      }]);
-      if (investError) throw investError;
-
-      const { error: txError } = await supabase.from('transactions').insert([{
-        user_id: user.id, type: 'investment', amount: planAmount, status: 'completed', reference: `INV-${Date.now()}`
-      }]);
-      if (txError) throw txError;
-
-      setUser({ ...user, balance: newBalance });
-      setShowSuccess(true);
-      
-      setTimeout(() => {
-        window.location.href = '/revenues';
-      }, 2500);
-
-    } catch (err: any) {
-      setMessage({ type: 'error', text: 'Une erreur est survenue lors de l\'activation.' });
-    } finally {
-      if (!showSuccess) setLoading(null);
-    }
-  };
-
-  
-  const getPlanName = (amount: number) => {
-    const amt = Number(amount);
-    if (amt === 3000) return 'Cloud Node Alpha';
-    if (amt === 7000) return 'Cloud Node Beta';
-    if (amt === 15000) return 'Serveur IA Standard';
-    if (amt === 31000) return 'Serveur IA Premium';
-    if (amt === 63000) return 'Cluster Data Pro';
-    if (amt === 125000) return 'Cluster Data Max';
-    if (amt === 249000) return 'Supercalculateur V1';
-    if (amt === 497000) return 'Quantum Node V2';
-    return 'Serveur Tech';
-  };
-
-  const formatCurrency = (amount: number | string) => {
-    const num = typeof amount === 'string' ? Number(amount.replace(/\D/g, '')) : amount;
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num);
-  };
-
-  const quickLinks = [
-    { icon: null, image: 'https://images.unsplash.com/photo-1614064641913-6b71f301682b?auto=format&fit=crop&q=80&w=400', label: 'Coffre', path: '/coffre', color: 'bg-purple-500' },
-    { icon: ArrowDownToLine, label: 'Recharger', path: '/deposit', color: 'bg-emerald-500' },
-    { icon: Gift, label: 'Commissions', path: '/commissions', color: 'bg-orange-500' },
-    { icon: Clock, label: 'Historique', path: '/history', color: 'bg-blue-500' },
-  ];
-
-  return (
+const replacement = `return (
     <div className="px-4 pt-4 pb-32 min-h-[100dvh] bg-slate-900 font-sans relative overflow-hidden text-slate-200">
       
       {/* Modale de Bienvenue */}
@@ -158,11 +20,11 @@ export function Home() {
             >
               <div className="p-8 flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-2xl mb-6 flex items-center justify-center shadow-xl shadow-yellow-500/20 rotate-3">
-                   <Cpu className="w-8 h-8 text-slate-900 -rotate-3" />
+                   <Leaf className="w-8 h-8 text-slate-900 -rotate-3" />
                 </div>
                 <h2 className="text-2xl font-black text-white mb-4">Bienvenue sur ElevFinAi</h2>
                 <p className="text-slate-400 text-[15px] font-medium mb-8 leading-relaxed">
-                  Votre plateforme dédiée à l'investissement dans le Cloud computing et l'Intelligence Artificielle. Financez des fermes de serveurs et générez des revenus passifs automatiques.
+                  Votre plateforme dédiée à l'investissement dans le secteur de l'élevage. Découvrez nos opportunités et générez des revenus passifs.
                 </p>
                 <div className="w-full flex flex-col gap-3">
                   <a 
@@ -187,6 +49,8 @@ export function Home() {
         )}
       </AnimatePresence>
 
+      {/* Header Profile Info (Optional, can be added if needed, but keeping existing structure) */}
+
       {/* Banner Carousel */}
       <div className="relative w-[calc(100%+2rem)] -ml-4 -mt-4 mb-8 aspect-[4/3] rounded-b-[2rem] overflow-hidden bg-slate-950 shadow-2xl shadow-black/50 border-b border-white/5">
         <AnimatePresence mode="wait">
@@ -205,13 +69,13 @@ export function Home() {
         {/* Banner Text overlay */}
         <div className="absolute inset-0 flex flex-col justify-end p-6 pb-12">
            <h2 className="text-3xl font-black text-white mb-2 leading-tight">Générez des<br/><span className="text-yellow-400">Revenus Passifs</span></h2>
-           <p className="text-slate-300 text-sm font-medium">Investissez dans les technologies de demain.</p>
+           <p className="text-slate-300 text-sm font-medium">Investissez dans l'élevage en Côte d'Ivoire.</p>
         </div>
 
         <div className="absolute bottom-5 left-6 right-6 flex justify-start items-center">
            <div className="flex gap-2">
              {BANNER_IMAGES.map((_, i) => (
-               <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === currentSlide ? 'w-6 bg-yellow-500' : 'w-2 bg-white/30'}`} />
+               <div key={i} className={\`h-1.5 rounded-full transition-all duration-300 \${i === currentSlide ? 'w-6 bg-yellow-500' : 'w-2 bg-white/30'}\`} />
              ))}
            </div>
         </div>
@@ -221,11 +85,11 @@ export function Home() {
       <div className="grid grid-cols-4 gap-3 mb-8">
         {quickLinks.map((link, i) => (
           <Link key={i} to={link.path} className="flex flex-col items-center gap-2 group">
-            <div className={`w-14 h-14 rounded-2xl ${link.color.replace('bg-', 'bg-slate-800 border border-white/5 text-')} flex items-center justify-center shadow-lg shadow-black/20 group-hover:scale-105 transition-transform overflow-hidden`}>
+            <div className={\`w-14 h-14 rounded-2xl \${link.color.replace('bg-', 'bg-slate-800 border border-white/5 text-')} flex items-center justify-center shadow-lg shadow-black/20 group-hover:scale-105 transition-transform overflow-hidden\`}>
               {link.image ? (
                 <img src={link.image} alt={link.label} className="w-full h-full object-cover opacity-90" />
               ) : (
-                <link.icon className={`w-6 h-6 ${link.color.includes('emerald') ? 'text-emerald-400' : link.color.includes('blue') ? 'text-blue-400' : link.color.includes('amber') ? 'text-amber-400' : link.color.includes('purple') ? 'text-purple-400' : 'text-yellow-400'}`} />
+                <link.icon className={\`w-6 h-6 \${link.color.includes('emerald') ? 'text-emerald-400' : link.color.includes('blue') ? 'text-blue-400' : link.color.includes('amber') ? 'text-amber-400' : link.color.includes('purple') ? 'text-purple-400' : 'text-yellow-400'}\`} />
               )}
             </div>
             <span className="text-[11px] font-bold text-slate-400">{link.label}</span>
@@ -259,7 +123,7 @@ export function Home() {
 
       {/* Messages */}
       {message && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`p-4 rounded-xl mb-6 flex items-center gap-3 border ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={\`p-4 rounded-xl mb-6 flex items-center gap-3 border \${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}\`}>
           {message.type === 'success' ? <CheckCircle2 className="w-5 h-5 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
           <p className="text-sm font-semibold">{message.text}</p>
         </motion.div>
@@ -282,10 +146,7 @@ export function Home() {
               
               <div className="flex gap-4 items-center relative z-10">
                  <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 relative shadow-inner border border-white/10">
-                   <img referrerPolicy="no-referrer" src={plan.image || "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80&w=800"} alt="Plan" className="w-full h-full object-cover opacity-60 mix-blend-luminosity" />
-                   <div className="absolute inset-0 bg-yellow-500/10 flex items-center justify-center">
-                     <Server className="w-8 h-8 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
-                   </div>
+                   <img referrerPolicy="no-referrer" src={plan.image || "https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&q=80&w=800"} alt="Plan" className="w-full h-full object-cover opacity-90" />
                  </div>
                  <div className="flex-1">
                    <div className="flex justify-between items-start gap-2">
@@ -323,7 +184,7 @@ export function Home() {
                   }
                 }}
                 disabled={loading === idx}
-                className={`w-full py-4 rounded-2xl text-sm font-black transition-all flex items-center justify-center gap-2 relative z-10 ${hasInsufficientBalance ? 'bg-slate-900/80 text-slate-500 border border-white/5 active:scale-95' : 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-slate-900 hover:from-yellow-400 hover:to-yellow-500 active:scale-95 shadow-lg shadow-yellow-500/20'}`}
+                className={\`w-full py-4 rounded-2xl text-sm font-black transition-all flex items-center justify-center gap-2 relative z-10 \${hasInsufficientBalance ? 'bg-slate-900/80 text-slate-500 border border-white/5 active:scale-95' : 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-slate-900 hover:from-yellow-400 hover:to-yellow-500 active:scale-95 shadow-lg shadow-yellow-500/20'}\`}
               >
                 {loading === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Acheter ce pack'}
               </button>
@@ -392,3 +253,7 @@ export function Home() {
     </div>
   );
 }
+`;
+
+code = code.replace(regex, replacement);
+fs.writeFileSync('src/pages/Home.tsx', code);

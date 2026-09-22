@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import fs from 'fs';
+const code = `import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { LogOut, Settings, Wallet, ArrowDownLeft, ArrowUpRight, Landmark, Info, ChevronRight, X, Share, PlusSquare, Apple, Users, Server, ShieldCheck, Database, HardDrive, Cpu, Terminal } from 'lucide-react';
@@ -164,3 +165,5 @@ export function Profile() {
     </div>
   );
 }
+`;
+fs.writeFileSync('src/pages/Profile.tsx', code);

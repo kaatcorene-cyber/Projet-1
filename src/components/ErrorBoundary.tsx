@@ -36,7 +36,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               localStorage.clear();
               window.location.reload();
             }}
-            className="px-6 py-3 bg-brand-500 text-white rounded-xl font-bold hover:bg-brand-600"
+            className="px-6 py-3 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600"
           >
             Réinitialiser l'application
           </button>
