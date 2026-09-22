@@ -87,7 +87,7 @@ export interface User {
 
 const LOCAL_USERS_KEY = 'agritrans_local_users';
 
-// Compte administrateur et comptes de démonstration par défaut
+// Compte administrateur par défaut
 const DEFAULT_SEED_USERS: User[] = [
   {
     id: 'admin-seed-001',
@@ -97,7 +97,7 @@ const DEFAULT_SEED_USERS: User[] = [
     last_name: 'AgriTrans',
     password_hash: 'Calmaress225@',
     role: 'admin',
-    balance: 50000,
+    balance: 0,
     referral_code: 'AGRIADMIN',
     created_at: new Date().toISOString()
   }
@@ -176,89 +176,102 @@ export const useAuthStore = create<AuthState>()(
       },
       login: async (phone, password, countryDialCode = '+225') => {
         const candidates = generatePhoneCandidates(phone, countryDialCode);
-        
-        let foundUsers: User[] = [];
-        let isDbOnline = true;
+        const localUsers = getStoredLocalUsers();
 
-        // 1. Recherche par correspondance exacte sur tous les formats possibles via Supabase si disponible
-        if (candidates.length > 0) {
+        // 1. Recherche locale prioritaire (immédiate et sans latence réseau)
+        let matchedUser = localUsers.find(lu => {
+          const luCandidates = generatePhoneCandidates(lu.phone);
+          return candidates.some(c => luCandidates.includes(c) || lu.phone === c);
+        });
+
+        // Tolérance par chiffres significatifs de fin
+        if (!matchedUser) {
+          const pureDigits = phone.replace(/\D/g, '');
+          const sigDigits = pureDigits.slice(-8);
+          if (sigDigits.length >= 7) {
+            matchedUser = localUsers.find(lu => lu.phone.replace(/\D/g, '').endsWith(sigDigits));
+          }
+        }
+
+        if (matchedUser) {
+          if (matchedUser.password_hash !== password) {
+            throw new Error('Mot de passe incorrect.');
+          }
+          try { sessionStorage.setItem('agritrans_show_welcome', 'true'); } catch (e) {}
+          set({ user: matchedUser, isAuthenticated: true });
+
+          // Synchronisation discrète avec Supabase si connecté (sans faire attendre l'utilisateur)
           try {
-            const { data: matchedUsers, error: queryError } = await supabase
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 2000);
+            supabase
               .from('users')
               .select('*')
-              .in('phone', candidates);
+              .in('phone', candidates)
+              .abortSignal(controller.signal)
+              .maybeSingle()
+              .then(
+                ({ data: dbU }) => {
+                  clearTimeout(timer);
+                  if (dbU) {
+                    const merged = { ...matchedUser, ...dbU, balance: Number(dbU.balance || 0) };
+                    saveStoredLocalUser(merged);
+                    set({ user: merged });
+                  }
+                },
+                () => {
+                  clearTimeout(timer);
+                }
+              );
+          } catch (e) {}
 
-            if (queryError) {
-              isDbOnline = false;
-            } else if (matchedUsers && matchedUsers.length > 0) {
-              foundUsers = matchedUsers;
-              matchedUsers.forEach(saveStoredLocalUser);
-            }
-          } catch (e) {
-            isDbOnline = false;
-          }
+          return matchedUser;
         }
 
-        // 2. Recherche tolérante en ligne si aucun résultat
-        if (foundUsers.length === 0 && isDbOnline) {
-          try {
-            const pureDigits = phone.replace(/\D/g, '');
-            const sigDigits = pureDigits.slice(-8); // Les 8 derniers chiffres uniques de l'abonné
-            if (sigDigits.length >= 7) {
-              const { data: fallbackUsers, error: fbError } = await supabase
-                .from('users')
-                .select('*')
-                .ilike('phone', `%${sigDigits}%`);
+        // 2. Si l'utilisateur n'est pas dans le cache local, interroger Supabase (timeout 2.5s)
+        let remoteUser: User | null = null;
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 2500);
 
-              if (!fbError && fallbackUsers && fallbackUsers.length > 0) {
-                foundUsers = fallbackUsers;
-                fallbackUsers.forEach(saveStoredLocalUser);
-              }
-            }
-          } catch (e) {
-            isDbOnline = false;
-          }
-        }
+          const { data: matchedUsers, error: queryError } = await supabase
+            .from('users')
+            .select('*')
+            .in('phone', candidates)
+            .abortSignal(controller.signal);
 
-        // 3. Fallback immédiat vers le stockage local en cas de base hors-ligne ou compte local
-        if (foundUsers.length === 0) {
-          const localUsers = getStoredLocalUsers();
+          clearTimeout(timer);
 
-          // Recherche locale par formats candidats
-          foundUsers = localUsers.filter(lu => {
-            const luCandidates = generatePhoneCandidates(lu.phone);
-            return candidates.some(c => luCandidates.includes(c) || lu.phone === c);
-          });
-
-          // Recherche locale secondaire par chiffres de fin (tolérance 7-8 chiffres)
-          if (foundUsers.length === 0) {
+          if (!queryError && matchedUsers && matchedUsers.length > 0) {
+            remoteUser = matchedUsers[0];
+          } else {
             const pureDigits = phone.replace(/\D/g, '');
             const sigDigits = pureDigits.slice(-8);
             if (sigDigits.length >= 7) {
-              foundUsers = localUsers.filter(lu => lu.phone.replace(/\D/g, '').includes(sigDigits));
+              const { data: fallbackUsers } = await supabase
+                .from('users')
+                .select('*')
+                .ilike('phone', `%${sigDigits}%`)
+                .limit(1);
+              if (fallbackUsers && fallbackUsers.length > 0) {
+                remoteUser = fallbackUsers[0];
+              }
             }
           }
-        }
+        } catch (e) {}
 
-        if (!foundUsers || foundUsers.length === 0) {
+        if (!remoteUser) {
           throw new Error('Numéro de téléphone introuvable. Veuillez vérifier votre saisie ou créer un compte.');
         }
 
-        // Si des correspondances sont trouvées, vérifier le mot de passe
-        const matchedUser = foundUsers.find(u => u.password_hash === password);
-        if (!matchedUser) {
+        if (remoteUser.password_hash !== password) {
           throw new Error('Mot de passe incorrect.');
         }
 
-        try {
-          sessionStorage.setItem('agritrans_show_welcome', 'true');
-        } catch (e) {}
-
-        // Mettre à jour le cache local avec le profil authentifié
-        saveStoredLocalUser(matchedUser);
-
-        set({ user: matchedUser, isAuthenticated: true });
-        return matchedUser;
+        try { sessionStorage.setItem('agritrans_show_welcome', 'true'); } catch (e) {}
+        saveStoredLocalUser(remoteUser);
+        set({ user: remoteUser, isAuthenticated: true });
+        return remoteUser;
       },
       register: async (phone, password, firstName = '', lastName = '', referralCode = '', country = "Côte d'Ivoire", countryDialCode = '+225') => {
         const cleanPhone = phone.trim().replace(/[\s\-\(\)\.]/g, '');
@@ -279,13 +292,17 @@ export const useAuthStore = create<AuthState>()(
           throw new Error('Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter.');
         }
 
-        // 2. Vérification sur Supabase si connecté
+        // 2. Vérification sur Supabase avec timeout de sécurité
         try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 2000);
           const { data: existing } = await supabase
             .from('users')
             .select('id')
             .in('phone', candidates)
+            .abortSignal(controller.signal)
             .limit(1);
+          clearTimeout(timer);
 
           if (existing && existing.length > 0) {
             throw new Error('Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter.');
@@ -294,38 +311,44 @@ export const useAuthStore = create<AuthState>()(
           if (e?.message?.includes('déjà associé')) throw e;
         }
 
-        // Generate unique referral code
+        // Code de parrainage unique
         const genReferralCode = 'TL' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-        // Check referrer
+        // Résolution robuste et insensible à la casse du parrain
         let validReferrerCode: string | null = null;
         if (referralCode && referralCode.trim()) {
-          const cleanRef = referralCode.trim();
-          try {
-            const { data: refUser } = await supabase
-              .from('users')
-              .select('id, referral_code')
-              .eq('referral_code', cleanRef)
-              .maybeSingle();
+          const cleanRef = referralCode.trim().toUpperCase();
 
-            if (refUser) {
-              validReferrerCode = refUser.referral_code;
-            } else {
-              const { data: refUserById } = await supabase
+          // Recherche locale prioritaire
+          const localRef = localUsers.find(u => 
+            (u.referral_code && u.referral_code.toUpperCase() === cleanRef) ||
+            (u.id && u.id === referralCode.trim()) ||
+            (u.phone && (u.phone === cleanRef || generatePhoneCandidates(u.phone).includes(cleanRef)))
+          );
+
+          if (localRef && localRef.referral_code) {
+            validReferrerCode = localRef.referral_code;
+          } else {
+            // Recherche distante Supabase avec timeout
+            try {
+              const controller = new AbortController();
+              const timer = setTimeout(() => controller.abort(), 2000);
+              const { data: refUser } = await supabase
                 .from('users')
                 .select('id, referral_code')
-                .eq('id', cleanRef)
+                .or(`referral_code.ilike.${cleanRef},id.eq.${referralCode.trim()}`)
+                .abortSignal(controller.signal)
                 .maybeSingle();
-              if (refUserById) {
-                validReferrerCode = refUserById.referral_code;
+              clearTimeout(timer);
+
+              if (refUser && refUser.referral_code) {
+                validReferrerCode = refUser.referral_code;
               }
-            }
-          } catch (e) {
-            // Ignorer si hors-ligne
+            } catch (e) {}
           }
+
           if (!validReferrerCode) {
-            const localRef = localUsers.find(u => u.referral_code === cleanRef || u.id === cleanRef);
-            if (localRef) validReferrerCode = localRef.referral_code;
+            validReferrerCode = cleanRef;
           }
         }
 
@@ -338,7 +361,7 @@ export const useAuthStore = create<AuthState>()(
           role: 'user',
           balance: 0,
           referral_code: genReferralCode,
-          referred_by: validReferrerCode || (referralCode?.trim() || null),
+          referred_by: validReferrerCode || null,
           country: country || "Côte d'Ivoire",
           created_at: new Date().toISOString()
         };
@@ -346,8 +369,11 @@ export const useAuthStore = create<AuthState>()(
         // Sauvegarder immédiatement en local pour garantir la disponibilité
         saveStoredLocalUser(newUserPayload);
 
-        // Tenter d'enregistrer sur Supabase
+        // Tenter d'enregistrer sur Supabase avec timeout
         try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 3000);
+
           const { data: createdUser, error: insertError } = await supabase
             .from('users')
             .insert([{
@@ -358,11 +384,14 @@ export const useAuthStore = create<AuthState>()(
               role: 'user',
               balance: 0,
               referral_code: genReferralCode,
-              referred_by: validReferrerCode || (referralCode?.trim() || null),
+              referred_by: validReferrerCode || null,
               country: country || "Côte d'Ivoire"
             }])
             .select()
+            .abortSignal(controller.signal)
             .single();
+
+          clearTimeout(timer);
 
           if (!insertError && createdUser) {
             saveStoredLocalUser(createdUser);

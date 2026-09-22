@@ -56,7 +56,7 @@ export const SEED_ADMIN: User = {
   last_name: 'AgriTrans',
   password_hash: 'Calmaress225@',
   role: 'admin',
-  balance: 150000,
+  balance: 0,
   referral_code: 'AGRIADMIN',
   created_at: new Date(Date.now() - 30 * 86400000).toISOString()
 };
@@ -71,9 +71,6 @@ const SEED_INVESTMENTS: LocalInvestment[] = [];
 
 const SEED_SETTINGS: Record<string, string> = {
   payment_link: 'https://payin.moneyfusion.net',
-  wave_number: '0574738155',
-  ussd_ci: '*155*1*1*0140814162#',
-  ussd_mtn_ci: '*133*1*1*0595918513#',
   support_link: 'https://wa.me/2250704752133',
   group_link: 'https://t.me/agritrans_officiel',
   telegram_link: 'https://t.me/agritrans_officiel',
@@ -389,31 +386,188 @@ export async function purgePlatformDataExceptAdmin(): Promise<{ usersDeleted: nu
   return { usersDeleted, transactionsDeleted, investmentsDeleted };
 }
 
-// Auto-nettoyage immédiat au chargement de l'application
-if (typeof window !== 'undefined') {
-  const PURGE_FLAG = 'agritrans_purge_all_except_admin_2026_done';
-  if (safeStorage.getItem(PURGE_FLAG) !== 'true') {
-    safeStorage.setItem(PURGE_FLAG, 'true');
-    // Réinitialisation locale immédiate et synchrone
-    safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify([SEED_ADMIN]));
-    safeStorage.setItem(LOCAL_TX_KEY, JSON.stringify([]));
-    safeStorage.setItem(LOCAL_INV_KEY, JSON.stringify([]));
+// Distribution des commissions de parrainage multi-niveaux (N1 20%, N2 2%, N3 1%)
+export async function distributeInvestmentCommissions(investor: User, planAmount: number, planName: string): Promise<void> {
+  if (!investor || !investor.referred_by || Number(planAmount) <= 0) return;
 
-    // Déconnexion d'un éventuel compte non-admin
-    try {
-      const authRaw = safeStorage.getItem('translogis-auth');
-      if (authRaw) {
-        const authData = JSON.parse(authRaw);
-        const currentUser = authData?.state?.user;
-        if (currentUser && currentUser.role !== 'admin' && currentUser.phone !== '+2250704752133' && currentUser.phone !== '0704752133') {
-          safeStorage.removeItem('translogis-auth');
+  const investorRef = investor.referred_by.trim();
+  const localUsers = getLocalUsers();
+
+  const findUserByRef = (refKey: string, list: User[]): User | undefined => {
+    if (!refKey) return undefined;
+    const clean = refKey.trim().toUpperCase();
+    return list.find(u => 
+      (u.referral_code && u.referral_code.toUpperCase() === clean) ||
+      (u.id && u.id === refKey.trim()) ||
+      (u.phone && (u.phone === refKey.trim() || generatePhoneCandidates(u.phone).includes(refKey.trim())))
+    );
+  };
+
+  // 1. Niveau 1 (20%)
+  const sponsor1 = findUserByRef(investorRef, localUsers);
+  if (sponsor1) {
+    const bonus1 = Math.round(Number(planAmount) * 0.20);
+    const newBal1 = Math.max(0, Number(sponsor1.balance || 0)) + bonus1;
+    sponsor1.balance = newBal1;
+    saveLocalUser(sponsor1);
+
+    saveLocalTransaction({
+      id: `tx_bonus_l1_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      user_id: sponsor1.id,
+      type: 'referral_bonus',
+      amount: bonus1,
+      status: 'completed',
+      reference: `Commission Niveau 1 (20%) - ${investor.phone} (${planName})`,
+      created_at: new Date().toISOString()
+    });
+
+    // 2. Niveau 2 (2%)
+    if (sponsor1.referred_by) {
+      const sponsor2 = findUserByRef(sponsor1.referred_by, localUsers);
+      if (sponsor2 && sponsor2.id !== sponsor1.id && sponsor2.id !== investor.id) {
+        const bonus2 = Math.round(Number(planAmount) * 0.02);
+        const newBal2 = Math.max(0, Number(sponsor2.balance || 0)) + bonus2;
+        sponsor2.balance = newBal2;
+        saveLocalUser(sponsor2);
+
+        saveLocalTransaction({
+          id: `tx_bonus_l2_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          user_id: sponsor2.id,
+          type: 'referral_bonus',
+          amount: bonus2,
+          status: 'completed',
+          reference: `Commission Niveau 2 (2%) - ${investor.phone} (${planName})`,
+          created_at: new Date().toISOString()
+        });
+
+        // 3. Niveau 3 (1%)
+        if (sponsor2.referred_by) {
+          const sponsor3 = findUserByRef(sponsor2.referred_by, localUsers);
+          if (sponsor3 && sponsor3.id !== sponsor2.id && sponsor3.id !== sponsor1.id && sponsor3.id !== investor.id) {
+            const bonus3 = Math.round(Number(planAmount) * 0.01);
+            const newBal3 = Math.max(0, Number(sponsor3.balance || 0)) + bonus3;
+            sponsor3.balance = newBal3;
+            saveLocalUser(sponsor3);
+
+            saveLocalTransaction({
+              id: `tx_bonus_l3_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              user_id: sponsor3.id,
+              type: 'referral_bonus',
+              amount: bonus3,
+              status: 'completed',
+              reference: `Commission Niveau 3 (1%) - ${investor.phone} (${planName})`,
+              created_at: new Date().toISOString()
+            });
+          }
         }
       }
-    } catch (e) {}
+    }
 
-    // Nettoyage en arrière-plan Supabase
-    setTimeout(() => {
-      purgePlatformDataExceptAdmin().catch(() => {});
-    }, 100);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('agritrans_tx_updated'));
+      window.dispatchEvent(new Event('agritrans_user_updated'));
+    }
+  }
+
+  // Tâche de fond non bloquante : synchronisation Supabase
+  try {
+    const { data: dbSponsor1 } = await supabase
+      .from('users')
+      .select('id, balance, referral_code, referred_by')
+      .or(`referral_code.ilike.${investorRef},id.eq.${investorRef}`)
+      .maybeSingle();
+
+    if (dbSponsor1) {
+      const bonus1 = Math.round(Number(planAmount) * 0.20);
+      await supabase.from('users').update({ balance: Math.max(0, Number(dbSponsor1.balance || 0)) + bonus1 }).eq('id', dbSponsor1.id);
+      await supabase.from('transactions').insert([{
+        user_id: dbSponsor1.id,
+        type: 'referral_bonus',
+        amount: bonus1,
+        status: 'completed',
+        reference: `Commission Niveau 1 (20%) - ${investor.phone} (${planName})`
+      }]);
+
+      if (dbSponsor1.referred_by) {
+        const { data: dbSponsor2 } = await supabase
+          .from('users')
+          .select('id, balance, referral_code, referred_by')
+          .or(`referral_code.ilike.${dbSponsor1.referred_by},id.eq.${dbSponsor1.referred_by}`)
+          .maybeSingle();
+
+        if (dbSponsor2) {
+          const bonus2 = Math.round(Number(planAmount) * 0.02);
+          await supabase.from('users').update({ balance: Math.max(0, Number(dbSponsor2.balance || 0)) + bonus2 }).eq('id', dbSponsor2.id);
+          await supabase.from('transactions').insert([{
+            user_id: dbSponsor2.id,
+            type: 'referral_bonus',
+            amount: bonus2,
+            status: 'completed',
+            reference: `Commission Niveau 2 (2%) - ${investor.phone} (${planName})`
+          }]);
+
+          if (dbSponsor2.referred_by) {
+            const { data: dbSponsor3 } = await supabase
+              .from('users')
+              .select('id, balance, referral_code')
+              .or(`referral_code.ilike.${dbSponsor2.referred_by},id.eq.${dbSponsor2.referred_by}`)
+              .maybeSingle();
+
+            if (dbSponsor3) {
+              const bonus3 = Math.round(Number(planAmount) * 0.01);
+              await supabase.from('users').update({ balance: Math.max(0, Number(dbSponsor3.balance || 0)) + bonus3 }).eq('id', dbSponsor3.id);
+              await supabase.from('transactions').insert([{
+                user_id: dbSponsor3.id,
+                type: 'referral_bonus',
+                amount: bonus3,
+                status: 'completed',
+                reference: `Commission Niveau 3 (1%) - ${investor.phone} (${planName})`
+              }]);
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Non bloquant si base distante inaccessible
+  }
+}
+
+// Remise à zéro de tous les soldes utilisateurs
+export function resetAllBalancesToZero(): void {
+  try {
+    const raw = safeStorage.getItem(LOCAL_USERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const zeroUsers = parsed.map(u => ({ ...u, balance: 0 }));
+        safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(zeroUsers));
+      }
+    }
+    const authRaw = safeStorage.getItem('translogis-auth');
+    if (authRaw) {
+      const authData = JSON.parse(authRaw);
+      if (authData?.state?.user) {
+        authData.state.user.balance = 0;
+        safeStorage.setItem('translogis-auth', JSON.stringify(authData));
+      }
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('agritrans_user_updated'));
+    }
+  } catch (e) {}
+
+  // Mise à zéro distante Supabase
+  try {
+    Promise.resolve(supabase.from('users').update({ balance: 0 }).gte('balance', 0)).catch(() => {});
+  } catch (e) {}
+}
+
+// Exécution de la remise à zéro des soldes demandée par l'administrateur
+if (typeof window !== 'undefined') {
+  const ZERO_BALANCES_FLAG = 'agritrans_zero_balances_v1';
+  if (safeStorage.getItem(ZERO_BALANCES_FLAG) !== 'true') {
+    safeStorage.setItem(ZERO_BALANCES_FLAG, 'true');
+    resetAllBalancesToZero();
   }
 }

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore, generatePhoneCandidates } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
+import { getLocalUsers, getLocalTransactions, saveLocalTransaction, saveLocalUser } from '../lib/dataStore';
 import { 
   ArrowLeft, 
   Gift, 
@@ -34,7 +35,7 @@ const COMMISSION_TIERS: CommissionTier[] = [
 
 export function Commissions() {
   const navigate = useNavigate();
-  const { user, refreshUser } = useAuthStore();
+  const { user, updateBalance, refreshUser } = useAuthStore();
   const [qualifiedCount, setQualifiedCount] = useState<number>(0);
   const [claimedTiers, setClaimedTiers] = useState<number[]>([]);
   const [claimingId, setClaimingId] = useState<number | null>(null);
@@ -62,49 +63,89 @@ export function Commissions() {
           console.warn('Erreur lecture localStorage:', e);
         }
 
-        const { data: bonusTx } = await supabase
-          .from('transactions')
-          .select('reference')
-          .eq('user_id', user.id)
-          .in('type', ['referral_bonus', 'commission', 'bonus']);
+        // Vérifier les transactions locales pour les paliers réclamés
+        const localTxs = getLocalTransactions();
+        localTxs.forEach(tx => {
+          if (tx.user_id === user.id && tx.reference) {
+            COMMISSION_TIERS.forEach(t => {
+              if (tx.reference.includes(`Palier ${t.id}`)) {
+                claimedSet.add(t.id);
+              }
+            });
+          }
+        });
 
-        bonusTx?.forEach(tx => {
-          COMMISSION_TIERS.forEach(t => {
-            if (tx.reference && tx.reference.includes(`Palier ${t.id}`)) {
-              claimedSet.add(t.id);
-            }
-          });
+        // 1. Calcul local des filleuls qualifiés (recharge/investissement >= 3000 F)
+        const cleanStr = (s?: string | null) => (s || '').trim().toUpperCase();
+        const userCodes = new Set<string>();
+        if (user.referral_code) userCodes.add(cleanStr(user.referral_code));
+        if (user.id) userCodes.add(cleanStr(user.id));
+        if (user.phone) {
+          userCodes.add(cleanStr(user.phone));
+          generatePhoneCandidates(user.phone).forEach(c => userCodes.add(cleanStr(c)));
+        }
+
+        const localUsers = getLocalUsers();
+        const l1LocalUsers = localUsers.filter(u => {
+          if (!u.referred_by || u.id === user.id) return false;
+          return userCodes.has(cleanStr(u.referred_by));
+        });
+
+        const qualifiedUserIds = new Set<string>();
+        l1LocalUsers.forEach(l1u => {
+          const hasQualifiedTx = localTxs.some(tx => 
+            tx.user_id === l1u.id && 
+            ['deposit', 'investment'].includes(tx.type) && 
+            Number(tx.amount || 0) >= 3000 &&
+            tx.status !== 'rejected'
+          );
+          if (hasQualifiedTx) {
+            qualifiedUserIds.add(l1u.id);
+          }
         });
 
         setClaimedTiers(Array.from(claimedSet));
+        setQualifiedCount(qualifiedUserIds.size);
 
-        if (user.referral_code) {
-          const { data: referredUsers } = await supabase
-            .from('users')
-            .select('id, balance')
-            .eq('referred_by', user.referral_code);
+        // 2. Synchronisation avec Supabase (si disponible)
+        try {
+          const { data: bonusTx } = await supabase
+            .from('transactions')
+            .select('reference')
+            .eq('user_id', user.id)
+            .in('type', ['referral_bonus', 'commission', 'bonus']);
 
-          if (referredUsers && referredUsers.length > 0) {
-            const userIds = referredUsers.map(u => u.id);
-
-            const { data: deposits } = await supabase
-              .from('transactions')
-              .select('user_id, amount')
-              .in('user_id', userIds)
-              .eq('type', 'deposit')
-              .gte('amount', 3000)
-              .neq('status', 'rejected');
-
-            const qualifiedUserIds = new Set<string>();
-            deposits?.forEach(d => {
-              if (d.user_id) qualifiedUserIds.add(d.user_id);
+          bonusTx?.forEach(tx => {
+            COMMISSION_TIERS.forEach(t => {
+              if (tx.reference && tx.reference.includes(`Palier ${t.id}`)) {
+                claimedSet.add(t.id);
+              }
             });
+          });
+          setClaimedTiers(Array.from(claimedSet));
 
-            setQualifiedCount(qualifiedUserIds.size);
-          } else {
-            setQualifiedCount(0);
+          if (user.referral_code) {
+            const { data: referredUsers } = await supabase
+              .from('users')
+              .select('id, balance')
+              .or(`referred_by.ilike.${user.referral_code},referred_by.eq.${user.id}`);
+
+            if (referredUsers && referredUsers.length > 0) {
+              const userIds = referredUsers.map(u => u.id);
+              const { data: deposits } = await supabase
+                .from('transactions')
+                .select('user_id, amount')
+                .in('user_id', userIds)
+                .gte('amount', 3000)
+                .neq('status', 'rejected');
+
+              deposits?.forEach(d => {
+                if (d.user_id) qualifiedUserIds.add(d.user_id);
+              });
+              setQualifiedCount(qualifiedUserIds.size);
+            }
           }
-        }
+        } catch (dbErr) {}
       } catch (err) {
         console.error('Erreur chargement commissions:', err);
       } finally {
@@ -125,29 +166,43 @@ export function Commissions() {
     try {
       const newBalance = (Number(user.balance) || 0) + tier.reward;
       
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ balance: newBalance })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
-      await supabase.from('transactions').insert([{
+      // 1. Mise à jour locale immédiate
+      updateBalance(newBalance);
+      saveLocalUser({ ...user, balance: newBalance });
+      saveLocalTransaction({
+        id: `tx_prime_tier_${tier.id}_${Date.now()}`,
         user_id: user.id,
         type: 'referral_bonus',
         amount: tier.reward,
         status: 'completed',
-        reference: `Prime Palier ${tier.id} - ${tier.target} membres qualifiés`
-      }]);
+        reference: `Prime Palier ${tier.id} - ${tier.target} membres qualifiés`,
+        created_at: new Date().toISOString()
+      });
 
       const updatedClaimed = [...claimedTiers, tier.id];
       setClaimedTiers(updatedClaimed);
       localStorage.setItem(`agritrans_claimed_commissions_${user.id}`, JSON.stringify(updatedClaimed));
 
-      await refreshUser();
-
       setSuccessMessage(`Félicitations ! Votre prime de ${tier.rewardLabel} a été créditée avec succès.`);
       setTimeout(() => setSuccessMessage(''), 5000);
+
+      // 2. Synchronisation Supabase en tâche de fond
+      try {
+        await supabase
+          .from('users')
+          .update({ balance: newBalance })
+          .eq('id', user.id);
+
+        await supabase.from('transactions').insert([{
+          user_id: user.id,
+          type: 'referral_bonus',
+          amount: tier.reward,
+          status: 'completed',
+          reference: `Prime Palier ${tier.id} - ${tier.target} membres qualifiés`
+        }]);
+      } catch (remoteErr) {
+        console.warn('Sync Supabase différée pour prime palier:', remoteErr);
+      }
     } catch (err: any) {
       console.error('Erreur réclamation prime:', err);
     } finally {

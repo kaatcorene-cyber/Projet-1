@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useAuthStore, User } from '../store/useAuthStore';
+import { useAuthStore, User, generatePhoneCandidates } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
 import { Copy, Users, CheckCircle2, AlertCircle, Sparkles, ChevronRight, Award, UserCheck, RefreshCw } from 'lucide-react';
@@ -55,6 +55,8 @@ const computeLocalTeam = (user: User): TeamStatsCache => {
       invByUserId.set(inv.user_id, list);
     });
 
+    const cleanStr = (s?: string | null) => (s || '').trim().toUpperCase();
+
     const attachInvestments = (u: any): TeamMember => ({
       id: u.id,
       phone: u.phone,
@@ -64,25 +66,53 @@ const computeLocalTeam = (user: User): TeamStatsCache => {
       investments: invByUserId.get(u.id) || []
     });
 
-    const userRefCodes = new Set([user.referral_code, user.id].filter(Boolean));
+    const userCodes = new Set<string>();
+    if (user.referral_code) userCodes.add(cleanStr(user.referral_code));
+    if (user.id) userCodes.add(cleanStr(user.id));
+    if (user.phone) {
+      userCodes.add(cleanStr(user.phone));
+      generatePhoneCandidates(user.phone).forEach(c => userCodes.add(cleanStr(c)));
+    }
+
+    const matchesCodes = (referredBy: string | null | undefined, codeSet: Set<string>): boolean => {
+      if (!referredBy) return false;
+      const cleanRef = cleanStr(referredBy);
+      return codeSet.has(cleanRef);
+    };
 
     // Niveau 1
-    const l1Raw = localUsers.filter(u => u.referred_by && userRefCodes.has(u.referred_by));
+    const l1Raw = localUsers.filter(u => u.id !== user.id && matchesCodes(u.referred_by, userCodes));
     const l1 = l1Raw.map(attachInvestments);
 
     // Niveau 2
-    const l1Codes = new Set(l1.flatMap(u => [u.referral_code, u.id]).filter(Boolean));
-    const l2Raw = localUsers.filter(u => u.referred_by && l1Codes.has(u.referred_by));
+    const l1Codes = new Set<string>();
+    l1.forEach(u => {
+      if (u.referral_code) l1Codes.add(cleanStr(u.referral_code));
+      if (u.id) l1Codes.add(cleanStr(u.id));
+      if (u.phone) {
+        l1Codes.add(cleanStr(u.phone));
+        generatePhoneCandidates(u.phone).forEach(c => l1Codes.add(cleanStr(c)));
+      }
+    });
+    const l2Raw = localUsers.filter(u => u.id !== user.id && !l1Raw.some(l1u => l1u.id === u.id) && matchesCodes(u.referred_by, l1Codes));
     const l2 = l2Raw.map(attachInvestments);
 
     // Niveau 3
-    const l2Codes = new Set(l2.flatMap(u => [u.referral_code, u.id]).filter(Boolean));
-    const l3Raw = localUsers.filter(u => u.referred_by && l2Codes.has(u.referred_by));
+    const l2Codes = new Set<string>();
+    l2.forEach(u => {
+      if (u.referral_code) l2Codes.add(cleanStr(u.referral_code));
+      if (u.id) l2Codes.add(cleanStr(u.id));
+      if (u.phone) {
+        l2Codes.add(cleanStr(u.phone));
+        generatePhoneCandidates(u.phone).forEach(c => l2Codes.add(cleanStr(c)));
+      }
+    });
+    const l3Raw = localUsers.filter(u => u.id !== user.id && !l1Raw.some(l1u => l1u.id === u.id) && !l2Raw.some(l2u => l2u.id === u.id) && matchesCodes(u.referred_by, l2Codes));
     const l3 = l3Raw.map(attachInvestments);
 
-    // Total commissions
+    // Total commissions pour l'utilisateur connecté
     const totalBonus = localTxs
-      .filter(tx => ['referral_bonus', 'commission', 'bonus', 'parrainage'].includes(tx.type))
+      .filter(tx => tx.user_id === user.id && ['referral_bonus', 'commission', 'bonus', 'parrainage'].includes(tx.type))
       .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
     return { level1: l1, level2: l2, level3: l3, totalBonus };

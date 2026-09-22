@@ -775,25 +775,6 @@ export function Admin() {
                <p className="text-xl font-black text-emerald-600">{usersList.length}</p>
             </div>
           </div>
-
-          {/* Quick Platform Maintenance Card */}
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 shadow-sm space-y-3 mt-4">
-            <div className="flex items-center gap-2 text-red-800">
-              <ShieldAlert className="w-5 h-5 shrink-0" />
-              <h3 className="text-sm font-black uppercase tracking-wider">Maintenance & Remise à Zéro</h3>
-            </div>
-            <p className="text-xs text-red-700 leading-relaxed font-medium">
-              Supprime définitivement tous les comptes utilisateurs, historiques de transactions, dépôts, retraits et investissements. Seul le compte Administrateur ({SEED_ADMIN.phone}) est conservé.
-            </p>
-            <button
-              onClick={handlePurgeAllDataExceptAdmin}
-              disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 active:scale-95 text-white py-2.5 px-4 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4" />
-              Purger tous les comptes & historiques (Conserver uniquement l'Admin)
-            </button>
-          </div>
         </div>
       )}
 
@@ -851,18 +832,7 @@ export function Admin() {
       {/* CONTENT: USERS */}
       {activeTab === 'users' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-lg font-black text-gray-900">Gestion des Utilisateurs ({usersList.length})</h2>
-            <button
-              onClick={handlePurgeAllDataExceptAdmin}
-              disabled={loading}
-              className="text-xs bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-              title="Supprimer tous les comptes sauf admin"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Tout purger</span>
-            </button>
-          </div>
+          <h2 className="text-lg font-black text-gray-900 mb-2">Gestion des Utilisateurs ({usersList.length})</h2>
           <div className="space-y-3">
             {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
               <div key={u.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative">
@@ -1379,82 +1349,6 @@ export function Admin() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-600 ml-1 mb-1">Code USSD Côte d'Ivoire (Moov)</label>
-                <input
-                  type="text"
-                  value={ussdCI}
-                  onChange={(e) => setUssdCI(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 ml-1 mb-1">Code USSD Côte d'Ivoire (MTN)</label>
-                <input
-                  type="text"
-                  value={ussdMtnCI}
-                  onChange={(e) => setUssdMtnCI(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 ml-1 mb-1">Numéro Wave (Côte d'Ivoire)</label>
-                <input
-                  type="text"
-                  value={waveNumber}
-                  onChange={(e) => setWaveNumber(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm font-mono tracking-widest"
-                />
-              </div>
-
-              <div className="pt-4 mt-4 border-t border-gray-200">
-                <h3 className="text-md font-bold text-gray-900 mb-4">Moyens de paiement par pays</h3>
-                
-                <p className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 p-2 rounded-lg mb-2">Bénin</p>
-                <div className="space-y-3 mb-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="text" placeholder="Numéro Moov" value={extraSettings['bj_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                    <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['bj_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="text" placeholder="Numéro MTN" value={extraSettings['bj_mtn_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_mtn_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                    <input type="text" placeholder="Code USSD MTN (*...#)" value={extraSettings['bj_mtn_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_mtn_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                  </div>
-                </div>
-
-                <p className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 p-2 rounded-lg mb-2">Burkina Faso</p>
-                <div className="space-y-3 mb-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="text" placeholder="Numéro Moov" value={extraSettings['bf_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bf_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                    <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['bf_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bf_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                  </div>
-                  <input type="text" placeholder="Numéro Wave" value={extraSettings['bf_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bf_wave_number: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                </div>
-
-                <p className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 p-2 rounded-lg mb-2">Togo</p>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <input type="text" placeholder="Numéro Moov" value={extraSettings['tg_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, tg_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                  <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['tg_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, tg_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                </div>
-
-                <p className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 p-2 rounded-lg mb-2">Sénégal & Niger</p>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <input type="text" placeholder="Sénégal - Numéro Wave" value={extraSettings['sn_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, sn_wave_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                  <input type="text" placeholder="Niger - Numéro Wave" value={extraSettings['ne_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ne_wave_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                </div>
-
-                <p className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 p-2 rounded-lg mb-2">Mali</p>
-                <div className="space-y-3 mb-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="text" placeholder="Numéro Moov" value={extraSettings['ml_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ml_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                    <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['ml_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ml_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                  </div>
-                  <input type="text" placeholder="Numéro Wave" value={extraSettings['ml_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ml_wave_number: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
-                </div>
-              </div>
-
               <button 
                 onClick={handleUpdateSettings}
                 disabled={loading}
@@ -1462,26 +1356,6 @@ export function Admin() {
               >
                 Sauvegarder les paramètres
               </button>
-
-              <div className="pt-6 mt-6 border-t border-red-200">
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-red-800">
-                    <ShieldAlert className="w-5 h-5 shrink-0" />
-                    <h3 className="text-sm font-black uppercase tracking-wider">Zone Critique : Réinitialisation Totale</h3>
-                  </div>
-                  <p className="text-xs text-red-700 leading-relaxed font-medium">
-                    Supprime l'ensemble des comptes utilisateurs créés, toutes les transactions passées et tous les investissements. Seul le compte administrateur ({SEED_ADMIN.phone}) est conservé.
-                  </p>
-                  <button
-                    onClick={handlePurgeAllDataExceptAdmin}
-                    disabled={loading}
-                    className="w-full bg-red-600 hover:bg-red-700 active:scale-95 text-white py-3 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Purger tous les comptes & historiques (Conserver uniquement l'Admin)
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { useAuthStore, saveStoredLocalUser } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { saveLocalInvestment, saveLocalTransaction, getLocalInvestments } from '../lib/dataStore';
+import { saveLocalInvestment, saveLocalTransaction, getLocalInvestments, distributeInvestmentCommissions } from '../lib/dataStore';
 import { 
   CheckCircle2, 
   AlertCircle, 
@@ -180,6 +180,13 @@ export function Invest() {
         created_at: now.toISOString()
       });
 
+      // 3.5. Distribution immédiate des commissions de parrainage multi-niveaux (N1: 20%, N2: 2%, N3: 1%)
+      try {
+        await distributeInvestmentCommissions(user, requiredAmount, plan.name);
+      } catch (comErr) {
+        console.warn('Erreur calcul commissions:', comErr);
+      }
+
       // 4. Synchronisation distante sur Supabase
       try {
         await supabase
@@ -209,76 +216,6 @@ export function Invest() {
           reference: `Souscription - ${plan.name}`,
           created_at: now.toISOString()
         }]);
-
-        // Commissions de parrainage multi-niveaux : N1 (20%), N2 (2%), N3 (1%)
-        if (user.referred_by) {
-          const { data: ref1 } = await supabase
-            .from('users')
-            .select('id, balance, referred_by')
-            .eq('referral_code', user.referred_by)
-            .maybeSingle();
-
-          if (ref1) {
-            const bonus1 = Math.round(requiredAmount * 0.20);
-            await supabase.from('users').update({
-              balance: Number(ref1.balance || 0) + bonus1
-            }).eq('id', ref1.id);
-
-            await supabase.from('transactions').insert([{
-              user_id: ref1.id,
-              type: 'bonus',
-              amount: bonus1,
-              status: 'completed',
-              reference: `Commission Niveau 1 (20%) - Activation ${plan.name}`
-            }]);
-
-            if (ref1.referred_by) {
-              const { data: ref2 } = await supabase
-                .from('users')
-                .select('id, balance, referred_by')
-                .eq('referral_code', ref1.referred_by)
-                .maybeSingle();
-
-              if (ref2) {
-                const bonus2 = Math.round(requiredAmount * 0.02);
-                await supabase.from('users').update({
-                  balance: Number(ref2.balance || 0) + bonus2
-                }).eq('id', ref2.id);
-
-                await supabase.from('transactions').insert([{
-                  user_id: ref2.id,
-                  type: 'bonus',
-                  amount: bonus2,
-                  status: 'completed',
-                  reference: `Commission Niveau 2 (2%) - Activation ${plan.name}`
-                }]);
-
-                if (ref2.referred_by) {
-                  const { data: ref3 } = await supabase
-                    .from('users')
-                    .select('id, balance')
-                    .eq('referral_code', ref2.referred_by)
-                    .maybeSingle();
-
-                  if (ref3) {
-                    const bonus3 = Math.round(requiredAmount * 0.01);
-                    await supabase.from('users').update({
-                      balance: Number(ref3.balance || 0) + bonus3
-                    }).eq('id', ref3.id);
-
-                    await supabase.from('transactions').insert([{
-                      user_id: ref3.id,
-                      type: 'bonus',
-                      amount: bonus3,
-                      status: 'completed',
-                      reference: `Commission Niveau 3 (1%) - Activation ${plan.name}`
-                    }]);
-                  }
-                }
-              }
-            }
-          }
-        }
       } catch (remoteSyncErr) {
         console.warn('Souscription enregistrée localement, sync Supabase différée:', remoteSyncErr);
       }
