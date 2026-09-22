@@ -2,63 +2,37 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { formatCurrency } from '../lib/utils';
-import { getLocalTransactionsForUser } from '../lib/dataStore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { AppLogo } from '../components/AppLogo';
-import { ArrowDownLeft, ArrowUpRight, Truck, Gift, History as HistoryIcon, Clock } from 'lucide-react';
 
 export function History() {
   const { user } = useAuthStore();
-  const [transactions, setTransactions] = useState<any[]>(() => {
-    return user ? getLocalTransactionsForUser(user.id) : [];
-  });
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
 
     const intervalId = setInterval(() => {
       fetchData();
-    }, 15000);
+    }, 60000);
 
-    const onTxUpdate = () => fetchData();
-    window.addEventListener('agritrans_tx_updated', onTxUpdate);
-
-    return () => {
-      clearInterval(intervalId);
-      window.removeEventListener('agritrans_tx_updated', onTxUpdate);
-    };
+    return () => clearInterval(intervalId);
   }, [user]);
 
   const fetchData = async () => {
     if (!user) return;
     
-    const localTxs = getLocalTransactionsForUser(user.id);
-    let remoteTxs: any[] = [];
-
-    try {
-      const { data: txData } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      
-      if (txData) {
-        remoteTxs = txData;
-      }
-    } catch (e) {}
-
-    // Combiner les transactions locales et distantes sans doublons d'ID
-    const txMap = new Map<string, any>();
-    localTxs.forEach(tx => txMap.set(tx.id, tx));
-    remoteTxs.forEach(tx => txMap.set(tx.id, tx));
-
-    const merged = Array.from(txMap.values()).sort(
-      (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-    );
-
-    setTransactions(merged);
+    const { data: txData } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    
+    if (txData) {
+      setTransactions(txData);
+    }
   };
 
   const isPositive = (type: string) => {
@@ -74,10 +48,11 @@ export function History() {
     return positiveTypes.includes(type?.toLowerCase());
   };
 
-  const getTransactionDetails = (tx: { type?: string; reference?: string }) => {
+  const getTransactionTitle = (tx: { type?: string; reference?: string }) => {
     const type = (tx.type || '').toLowerCase();
     const ref = (tx.reference || '').toLowerCase();
 
+    // 1. Commission : paliers d'équipe (Commissions de membres ou palier) ou type commission
     if (
       type === 'commission' || 
       ref.includes('palier') || 
@@ -85,9 +60,10 @@ export function History() {
       ref.includes('membres') ||
       ref.startsWith('commission palier')
     ) {
-      return { title: 'Commission Équipe', icon: Gift, category: 'commission' };
+      return 'Commission';
     }
 
+    // 2. Bonus de parrainage : commissions sur dépôt filleul (Niveau 1, 2, 3), bonus affiliation, bonus parrainage
     if (
       type === 'referral_bonus' || 
       type === 'bonus' || 
@@ -95,100 +71,87 @@ export function History() {
       ref.includes('parrainage') || 
       ref.includes('niveau')
     ) {
-      return { title: 'Bonus de Parrainage', icon: Gift, category: 'commission' };
+      return 'Bonus de parrainage';
     }
 
+    // 3. Types classiques
     switch (type) {
       case 'deposit': 
-        return { title: 'Recharge Reçue', icon: ArrowDownLeft, category: 'deposit' };
+        return 'Dépôt';
       case 'withdrawal': 
-        return { title: 'Retrait Versé', icon: ArrowUpRight, category: 'withdrawal' };
+        return 'Retrait';
       case 'investment': 
-        return { title: 'Souscription Flotte', icon: Truck, category: 'investment' };
+        return 'Investissement Culture';
       case 'daily_gain': 
-        return { title: 'Rendement Flotte 24h', icon: Truck, category: 'daily_gain' };
+        return 'Gain journalier';
       case 'signup_bonus': 
-        return { title: 'Prime de Bienvenue', icon: Gift, category: 'commission' };
+        return 'Bonus de bienvenue';
       default: 
-        return { title: 'Transaction Flotte', icon: HistoryIcon, category: 'other' };
+        return 'Bonus de parrainage';
     }
   };
 
   return (
-    <div className="min-h-screen pb-28 font-sans text-slate-900 bg-slate-50 overflow-x-hidden">
-      {/* Header Sticky */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex justify-between items-center transition-all">
+    <div className="min-h-screen bg-gray-50 text-gray-900 p-5 pt-6 pb-24 font-sans relative overflow-x-hidden">
+      {/* Background FX */}
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] pointer-events-none"></div>
+
+      <header className="flex justify-between items-center pb-4 border-b border-black/5 relative z-10">
         <div>
-          <h1 className="text-base font-black text-slate-900 tracking-tight">Historiques</h1>
-          <p className="text-emerald-700 text-[10px] font-black uppercase tracking-wider">Journal des Opérations</p>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Histoire</h1>
+          <p className="text-emerald-600 text-[11px] font-bold uppercase tracking-wider mt-0.5">Flux des Transactions</p>
         </div>
-        <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />
+        <AppLogo imgClassName="h-8 w-auto object-contain max-h-10" />
       </header>
 
-      <div className="pt-3 max-w-xl mx-auto space-y-3 px-3 sm:px-0">
-        {/* Transactions List */}
-        <div className="space-y-2.5">
-          {transactions.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center space-y-2 shadow-sm">
-              <HistoryIcon className="w-10 h-10 text-slate-400 mx-auto" />
-              <p className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                Aucune transaction pour le moment
-              </p>
-              <p className="text-xs text-slate-500">
-                Vos prochaines opérations s'afficheront ici en temps réel.
-              </p>
-            </div>
-          ) : (
-            transactions.map((tx) => {
+      {/* Directly on the page - No card wrapper, no icons behind notifications */}
+      <div className="relative z-10 mt-4">
+        {transactions.length === 0 ? (
+          <div className="text-center py-16 text-gray-400 text-xs font-bold tracking-wider uppercase">
+            Aucune transaction enregistrée
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200/80">
+            {transactions.map((tx) => {
               const positive = isPositive(tx.type);
-              const { title, icon: Icon } = getTransactionDetails(tx);
-
+              const title = getTransactionTitle(tx);
               return (
                 <div 
                   key={tx.id} 
-                  className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between shadow-sm transition-all"
+                  className="py-3.5 px-1 flex items-center justify-between hover:bg-black/[0.02] transition-colors"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                      positive 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                        : 'bg-slate-100 text-slate-700 border-slate-200'
-                    }`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-
-                    <div className="min-w-0 space-y-0.5">
-                      <h3 className="font-black text-slate-900 text-xs sm:text-sm truncate">
-                        {title}
-                      </h3>
-                      <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        {format(new Date(tx.created_at), 'dd MMM yyyy à HH:mm', { locale: fr })}
-                      </p>
-                    </div>
+                  <div className="flex-1 pr-4">
+                    <h3 className="font-bold text-gray-900 text-sm leading-snug">
+                      {title}
+                    </h3>
+                    <p className="text-[11px] text-gray-500 font-medium mt-0.5">
+                      {format(new Date(tx.created_at), 'dd MMM yyyy à HH:mm', { locale: fr })}
+                    </p>
                   </div>
-
+                  
                   <div className="text-right shrink-0">
-                    <p className={`text-sm sm:text-base font-black tracking-tight ${
-                      positive ? 'text-emerald-700' : 'text-slate-900'
+                    <p className={`text-base font-black tracking-tight ${
+                      positive ? 'text-emerald-600' : 'text-gray-900'
                     }`}>
                       {positive ? '+' : '-'}{formatCurrency(tx.amount)}
                     </p>
-                    <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md mt-0.5 border ${
+                    <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md mt-1 ${
                       tx.status === 'completed' || tx.status === 'approved' 
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
-                        : tx.status === 'rejected'
-                        ? 'bg-red-50 text-red-800 border-red-200'
-                        : 'bg-amber-50 text-amber-900 border-amber-200'
+                        ? 'text-emerald-700 bg-emerald-50 border border-emerald-500/20' 
+                        : tx.status === 'pending' 
+                          ? 'text-amber-700 bg-amber-50 border border-amber-500/20' 
+                          : 'text-red-700 bg-red-50 border border-red-500/20'
                     }`}>
-                      {tx.status === 'completed' || tx.status === 'approved' ? 'Validé' : tx.status === 'rejected' ? 'Rejeté' : 'En attente'}
+                      {tx.status === 'completed' || tx.status === 'approved' ? 'Validé' :
+                       tx.status === 'pending' ? 'En cours' : 'Rejeté'}
                     </span>
                   </div>
                 </div>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

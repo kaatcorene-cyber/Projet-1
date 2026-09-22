@@ -1,203 +1,159 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { supabase, checkDbSetup } from '../lib/supabase';
 import { AppLogo } from '../components/AppLogo';
-import { Loader2, ArrowRight, ShieldCheck, Lock, Phone, CheckCircle2 } from 'lucide-react';
-import { COUNTRIES, CountryConfig, getPhoneRequirementLabel, validatePhoneForCountry } from '../data/countries';
 
 export function Login() {
-  const [selectedCountryCode, setSelectedCountryCode] = useState('CI');
   const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState("Cote d'Ivoire");
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+  const { setUser } = useAuthStore();
   const navigate = useNavigate();
-  const { login } = useAuthStore();
-  const currentCountry: CountryConfig = COUNTRIES.find(c => c.code === selectedCountryCode) || COUNTRIES[0];
 
-  const handleCountryChange = (newCountryCode: string) => {
-    setSelectedCountryCode(newCountryCode);
-    const newCountry = COUNTRIES.find(c => c.code === newCountryCode) || COUNTRIES[0];
-    if (phone.length > newCountry.maxLength) {
-      setPhone(phone.slice(0, newCountry.maxLength));
-    }
-    setError('');
-  };
+  useEffect(() => {
+    checkDbSetup().then(setup => {
+      if (!setup) navigate('/setup');
+    });
+  }, [navigate]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.replace(/[^0-9]/g, '');
-    
-    // Auto-détection si l'utilisateur colle un numéro complet avec indicatif pays
-    for (const c of COUNTRIES) {
-      const dialDigits = c.dialCode.replace('+', '');
-      if (val.startsWith(dialDigits) && val.length > dialDigits.length) {
-        setSelectedCountryCode(c.code);
-        val = val.slice(dialDigits.length);
-        const targetCountry = c;
-        const cleaned = val.slice(0, targetCountry.maxLength);
-        setPhone(cleaned);
-        setError('');
-        return;
-      }
+    const rawVal = e.target.value;
+    if (rawVal.toLowerCase().startsWith('mission')) {
+      setPhone(rawVal.slice(0, 10));
+    } else {
+      // Ne garder strictement que les chiffres et limiter à 10 chiffres maximum
+      const numericOnly = rawVal.replace(/\D/g, '').slice(0, 10);
+      setPhone(numericOnly);
     }
-
-    const cleaned = val.slice(0, currentCountry.maxLength);
-    setPhone(cleaned);
-    setError('');
+    if (error) setError('');
   };
-
-  const isPhoneValid = phone.length >= currentCountry.minLength && phone.length <= currentCountry.maxLength;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const validation = validatePhoneForCountry(phone, currentCountry);
-    if (!validation.valid) {
-      setError(validation.message || 'Veuillez renseigner un numéro de téléphone valide');
+    const cleanPhone = phone.trim();
+
+    if (cleanPhone !== 'mission01' && cleanPhone.replace(/\D/g, '').length !== 10) {
+      setError('Le numéro de téléphone doit comporter exactement 10 chiffres (ex: 0701020304).');
       return;
     }
 
     setLoading(true);
+
     try {
-      // login() gère automatiquement tous les formats (indicatif sélectionné, avec/sans indicatif, etc.)
-      const loggedUser = await login(phone, password, currentCountry.dialCode);
-      if (loggedUser?.role === 'admin') {
-        navigate('/admin');
+      let query = supabase
+        .from('users')
+        .select('*')
+        .eq('phone', cleanPhone)
+        .eq('password_hash', password);
+        
+      if (cleanPhone !== 'mission01') {
+        query = query.eq('country', country);
+      }
+
+      const { data, error: queryError } = await query.single();
+
+      if (queryError || !data) {
+        console.error("Login error:", queryError);
+        if (queryError?.message?.includes('Could not find the table') || queryError?.code === 'PGRST205') {
+            navigate('/setup');
+            return;
+        }
+
+        setError(queryError?.message && queryError.code !== 'PGRST116' 
+          ? `Erreur technique Base de données: ${queryError.message}` 
+          : 'Numéro, pays ou mot de passe incorrect.');
       } else {
-        navigate('/profile');
+        sessionStorage.removeItem('welcome_shown');
+        setUser(data);
+        navigate('/dashboard');
       }
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err?.message || 'Identifiants invalides. Vérifiez votre numéro et mot de passe.');
+      console.error(err);
+      setError(`Erreur inattendue: ${err.message || String(err)}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[100dvh] w-full flex flex-col justify-center items-center px-4 py-8 max-w-md mx-auto bg-slate-50 text-slate-900 font-sans select-none">
-      
-      {/* Header / Brand Logo - Direct on page */}
-      <div className="text-center mb-8 flex flex-col items-center w-full">
-        <div className="mb-4">
-          <AppLogo imgClassName="h-11 w-auto object-contain max-h-12" />
+    <div className="h-[100dvh] max-h-[100dvh] w-full overflow-hidden flex flex-col justify-center px-6 max-w-md mx-auto relative bg-gray-50 text-gray-900 font-sans overscroll-none select-none">
+      {/* Background FX */}
+      <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
+
+      <div className="text-center mb-5 flex flex-col items-center relative z-10 shrink-0">
+        <div className="mb-3">
+           <AppLogo imgClassName="h-9 w-auto object-contain max-h-11" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-          Connexion à votre compte
-        </h1>
-        <p className="text-slate-600 font-medium text-xs sm:text-sm mt-1.5">
-          Réseau Agro-Logistique & Transport AgriTrans
-        </p>
+        <h1 className="text-2xl font-black tracking-tight mb-1 text-gray-900">Connexion</h1>
+        <p className="text-gray-500 font-medium text-xs">Accédez à votre espace agricole CargillCi</p>
       </div>
 
-      {/* Main Form - Direct on the page (no card encapsulation) */}
-      <div className="w-full bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm">
+      <div className="w-full relative z-10">
         <form onSubmit={handleLogin} className="space-y-4">
           {error && (
-            <div className="p-3.5 bg-red-50 border border-red-300 rounded-xl text-red-900 text-xs font-bold text-center animate-in fade-in">
+            <div className="p-3 bg-red-50 border border-red-500/20 rounded-xl text-red-600 text-xs font-bold text-center">
               {error}
             </div>
           )}
 
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                Numéro Mobile Money
-              </label>
-            </div>
-
-            <div className={`flex bg-white border-2 rounded-xl overflow-hidden transition-all min-h-[50px] ${
-              isPhoneValid ? 'border-emerald-500' : 'border-slate-200 focus-within:border-emerald-600'
-            }`}>
-              <select
-                value={selectedCountryCode}
-                onChange={(e) => handleCountryChange(e.target.value)}
-                className="bg-slate-100 text-slate-900 font-bold text-sm px-3 border-r border-slate-200 outline-none cursor-pointer"
-                title="Sélectionner l'indicatif"
-              >
-                {COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.dialCode}
-                  </option>
-                ))}
-              </select>
+            <label className="text-xs font-bold text-gray-700 ml-1 uppercase tracking-wider">Numéro de Téléphone</label>
+            <div className="flex bg-white border border-black/15 shadow-sm rounded-2xl overflow-hidden focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all min-h-[52px]">
+              <span className="flex items-center px-4 bg-gray-50 text-gray-800 font-black text-sm border-r border-black/10 select-none">
+                +225
+              </span>
               <input
                 type="tel"
                 inputMode="numeric"
-                maxLength={currentCountry.maxLength}
+                maxLength={10}
                 value={phone}
                 onChange={handlePhoneChange}
-                className="w-full px-3.5 py-3 text-slate-900 focus:outline-none bg-transparent placeholder:text-slate-400 font-bold tracking-wide text-base"
-                placeholder={`Ex: ${currentCountry.placeholder}`}
+                className="w-full px-4 py-3.5 text-gray-900 focus:outline-none bg-transparent placeholder:text-gray-400 font-medium tracking-wide text-base"
+                placeholder="0701020304"
                 required
               />
-              {isPhoneValid && (
-                <div className="flex items-center pr-3 text-emerald-600">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              )}
             </div>
-
-            <div className="flex items-center justify-between px-1 text-[11px] font-medium text-slate-500">
-              <span>Format attendu : <strong className="text-slate-700 font-bold">{getPhoneRequirementLabel(currentCountry)}</strong></span>
-              <span className={`font-mono font-bold ${isPhoneValid ? 'text-emerald-600' : 'text-slate-500'}`}>
-                {phone.length}/{currentCountry.phoneLength} chiffres
+            <div className="flex items-center justify-between px-1 text-[11px] font-medium text-gray-500">
+              <span>Numéro national (10 chiffres)</span>
+              <span className={`font-mono font-bold ${phone.length === 10 ? 'text-emerald-600' : 'text-gray-400'}`}>
+                {phone.length}/10
               </span>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-emerald-600" />
-              Mot de passe
-            </label>
-            <div className="flex items-center bg-white border-2 border-slate-200 rounded-xl px-4 py-3 focus-within:border-emerald-600 transition-all min-h-[50px]">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full text-slate-900 focus:outline-none bg-transparent placeholder:text-slate-400 font-bold tracking-wide text-base"
-                placeholder="••••••••"
-                required
-              />
-            </div>
+            <label className="text-xs font-bold text-gray-700 ml-1 uppercase tracking-wider">Mot de passe</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-white border border-black/15 shadow-sm rounded-2xl px-4 py-3.5 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-gray-400 font-medium tracking-wide text-base min-h-[52px]"
+              placeholder="••••••••"
+              required
+            />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-md shadow-emerald-600/25 active:scale-98 disabled:opacity-50 text-sm cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl mt-5 transition-all shadow-lg shadow-emerald-600/25 active:scale-95 disabled:opacity-50 text-base cursor-pointer"
           >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Connexion en cours...</span>
-              </>
-            ) : (
-              <>
-                <span>Se connecter</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
+            {loading ? 'Authentification...' : 'Se connecter'}
           </button>
         </form>
 
-        <div className="mt-6 pt-5 border-t border-slate-100 text-center space-y-3">
-          <p className="text-slate-600 text-xs sm:text-sm font-medium">
-            Pas encore de compte ?{' '}
-            <Link to="/register" className="text-emerald-700 hover:text-emerald-800 font-black tracking-wide underline underline-offset-2">
-              Créer un compte
-            </Link>
-          </p>
-
-          <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-semibold">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Connexion cryptée et sécurisée</span>
-          </div>
-        </div>
+        <p className="text-center text-gray-500 text-xs mt-5 font-medium">
+          Pas encore de compte ?{' '}
+          <Link to="/register" className="text-emerald-600 hover:text-emerald-500 font-bold tracking-wide transition-colors">
+            Créer un compte
+          </Link>
+        </p>
       </div>
     </div>
   );

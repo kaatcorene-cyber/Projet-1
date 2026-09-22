@@ -1,23 +1,22 @@
 import { supabase } from './supabase';
 import { parseSafeDate } from './utils';
-import { TransportPlan, DEFAULT_TRANSPORT_PLANS } from '../data/plans';
-import { useAuthStore, saveStoredLocalUser } from '../store/useAuthStore';
-import { saveLocalInvestment, saveLocalTransaction } from './dataStore';
+import { CropPlan, DEFAULT_CROP_PLANS } from '../data/plans';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const CYCLE_24H_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 /**
- * Returns transport fleet details (name, photo, daily yield, duration) matching an investment.
+ * Returns crop details (name, photo, daily yield, duration) matching an investment.
  */
-export function getCropInfo(planAmount: number | string, dailyYield?: number | string): TransportPlan {
+export function getCropInfo(planAmount: number | string, dailyYield?: number | string): CropPlan {
   const amount = Number(planAmount) || 0;
   const daily = Number(dailyYield) || 0;
 
   // 1. Try to find in cache or database settings
   try {
-    const cachedPlans = localStorage.getItem('agritrans_investment_plans') || localStorage.getItem('translogis_investment_plans');
+    const cachedPlans = localStorage.getItem('cargill_investment_plans');
     if (cachedPlans) {
-      const parsed: TransportPlan[] = JSON.parse(cachedPlans);
+      const parsed: CropPlan[] = JSON.parse(cachedPlans);
       const match = parsed.find(p => Number(p.amount) === amount);
       if (match) return match;
     }
@@ -25,31 +24,31 @@ export function getCropInfo(planAmount: number | string, dailyYield?: number | s
     // Ignore JSON error and fallback
   }
 
-  // 2. Try to match by exact amount in default transport plans
-  const foundByAmount = DEFAULT_TRANSPORT_PLANS.find(p => Number(p.amount) === amount);
+  // 2. Try to match by exact amount in default crop plans
+  const foundByAmount = DEFAULT_CROP_PLANS.find(p => Number(p.amount) === amount);
   if (foundByAmount) return foundByAmount;
 
   // 3. Try to match by daily yield
   if (daily > 0) {
-    const foundByDaily = DEFAULT_TRANSPORT_PLANS.find(p => Number(p.daily) === daily);
+    const foundByDaily = DEFAULT_CROP_PLANS.find(p => Number(p.daily) === daily);
     if (foundByDaily) return foundByDaily;
   }
 
   // 4. Clean fallback for custom or modified plans
   return {
-    id: `transport-${amount}`,
-    name: `Service Transport (${amount.toLocaleString('fr-FR')} FCFA)`,
+    id: `crop-${amount}`,
+    name: `Culture (${amount.toLocaleString('fr-FR')} FCFA)`,
     amount: amount,
     daily: daily || Math.round(amount * 0.07),
     total: (daily || Math.round(amount * 0.07)) * 60,
     duration: 60,
-    image: DEFAULT_TRANSPORT_PLANS[0]?.image || '',
+    image: DEFAULT_CROP_PLANS[0]?.image || '',
     locked: false
   };
 }
 
 export interface CultureTimerState {
-  crop: TransportPlan;
+  crop: CropPlan;
   startDateMs: number;
   lastPaidMs: number;
   endDateMs: number;
@@ -60,195 +59,199 @@ export interface CultureTimerState {
   seconds: number;
   progressPercent: number;
   isReady: boolean;
+  cyclesReady: number;
   claimableAmount: number;
-  isCompleted: boolean;
   daysElapsed: number;
   totalDays: number;
+  isExpired: boolean;
 }
 
-export type TransportTimerState = CultureTimerState;
-
 /**
- * Calculates countdown timer and claim eligibility for a transport investment.
+ * Computes the exact 24-hour cycle state and countdown for an individual investment.
  */
 export function calculateCultureTimer(inv: any, nowMs: number = Date.now()): CultureTimerState {
-  const planAmount = Number(inv.plan_amount || 0);
-  const dailyYield = Number(inv.daily_yield || 0);
-  const crop = getCropInfo(planAmount, dailyYield);
+  const crop = getCropInfo(inv.plan_amount, inv.daily_yield);
+  const dailyYield = Number(inv.daily_yield) || Number(crop.daily) || 0;
 
-  const startDateMs = parseSafeDate(inv.start_date || inv.created_at);
-  const lastPaidMs = inv.last_paid_at ? parseSafeDate(inv.last_paid_at) : startDateMs;
-  const totalDays = crop.duration || 60;
-  const endDateMs = inv.end_date ? parseSafeDate(inv.end_date) : startDateMs + totalDays * CYCLE_24H_MS;
+  const startDateMs = parseSafeDate(inv.start_date || inv.created_at || nowMs);
+  const lastPaidMs = parseSafeDate(inv.last_paid_at || inv.start_date || nowMs);
+  const endDateMs = parseSafeDate(inv.end_date || (startDateMs + (crop.duration || 60) * CYCLE_24H_MS));
 
-  const isCompleted = inv.status === 'completed' || nowMs >= endDateMs;
+  const isExpired = nowMs >= endDateMs;
+  const nextPayoutMs = lastPaidMs + CYCLE_24H_MS;
 
-  let nextPayoutMs = lastPaidMs + CYCLE_24H_MS;
-  if (isCompleted) {
-    nextPayoutMs = endDateMs;
+  const totalDays = Math.max(1, Math.round((endDateMs - startDateMs) / CYCLE_24H_MS)) || (crop.duration || 60);
+  const daysElapsed = Math.min(totalDays, Math.max(1, Math.floor((nowMs - startDateMs) / CYCLE_24H_MS) + 1));
+
+  if (nowMs >= nextPayoutMs) {
+    // 24h cycle has arrived or passed!
+    const cyclesReady = Math.max(1, Math.floor((nowMs - lastPaidMs) / CYCLE_24H_MS));
+    const claimableAmount = cyclesReady * dailyYield;
+
+    return {
+      crop,
+      startDateMs,
+      lastPaidMs,
+      endDateMs,
+      nextPayoutMs,
+      timeLeftMs: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      progressPercent: 100,
+      isReady: true,
+      cyclesReady,
+      claimableAmount,
+      daysElapsed,
+      totalDays,
+      isExpired
+    };
+  } else {
+    // 24h cycle is actively counting down
+    const timeLeftMs = Math.max(0, nextPayoutMs - nowMs);
+    const hours = Math.floor(timeLeftMs / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeLeftMs % (1000 * 60)) / 1000);
+
+    const elapsedInCycle = CYCLE_24H_MS - timeLeftMs;
+    const progressPercent = Math.min(100, Math.max(0, (elapsedInCycle / CYCLE_24H_MS) * 100));
+
+    return {
+      crop,
+      startDateMs,
+      lastPaidMs,
+      endDateMs,
+      nextPayoutMs,
+      timeLeftMs,
+      hours,
+      minutes,
+      seconds,
+      progressPercent,
+      isReady: false,
+      cyclesReady: 0,
+      claimableAmount: 0,
+      daysElapsed,
+      totalDays,
+      isExpired
+    };
   }
-
-  const timeLeftMs = Math.max(0, nextPayoutMs - nowMs);
-  const isReady = !isCompleted && timeLeftMs === 0;
-
-  const totalCycleMs = CYCLE_24H_MS;
-  const elapsedInCycleMs = Math.min(totalCycleMs, Math.max(0, nowMs - lastPaidMs));
-  const progressPercent = isCompleted ? 100 : Math.min(100, Math.round((elapsedInCycleMs / totalCycleMs) * 100));
-
-  const totalSeconds = Math.floor(timeLeftMs / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  const totalDurationMs = endDateMs - startDateMs;
-  const totalElapsedMs = Math.max(0, nowMs - startDateMs);
-  const daysElapsed = Math.min(totalDays, Math.floor(totalElapsedMs / CYCLE_24H_MS) + 1);
-
-  const claimableAmount = isReady ? (dailyYield || crop.daily) : 0;
-
-  return {
-    crop,
-    startDateMs,
-    lastPaidMs,
-    endDateMs,
-    nextPayoutMs,
-    timeLeftMs,
-    hours,
-    minutes,
-    seconds,
-    progressPercent,
-    isReady,
-    claimableAmount,
-    isCompleted,
-    daysElapsed,
-    totalDays
-  };
 }
 
-export const calculateTransportTimer = calculateCultureTimer;
-
 /**
- * Claims the daily yield for a specific transport service.
+ * Claims the daily yield for a specific culture.
+ * Adds funds to user balance, logs transaction, and updates investment last_paid_at.
  */
 export async function claimCultureYield(inv: any, userId: string): Promise<{ success: boolean; amount: number; message: string }> {
   try {
     const nowMs = Date.now();
     const timerState = calculateCultureTimer(inv, nowMs);
 
-    if (!timerState.isReady) {
-      return {
-        success: false,
-        amount: 0,
-        message: `Ce véhicule est actuellement en transit. Prochain revenu dans ${timerState.hours}h ${timerState.minutes}m ${timerState.seconds}s.`
-      };
+    if (!timerState.isReady || timerState.claimableAmount <= 0) {
+      return { success: false, amount: 0, message: 'Le compte à rebours de 24h n\'est pas encore terminé.' };
     }
 
-    const yieldAmount = timerState.claimableAmount;
-    if (yieldAmount <= 0) {
-      return { success: false, amount: 0, message: 'Aucun revenu disponible à percevoir.' };
+    // 1. Fetch live user balance
+    const { data: userRecord, error: userErr } = await supabase
+      .from('users')
+      .select('balance')
+      .eq('id', userId)
+      .single();
+
+    if (userErr || !userRecord) {
+      throw new Error('Impossible de synchroniser avec le compte utilisateur.');
     }
 
-    // 1. Déterminer le solde actuel (local ou base distante)
-    let currentBalance = Number(useAuthStore.getState().user?.balance || 0);
-    try {
-      const { data: dbUser } = await supabase
-        .from('users')
-        .select('balance')
-        .eq('id', userId)
-        .maybeSingle();
-      if (dbUser && dbUser.balance !== undefined) {
-        currentBalance = Number(dbUser.balance || 0);
-      }
-    } catch (e) {}
+    const currentBalance = Number(userRecord.balance) || 0;
+    const newBalance = currentBalance + timerState.claimableAmount;
 
-    const newBalance = currentBalance + yieldAmount;
-    const nowIso = new Date(nowMs).toISOString();
-    const isNowFinished = nowMs >= timerState.endDateMs;
+    // 2. Update user balance
+    const { error: balanceErr } = await supabase
+      .from('users')
+      .update({ balance: newBalance })
+      .eq('id', userId);
 
-    // 2. Mise à jour locale immédiate du solde
-    useAuthStore.getState().updateBalance(newBalance);
-    const currentUser = useAuthStore.getState().user;
-    if (currentUser) {
-      saveStoredLocalUser({ ...currentUser, balance: newBalance });
+    if (balanceErr) throw balanceErr;
+
+    // 3. Calculate new last_paid_at keeping exact 24h cadence
+    const newLastPaidMs = timerState.lastPaidMs + (timerState.cyclesReady * CYCLE_24H_MS);
+    const newLastPaidIso = new Date(newLastPaidMs).toISOString();
+
+    const updatePayload: any = {
+      last_paid_at: newLastPaidIso
+    };
+
+    if (nowMs >= timerState.endDateMs) {
+      updatePayload.status = 'completed';
     }
 
-    // 3. Mise à jour locale immédiate de l'investissement
-    saveLocalInvestment({
-      ...inv,
-      last_paid_at: nowIso,
-      status: isNowFinished ? 'completed' : 'active'
-    });
+    const { error: invErr } = await supabase
+      .from('investments')
+      .update(updatePayload)
+      .eq('id', inv.id);
 
-    // 4. Enregistrement local immédiat de la transaction
-    const txId = 'tx_gain_' + Date.now();
-    saveLocalTransaction({
-      id: txId,
-      user_id: userId,
-      type: 'daily_gain',
-      amount: yieldAmount,
-      status: 'completed',
-      reference: `Rendement - ${timerState.crop.name} (Service actif)`,
-      created_at: nowIso
-    });
+    if (invErr) throw invErr;
 
-    // 5. Synchronisation distante sur Supabase en arrière-plan
-    try {
-      await supabase.from('users').update({ balance: newBalance }).eq('id', userId);
-      await supabase.from('investments').update({
-        last_paid_at: nowIso,
-        status: isNowFinished ? 'completed' : 'active'
-      }).eq('id', inv.id);
-      await supabase.from('transactions').insert([{
-        id: txId,
+    // 4. Log transactions for each cycle claimed
+    const transactionsToInsert = [];
+    for (let i = 0; i < timerState.cyclesReady; i++) {
+      transactionsToInsert.push({
         user_id: userId,
         type: 'daily_gain',
-        amount: yieldAmount,
+        amount: Number(inv.daily_yield) || timerState.crop.daily,
         status: 'completed',
-        reference: `Rendement - ${timerState.crop.name} (Service actif)`,
-        created_at: nowIso
-      }]);
-    } catch (remoteErr) {
-      console.warn('Synchronisation Supabase différée pour le rendement:', remoteErr);
+        reference: inv.id
+      });
+    }
+
+    if (transactionsToInsert.length > 0) {
+      await supabase.from('transactions').insert(transactionsToInsert);
+    }
+
+    // 5. Update local store user
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser && currentUser.id === userId) {
+      useAuthStore.getState().setUser({
+        ...currentUser,
+        balance: newBalance
+      });
     }
 
     return {
       success: true,
-      amount: yieldAmount,
-      message: `Revenu de ${yieldAmount.toLocaleString('fr-FR')} FCFA perçu avec succès !`
+      amount: timerState.claimableAmount,
+      message: `Récolte réussie ! +${timerState.claimableAmount.toLocaleString('fr-FR')} FCFA ajoutés à votre solde.`
     };
   } catch (error: any) {
-    console.error('Erreur lors de la perception du revenu:', error);
+    console.error('Erreur lors de la récolte de culture:', error);
     return {
       success: false,
       amount: 0,
-      message: error?.message || 'Une erreur est survenue lors de la perception.'
+      message: error?.message || 'Une erreur est survenue lors de la récolte.'
     };
   }
 }
 
-export const claimTransportYield = claimCultureYield;
-
 /**
- * Claims yields for ALL active services that have completed their 24h cycle.
+ * Claims yields for ALL active cultures that have completed their 24h cycle.
  */
-export async function claimAllActiveYields(investments: any[], userId: string): Promise<{ success: boolean; totalClaimed: number; count: number }> {
+export async function claimAllActiveYields(activeInvestments: any[], userId: string): Promise<{ success: boolean; totalAmount: number; count: number }> {
   let totalClaimed = 0;
-  let count = 0;
+  let countClaimed = 0;
 
-  for (const inv of investments) {
+  for (const inv of activeInvestments) {
     const timer = calculateCultureTimer(inv);
     if (timer.isReady && timer.claimableAmount > 0) {
       const res = await claimCultureYield(inv, userId);
       if (res.success) {
         totalClaimed += res.amount;
-        count++;
+        countClaimed += 1;
       }
     }
   }
 
   return {
-    success: count > 0,
-    totalClaimed,
-    count
+    success: countClaimed > 0,
+    totalAmount: totalClaimed,
+    count: countClaimed
   };
 }

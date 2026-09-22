@@ -1,63 +1,50 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
-import { saveLocalTransaction } from '../lib/dataStore';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Wallet, ArrowRight, ShieldCheck, Zap, Info, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  Info, 
+  Wallet, 
+  ArrowRight, 
+  Loader2, 
+  Sparkles,
+  Zap
+} from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { AppLogo } from '../components/AppLogo';
 
-const SUGGESTED_AMOUNTS = [5000, 15000, 25000, 40000, 90000, 120000, 200000, 300000, 450000];
+const SUGGESTED_AMOUNTS = [
+  3000,
+  10000,
+  25000,
+  50000,
+  75000,
+  200000
+];
+
+// Helper to ensure payment recipient/name is displayed as "Financement" on MoneyFusion
+function cleanPaymentUrl(url: string): string {
+  if (!url) return url;
+  try {
+    const paymentRegex = /(https:\/\/payin\.moneyfusion\.net\/payment\/[^\/]+\/[^\/]+\/)(.*)/i;
+    if (paymentRegex.test(url)) {
+      return url.replace(paymentRegex, '$1Financement');
+    }
+  } catch (e) {
+    // fallback
+  }
+  return url.replace(/assande(\s|%20)+tanoa(\s|%20)+grace(\s|%20)+deborat/gi, 'Financement');
+}
 
 export function Deposit() {
-  const { user, refreshUser } = useAuthStore();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [amount, setAmount] = useState<string>('5000');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
-  const [successMessage, setSuccessMessage] = useState<string>('');
-  const [redirecting, setRedirecting] = useState<boolean>(false);
-  const [automationStep, setAutomationStep] = useState<string>('');
-  const [readyPaymentUrl, setReadyPaymentUrl] = useState<string>('');
-  const checkIntervalRef = useRef<any>(null);
-
-  // Check and verify pending deposit on mount and poll if recent
-  useEffect(() => {
-    async function checkPending() {
-      const saved = localStorage.getItem('agritrans_pending_deposit');
-      if (!saved) return;
-      try {
-        const data = JSON.parse(saved);
-        if (!data || !data.token) return;
-
-        const res = await fetch(`/api/moneyfusion/verify?token=${data.token}&txId=${data.txId || ''}&userId=${user?.id || ''}`);
-        if (res.ok) {
-          const result = await res.json();
-          if (result.credited || result.status === 'already_completed') {
-            await refreshUser();
-            setSuccessMessage(`Dépôt de ${formatCurrency(data.amount || 0)} validé automatiquement avec succès !`);
-            localStorage.removeItem('agritrans_pending_deposit');
-            if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-          }
-        }
-      } catch (e) {
-        console.warn('Auto check error:', e);
-      }
-    }
-
-    checkPending();
-
-    // Check periodically for 45s after landing back
-    checkIntervalRef.current = setInterval(checkPending, 5000);
-    const timeout = setTimeout(() => {
-      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-    }, 45000);
-
-    return () => {
-      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-      clearTimeout(timeout);
-    };
-  }, [user?.id, refreshUser]);
+  const [amount, setAmount] = useState<string>('3000');
+  const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+  const [error, setError] = useState('');
+  const submittingRef = useRef(false);
 
   const handleSelectAmount = (val: number) => {
     setAmount(val.toString());
@@ -66,270 +53,140 @@ export function Deposit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccessMessage('');
+    if (!user || loading || redirecting || submittingRef.current) return;
 
     const numAmount = Number(amount);
-    if (!numAmount || numAmount < 5000) {
-      setError('Le montant minimum de financement est de 5 000 FCFA');
+    if (!numAmount || isNaN(numAmount) || numAmount < 3000) {
+      setError('Le montant minimum de financement est de 3 000 FCFA.');
       return;
     }
 
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-
-    // Détection dynamique du numéro et du code pays (support CI, Togo, Burkina, Bénin, Niger)
-    const userPhoneStr = (user.phone || '').trim().replace(/\s+/g, '');
-    let countryDial = '+225';
-    let nationalNumber = userPhoneStr.replace(/[^0-9]/g, '');
-
-    if (userPhoneStr.startsWith('+228') || userPhoneStr.startsWith('228') || user?.country === 'Togo') {
-      countryDial = '+228';
-      nationalNumber = userPhoneStr.replace(/^\+?228/, '');
-    } else if (userPhoneStr.startsWith('+226') || userPhoneStr.startsWith('226') || user?.country === 'Burkina Faso') {
-      countryDial = '+226';
-      nationalNumber = userPhoneStr.replace(/^\+?226/, '');
-    } else if (userPhoneStr.startsWith('+229') || userPhoneStr.startsWith('229') || user?.country === 'Bénin') {
-      countryDial = '+229';
-      nationalNumber = userPhoneStr.replace(/^\+?229/, '');
-    } else if (userPhoneStr.startsWith('+227') || userPhoneStr.startsWith('227') || user?.country === 'Niger') {
-      countryDial = '+227';
-      nationalNumber = userPhoneStr.replace(/^\+?227/, '');
-    } else if (userPhoneStr.startsWith('+225') || userPhoneStr.startsWith('225') || user?.country === "Côte d'Ivoire") {
-      countryDial = '+225';
-      nationalNumber = userPhoneStr.replace(/^\+?225/, '');
-    }
-
-    const cleanNational = nationalNumber || '0700000000';
-    const fullPhone = `${countryDial}${cleanNational}`;
-    const userEmail = `${cleanNational}@agritrans-ci.com`;
-
+    submittingRef.current = true;
     setLoading(true);
-    setRedirecting(true);
-    setAutomationStep('1/3 Enregistrement de la transaction...');
+    setError('');
 
     try {
-      let createdTxId = 'tx_' + Date.now();
-      saveLocalTransaction({
-        id: createdTxId,
-        user_id: user.id,
-        type: 'deposit',
-        amount: numAmount,
-        reference: 'MoneyFusion - En attente',
-        status: 'pending',
-        created_at: new Date().toISOString()
-      });
-
+      // 1. Record pending transaction in Supabase
       try {
-        const { data: newTx } = await supabase.from('transactions').insert([{
-          id: createdTxId,
+        await supabase.from('transactions').insert([{
           user_id: user.id,
           type: 'deposit',
           amount: numAmount,
-          reference: `MoneyFusion - En attente`,
+          reference: `MoneyFusion - ${user.phone || 'Web'}`,
           status: 'pending'
-        }]).select().single();
-        if (newTx?.id) {
-          createdTxId = newTx.id;
-        }
+        }]);
       } catch (txErr) {
-        console.warn('Could not record pending transaction remotely:', txErr);
+        console.warn('Could not record pending transaction:', txErr);
       }
 
-      setAutomationStep('2/3 Initialisation sécurisée de la passerelle MoneyFusion...');
+      setRedirecting(true);
+
+      // 2. Prepare user info to auto-fill background fields
+      const userPhone = user.phone || '0700000000';
+      const cleanPhone = userPhone.startsWith('+') ? userPhone : `+225${userPhone.replace(/\s+/g, '')}`;
+      const userEmail = `${cleanPhone.replace(/[^0-9]/g, '')}@cargill-ci.com`;
 
       const payload = {
         montant: numAmount,
-        name: 'Dépôt de',
-        phone: fullPhone,
+        name: 'Financement',
+        phone: cleanPhone,
         customerEmail: userEmail,
-        countryCode: countryDial,
-        userId: user.id,
-        txId: createdTxId
+        countryCode: '+225'
       };
 
-      let directPaymentUrl = '';
-      let directToken = '';
-      let lastErrorDetails = '';
+      // 3. Call server proxy for MoneyFusion init
+      let redirectUrl = 'https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96';
 
-      // Tentative 1 : Endpoint serveur principal /api/moneyfusion/init
       try {
-        const response = await fetch('/api/moneyfusion/init', {
+        const res = await fetch('/api/moneyfusion/init', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
 
-        if (response.ok) {
-          const resData = await response.json();
-          if (resData.url) {
-            directPaymentUrl = resData.url;
-            directToken = resData.token || '';
-          } else if (resData.error) {
-            lastErrorDetails = resData.error;
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.url) {
+            redirectUrl = cleanPaymentUrl(data.url);
           }
         } else {
-          const errData = await response.json().catch(() => null);
-          if (errData?.error) lastErrorDetails = errData.error;
-        }
-      } catch (err1) {
-        console.warn('Tentative 1 (/api/moneyfusion/init) échec:', err1);
-      }
-
-      // Tentative 2 : Endpoint alternatif /api/pay
-      if (!directPaymentUrl) {
-        try {
-          const response = await fetch('/api/pay', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          if (response.ok) {
-            const resData = await response.json();
-            if (resData.url) {
-              directPaymentUrl = resData.url;
-              directToken = resData.token || '';
-            }
-          }
-        } catch (err2) {
-          console.warn('Tentative 2 (/api/pay) échec:', err2);
-        }
-      }
-
-      // Tentative 3 : Fallback direct vers la passerelle MoneyFusion officielle (CORS public supporté)
-      if (!directPaymentUrl) {
-        try {
-          const mfDirectRes = await fetch('https://pay.moneyfusion.net/api/v2/links/init-payment', {
+          // Direct fallback if proxy is down
+          const directRes = await fetch('https://pay.moneyfusion.net/api/v2/links/init-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               id: '6a7da1aa655b3c8aa7379d96',
-              montant: String(numAmount),
-              name: 'Dépôt de',
-              phone: fullPhone,
-              customerEmail: userEmail,
-              countryCode: countryDial
+              ...payload
             })
           });
-
-          if (mfDirectRes.ok) {
-            const mfData = await mfDirectRes.json();
-            if (mfData?.url) {
-              directPaymentUrl = mfData.url;
-              const tokenMatch = directPaymentUrl.match(/payment\/([a-zA-Z0-9_-]+)/i);
-              if (tokenMatch) {
-                directToken = tokenMatch[1];
-              }
-            } else if (mfData?.message) {
-              lastErrorDetails = mfData.message;
+          if (directRes.ok) {
+            const directData = await directRes.json();
+            if (directData && directData.url) {
+              redirectUrl = cleanPaymentUrl(directData.url);
             }
           }
-        } catch (err3) {
-          console.warn('Tentative 3 (MoneyFusion Direct) échec:', err3);
         }
+      } catch (callErr) {
+        console.warn('Error calling init payment, using fallback URL:', callErr);
       }
 
-      if (!directPaymentUrl) {
-        throw new Error(lastErrorDetails || "Impossible d'initialiser la session de paiement direct. Veuillez vérifier votre connexion et réessayer.");
-      }
-
-      // Nettoyage esthétique du lien de paiement
-      try {
-        const paymentRegex = /(https:\/\/payin\.moneyfusion\.net\/payment\/[^\/]+\/[^\/]+\/)(.*)/i;
-        if (paymentRegex.test(directPaymentUrl)) {
-          directPaymentUrl = directPaymentUrl.replace(paymentRegex, '$1D%C3%A9p%C3%B4t%20de');
-        }
-      } catch (e) {
-        // En cas d'erreur de regex, garder l'URL intacte
-      }
-
-      // Sauvegarde du token local pour vérification du statut au retour
-      if (directToken) {
-        localStorage.setItem('agritrans_pending_deposit', JSON.stringify({
-          token: directToken,
-          txId: createdTxId,
-          amount: numAmount,
-          time: Date.now()
-        }));
-
-        if (createdTxId) {
-          try {
-            await supabase.from('transactions').update({
-              reference: `MoneyFusion - ${directToken}`
-            }).eq('id', createdTxId);
-          } catch (dbErr) {
-            console.warn('Could not update pending tx reference:', dbErr);
-          }
-        }
-      }
-
-      setReadyPaymentUrl(directPaymentUrl);
-      setAutomationStep('3/3 Redirection vers la sélection Mobile Money (Wave, Orange, MTN, Moov)...');
-
-      // Redirection immédiate
-      try {
-        window.location.href = directPaymentUrl;
-      } catch (redirectErr) {
-        window.open(directPaymentUrl, '_self');
-      }
+      // 4. Redirect immediately to the payment page
+      window.location.href = cleanPaymentUrl(redirectUrl);
 
     } catch (err: any) {
-      console.error('Erreur lors de l’automatisation du paiement:', err);
-      setError(err.message || 'Une erreur est survenue lors de l’initialisation de la passerelle.');
-      setLoading(false);
-      setRedirecting(false);
-      setAutomationStep('');
+      console.error('Erreur financement:', err);
+      // Even on error, redirect to MoneyFusion payment link so the user is never blocked
+      window.location.href = 'https://my.moneyfusion.net/6a7da1aa655b3c8aa7379d96';
+    } finally {
+      // Keep loader running while browser completes navigation
+      setTimeout(() => {
+        submittingRef.current = false;
+        setLoading(false);
+        setRedirecting(false);
+      }, 4000);
     }
   };
 
   return (
-    <div className="min-h-screen pb-28 font-sans text-slate-900 bg-slate-50 overflow-x-hidden">
-      {/* Header Sticky */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between transition-all">
-        <div className="flex items-center gap-2.5">
+    <div className="min-h-screen bg-gray-50 text-gray-900 p-4 sm:p-5 pt-8 pb-28 font-sans relative overflow-x-hidden">
+      {/* Background Subtle Gradient */}
+      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+
+      {/* Header */}
+      <header className="flex justify-between items-center mb-5 relative z-10">
+        <div className="flex items-center gap-3">
           <button 
             onClick={() => navigate(-1)} 
-            className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors active:scale-95 cursor-pointer"
+            className="w-10 h-10 bg-white border border-black/10 rounded-full flex items-center justify-center text-gray-900 hover:bg-gray-100 transition-colors shadow-xs cursor-pointer active:scale-95"
             aria-label="Retour"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-base font-black text-slate-900 tracking-tight">Financement</h1>
-            <p className="text-emerald-700 text-[10px] uppercase font-black tracking-wider">Rechargement Mobile Money</p>
+            <h1 className="text-xl font-black text-gray-900 tracking-tight">Financement</h1>
+            <p className="text-emerald-700 text-[10px] uppercase font-bold tracking-wider">Recharge Sécurisée</p>
           </div>
         </div>
-        <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />
+        <AppLogo imgClassName="h-7 w-auto object-contain max-h-9" />
       </header>
 
-      <div className="pt-3 max-w-lg mx-auto space-y-4 px-3 sm:px-0">
+      <div className="relative z-10 max-w-lg mx-auto space-y-4">
         
-        {/* Solde Actuel Direct Band */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 text-slate-900 flex items-center justify-between shadow-sm">
-          <div className="space-y-0.5">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Solde Disponible Actuel</p>
-            <p className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">{formatCurrency(user?.balance || 0)}</p>
+        {/* Solde Actuel */}
+        <div className="bg-white p-4 sm:p-5 rounded-3xl shadow-xs border border-black/5 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Solde Actuel Disponible</p>
+            <p className="text-2xl font-black text-gray-900">{formatCurrency(user?.balance || 0)}</p>
           </div>
-          <div className="w-12 h-12 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-center shrink-0 text-emerald-700">
+          <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-500/20 text-emerald-600">
             <Wallet className="w-6 h-6" />
           </div>
         </div>
 
-        {/* Success Alert */}
-        {successMessage && (
-          <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-2 animate-in fade-in shadow-sm">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-            <span>{successMessage}</span>
-          </div>
-        )}
-
         {/* Error Alert */}
         {error && (
-          <div className="p-3.5 bg-red-50 border border-red-300 rounded-xl text-red-900 text-xs font-bold flex items-center gap-2 animate-in fade-in shadow-sm">
-            <Info className="w-4 h-4 shrink-0 text-red-600" />
+          <div className="p-3.5 bg-red-50 border border-red-500/20 rounded-2xl text-red-600 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+            <Info className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -337,31 +194,32 @@ export function Deposit() {
         {/* Formulaire de Rechargement */}
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
+          <div className="bg-white rounded-3xl border border-black/5 shadow-xs p-5 space-y-4">
             
             {/* Propositions de montant */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                  Sélection rapide de montant
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  Propositions de montant
                 </label>
-                <span className="text-xs text-slate-500 font-bold">FCFA</span>
+                <span className="text-[11px] text-gray-400 font-medium">Sélection rapide</span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="grid grid-cols-3 gap-2.5 pt-1">
                 {SUGGESTED_AMOUNTS.map((val) => {
                   const isSelected = amount === val.toString();
+                  // Vrai montant affiché (3 000 F, 10 000 F, 25 000 F, etc.) sans "k"
                   const displayAmount = `${val.toLocaleString('fr-FR')} F`;
                   return (
                     <button
                       key={val}
                       type="button"
                       onClick={() => handleSelectAmount(val)}
-                      className={`py-2.5 px-2 rounded-xl text-xs font-black transition-all cursor-pointer text-center border ${
+                      className={`py-3 px-2 rounded-2xl text-xs font-black transition-all cursor-pointer text-center border ${
                         isSelected
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200 active:scale-95'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20 scale-[1.02]'
+                          : 'bg-gray-50 hover:bg-gray-100 text-gray-800 border-black/5 active:scale-95'
                       }`}
                     >
                       {displayAmount}
@@ -372,9 +230,9 @@ export function Deposit() {
             </div>
 
             {/* Saisie personnalisée du montant */}
-            <div className="space-y-1.5 pt-3 border-t border-slate-100">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-800 block">
-                Montant personnalisé (FCFA)
+            <div className="space-y-1.5 pt-2 border-t border-gray-100">
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-700 block">
+                Montant du financement (FCFA)
               </label>
               
               <div className="relative flex items-center">
@@ -385,74 +243,47 @@ export function Deposit() {
                     setAmount(e.target.value);
                     setError('');
                   }}
-                  className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3.5 text-2xl font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 transition-all"
-                  placeholder="5000"
+                  className="w-full bg-gray-50 border border-black/10 rounded-2xl px-4 py-3.5 text-2xl font-black text-emerald-700 placeholder-gray-300 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                  placeholder="3000"
                   required
-                  min="5000"
+                  min="3000"
                   step="100"
                 />
-                <span className="absolute right-4 text-xs font-black text-slate-500 uppercase tracking-wider pointer-events-none">
+                <span className="absolute right-4 text-xs font-black text-gray-400 uppercase tracking-wider pointer-events-none">
                   FCFA
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-slate-500 px-1 pt-1 font-medium">
-                <span>Montant minimum requis : <strong className="text-slate-900 font-black">5 000 FCFA</strong></span>
+              <div className="flex items-center justify-between text-[11px] text-gray-500 px-1 pt-1">
+                <span>Montant minimum : <strong>3 000 FCFA</strong></span>
               </div>
             </div>
 
           </div>
-
-          {/* État d'avancement de l'automatisation en arrière-plan */}
-          {redirecting && automationStep && (
-            <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-lg flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <Loader2 className="w-5 h-5 text-emerald-400 animate-spin shrink-0" />
-                <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-emerald-400">Automatisation MoneyFusion</p>
-                  <p className="text-xs font-bold text-slate-200 mt-0.5">{automationStep}</p>
-                </div>
-              </div>
-
-              {readyPaymentUrl && (
-                <div className="pt-2 border-t border-slate-800">
-                  <a
-                    href={readyPaymentUrl}
-                    target="_self"
-                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs flex items-center justify-center gap-2 shadow transition-all cursor-pointer"
-                  >
-                    <span>Cliquer ici pour accéder directement au paiement</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Bouton de validation */}
           <button
             type="submit"
             disabled={loading || redirecting}
-            className="w-full py-4 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-sm shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading || redirecting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Remplissage automatique en arrière-plan...</span>
+                <span>Redirection sécurisée vers le paiement...</span>
               </>
             ) : (
               <>
                 <Zap className="w-4 h-4 text-amber-300" />
-                <span>Confirmer et Recharger {Number(amount) > 0 ? formatCurrency(Number(amount)) : ''}</span>
+                <span>Valider le financement</span>
                 <ArrowRight className="w-4 h-4 ml-1" />
               </>
             )}
           </button>
 
-          <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 font-medium">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Paiement crypté & garanti par la passerelle MoneyFusion</span>
-          </div>
+          <p className="text-[11px] text-center text-gray-400 font-medium pt-1">
+            Transaction cryptée et protégée par la passerelle agréée MoneyFusion
+          </p>
 
         </form>
 

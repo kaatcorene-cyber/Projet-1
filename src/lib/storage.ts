@@ -1,18 +1,9 @@
 /**
- * Safe storage wrapper to prevent QuotaExceededError crashes and SSR ReferenceErrors
+ * Safe storage wrapper to prevent QuotaExceededError crashes
  */
-
-const hasLocalStorage = (): boolean => {
-  try {
-    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
-  } catch (e) {
-    return false;
-  }
-};
 
 export const safeStorage = {
   getItem: (key: string): string | null => {
-    if (!hasLocalStorage()) return null;
     try {
       return localStorage.getItem(key);
     } catch (e) {
@@ -22,7 +13,6 @@ export const safeStorage = {
   },
 
   setItem: (key: string, value: string): void => {
-    if (!hasLocalStorage()) return;
     try {
       localStorage.setItem(key, value);
     } catch (e: any) {
@@ -38,7 +28,6 @@ export const safeStorage = {
   },
 
   removeItem: (key: string): void => {
-    if (!hasLocalStorage()) return;
     try {
       localStorage.removeItem(key);
     } catch (e) {
@@ -47,7 +36,6 @@ export const safeStorage = {
   },
 
   clear: (): void => {
-    if (!hasLocalStorage()) return;
     try {
       localStorage.clear();
     } catch (e) {
@@ -61,7 +49,6 @@ export const safeStorage = {
  * while preserving authentication tokens
  */
 export function purgeNonEssentialStorage() {
-  if (!hasLocalStorage()) return;
   const nonEssentialKeys = [
     'soleil-app-storage',
     'support_chat_history',

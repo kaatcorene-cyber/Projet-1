@@ -1,48 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 56" fill="none">
-  <defs>
-    <linearGradient id="agriGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10b981"/>
-      <stop offset="100%" stop-color="#047857"/>
-    </linearGradient>
-    <linearGradient id="harvestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24"/>
-      <stop offset="100%" stop-color="#d97706"/>
-    </linearGradient>
-  </defs>
-
-  <!-- Emblem: Leaf + Dynamic Transport Highway Arrow -->
-  <g transform="translate(6, 6)">
-    <!-- Base Rounded Shield -->
-    <rect x="0" y="0" width="44" height="44" rx="12" fill="url(#agriGrad)" />
-    
-    <!-- Sun / Harvest Arc -->
-    <circle cx="30" cy="14" r="5" fill="url(#harvestGrad)" />
-
-    <!-- Stylized Leaf & Transport Road Arrow -->
-    <path d="M12 28 C12 18, 20 12, 32 12 C32 24, 26 30, 16 31 Z" fill="#ffffff" opacity="0.95" />
-    <path d="M14 29 C20 22, 28 20, 34 20" stroke="#047857" stroke-width="2.5" stroke-linecap="round" />
-    <path d="M10 35 L26 35 L34 27" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 56" fill="none">
+  <!-- Minimalist Clean CargillCi Logo avec CI collé -->
+  
+  <!-- Modern Leaf Accent Mark -->
+  <g transform="translate(6, 10)">
+    <!-- Main stylized organic leaf -->
+    <path 
+      d="M 18 34 C 18 20 28 8 36 4 C 36 18 28 30 18 34 Z" 
+      fill="#059669" 
+    />
+    <!-- Secondary soft curved leaf -->
+    <path 
+      d="M 18 34 C 18 25 10 18 4 15 C 4 25 12 32 18 34 Z" 
+      fill="#10b981" 
+    />
+    <!-- Small natural warm dot representing growth/sun -->
+    <circle cx="20" cy="5" r="3.5" fill="#f97316" />
   </g>
 
-  <!-- Typography: AgriTrans -->
+  <!-- Typography with "CI" tightly attached / seamless -->
   <text 
-    x="58" 
-    y="33" 
-    font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Segoe UI', Roboto, sans-serif" 
-    font-size="25" 
-    font-weight="900" 
-    fill="#0f172a" 
-    letter-spacing="-0.5"
-  >Agri<tspan fill="#059669">Trans</tspan></text>
-
-  <!-- Tagline: Agro-Logistique -->
-  <text 
-    x="59" 
-    y="46" 
-    font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Segoe UI', Roboto, sans-serif" 
-    font-size="9" 
+    x="56" 
+    y="36" 
+    font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif" 
+    font-size="28" 
     font-weight="800" 
-    fill="#64748b" 
-    letter-spacing="1.2"
-  >AGRO-LOGISTIQUE &amp; TRANSPORT</text>
+    fill="#111827" 
+    letter-spacing="-0.5"
+  >Cargill<tspan fill="#059669" font-weight="900">CI</tspan></text>
 </svg>

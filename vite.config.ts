@@ -21,9 +21,9 @@ export default defineConfig(({mode}) => {
         },
         includeAssets: ['favicon.ico', 'icon.svg', 'apple-touch-icon.png'],
         manifest: {
-          name: 'AgriTrans',
-          short_name: 'AgriTrans',
-          description: 'Plateforme officielle d’investissement et de logistique agro-pastorale et de transport AgriTrans',
+          name: 'Cargill',
+          short_name: 'Cargill',
+          description: 'Plateforme d’investissement et de gestion des cultures agricoles Cargill',
           theme_color: '#059669',
           background_color: '#f9fafb',
           display: 'standalone',

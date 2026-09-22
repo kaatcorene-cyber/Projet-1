@@ -1,255 +1,200 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { supabase, checkDbSetup } from '../lib/supabase';
 import { AppLogo } from '../components/AppLogo';
-import { Loader2, ArrowRight, ShieldCheck, Lock, Gift, Phone, CheckCircle2 } from 'lucide-react';
-import { COUNTRIES, CountryConfig, getPhoneRequirementLabel, validatePhoneForCountry } from '../data/countries';
 
 export function Register() {
   const [searchParams] = useSearchParams();
-  const [selectedCountryCode, setSelectedCountryCode] = useState('CI');
   const [formData, setFormData] = useState({
     phone: '',
+    country: "Cote d'Ivoire",
     password: '',
-    referralCode: '',
+    referralCode: (searchParams.get('ref') && searchParams.get('ref') !== 'undefined') ? searchParams.get('ref') : ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+  const { setUser } = useAuthStore();
   const navigate = useNavigate();
-  const { register } = useAuthStore();
-  const currentCountry: CountryConfig = COUNTRIES.find(c => c.code === selectedCountryCode) || COUNTRIES[0];
 
   useEffect(() => {
-    const ref = searchParams.get('ref');
-    if (ref) {
-      setFormData(prev => ({ ...prev, referralCode: ref }));
-    }
-  }, [searchParams]);
+    checkDbSetup().then(setup => {
+      if (!setup) navigate('/setup');
+    });
+  }, [navigate]);
 
-  // When country changes, adjust phone if it exceeds the new country's max length
-  const handleCountryChange = (newCountryCode: string) => {
-    setSelectedCountryCode(newCountryCode);
-    const newCountry = COUNTRIES.find(c => c.code === newCountryCode) || COUNTRIES[0];
-    if (formData.phone.length > newCountry.maxLength) {
-      setFormData(prev => ({ ...prev, phone: prev.phone.slice(0, newCountry.maxLength) }));
-    }
-    setError('');
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.replace(/[^0-9]/g, '');
-    
-    // Auto-détection si l'utilisateur colle un numéro complet avec indicatif pays
-    for (const c of COUNTRIES) {
-      const dialDigits = c.dialCode.replace('+', '');
-      if (val.startsWith(dialDigits) && val.length > dialDigits.length) {
-        setSelectedCountryCode(c.code);
-        val = val.slice(dialDigits.length);
-        const targetCountry = c;
-        const cleaned = val.slice(0, targetCountry.maxLength);
-        setFormData(prev => ({ ...prev, phone: cleaned }));
-        setError('');
-        return;
-      }
-    }
-
-    const cleaned = val.slice(0, currentCountry.maxLength);
-    setFormData(prev => ({ ...prev, phone: cleaned }));
-    setError('');
+    // Ne garder strictement que les chiffres et limiter à 10 chiffres maximum
+    const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setFormData(prev => ({ ...prev, phone: numericOnly }));
+    if (error) setError('');
   };
-
-  const isPhoneValid = formData.phone.length >= currentCountry.minLength && formData.phone.length <= currentCountry.maxLength;
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const validation = validatePhoneForCountry(formData.phone, currentCountry);
-    if (!validation.valid) {
-      setError(validation.message || 'Numéro de téléphone invalide');
-      return;
-    }
+    const cleanPhone = formData.phone.replace(/\D/g, '');
 
-    if (formData.password.length < 4) {
-      setError('Le mot de passe doit comporter au moins 4 caractères');
+    if (cleanPhone.length !== 10) {
+      setError('Le numéro de téléphone doit comporter exactement 10 chiffres (ex: 0701020304).');
       return;
     }
 
     setLoading(true);
+
     try {
-      const fullPhone = `${currentCountry.dialCode}${formData.phone}`;
-      await register(
-        fullPhone,
-        formData.password,
-        '',
-        '',
-        formData.referralCode,
-        currentCountry.name,
-        currentCountry.dialCode
-      );
-      navigate('/profile');
-    } catch (err: any) {
-      console.error('Registration error:', err);
-      let msg = err?.message || "Une erreur est survenue lors de l'inscription.";
-      if (msg.includes('duplicate key') || msg.includes('already exists') || msg.includes('unique constraint') || msg.includes('users_phone_key')) {
-        msg = 'Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter.';
+      const { data: existingUser, error: existError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('phone', cleanPhone)
+        .eq('country', formData.country)
+        .maybeSingle();
+
+      if (existError) console.warn("DB Check Warning:", existError);
+
+      if (existingUser) {
+        setError('Ce numéro est déjà utilisé en Côte d’Ivoire');
+        setLoading(false);
+        return;
       }
-      setError(msg);
+
+      const myReferralCode = 'AG' + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+      const { data, error: insertError } = await supabase
+        .from('users')
+        .insert([
+          {
+            first_name: "Membre",
+            last_name: "",
+            phone: cleanPhone,
+            country: formData.country,
+            password_hash: formData.password,
+            referral_code: myReferralCode,
+            referred_by: formData.referralCode ? formData.referralCode.trim().toUpperCase() : null,
+            balance: 0
+          }
+        ])
+        .select()
+        .single();
+
+      if (insertError || !data) {
+        console.error("Insert error:", insertError);
+        if (insertError?.message?.includes('Could not find the table') || insertError?.code === 'PGRST205') {
+            navigate('/setup');
+            return;
+        }
+
+        if (insertError?.code === '23505') {
+            setError('Ce numéro de téléphone est déjà pris.');
+        } else {
+            setError(`Erreur Serveur: ${insertError?.message || 'Impossible de créer le compte'}`);
+        }
+      } else {
+        sessionStorage.removeItem('welcome_shown');
+        setUser(data);
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(`Erreur inattendue: ${err.message || String(err)}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[100dvh] w-full flex flex-col justify-center items-center px-4 py-8 max-w-md mx-auto bg-slate-50 text-slate-900 font-sans select-none">
-      
-      {/* Header / Brand Logo - Direct on page */}
-      <div className="text-center mb-8 flex flex-col items-center w-full">
-        <div className="mb-4">
-          <AppLogo imgClassName="h-11 w-auto object-contain max-h-12" />
+    <div className="h-[100dvh] max-h-[100dvh] w-full overflow-hidden flex flex-col justify-center px-6 max-w-md mx-auto relative bg-gray-50 text-gray-900 font-sans overscroll-none select-none">
+      {/* Background FX */}
+      <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/10 to-transparent translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
+
+      <div className="text-center mb-4 flex flex-col items-center relative z-10 shrink-0">
+        <div className="mb-2.5">
+           <AppLogo imgClassName="h-9 w-auto object-contain max-h-11" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-          Créer un Compte
-        </h1>
-        <p className="text-slate-600 font-medium text-xs sm:text-sm mt-1.5">
-          Rejoignez le réseau agro-logistique & transport AgriTrans
-        </p>
+        <h1 className="text-2xl font-black tracking-tight mb-0.5 text-gray-900">Inscription</h1>
+        <p className="text-gray-500 font-medium text-xs">Rejoignez la plateforme agricole CargillCi</p>
       </div>
 
-      {/* Main Form - Direct on the page */}
-      <div className="w-full bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm">
-        <form onSubmit={handleRegister} className="space-y-4">
+      <div className="w-full relative z-10">
+        <form onSubmit={handleRegister} className="space-y-3.5">
           {error && (
-            <div className="p-3.5 bg-red-50 border border-red-300 rounded-xl text-red-900 text-xs font-bold text-center animate-in fade-in">
+            <div className="p-3 bg-red-50 border border-red-500/20 rounded-xl text-red-600 text-xs font-bold text-center">
               {error}
             </div>
           )}
 
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                Numéro Mobile Money
-              </label>
-            </div>
-
-            <div className={`flex bg-white border-2 rounded-xl overflow-hidden transition-all min-h-[50px] ${
-              isPhoneValid ? 'border-emerald-500' : 'border-slate-200 focus-within:border-emerald-600'
-            }`}>
-              <select
-                value={selectedCountryCode}
-                onChange={(e) => handleCountryChange(e.target.value)}
-                className="bg-slate-100 text-slate-900 font-bold text-sm px-3 border-r border-slate-200 outline-none cursor-pointer"
-                title="Sélectionner l'indicatif"
-              >
-                {COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.dialCode}
-                  </option>
-                ))}
-              </select>
+            <label className="text-xs font-bold text-gray-700 ml-1 uppercase tracking-wider">Numéro de Téléphone</label>
+            <div className="flex bg-white border border-black/15 shadow-sm rounded-2xl overflow-hidden focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all min-h-[52px]">
+              <span className="flex items-center px-4 bg-gray-50 text-gray-800 font-black text-sm border-r border-black/10 select-none">
+                +225
+              </span>
               <input
                 type="tel"
                 inputMode="numeric"
                 name="phone"
-                maxLength={currentCountry.maxLength}
+                maxLength={10}
                 value={formData.phone}
                 onChange={handlePhoneChange}
-                className="w-full px-3.5 py-3 text-slate-900 focus:outline-none bg-transparent placeholder:text-slate-400 font-bold tracking-wide text-base"
-                placeholder={`Ex: ${currentCountry.placeholder}`}
+                className="w-full px-4 py-3.5 text-gray-900 focus:outline-none bg-transparent placeholder:text-gray-400 font-medium tracking-wide text-base"
+                placeholder="0701020304"
                 required
               />
-              {isPhoneValid && (
-                <div className="flex items-center pr-3 text-emerald-600">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              )}
             </div>
-
-            <div className="flex items-center justify-between px-1 text-[11px] font-medium text-slate-500">
-              <span>Format attendu : <strong className="text-slate-700 font-bold">{getPhoneRequirementLabel(currentCountry)}</strong></span>
-              <span className={`font-mono font-bold ${isPhoneValid ? 'text-emerald-600' : 'text-slate-500'}`}>
-                {formData.phone.length}/{currentCountry.phoneLength} chiffres
+            <div className="flex items-center justify-between px-1 text-[11px] font-medium text-gray-500">
+              <span>Numéro national (10 chiffres)</span>
+              <span className={`font-mono font-bold ${formData.phone.length === 10 ? 'text-emerald-600' : 'text-gray-400'}`}>
+                {formData.phone.length}/10
               </span>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-emerald-600" />
-              Mot de passe
-            </label>
-            <div className="flex items-center bg-white border-2 border-slate-200 rounded-xl px-4 py-3 focus-within:border-emerald-600 transition-all min-h-[50px]">
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full text-slate-900 focus:outline-none bg-transparent placeholder:text-slate-400 font-bold tracking-wide text-base"
-                placeholder="••••••••"
-                required
-              />
-            </div>
+            <label className="text-xs font-bold text-gray-700 ml-1 uppercase tracking-wider">Mot de passe</label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full bg-white border border-black/15 shadow-sm rounded-2xl px-4 py-3.5 text-gray-900 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium text-base placeholder:text-gray-400 min-h-[52px]"
+              placeholder="••••••••"
+              required
+            />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Gift className="w-3.5 h-3.5 text-emerald-600" />
-                Code Parrain
-              </span>
-              <span className="text-slate-500 lowercase font-medium text-[11px]">facultatif</span>
-            </label>
-            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 min-h-[50px]">
-              <input
-                type="text"
-                name="referralCode"
-                value={formData.referralCode}
-                readOnly={!!formData.referralCode}
-                onChange={handleChange}
-                placeholder="Aucun parrain"
-                className="w-full text-emerald-800 focus:outline-none bg-transparent placeholder:text-slate-400 font-mono font-bold uppercase tracking-wider text-sm"
-              />
-            </div>
+            <label className="text-xs font-bold text-gray-700 ml-1 uppercase tracking-wider">Code parrain</label>
+            <input
+              type="text"
+              name="referralCode"
+              value={formData.referralCode}
+              readOnly
+              placeholder="Facultatif"
+              className="w-full bg-gray-100 border border-black/15 shadow-inner rounded-2xl px-4 py-3.5 text-gray-600 focus:outline-none transition-all font-semibold uppercase opacity-85 text-base font-mono min-h-[52px]"
+            />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-md shadow-emerald-600/25 active:scale-98 disabled:opacity-50 text-sm cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl mt-4 transition-all shadow-lg shadow-emerald-600/25 active:scale-95 disabled:opacity-50 text-base cursor-pointer"
           >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Création de votre compte...</span>
-              </>
-            ) : (
-              <>
-                <span>Valider mon inscription</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
+            {loading ? 'Création du compte...' : "S'inscrire"}
           </button>
         </form>
 
-        <div className="mt-6 pt-5 border-t border-slate-100 text-center space-y-3">
-          <p className="text-slate-600 text-xs sm:text-sm font-medium">
-            Déjà inscrit sur AgriTrans ?{' '}
-            <Link to="/login" className="text-emerald-700 hover:text-emerald-800 font-black tracking-wide underline underline-offset-2">
-              Se connecter
-            </Link>
-          </p>
-
-          <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-semibold">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Données confidentielles et sécurisées</span>
-          </div>
-        </div>
+        <p className="text-center text-gray-500 text-xs mt-4 font-medium">
+          Déjà un compte ?{' '}
+          <Link to="/login" className="text-emerald-600 hover:text-emerald-500 font-bold tracking-wide transition-colors">
+            Se connecter
+          </Link>
+        </p>
       </div>
     </div>
   );

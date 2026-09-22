@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore, generatePhoneCandidates } from '../store/useAuthStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
-import { getLocalUsers, getLocalTransactions, saveLocalTransaction, saveLocalUser } from '../lib/dataStore';
 import { 
   ArrowLeft, 
   Gift, 
   CheckCircle2, 
-  Sparkles, 
-  Loader2, 
-  Users 
+  Sparkles,
+  Loader2,
+  Users
 } from 'lucide-react';
-import { AppLogo } from '../components/AppLogo';
 
 interface CommissionTier {
   id: number;
@@ -35,7 +33,7 @@ const COMMISSION_TIERS: CommissionTier[] = [
 
 export function Commissions() {
   const navigate = useNavigate();
-  const { user, updateBalance, refreshUser } = useAuthStore();
+  const { user } = useAuthStore();
   const [qualifiedCount, setQualifiedCount] = useState<number>(0);
   const [claimedTiers, setClaimedTiers] = useState<number[]>([]);
   const [claimingId, setClaimingId] = useState<number | null>(null);
@@ -50,9 +48,10 @@ export function Commissions() {
       }
 
       try {
+        // 1. Charger les paliers déjà réclamés depuis localStorage et transactions
         const claimedSet = new Set<number>();
         try {
-          const local = localStorage.getItem(`agritrans_claimed_commissions_${user.id}`);
+          const local = localStorage.getItem(`cargill_claimed_commissions_${user.id}`);
           if (local) {
             const parsed = JSON.parse(local);
             if (Array.isArray(parsed)) {
@@ -63,89 +62,74 @@ export function Commissions() {
           console.warn('Erreur lecture localStorage:', e);
         }
 
-        // Vérifier les transactions locales pour les paliers réclamés
-        const localTxs = getLocalTransactions();
-        localTxs.forEach(tx => {
-          if (tx.user_id === user.id && tx.reference) {
-            COMMISSION_TIERS.forEach(t => {
-              if (tx.reference.includes(`Palier ${t.id}`)) {
-                claimedSet.add(t.id);
-              }
-            });
-          }
-        });
+        // Vérifier également dans les transactions Supabase
+        const { data: bonusTx } = await supabase
+          .from('transactions')
+          .select('reference')
+          .eq('user_id', user.id)
+          .eq('type', 'referral_bonus');
 
-        // 1. Calcul local des filleuls qualifiés (recharge/investissement >= 3000 F)
-        const cleanStr = (s?: string | null) => (s || '').trim().toUpperCase();
-        const userCodes = new Set<string>();
-        if (user.referral_code) userCodes.add(cleanStr(user.referral_code));
-        if (user.id) userCodes.add(cleanStr(user.id));
-        if (user.phone) {
-          userCodes.add(cleanStr(user.phone));
-          generatePhoneCandidates(user.phone).forEach(c => userCodes.add(cleanStr(c)));
-        }
-
-        const localUsers = getLocalUsers();
-        const l1LocalUsers = localUsers.filter(u => {
-          if (!u.referred_by || u.id === user.id) return false;
-          return userCodes.has(cleanStr(u.referred_by));
-        });
-
-        const qualifiedUserIds = new Set<string>();
-        l1LocalUsers.forEach(l1u => {
-          const hasQualifiedTx = localTxs.some(tx => 
-            tx.user_id === l1u.id && 
-            ['deposit', 'investment'].includes(tx.type) && 
-            Number(tx.amount || 0) >= 3000 &&
-            tx.status !== 'rejected'
-          );
-          if (hasQualifiedTx) {
-            qualifiedUserIds.add(l1u.id);
-          }
+        bonusTx?.forEach(tx => {
+          COMMISSION_TIERS.forEach(t => {
+            if (tx.reference && tx.reference.includes(`Palier ${t.id}`)) {
+              claimedSet.add(t.id);
+            }
+          });
         });
 
         setClaimedTiers(Array.from(claimedSet));
-        setQualifiedCount(qualifiedUserIds.size);
 
-        // 2. Synchronisation avec Supabase (si disponible)
-        try {
-          const { data: bonusTx } = await supabase
-            .from('transactions')
-            .select('reference')
-            .eq('user_id', user.id)
-            .in('type', ['referral_bonus', 'commission', 'bonus']);
+        // 2. Compter uniquement les membres invités ayant rechargé au minimum 3000 F
+        if (user.referral_code) {
+          const { data: referredUsers } = await supabase
+            .from('users')
+            .select('id, balance')
+            .eq('referred_by', user.referral_code);
 
-          bonusTx?.forEach(tx => {
-            COMMISSION_TIERS.forEach(t => {
-              if (tx.reference && tx.reference.includes(`Palier ${t.id}`)) {
-                claimedSet.add(t.id);
+          if (referredUsers && referredUsers.length > 0) {
+            const userIds = referredUsers.map(u => u.id);
+
+            // Vérifier les dépôts d'au moins 3 000 F
+            const { data: deposits } = await supabase
+              .from('transactions')
+              .select('user_id, amount')
+              .in('user_id', userIds)
+              .eq('type', 'deposit')
+              .gte('amount', 3000)
+              .neq('status', 'rejected');
+
+            // Vérifier les investissements d'au moins 3 000 F
+            const { data: investments } = await supabase
+              .from('investments')
+              .select('user_id, plan_amount')
+              .in('user_id', userIds)
+              .gte('plan_amount', 3000);
+
+            const qualifiedUserIds = new Set<string>();
+
+            deposits?.forEach(d => {
+              if (Number(d.amount) >= 3000) {
+                qualifiedUserIds.add(d.user_id);
               }
             });
-          });
-          setClaimedTiers(Array.from(claimedSet));
 
-          if (user.referral_code) {
-            const { data: referredUsers } = await supabase
-              .from('users')
-              .select('id, balance')
-              .or(`referred_by.ilike.${user.referral_code},referred_by.eq.${user.id}`);
+            investments?.forEach(i => {
+              if (Number(i.plan_amount) >= 3000) {
+                qualifiedUserIds.add(i.user_id);
+              }
+            });
 
-            if (referredUsers && referredUsers.length > 0) {
-              const userIds = referredUsers.map(u => u.id);
-              const { data: deposits } = await supabase
-                .from('transactions')
-                .select('user_id, amount')
-                .in('user_id', userIds)
-                .gte('amount', 3000)
-                .neq('status', 'rejected');
+            referredUsers.forEach(u => {
+              if ((u.balance || 0) >= 3000) {
+                qualifiedUserIds.add(u.id);
+              }
+            });
 
-              deposits?.forEach(d => {
-                if (d.user_id) qualifiedUserIds.add(d.user_id);
-              });
-              setQualifiedCount(qualifiedUserIds.size);
-            }
+            setQualifiedCount(qualifiedUserIds.size);
+          } else {
+            setQualifiedCount(0);
           }
-        } catch (dbErr) {}
+        }
       } catch (err) {
         console.error('Erreur chargement commissions:', err);
       } finally {
@@ -157,113 +141,122 @@ export function Commissions() {
   }, [user]);
 
   const handleClaim = async (tier: CommissionTier) => {
-    if (!user) return;
+    if (!user || claimingId !== null || claimedTiers.includes(tier.id)) return;
     if (qualifiedCount < tier.target) return;
-    if (claimedTiers.includes(tier.id)) return;
 
     setClaimingId(tier.id);
-
     try {
-      const newBalance = (Number(user.balance) || 0) + tier.reward;
-      
-      // 1. Mise à jour locale immédiate
-      updateBalance(newBalance);
-      saveLocalUser({ ...user, balance: newBalance });
-      saveLocalTransaction({
-        id: `tx_prime_tier_${tier.id}_${Date.now()}`,
+      const currentBalance = Number(user.balance || 0);
+      const newBalance = currentBalance + tier.reward;
+
+      // 1. Mettre à jour le solde dans Supabase
+      const { error: updateErr } = await supabase
+        .from('users')
+        .update({ balance: newBalance })
+        .eq('id', user.id);
+
+      if (updateErr) {
+        throw updateErr;
+      }
+
+      // 2. Enregistrer la transaction du bonus
+      await supabase.from('transactions').insert([{
         user_id: user.id,
         type: 'referral_bonus',
         amount: tier.reward,
         status: 'completed',
-        reference: `Prime Palier ${tier.id} - ${tier.target} membres qualifiés`,
-        created_at: new Date().toISOString()
+        reference: `Bonus Commission Palier ${tier.id} - ${tier.target} membres`
+      }]);
+
+      // 3. Mettre à jour l'état local et localStorage
+      const nextClaimed = [...claimedTiers, tier.id];
+      setClaimedTiers(nextClaimed);
+      try {
+        localStorage.setItem(`cargill_claimed_commissions_${user.id}`, JSON.stringify(nextClaimed));
+      } catch (e) {
+        console.warn('Erreur écriture localStorage:', e);
+      }
+
+      // 4. Mettre à jour le store d'authentification pour répercuter immédiatement le solde
+      useAuthStore.setState({
+        user: {
+          ...user,
+          balance: newBalance,
+        }
       });
 
-      const updatedClaimed = [...claimedTiers, tier.id];
-      setClaimedTiers(updatedClaimed);
-      localStorage.setItem(`agritrans_claimed_commissions_${user.id}`, JSON.stringify(updatedClaimed));
+      setSuccessMessage(`Félicitations ! Votre bonus de ${tier.rewardLabel} a été crédité sur votre solde principal.`);
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
 
-      setSuccessMessage(`Félicitations ! Votre prime de ${tier.rewardLabel} a été créditée avec succès.`);
-      setTimeout(() => setSuccessMessage(''), 5000);
-
-      // 2. Synchronisation Supabase en tâche de fond
-      try {
-        await supabase
-          .from('users')
-          .update({ balance: newBalance })
-          .eq('id', user.id);
-
-        await supabase.from('transactions').insert([{
-          user_id: user.id,
-          type: 'referral_bonus',
-          amount: tier.reward,
-          status: 'completed',
-          reference: `Prime Palier ${tier.id} - ${tier.target} membres qualifiés`
-        }]);
-      } catch (remoteErr) {
-        console.warn('Sync Supabase différée pour prime palier:', remoteErr);
-      }
     } catch (err: any) {
-      console.error('Erreur réclamation prime:', err);
+      console.error('Erreur réclamation bonus:', err);
+      alert('Une erreur est survenue lors de la réclamation du bonus. Veuillez réessayer.');
     } finally {
       setClaimingId(null);
     }
   };
 
   return (
-    <div className="min-h-screen pb-28 font-sans text-slate-900 bg-slate-50 overflow-x-hidden">
-      {/* Header Sticky */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between transition-all">
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors active:scale-95 cursor-pointer"
-            aria-label="Retour"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-base font-black text-slate-900 tracking-tight">Paliers & Primes</h1>
-            <p className="text-emerald-700 text-[10px] uppercase font-black tracking-wider">Bonus Partenaires Niveau 1</p>
-          </div>
-        </div>
-        <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />
-      </header>
+    <div className="min-h-screen bg-gray-50 pb-28 font-sans text-gray-900 relative">
+      {/* Background Subtle Gradient */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/5 to-transparent -translate-y-1/2 translate-x-1/3"></div>
+      </div>
 
-      <div className="pt-3 max-w-xl mx-auto space-y-4 px-3 sm:px-0">
-        
-        {/* Message de succès */}
+      {/* Header épuré sans logo ni nom Cargill */}
+      <div className="bg-white px-5 pt-8 pb-4 shadow-sm border-b border-black/5 sticky top-0 z-30 flex items-center justify-between">
+        <button
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 hover:bg-black/10 transition-colors border border-black/5 cursor-pointer active:scale-95"
+          aria-label="Retour"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div className="text-center flex-1">
+          <h1 className="text-base font-black text-gray-900 tracking-tight">Commissions</h1>
+          <p className="text-[11px] text-gray-500 font-semibold">Paliers de parrainage & récompenses</p>
+        </div>
+        <div className="w-10"></div>
+      </div>
+
+      <div className="p-4 sm:p-5 space-y-4 max-w-md mx-auto relative z-10">
+
+        {/* Message de succès lors de la réclamation */}
         {successMessage && (
-          <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl flex items-center gap-2.5 text-xs text-emerald-900 font-bold animate-in fade-in shadow-sm">
+          <div className="p-3.5 bg-emerald-50 border border-emerald-500/30 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2.5 shadow-sm animate-in fade-in">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <p>{successMessage}</p>
+            <span>{successMessage}</span>
           </div>
         )}
 
         {/* Bannière explicative : Niveau 1 uniquement */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center shrink-0 font-black">
-              <Users className="w-5 h-5" />
+        <div className="bg-emerald-50/80 border border-emerald-500/20 rounded-2xl p-3.5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-900">Membres Niveau 1 qualifiés</p>
+                <p className="text-[10px] text-gray-500 font-medium">Seuls les filleuls directs avec recharge ≥ 3 000 F comptent</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs sm:text-sm font-black text-slate-900">Partenaires Niveau 1 Qualifiés</p>
-              <p className="text-xs text-slate-500 font-medium">Recharge minimum de 3 000 FCFA</p>
+            <div className="text-right">
+              <span className="text-lg font-black text-emerald-700">{qualifiedCount}</span>
+              <span className="text-[10px] text-gray-500 block font-semibold">actif{qualifiedCount > 1 ? 's' : ''}</span>
             </div>
-          </div>
-          <div className="text-right">
-            <span className="text-xl sm:text-2xl font-black text-emerald-700">{qualifiedCount}</span>
-            <span className="text-[10px] text-slate-500 block font-bold uppercase">actif{qualifiedCount > 1 ? 's' : ''}</span>
           </div>
         </div>
 
-        {/* Liste des Paliers */}
+        {/* Liste des Paliers avec boutons Réclamer lorsque la barre est remplie */}
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-xs font-black text-slate-700 uppercase tracking-wider">
+            <h2 className="text-xs font-black text-gray-500 uppercase tracking-wider">
               Paliers de progression
             </h2>
-            <span className="text-xs font-black text-emerald-700">10 Paliers • Niveau 1</span>
+            <span className="text-[11px] font-bold text-emerald-700">10 Paliers • Niveau 1</span>
           </div>
 
           <div className="space-y-3">
@@ -276,12 +269,12 @@ export function Commissions() {
               return (
                 <div
                   key={tier.id}
-                  className={`p-4 rounded-2xl border transition-all duration-200 bg-white shadow-sm ${
+                  className={`p-4 rounded-2xl border transition-all duration-200 bg-white ${
                     isClaimed
-                      ? 'border-emerald-200 bg-emerald-50/40'
+                      ? 'border-emerald-500/20 bg-emerald-50/30'
                       : isFilled
-                      ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-md'
-                      : 'border-slate-200'
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/10 shadow-sm'
+                      : 'border-black/5 shadow-xs'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3 mb-2.5">
@@ -290,26 +283,26 @@ export function Commissions() {
                         isClaimed
                           ? 'bg-emerald-600 text-white'
                           : isFilled
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : 'bg-slate-100 text-slate-500 border border-slate-200'
+                          ? 'bg-emerald-100 text-emerald-700 border border-emerald-500/30'
+                          : 'bg-gray-100 text-gray-500'
                       }`}>
                         {isClaimed ? <CheckCircle2 className="w-5 h-5" /> : `N°${tier.id}`}
                       </div>
 
                       <div className="text-left">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-black text-slate-900">
-                            {tier.target} {tier.target === 1 ? 'partenaire direct (Niveau 1)' : 'partenaires directs (Niveau 1)'}
+                          <span className="text-xs font-bold text-gray-900">
+                            {tier.target} {tier.target === 1 ? 'filleul direct (Niveau 1)' : 'filleuls directs (Niveau 1)'}
                           </span>
                         </div>
-                        <span className="text-[11px] text-slate-500 font-medium">
+                        <span className="text-[11px] text-gray-500 font-medium">
                           Recharge min. 3 000 F / membre N1
                         </span>
                       </div>
                     </div>
 
                     <div className="text-right shrink-0">
-                      <div className="px-3 py-1.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-200">
+                      <div className="px-3 py-1.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-300/60">
                         <Gift className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                         <span>{tier.rewardLabel}</span>
                       </div>
@@ -318,14 +311,14 @@ export function Commissions() {
 
                   {/* Barre de progression */}
                   <div className="space-y-1.5 pt-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500 font-medium">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-gray-500 font-medium">
                         Progression : {Math.min(qualifiedCount, tier.target)} / {tier.target}
                       </span>
-                      <span className="font-black text-emerald-700">{progressPct}%</span>
+                      <span className="font-bold text-emerald-700">{progressPct}%</span>
                     </div>
 
-                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
                           isFilled ? 'bg-emerald-600' : 'bg-emerald-500'
@@ -336,21 +329,21 @@ export function Commissions() {
                   </div>
 
                   {/* Zone d'action : Bouton Réclamer si la barre est remplie */}
-                  <div className="mt-3 pt-2.5 border-t border-slate-100">
+                  <div className="mt-3 pt-2.5 border-t border-gray-100">
                     {isClaimed ? (
-                      <div className="flex items-center justify-between text-xs py-1 text-emerald-800 font-black bg-emerald-50 px-3 rounded-xl border border-emerald-200">
+                      <div className="flex items-center justify-between text-xs py-1 text-emerald-800 font-bold bg-emerald-50 px-3 rounded-xl border border-emerald-500/20">
                         <span className="flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          Prime créditée sur votre solde
+                          Bonus crédité sur votre solde
                         </span>
-                        <span className="font-black text-emerald-800">+{tier.rewardLabel}</span>
+                        <span className="font-black text-emerald-700">+{tier.rewardLabel}</span>
                       </div>
                     ) : isFilled ? (
                       <button
                         type="button"
                         onClick={() => handleClaim(tier)}
                         disabled={isClaimingThis}
-                        className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer disabled:opacity-75"
+                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-xs shadow-md shadow-emerald-700/20 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer disabled:opacity-75"
                       >
                         {isClaimingThis ? (
                           <>
@@ -365,9 +358,9 @@ export function Commissions() {
                         )}
                       </button>
                     ) : (
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 py-1 font-medium">
-                        <span>Encore {tier.target - qualifiedCount} partenaire{tier.target - qualifiedCount > 1 ? 's' : ''} N1 (recharge ≥ 3 000 F)</span>
-                        <span className="text-slate-600 font-bold">À débloquer</span>
+                      <div className="flex items-center justify-between text-[11px] text-gray-400 py-1 font-medium">
+                        <span>Encore {tier.target - qualifiedCount} filleul{tier.target - qualifiedCount > 1 ? 's' : ''} N1 (recharge ≥ 3 000 F)</span>
+                        <span className="text-gray-400 font-bold">À débloquer</span>
                       </div>
                     )}
                   </div>

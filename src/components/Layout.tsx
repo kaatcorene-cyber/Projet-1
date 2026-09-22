@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react';
 import { Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { BottomNav } from './BottomNav';
-import { Settings, Download } from 'lucide-react';
+import { LogOut, Settings, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { parseSafeDate } from '../lib/utils';
 import { claimAllActiveYields } from '../lib/investments';
 
 export function Layout() {
@@ -37,7 +38,7 @@ export function Layout() {
       if (!investments || investments.length === 0) return;
 
       const result = await claimAllActiveYields(investments, userId);
-      if (result.success && result.totalClaimed > 0) {
+      if (result.success && result.totalAmount > 0) {
         await refreshUser();
       }
     } catch (e) {
@@ -49,28 +50,32 @@ export function Layout() {
     return <Navigate to="/login" replace />;
   }
 
+  const handleLogout = () => {
+    sessionStorage.removeItem('telegramModalShown');
+    logout();
+    navigate('/login');
+  };
+
   return (
-    <div className="min-h-screen text-slate-900 bg-slate-50 pb-20 font-sans selection:bg-emerald-600 selection:text-white">
-      <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden bg-slate-50">
-        {/* Top Mini Header for Admin and PWA */}
-        <div className="absolute top-3 right-4 flex items-center gap-2 z-50">
+    <div className="min-h-screen text-slate-900 pb-16 font-sans">
+      <main className="max-w-md mx-auto min-h-screen relative overflow-x-hidden">
+        {/* Top Mini Header for Admin and Logout */}
+        <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
           {isInstallable && (
             <button 
               onClick={installPWA}
-              className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex items-center gap-1.5 text-[11px] font-bold shadow-md shadow-emerald-600/25 transition-all cursor-pointer active:scale-95"
-              title="Installer l'application"
+              className="w-10 h-10 bg-emerald-600 border border-emerald-500 rounded-full flex items-center justify-center text-white shadow-sm hover:bg-emerald-700 transition-colors animate-pulse"
+              title="Télécharger l'Application"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Installer PWA</span>
+              <Download className="w-5 h-5" />
             </button>
           )}
           {user?.role === 'admin' && (
             <button 
               onClick={() => navigate('/admin')}
-              className="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-700 shadow-sm hover:text-emerald-600 hover:border-emerald-500 transition-colors cursor-pointer active:scale-95"
-              title="Panneau d'administration"
+              className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-5 h-5" />
             </button>
           )}
         </div>

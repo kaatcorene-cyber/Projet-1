@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Send, ImagePlus } from 'lucide-react';
+import { ArrowLeft, Send, ImagePlus, Loader2, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
@@ -24,7 +24,7 @@ export function Support() {
   const { user } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
-      const saved = localStorage.getItem('agritrans_support_chat_history');
+      const saved = localStorage.getItem('support_chat_history');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
@@ -32,12 +32,12 @@ export function Support() {
     } catch (e) {}
     return [];
   });
-  const [supportLink, setSupportLink] = useState('https://t.me/AgriTrans_01');
+  const [supportLink, setSupportLink] = useState('https://t.me/AgentCargill');
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [verifState, setVerifState] = useState<VerifState>(() => {
     try {
-      const saved = localStorage.getItem('agritrans_support_verif_state');
+      const saved = localStorage.getItem('support_verif_state');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
@@ -52,11 +52,12 @@ export function Support() {
 
   useEffect(() => {
     try {
+      // Strip large base64 data to avoid QuotaExceededError
       const safeMsgs = messages.slice(-15).map(m => ({
         ...m,
         imageUrl: m.imageUrl && m.imageUrl.startsWith('data:') ? undefined : m.imageUrl
       }));
-      localStorage.setItem('agritrans_support_chat_history', JSON.stringify(safeMsgs));
+      localStorage.setItem('support_chat_history', JSON.stringify(safeMsgs));
     } catch (e) {
       console.warn('Could not save support chat history:', e);
     }
@@ -64,7 +65,7 @@ export function Support() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('agritrans_support_verif_state', JSON.stringify(verifState));
+      localStorage.setItem('support_verif_state', JSON.stringify(verifState));
     } catch (e) {
       console.warn('Could not save support verif state:', e);
     }
@@ -80,7 +81,7 @@ export function Support() {
         {
           id: '1',
           sender: 'bot',
-          text: `Bonjour ${user?.first_name || ''} ! Je suis le Service Client d'AgriTrans. Comment puis-je vous assister aujourd'hui pour vos formules de transport ou la gestion de votre compte ?`
+          text: `Bonjour ${user?.first_name || ''} ! Je suis le Service Client de CargillCi. Comment puis-je vous assister aujourd'hui ?`
         }
       ]);
     }
@@ -121,97 +122,99 @@ export function Support() {
         responseText = `J'attends toujours une capture d'écran. Veuillez utiliser l'icône d'ajout d'image (🖼️) pour joindre la preuve de votre transfert.`;
       } else if (isDepositProblem) {
         setVerifState({ step: 'ask_name', name: '', amount: '', number: '' });
-        responseText = `Je comprends que votre dépôt n'a pas encore été crédité. Rassurez-vous, notre système d'analyse automatisé AgriTrans va procéder à une vérification immédiate. Pour des raisons de conformité, veuillez m'indiquer votre nom complet.`;
+        responseText = `Je comprends que votre dépôt n'a pas encore été crédité. Rassurez-vous, notre système d'analyse automatisé va procéder à une vérification immédiate. Pour des raisons de conformité, veuillez m'indiquer votre nom complet.`;
       } else if (lower.includes('télécharg') || lower.includes('install') || lower.includes('application') || lower.includes('appli')) {
         responseText = `
           <span>
-            L'installation de l'application <b>AgriTrans</b> s'effectue en quelques instants.<br/><br/>
+            L'installation de l'application <b>CargillCi</b> s'effectue en quelques instants. Appuyez sur l'icône d'installation ⬇️ (ou accédez au menu de votre navigateur) pour procéder à l'ajout.<br/><br/>
             <b>• Sur appareil Android :</b><br/>
-            Acceptez l'installation via la bannière au bas de l'écran ou depuis le menu du navigateur (Ajouter à l'écran d'accueil).<br/><br/>
+            Acceptez l'installation via la bannière qui s'affiche au bas de l'écran ou depuis le menu de votre navigateur (Ajouter à l'écran d'accueil).<br/><br/>
             <b>• Sur appareil iOS (iPhone) :</b><br/>
-            1. Appuyez sur l'icône de partage située en bas de Safari.<br/>
+            1. Appuyez sur l'icône de partage située en bas de votre navigateur Safari.<br/>
             2. Sélectionnez l'option <b>« Sur l'écran d'accueil »</b>.<br/>
             3. Validez en appuyant sur <b>« Ajouter »</b>.<br/><br/>
-            L'application sera ainsi accessible directement pour piloter votre flotte agricole.
+            L'application sera ainsi disponible directement sur votre écran d'accueil pour une gestion optimale de vos cultures.
           </span>
         `;
       } else if (lower.includes('moov') || lower.includes('mtn')) {
         responseText = `
           <span>
-            Voici la procédure à suivre pour effectuer un financement via <b>Moov Money ou MTN Mobile Money</b> sur votre compte AgriTrans :<br/><br/>
-            <b>Étape 1 :</b> Accédez à la rubrique « Financer » et sélectionnez l'opérateur concerné.<br/>
-            <b>Étape 2 :</b> Saisissez le montant et votre numéro de téléphone.<br/>
-            <b>Étape 3 :</b> Cliquez sur « Lancer le code système » pour ouvrir le code USSD.<br/>
-            <b>Étape 4 :</b> Confirmez la transaction à l'aide de votre code PIN personnel.<br/><br/>
-            Le système créditera vos fonds instantanément dès validation.
+            Voici la procédure à suivre pour effectuer un dépôt via <b>Moov Money ou MTN Mobile Money</b> sur votre compte CargillCi :<br/><br/>
+            <b>Étape 1 :</b> Accédez à la rubrique « Recharger » et sélectionnez l'opérateur concerné (Moov ou MTN).<br/>
+            <b>Étape 2 :</b> Saisissez le montant de votre investissement et votre numéro de téléphone de facturation.<br/>
+            <b>Étape 3 :</b> Cliquez sur « Lancer le code système ». Vous serez redirigé vers l'invite de commande de votre téléphone.<br/>
+            <b>Étape 4 :</b> Entrez manuellement le montant défini et confirmez à l'aide de votre code PIN personnel.<br/><br/>
+            Le système créditera vos fonds instantanément dès la validation du réseau opérateur.
           </span>
         `;
       } else if (lower.includes('wave')) {
         responseText = `
           <span>
-            Voici la procédure de financement via <b>Wave</b> sur AgriTrans :<br/><br/>
-            <b>Étape 1 :</b> Rendez-vous dans la section « Financer » et choisissez « Wave ».<br/>
-            <b>Étape 2 :</b> Renseignez le montant désiré et votre numéro Wave.<br/>
-            <b>Étape 3 :</b> Copiez le numéro de paiement affiché.<br/>
-            <b>Étape 4 :</b> Effectuez l'envoi depuis votre application Wave.<br/><br/>
-            Votre compte sera crédité rapidement et en toute sécurité.
+            Voici le protocole de rechargement via <b>Wave</b> sur la plateforme CargillCi :<br/><br/>
+            <b>Étape 1 :</b> Rendez-vous dans la section « Recharger » et choisissez l'option « Wave ».<br/>
+            <b>Étape 2 :</b> Renseignez le montant désiré et votre numéro de compte Wave.<br/>
+            <b>Étape 3 :</b> Un identifiant de paiement vous sera fourni. Copiez ce numéro.<br/>
+            <b>Étape 4 :</b> Effectuez l'envoi des fonds vers ce numéro directement depuis votre application Wave.<br/><br/>
+            Votre dépôt sera analysé et crédité sur votre solde d'investisseur de manière sécurisée et rapide.
           </span>
         `;
       } else if (lower.includes('attente') && (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement'))) {
-        responseText = "Votre transaction est en attente de validation. Le délai moyen est de 5 à 15 minutes. Si vos fonds ne sont pas visibles passé ce délai, écrivez « mon dépôt n'est pas crédité » pour démarrer une vérification directe.";
+        responseText = "Nous comprenons que votre transaction est en attente de traitement. Soyez assuré que vos fonds sont sécurisés. Le délai de traitement interbancaire ou de l'opérateur varie généralement de 5 à 15 minutes. Si vos fonds ne sont toujours pas reflétés au-delà de ce délai, utilisez la commande « mon dépôt n'est pas crédité » pour procéder à une vérification avec votre reçu.";
       } else if ((lower.includes('étape') || lower.includes('etape') || lower.includes('comment')) && (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement') || lower.includes('payer'))) {
         responseText = `
           <span>
-            Pour créditer votre compte AgriTrans, rendez-vous sur « Financer ». Nous supportons les réseaux <b>Wave</b>, <b>Moov Money</b>, <b>Orange Money</b> et <b>MTN Mobile Money</b>.<br/><br/>
-            <i>Pour des détails précis, indiquez le nom de votre moyen de paiement (ex : « comment recharger avec Wave »).</i>
+            Pour créditer votre solde d'investisseur, accédez à l'onglet « Recharger » depuis votre interface principale. Nous supportons les réseaux <b>Wave</b>, <b>Moov Money</b> et <b>MTN Mobile Money</b>.<br/><br/>
+            <i>Si vous désirez consulter une procédure spécifique, veuillez indiquer le nom de votre opérateur (ex: « comment recharger par Wave », « procédure pour MTN »).</i>
           </span>
         `;
       } else if (lower.includes('dépôt') || lower.includes('depot') || lower.includes('recharg') || lower.includes('paiement') || lower.includes('payer')) {
-        responseText = "Veuillez préciser votre demande : souhaitez-vous de l'aide pour un dépôt en cours ou des indications sur la procédure de rechargement ?";
+        responseText = "Veuillez préciser l'objet de votre requête. Souhaitez-vous obtenir de l'assistance pour un dépôt en attente d'approbation ou avez-vous besoin d'orientations sur le processus de rechargement ?";
       } else if (lower.includes('attente') && (lower.includes('retrait') || lower.includes('retirer'))) {
-        responseText = "Votre demande de retrait est actuellement en cours de traitement. Nos administrateurs traitent chaque demande avec soin sous 24h ouvrées.";
+        responseText = "Le statut de votre demande de retrait est actuellement en traitement. Nos administrateurs financiers valident chaque décaissement manuellement afin de garantir la sécurité des fonds. Ce processus peut prendre jusqu'à 24 heures ouvrées. Vos fonds vous parviendront sous peu.";
       } else if ((lower.includes('étape') || lower.includes('etape') || lower.includes('comment')) && (lower.includes('retrait') || lower.includes('retirer'))) {
         responseText = `
           <span>
-            Pour effectuer un retrait de vos gains AgriTrans :<br/><br/>
-            <b>Étape 1 :</b> Rendez-vous sur la section « Retrait ».<br/>
-            <b>Étape 2 :</b> Spécifiez le montant (minimum 2 000 FCFA).<br/>
-            <b>Étape 3 :</b> Entrez votre mot de passe de connexion.<br/>
-            <b>Étape 4 :</b> Validez votre nom et numéro de réception.<br/><br/>
-            Le montant net vous sera transféré après déduction des frais réglementaires de 15%.
+            Afin de procéder au décaissement de vos rendements, veuillez suivre la démarche ci-dessous :<br/><br/>
+            <b>Étape 1 :</b> Cliquez sur la section « Retrait » de votre tableau de bord.<br/>
+            <b>Étape 2 :</b> Spécifiez le montant exact que vous désirez retirer de votre solde.<br/>
+            <b>Étape 3 :</b> Entrez le numéro de téléphone de réception ou de facturation adéquat.<br/>
+            <b>Étape 4 :</b> Confirmez la transaction à l'aide de votre mot de passe d'accès pour finaliser l'opération.<br/><br/>
+            Une fois validée, la requête est transmise à nos équipes pour libération des fonds.
           </span>
         `;
       } else if (lower.includes('retrait') || lower.includes('retirer')) {
-        responseText = "Souhaitez-vous suivre un retrait en attente ou connaître la procédure pour soumettre un retrait ?";
+        responseText = "Veuillez préciser votre demande concernant les décaissements. Voulez-vous faire un suivi sur un retrait en cours d'approbation ou avez-vous besoin d'indications sur la procédure complète ?";
       } else if (lower.includes('parrain') || lower.includes('invit') || lower.includes('équipe') || lower.includes('equipe') || lower.includes('affili')) {
         responseText = `
           <span>
-            AgriTrans propose un programme d'affiliation sur 3 niveaux :<br/><br/>
-            • <b>Niveau 1 :</b> 20% de commission sur chaque formule activée.<br/>
-            • <b>Niveau 2 :</b> 2% de commission.<br/>
-            • <b>Niveau 3 :</b> 1% de commission.<br/><br/>
-            Rendez-vous dans la section « Équipe » pour récupérer votre lien d'invitation personnel.
+            CargillCi vous offre l'opportunité de multiplier vos sources de revenus grâce à notre programme d'affiliation structuré en réseau :<br/><br/>
+            <b>Étape 1 :</b> Naviguez vers l'onglet « Réseau » ou « Équipe » en bas de votre écran.<br/>
+            <b>Étape 2 :</b> Repérez et copiez votre lien de parrainage affilié unique.<br/>
+            <b>Étape 3 :</b> Diffusez-le à votre entourage ou vos collaborateurs.<br/><br/>
+            Lorsqu'un partenaire s'inscrit via votre lien et initialise une culture agricole, la plateforme vous octroiera automatiquement les commissions correspondantes selon notre stratégie de rendement de niveaux (10% - 3% - 2%).
           </span>
         `;
-      } else if (lower.includes('investir') || lower.includes('plan') || lower.includes('service') || lower.includes('transport') || lower.includes('flotte') || lower.includes('camion')) {
+      } else if (lower.includes('investir') || lower.includes('plan') || lower.includes('vip') || lower.includes('culture') || lower.includes('générateur') || lower.includes('generateur')) {
         responseText = `
           <span>
-            Pour souscrire à une formule logistique AgriTrans :<br/><br/>
-            <b>Étape 1 :</b> Rendez-vous dans la rubrique « Flotte ».<br/>
-            <b>Étape 2 :</b> Choisissez une formule adaptée à vos objectifs (à partir de 5 000 FCFA).<br/>
-            <b>Étape 3 :</b> Cliquez sur « Activer ce plan ».<br/><br/>
-            Vos revenus journaliers vous sont versés chaque jour sur un cycle de 80 jours.
+            Le lancement d'un plan de culture sur la plateforme CargillCi est optimisé pour garantir une rentabilité efficace :<br/><br/>
+            <b>Étape 1 :</b> Vérifiez que votre solde d'intérêts a été rechargé conformément à la valeur de la culture souhaitée.<br/>
+            <b>Étape 2 :</b> Consultez la liste des cultures disponibles dans la section « Culture » (Investir).<br/>
+            <b>Étape 3 :</b> Évaluez les rendements proposés pour chaque culture et sélectionnez celle de votre choix.<br/>
+            <b>Étape 4 :</b> Lancez le processus de culture par le biais du bouton d'investissement.<br/><br/>
+            Une fois le contrat acté, la génération de vos gains débute et vos profits vous seront versés quotidiennement.
           </span>
         `;
       } else if (lower.includes('bonjour') || lower.includes('salut') || lower.includes('coucou')) {
-        responseText = "Bonjour ! Le Service Client AgriTrans est à votre entière disposition. Comment pouvons-nous vous aider aujourd'hui ?";
+        responseText = "Bonjour ! Le Service Client CargillCi est à votre écoute pour vous assister dans vos opérations. Souhaitez-vous des conseils sur un dépôt, un retrait ou un plan de culture ?";
       } else {
-        const finalLink = supportLink ? (supportLink.startsWith('http') ? supportLink : `https://${supportLink}`) : 'https://t.me/AgriTrans_01';
+        const finalLink = supportLink ? (supportLink.startsWith('http') ? supportLink : `https://${supportLink}`) : 'https://wa.me/2250574738155';
         responseText = `
           <span>
-            Pour une assistance personnalisée directe, contactez un conseiller AgriTrans sur Telegram : <br/><br/>
-            <a href="${finalLink}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; background-color:#0284c7; color:white; padding:8px 14px; border-radius:10px; text-decoration:none; font-weight:bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              <span>Assistance Directe Telegram</span>
+            Pour une meilleure prise en charge, veuillez contacter <b>𝗠𝗶𝘀𝘀 𝗩𝗮𝗻𝗲𝘀𝘀𝗮</b> sur WhatsApp en cliquant ici : <br/><br/>
+            <a href="${finalLink}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; background-color:#25D366; color:white; padding:8px 12px; border-radius:8px; text-decoration:none; font-weight:bold; box-shadow: 0 1px 2px rgba(0,0,0,0.2);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.898-4.45 9.896-9.896 0-2.679-1.055-5.198-2.946-7.089-1.891-1.89-4.41-2.932-7.091-2.932-5.447 0-9.896 4.45-9.896 9.896 0 2.115.597 3.716 1.592 5.392l-1.074 3.922 4.027-1.085zm-1.545-7.443c-.027-.08-.054-.162-.054-.246 0-.825.68-1.498 1.512-1.498.423 0 .807.172 1.085.45.278.278.448.66.448 1.085 0 .285-.09.544-.241.761l-1.285 2.226c-.198.343-.464.306-.605.163-.14-.143-.377-.384-.377-.384z" opacity="0"/><path d="M11.954 2.1c-5.467 0-9.914 4.448-9.914 9.914 0 1.947.563 3.822 1.583 5.398l-1.127 4.116 4.223-1.107c1.52.923 3.266 1.411 5.235 1.411 5.467 0 9.914-4.448 9.914-9.914 0-5.466-4.447-9.914-9.914-9.914m0 18.067c-1.638 0-3.238-.42-4.646-1.215l-.333-.188-3.447.904.921-3.359-.208-.34C3.41 14.568 2.89 12.915 2.89 11.198c0-4.996 4.066-9.062 9.064-9.062 4.996 0 9.064 4.066 9.064 9.062 0 4.996-4.068 9.062-9.064 9.062m4.97-6.793c-.272-.136-1.611-.796-1.861-.887-.251-.09-.435-.136-.616.136-.182.272-.703.887-.862 1.068-.159.181-.318.204-.59.068-1.503-.758-2.617-1.464-3.525-2.646-.239-.312.316-.279.795-1.235.09-.181.045-.34-.022-.477-.068-.136-.616-1.486-.844-2.036-.221-.537-.446-.464-.616-.473-.159-.009-.34-.009-.523-.009-.181 0-.477.068-.726.34-.25.272-.953.931-.953 2.269 0 1.339.976 2.632 1.112 2.813.136.182 1.918 2.93 4.645 4.108 1.84.795 2.457.863 3.327.727.863-.136 2.502-1.021 2.853-2.008.352-.987.352-1.838.246-2.015-.105-.178-.387-.269-.659-.406z"/></svg> 
+              𝗠𝗶𝘀𝘀 𝗩𝗮𝗻𝗲𝘀𝘀𝗮
             </a>
           </span>
         `;
@@ -220,7 +223,7 @@ export function Support() {
       const botMsg: Message = { id, sender: 'bot', text: responseText as string };
       setMessages(prev => [...prev, botMsg]);
       setIsTyping(false);
-    }, 1000);
+    }, 1200);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,79 +250,148 @@ export function Support() {
         text: 'Capture d\'écran envoyée',
         imageUrl: base64String
       };
+      
       setMessages(prev => [...prev, userMsg]);
       setIsTyping(true);
+      setVerifState(v => ({ ...v, step: 'verifying' }));
 
-      setTimeout(() => {
-        const id = (Date.now() + 1).toString();
-        const responseText = "Merci. Votre justificatif a bien été reçu et transmis à l'équipe financière AgriTrans pour vérification prioritaire. Vos fonds seront crédités dès confirmation.";
-        setMessages(prev => [...prev, { id, sender: 'bot', text: responseText }]);
-        setIsTyping(false);
+      try {
+        const base64Data = base64String.split(',')[1];
+        const { analyzeReceipt } = await import('../lib/gemini');
+        const result = await analyzeReceipt(base64Data, file.type);
+        
+        let isValid = false;
+        
+        const loweredRecipient = result.recipient.toLowerCase();
+        if (!result.is_falsified) {
+          if (loweredRecipient.includes('0140814162') || loweredRecipient.includes('0595918513') || loweredRecipient.includes('soleil-power entreprise')) {
+            isValid = true;
+          }
+        }
+
+        const numericAmount = Number(verifState.amount.replace(/[^0-9]/g, ''));
+        if (result.amount !== numericAmount) {
+           isValid = false; 
+        }
+
+        const finalStatus = isValid ? 'valid' : 'rejected';
+        
+        if (user) {
+           await supabase.from('deposit_verifications').insert({
+             user_id: user.id,
+             full_name: verifState.name,
+             amount: numericAmount || result.amount,
+             sender_number: verifState.number,
+             receipt_url: 'uploaded_via_chat', 
+             status: finalStatus,
+             ai_analysis: JSON.stringify(result)
+           });
+           
+           if (isValid) {
+             const amt = numericAmount || result.amount;
+             
+             const { data: userData } = await supabase.from('users').select('balance').eq('id', user.id).single();
+             if (userData) {
+                const newBalance = Number(userData.balance || 0) + amt;
+                
+                await supabase.from('users').update({ balance: newBalance }).eq('id', user.id);
+                
+                await supabase.from('transactions').insert({
+                  user_id: user.id,
+                  type: 'deposit',
+                  amount: amt,
+                  status: 'approved',
+                  reference: `IA_VERIF_${Date.now()}`
+                });
+             }
+           }
+        }
+
+        const botMsg: Message = { 
+          id: (Date.now() + 1).toString(), 
+          sender: 'bot', 
+          text: isValid 
+            ? `Bonne nouvelle ${verifState.name} ! J'ai bien vérifié la capture d'écran, le dépôt est **VALIDE**. Votre compte a été mis à jour dans nos registres.`
+            : `Désolé ${verifState.name}, après vérification attentive de l'image, le dépôt a été **REJETÉ**. Motif: ${result.reasoning}. Assurez-vous d'avoir transféré au bon numéro.`
+        };
+        
+        setMessages(prev => [...prev, botMsg]);
         setVerifState({ step: 'none', name: '', amount: '', number: '' });
-      }, 1500);
+
+      } catch (err: any) {
+        console.error("Analysis error:", err);
+        setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'bot', text: `Une erreur est survenue lors de l\'analyse de l\'image: ${err.message || String(err)}. Veuillez réessayer.` }]);
+        setVerifState(v => ({ ...v, step: 'ask_receipt' }));
+      } finally {
+        setIsTyping(false);
+      }
     };
     reader.readAsDataURL(file);
+    
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-slate-50 font-sans text-slate-900 relative overflow-hidden">
-      {/* Header */}
-      <header className="px-4 py-3 bg-white/95 backdrop-blur-md border-b border-slate-200 flex items-center gap-3 relative z-10 shrink-0">
-        <button 
-          onClick={() => navigate(-1)} 
-          className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 active:scale-95 transition-all cursor-pointer"
-        >
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans relative overflow-x-hidden">
+      {/* Background FX */}
+      <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-500/5 to-transparent -translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] pointer-events-none"></div>
+
+      <header className="bg-white px-5 pt-10 pb-4 shadow-sm border-b border-black/5 sticky top-0 z-20 flex items-center gap-3.5">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 hover:bg-black/10 transition-colors border border-black/5">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="w-10 h-10 rounded-full overflow-hidden border border-emerald-200 relative shrink-0 bg-emerald-50 flex items-center justify-center">
+        <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-emerald-500 shrink-0 bg-emerald-50">
           <img 
-            src="/icon.svg" 
-            alt="AgriTrans Support" 
-            className="w-full h-full object-contain p-1"
+            src="/images/customer_support_avatar.jpg" 
+            alt="Conseiller CargillCi" 
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/icon.svg'; }}
           />
-          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-600 border-2 border-white"></span>
+          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white"></span>
         </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight truncate">Support Client AgriTrans</h1>
-          <p className="text-[10px] text-emerald-700 font-black flex items-center gap-1 uppercase tracking-wider mt-0.5">
+        <div className="flex-1">
+          <h1 className="text-base font-black text-gray-900 tracking-tight flex items-center gap-1.5">Service Client</h1>
+          <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 uppercase tracking-wider mt-0.5">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             Conseiller en ligne 24/7
           </p>
         </div>
         <a
-          href={supportLink || 'https://t.me/AgriTrans_01'}
+          href={supportLink || 'https://t.me/AgentCargill'}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer"
+          className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-500/20 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
         >
           <span>Telegram</span>
           <Send className="w-3 h-3" />
         </a>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 pb-[160px] relative z-10 scrollbar-hide">
-        <div className="flex justify-center mb-2">
-           <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider bg-white px-3 py-1 rounded-full border border-slate-200 shadow-xs">Assistance en direct</span>
+      <div className="flex-1 overflow-y-auto p-5 space-y-4 pb-[160px] relative z-10 scrollbar-hide">
+        <div className="flex justify-center mb-4">
+           <span className="text-[9px] uppercase font-bold text-gray-400 tracking-wider bg-white px-3 py-1 rounded-full border border-black/5">Historique des messages</span>
         </div>
         
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.sender === 'bot' && (
-              <div className="w-8 h-8 rounded-full overflow-hidden mr-2.5 shrink-0 mt-auto mb-1 border border-emerald-200 bg-emerald-50 p-1 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full overflow-hidden mr-2.5 shrink-0 mt-auto mb-1 border border-emerald-500/30 bg-emerald-50">
                 <img 
-                  src="/icon.svg" 
+                  src="/images/customer_support_avatar.jpg" 
                   alt="Conseiller" 
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/icon.svg'; }}
                 />
               </div>
             )}
             
-            <div className={`max-w-[85%] ${msg.sender === 'user' ? 'bg-emerald-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 font-medium text-sm shadow-sm' : 'bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm text-sm'}`}>
+            <div className={`max-w-[85%] ${msg.sender === 'user' ? 'bg-emerald-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 font-medium text-sm' : 'bg-white border border-black/5 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm text-sm'}`}>
               {msg.imageUrl && (
-                <img src={msg.imageUrl} alt="preuve" className="w-full max-w-[200px] rounded-xl mb-2 object-cover shadow-sm border border-slate-200" />
+                <img src={msg.imageUrl} alt="preuve" className="w-full max-w-[200px] rounded-xl mb-2 object-cover shadow-sm border border-black/10" />
               )}
               {msg.sender === 'user' ? (
                 <div className="leading-relaxed break-words">{msg.text}</div>
@@ -332,13 +404,13 @@ export function Support() {
 
         {isTyping && (
           <div className="flex justify-start animate-fade-in mb-4">
-            <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center mr-2.5 shrink-0 mt-auto mb-1 border border-emerald-200 text-emerald-700">
-              <span className="text-xs font-black">AT</span>
+            <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center mr-2.5 shrink-0 mt-auto mb-1 border border-emerald-500/20 text-emerald-600">
+              <span className="text-xs font-black">SP</span>
             </div>
-            <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-1.5 h-[40px]">
-              <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-              <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-              <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-bounce"></div>
+            <div className="bg-white border border-black/5 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-1.5 h-[40px]">
+              <div className="w-1.5 h-1.5 bg-emerald-500/50 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-1.5 h-1.5 bg-emerald-500/70 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></div>
             </div>
           </div>
         )}
@@ -346,7 +418,7 @@ export function Support() {
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <div className="bg-white/95 backdrop-blur-md border-t border-slate-200 p-3.5 fixed bottom-[72px] left-0 right-0 z-40">
+      <div className="bg-gray-50/90 backdrop-blur-md border-t border-black/5 p-3.5 fixed bottom-[72px] left-0 right-0 z-40">
         <form onSubmit={handleSendMessage} className="flex gap-2 items-center max-w-4xl mx-auto">
           <input 
             type="file" 
@@ -358,7 +430,7 @@ export function Support() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-11 h-11 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center hover:bg-slate-200 transition-colors shrink-0 border border-slate-200 cursor-pointer"
+            className="w-11 h-11 bg-white text-gray-600 rounded-xl flex items-center justify-center hover:bg-gray-100 transition-colors shrink-0 border border-black/10"
           >
             <ImagePlus className="w-5 h-5" />
           </button>
@@ -367,12 +439,12 @@ export function Support() {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Écrire votre message..."
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-600 text-slate-900 transition-colors text-sm font-medium placeholder-slate-400"
+            className="flex-1 bg-white border border-black/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 text-gray-900 transition-colors text-sm font-medium placeholder-gray-400"
           />
           <button
             type="submit"
             disabled={!inputText.trim()}
-            className="w-11 h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center justify-center disabled:opacity-40 disabled:bg-slate-300 disabled:text-slate-500 transition-all active:scale-95 shrink-0 shadow-sm cursor-pointer"
+            className="w-11 h-11 bg-emerald-600 text-white rounded-xl flex items-center justify-center disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-400 transition-all active:scale-95 shrink-0 shadow-sm"
           >
             <Send className="w-4 h-4" />
           </button>

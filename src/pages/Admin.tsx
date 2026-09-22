@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
-import { useAuthStore, deleteStoredLocalUser } from '../store/useAuthStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -14,25 +14,6 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DEFAULT_CROP_PLANS, CropPlan } from '../data/plans';
 import { getCropInfo } from '../lib/investments';
-import { 
-  getLocalUsers, 
-  saveLocalUser, 
-  deleteLocalUser, 
-  getLocalTransactions, 
-  saveLocalTransaction, 
-  updateLocalTransactionStatus, 
-  deleteLocalTransaction, 
-  getLocalInvestments, 
-  saveLocalInvestment,
-  deleteLocalInvestment,
-  getLocalSettings, 
-  saveLocalSettings,
-  purgePlatformDataExceptAdmin,
-  isPermanentlyDeletedPhone,
-  deleteAccountCompletely,
-  SEED_ADMIN
-} from '../lib/dataStore';
-import { safeStorage } from '../lib/storage';
 
 const VIP_LEVELS = ['user', 'vip1', 'vip2', 'vip3', 'vip4', 'vip5'];
 
@@ -83,15 +64,9 @@ export function Admin() {
   const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, message: string, onConfirm: () => void} | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
-  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.phone === '+2250704752133' || user?.phone === '0704752133';
-
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    if (!isAdmin) {
-      navigate('/profile');
+    if (user?.role !== 'admin') {
+      navigate('/dashboard');
       return;
     }
     fetchData();
@@ -101,173 +76,76 @@ export function Admin() {
     }, 15000);
 
     return () => clearInterval(intervalId);
-  }, [user, navigate, isAdmin]);
+  }, [user, navigate]);
 
   const fetchData = async (showLoading = true) => {
-    // 1. Charger immédiatement le cache local sans bloquer l'interface
-    const localUsers = getLocalUsers();
-    const localTxs = getLocalTransactions();
-    const localInvs = getLocalInvestments();
-    const localSets = getLocalSettings();
-
-    setUsersList(localUsers.filter(u => !isPermanentlyDeletedPhone(u.phone)));
-    setTransactions(localTxs.filter(t => !isPermanentlyDeletedPhone(t.users?.phone)));
-    setInvestmentsList(localInvs.filter(i => !isPermanentlyDeletedPhone(i.users?.phone)));
-
-    // Paramètres locaux immédiats
-    if (localSets.payment_link) setPaymentLink(localSets.payment_link);
-    if (localSets.group_link) setGroupLink(localSets.group_link);
-    if (localSets.support_link) setSupportLink(localSets.support_link);
-    if (localSets.ussd_ci) setUssdCI(localSets.ussd_ci);
-    if (localSets.wave_number) setWaveNumber(localSets.wave_number);
-    if (localSets.ussd_mtn_ci) setUssdMtnCI(localSets.ussd_mtn_ci);
-    if (localSets.app_logo) setAppLogo(localSets.app_logo);
-
-    // Débloquer l'affichage instantanément
-    setIsInitializing(false);
-
+    if (showLoading) setIsInitializing(true);
     try {
-      // 2. Récupérer les données fraîches depuis l'API serveur interne (réponse en 2ms)
-      const fetchServerData = async () => {
-        try {
-          const [uRes, tRes, iRes, sRes] = await Promise.all([
-            fetch('/api/users').then(r => r.ok ? r.json() : null).catch(() => null),
-            fetch('/api/transactions').then(r => r.ok ? r.json() : null).catch(() => null),
-            fetch('/api/investments').then(r => r.ok ? r.json() : null).catch(() => null),
-            fetch('/api/settings').then(r => r.ok ? r.json() : null).catch(() => null)
-          ]);
-          return { serverUsers: uRes, serverTxs: tRes, serverInvs: iRes, serverSets: sRes };
-        } catch (e) {
-          return { serverUsers: null, serverTxs: null, serverInvs: null, serverSets: null };
-        }
-      };
-
-      // 3. Tenter Supabase avec un timeout court (1500ms max) pour ne jamais ralentir l'administrateur
-      const safeQuery = async (queryPromise: PromiseLike<any>) => {
-        try {
-          return await Promise.race([
-            queryPromise,
-            new Promise((resolve) => setTimeout(() => resolve({ data: null, error: 'timeout' }), 1500))
-          ]);
-        } catch (e) {
-          return { data: null, error: e };
-        }
-      };
-
-      const [serverResult, usersRes, transRes, invRes, settingsRes] = await Promise.all([
-        fetchServerData(),
-        safeQuery(supabase.from('users').select('*').order('created_at', { ascending: false })),
-        safeQuery(supabase.from('transactions').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false })),
-        safeQuery(supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false })),
-        safeQuery(supabase.from('settings').select('*'))
+      const [usersRes, transRes, invRes, settingsRes] = await Promise.all([
+        supabase.from('users').select('*').order('created_at', { ascending: false }),
+        supabase.from('transactions').select('*, users(first_name, last_name, phone)').order('created_at', { ascending: false }),
+        supabase.from('investments').select('*, users(first_name, last_name, phone)').order('start_date', { ascending: false }),
+        supabase.from('settings').select('*')
       ]);
 
-      // Fusion des utilisateurs (Serveur > Supabase > Local)
-      const userMap = new Map<string, any>();
-      localUsers.forEach(u => userMap.set(u.id, u));
-      if (serverResult.serverUsers && Array.isArray(serverResult.serverUsers)) {
-        serverResult.serverUsers.forEach((u: any) => {
-          userMap.set(u.id, { ...userMap.get(u.id), ...u });
-          saveLocalUser(u);
-        });
-      }
-      if (usersRes?.data && Array.isArray(usersRes.data)) {
-        usersRes.data.forEach((u: any) => {
-          userMap.set(u.id, { ...userMap.get(u.id), ...u });
-          saveLocalUser(u);
-        });
-      }
+      if (usersRes.data) setUsersList(usersRes.data);
+      if (transRes.data) setTransactions(transRes.data);
+      if (invRes.data) setInvestmentsList(invRes.data);
 
-      const mergedUsers = Array.from(userMap.values()).filter(u => !isPermanentlyDeletedPhone(u.phone));
-      if (!mergedUsers.some(u => u.phone === SEED_ADMIN.phone || u.id === SEED_ADMIN.id)) {
-        mergedUsers.unshift(SEED_ADMIN);
-      }
-      setUsersList(mergedUsers);
+      if (settingsRes.data) {
+        const pay = settingsRes.data.find(s => s.key === 'payment_link');
+        const grp = settingsRes.data.find(s => s.key === 'group_link');
+        const sup = settingsRes.data.find(s => s.key === 'support_link');
+        const uc = settingsRes.data.find(s => s.key === 'ussd_ci');
+        const wn = settingsRes.data.find(s => s.key === 'wave_number');
+        const u_mtn_ci = settingsRes.data.find(s => s.key === 'ussd_mtn_ci');
+        const logo = settingsRes.data.find(s => s.key === 'app_logo');
 
-      // Fusion des transactions
-      const txMap = new Map<string, any>();
-      localTxs.forEach(t => txMap.set(t.id, t));
-      if (serverResult.serverTxs && Array.isArray(serverResult.serverTxs)) {
-        serverResult.serverTxs.forEach((t: any) => {
-          txMap.set(t.id, { ...txMap.get(t.id), ...t });
-          saveLocalTransaction(t);
+        if (pay) setPaymentLink(pay.value);
+        if (grp) setGroupLink(grp.value);
+        if (sup) setSupportLink(sup.value);
+        if (uc) setUssdCI(uc.value);
+        if (wn) setWaveNumber(wn.value);
+        if (u_mtn_ci) setUssdMtnCI(u_mtn_ci.value);
+        if (logo) setAppLogo(logo.value);
+
+        const extraKeys = [
+          'bj_moov_number', 'bj_moov_syntax', 'bj_mtn_number', 'bj_mtn_syntax', 
+          'bf_moov_number', 'bf_moov_syntax', 'bf_wave_number', 
+          'tg_moov_number', 'tg_moov_syntax', 
+          'sn_wave_number', 'ne_wave_number', 
+          'ml_moov_number', 'ml_moov_syntax', 'ml_wave_number'
+        ];
+        const extraObj: Record<string, string> = {};
+        extraKeys.forEach(k => {
+          const f = settingsRes.data.find(s => s.key === k);
+          extraObj[k] = f ? f.value : '';
         });
-      }
-      if (transRes?.data && Array.isArray(transRes.data)) {
-        transRes.data.forEach((t: any) => {
-          txMap.set(t.id, { ...txMap.get(t.id), ...t });
-        });
-      }
-      setTransactions(Array.from(txMap.values()).filter(t => !isPermanentlyDeletedPhone(t.users?.phone)));
-
-      // Fusion des investissements
-      const invMap = new Map<string, any>();
-      localInvs.forEach(i => invMap.set(i.id, i));
-      if (serverResult.serverInvs && Array.isArray(serverResult.serverInvs)) {
-        serverResult.serverInvs.forEach((i: any) => {
-          invMap.set(i.id, { ...invMap.get(i.id), ...i });
-          saveLocalInvestment(i);
-        });
-      }
-      if (invRes?.data && Array.isArray(invRes.data)) {
-        invRes.data.forEach((i: any) => {
-          invMap.set(i.id, { ...invMap.get(i.id), ...i });
-        });
-      }
-      setInvestmentsList(Array.from(invMap.values()).filter(i => !isPermanentlyDeletedPhone(i.users?.phone)));
-
-      // Paramètres
-      const remoteSettings = settingsRes?.data || [];
-      const sMap: Record<string, string> = { ...localSets, ...(serverResult.serverSets || {}) };
-      if (Array.isArray(remoteSettings)) {
-        remoteSettings.forEach((item: any) => {
-          if (item?.key && item?.value !== undefined) {
-            sMap[item.key] = item.value;
-          }
-        });
-      }
-
-      if (sMap.payment_link) setPaymentLink(sMap.payment_link);
-      if (sMap.group_link) setGroupLink(sMap.group_link);
-      if (sMap.support_link) setSupportLink(sMap.support_link);
-      if (sMap.ussd_ci) setUssdCI(sMap.ussd_ci);
-      if (sMap.wave_number) setWaveNumber(sMap.wave_number);
-      if (sMap.ussd_mtn_ci) setUssdMtnCI(sMap.ussd_mtn_ci);
-      if (sMap.app_logo) setAppLogo(sMap.app_logo);
-
-      const extraKeys = [
-        'bj_moov_number', 'bj_moov_syntax', 'bj_mtn_number', 'bj_mtn_syntax', 
-        'bf_moov_number', 'bf_moov_syntax', 'bf_wave_number', 
-        'tg_moov_number', 'tg_moov_syntax', 
-        'sn_wave_number', 'ne_wave_number', 
-        'ml_moov_number', 'ml_moov_syntax', 'ml_wave_number'
-      ];
-      const extraObj: Record<string, string> = {};
-      extraKeys.forEach(k => {
-        extraObj[k] = sMap[k] || '';
-      });
-      setExtraSettings(extraObj);
-
-      const dbPlansStr = sMap['investment_plans'];
-      if (dbPlansStr) {
-        try {
-          const parsed = JSON.parse(dbPlansStr);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setPlans(parsed.map((p: any, idx: number) => ({
-              ...p,
-              id: p.id || `crop_${p.amount || idx}_${idx}`
-            })));
-          } else {
+        setExtraSettings(extraObj);
+        
+        const dbPlansStr = settingsRes.data.find(s => s.key === 'investment_plans');
+        if (dbPlansStr && dbPlansStr.value) {
+          try {
+            const parsed = JSON.parse(dbPlansStr.value);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setPlans(parsed.map((p: any, idx: number) => ({
+                ...p,
+                id: p.id || `crop_${p.amount || idx}_${idx}`
+              })));
+            } else {
+              setPlans(DEFAULT_CROP_PLANS);
+            }
+          } catch (e) {
             setPlans(DEFAULT_CROP_PLANS);
           }
-        } catch (e) {
+        } else {
           setPlans(DEFAULT_CROP_PLANS);
         }
-      } else {
+      } else if (showLoading) {
         setPlans(DEFAULT_CROP_PLANS);
       }
     } catch (e) {
-      console.warn('fetchData warn:', e);
+      console.error(e);
     } finally {
       setIsInitializing(false);
     }
@@ -281,27 +159,9 @@ export function Admin() {
       onConfirm: async () => {
         try {
           setLoading(true);
-          const newBal = Number(editBalance);
-          
-          // 1. Mise à jour locale immédiate
-          setUsersList(prev => prev.map(u => {
-            if (u.id === id) {
-              const updated = { ...u, balance: newBal };
-              saveLocalUser(updated);
-              if (user?.id === id) {
-                useAuthStore.getState().updateBalance(newBal);
-              }
-              return updated;
-            }
-            return u;
-          }));
+          await supabase.from('users').update({ balance: Number(editBalance) }).eq('id', id);
           setEditingUserId(null);
-
-          // 2. Synchronisation distante
-          try {
-            await supabase.from('users').update({ balance: newBal }).eq('id', id);
-          } catch (e) {}
-
+          fetchData();
           setLoading(false);
           setMessage({ type: 'success', text: "Solde mis à jour avec succès !" });
         } catch(err: any) {
@@ -313,18 +173,8 @@ export function Admin() {
   };
 
   const handleRoleChange = async (id: string, newRole: string) => {
-    setUsersList(prev => prev.map(u => {
-      if (u.id === id) {
-        const updated = { ...u, role: newRole };
-        saveLocalUser(updated);
-        return updated;
-      }
-      return u;
-    }));
-    try {
-      await supabase.from('users').update({ role: newRole }).eq('id', id);
-    } catch (e) {}
-    setMessage({ type: 'success', text: `Rôle mis à jour (${newRole})` });
+    await supabase.from('users').update({ role: newRole }).eq('id', id);
+    fetchData();
   };
 
   const handleDeleteUser = async (id: string, userPhone?: string, referralCode?: string) => {
@@ -335,56 +185,38 @@ export function Admin() {
         try {
           setLoading(true);
 
-          // 1. Suppression locale immédiate
-          deleteLocalUser(id);
-          deleteStoredLocalUser(id);
+          // 1. Supprimer ou dissocier les tables dépendantes ayant une clé étrangère vers users(id)
+          // a. Transactions de l'utilisateur
+          const { error: txErr } = await supabase.from('transactions').delete().eq('user_id', id);
+          if (txErr) console.warn('[DeleteUser] Erreur suppression transactions:', txErr.message);
+
+          // b. Investissements de l'utilisateur
+          const { error: invErr } = await supabase.from('investments').delete().eq('user_id', id);
+          if (invErr) console.warn('[DeleteUser] Erreur suppression investissements:', invErr.message);
+
+          // c. Demandes de vérification de dépôt
+          const { error: depErr } = await supabase.from('deposit_verifications').delete().eq('user_id', id);
+          if (depErr) console.warn('[DeleteUser] Erreur suppression verifications:', depErr.message);
+
+          // d. Dissocier les filleuls parrainés par cet utilisateur pour éviter les blocages
+          if (referralCode) {
+            await supabase.from('users').update({ referred_by: null }).eq('referred_by', referralCode);
+          }
+
+          // 2. Supprimer l'utilisateur lui-même
+          const { error: userErr } = await supabase.from('users').delete().eq('id', id);
+          if (userErr) throw userErr;
+
+          // Mise à jour optimiste immédiate de la liste des utilisateurs
           setUsersList(prev => prev.filter(u => u.id !== id));
           setTransactions(prev => prev.filter(t => t.user_id !== id));
           setInvestmentsList(prev => prev.filter(i => i.user_id !== id));
 
-          // 2. Suppression sur Supabase
-          try {
-            await supabase.from('transactions').delete().eq('user_id', id);
-            await supabase.from('investments').delete().eq('user_id', id);
-            await supabase.from('deposit_verifications').delete().eq('user_id', id);
-            if (referralCode) {
-              await supabase.from('users').update({ referred_by: null }).eq('referred_by', referralCode);
-            }
-            await supabase.from('users').delete().eq('id', id);
-          } catch (e) {}
-
+          await fetchData(false);
           setMessage({ type: 'success', text: "Utilisateur et données associées supprimés avec succès." });
         } catch(err: any) {
           console.error('[DeleteUser Error]', err);
           setMessage({ type: 'error', text: "Erreur suppression: " + (err.message || 'Impossible de supprimer cet utilisateur.') });
-        } finally {
-          setLoading(false);
-        }
-      }
-    });
-  };
-
-  const handlePurgeAllDataExceptAdmin = () => {
-    setConfirmModal({
-      isOpen: true,
-      message: "⚠️ ACTION CRITIQUE : Voulez-vous vraiment supprimer définitivement TOUS les comptes utilisateurs, TOUTES les transactions, et TOUS les investissements de la plateforme ? SEUL le compte Administrateur (+2250704752133) sera conservé. Cette action est irréversible.",
-      onConfirm: async () => {
-        try {
-          setLoading(true);
-          const result = await purgePlatformDataExceptAdmin();
-          setUsersList([SEED_ADMIN]);
-          setTransactions([]);
-          setInvestmentsList([]);
-          setMessage({
-            type: 'success',
-            text: `Plateforme nettoyée ! Comptes supprimés : ${result.usersDeleted}, transactions supprimées : ${result.transactionsDeleted}, investissements supprimés : ${result.investmentsDeleted}. Seul l'administrateur reste actif.`
-          });
-        } catch (err: any) {
-          console.error('[Purge Error]', err);
-          setMessage({
-            type: 'error',
-            text: "Erreur lors de la suppression : " + (err.message || 'Échec de la purge.')
-          });
         } finally {
           setLoading(false);
         }
@@ -404,88 +236,138 @@ export function Admin() {
     setLoading(true);
 
     try {
-      // 2. Mise à jour locale immédiate de la transaction
-      updateLocalTransactionStatus(id, newStatus);
+      // 2. Vérification et mise à jour atomique conditionnelle WHERE id = id AND status = 'pending'
+      // Cela garantit au niveau de la base qu'une transaction ne peut être validée qu'une seule et unique fois
+      const { data: updatedTx, error: updateError } = await supabase
+        .from('transactions')
+        .update({ status: newStatus })
+        .eq('id', id)
+        .eq('status', 'pending')
+        .select('id, status, amount, type, user_id')
+        .maybeSingle();
+
+      if (updateError) throw updateError;
+
+      // Si aucune ligne n'a été mise à jour, la transaction a déjà été traitée par un clic précédent
+      if (!updatedTx) {
+        setMessage({ 
+          type: 'error', 
+          text: "Cette transaction a déjà été confirmée ou n'est plus en attente. Aucun double crédit n'a été effectué." 
+        });
+        await fetchData(false);
+        return;
+      }
+
+      // Mise à jour optimiste immédiate dans la liste pour faire disparaître les boutons
       setTransactions(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
 
-      // 3. Gestion de l'impact sur le solde
       if (newStatus === 'approved') {
-        if (type === 'deposit') {
-          setUsersList(prev => prev.map(u => {
-            if (u.id === userId) {
-              const newBal = Number(u.balance || 0) + Number(amount);
-              const updatedUser = { ...u, balance: newBal };
-              saveLocalUser(updatedUser);
-              if (user?.id === userId) {
-                useAuthStore.getState().updateBalance(newBal);
+        const { data: userData } = await supabase.from('users').select('balance, referred_by').eq('id', userId).single();
+        if (userData) {
+          const currentBalance = Number(userData.balance || 0);
+          let updatedBalance = currentBalance;
+
+          if (type === 'deposit') {
+            updatedBalance = currentBalance + Number(amount);
+            
+            // Distribute Referral Bonus on 1st approved deposit
+            // Level 1: 10%, Level 2: 3%, Level 3: 2%
+            if (userData.referred_by) {
+              const { data: previousApprovedDeposits } = await supabase
+                .from('transactions')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('type', 'deposit')
+                .eq('status', 'approved');
+
+              if (!previousApprovedDeposits || previousApprovedDeposits.length <= 1) {
+                // Level 1 (10%)
+                const { data: referrerL1 } = await supabase
+                  .from('users')
+                  .select('id, balance, referred_by')
+                  .eq('referral_code', userData.referred_by)
+                  .maybeSingle();
+
+                if (referrerL1) {
+                  const bonusL1 = Math.round(Number(amount) * 0.10);
+                  await supabase.from('users').update({
+                    balance: Number(referrerL1.balance || 0) + bonusL1
+                  }).eq('id', referrerL1.id);
+
+                  await supabase.from('transactions').insert([{
+                    user_id: referrerL1.id,
+                    type: 'bonus',
+                    amount: bonusL1,
+                    status: 'completed',
+                    reference: `Commission Niveau 1 (10%) - Parrainage`
+                  }]);
+
+                  // Level 2 (3%)
+                  if (referrerL1.referred_by) {
+                    const { data: referrerL2 } = await supabase
+                      .from('users')
+                      .select('id, balance, referred_by')
+                      .eq('referral_code', referrerL1.referred_by)
+                      .maybeSingle();
+
+                    if (referrerL2) {
+                      const bonusL2 = Math.round(Number(amount) * 0.03);
+                      await supabase.from('users').update({
+                        balance: Number(referrerL2.balance || 0) + bonusL2
+                      }).eq('id', referrerL2.id);
+
+                      await supabase.from('transactions').insert([{
+                        user_id: referrerL2.id,
+                        type: 'bonus',
+                        amount: bonusL2,
+                        status: 'completed',
+                        reference: `Commission Niveau 2 (3%) - Parrainage`
+                      }]);
+
+                      // Level 3 (2%)
+                      if (referrerL2.referred_by) {
+                        const { data: referrerL3 } = await supabase
+                          .from('users')
+                          .select('id, balance')
+                          .eq('referral_code', referrerL2.referred_by)
+                          .maybeSingle();
+
+                        if (referrerL3) {
+                          const bonusL3 = Math.round(Number(amount) * 0.02);
+                          await supabase.from('users').update({
+                            balance: Number(referrerL3.balance || 0) + bonusL3
+                          }).eq('id', referrerL3.id);
+
+                          await supabase.from('transactions').insert([{
+                            user_id: referrerL3.id,
+                            type: 'bonus',
+                            amount: bonusL3,
+                            status: 'completed',
+                            reference: `Commission Niveau 3 (2%) - Parrainage`
+                          }]);
+                        }
+                      }
+                    }
+                  }
+                }
               }
-              return updatedUser;
             }
-            return u;
-          }));
+          }
+
+          await supabase.from('users').update({ balance: updatedBalance }).eq('id', userId);
         }
       } else if (newStatus === 'rejected') {
         if (type === 'withdrawal') {
-          // Rembourser le solde déduit lors de la demande de retrait
-          setUsersList(prev => prev.map(u => {
-            if (u.id === userId) {
-              const newBal = Number(u.balance || 0) + Number(amount);
-              const updatedUser = { ...u, balance: newBal };
-              saveLocalUser(updatedUser);
-              if (user?.id === userId) {
-                useAuthStore.getState().updateBalance(newBal);
-              }
-              return updatedUser;
-            }
-            return u;
-          }));
+          const { data: userData } = await supabase.from('users').select('balance').eq('id', userId).single();
+          if (userData) {
+            const restoredBalance = Number(userData.balance || 0) + Number(amount);
+            await supabase.from('users').update({ balance: restoredBalance }).eq('id', userId);
+          }
         }
       }
 
-      // 4. Synchronisation Supabase en tâche de fond sécurisée
-      try {
-        await supabase
-          .from('transactions')
-          .update({ status: newStatus })
-          .eq('id', id);
-
-        if (newStatus === 'approved' && type === 'deposit') {
-          const { data: dbU } = await supabase.from('users').select('balance, referred_by').eq('id', userId).maybeSingle();
-          if (dbU) {
-            const newBal = Number(dbU.balance || 0) + Number(amount);
-            await supabase.from('users').update({ balance: newBal }).eq('id', userId);
-
-            // Bonus de parrainage sur premier dépôt si éligible
-            if (dbU.referred_by) {
-              const { data: refUser } = await supabase
-                .from('users')
-                .select('id, balance')
-                .eq('referral_code', dbU.referred_by)
-                .maybeSingle();
-              if (refUser) {
-                const bonus = Math.round(Number(amount) * 0.20);
-                await supabase.from('users').update({ balance: Number(refUser.balance || 0) + bonus }).eq('id', refUser.id);
-                await supabase.from('transactions').insert([{
-                  user_id: refUser.id,
-                  type: 'bonus',
-                  amount: bonus,
-                  status: 'completed',
-                  reference: `Bonus Parrainage 20%`
-                }]);
-              }
-            }
-          }
-        } else if (newStatus === 'rejected' && type === 'withdrawal') {
-          const { data: dbU } = await supabase.from('users').select('balance').eq('id', userId).maybeSingle();
-          if (dbU) {
-            await supabase.from('users').update({ balance: Number(dbU.balance || 0) + Number(amount) }).eq('id', userId);
-          }
-        }
-      } catch (remoteErr) {
-        console.warn('Mise à jour Supabase différée:', remoteErr);
-      }
-
-      setMessage({ type: 'success', text: `Transaction mise à jour : ${newStatus === 'approved' ? 'Approuvée avec succès' : 'Rejetée'}` });
+      await fetchData(false);
+      setMessage({ type: 'success', text: `Transaction mise à jour : ${newStatus === 'approved' ? 'Approuvée' : 'Rejetée'}` });
     } catch(err: any) {
       setMessage({ type: 'error', text: "Erreur: " + err.message });
     } finally {
@@ -506,34 +388,9 @@ export function Admin() {
       onConfirm: async () => {
         setLoading(true);
         try {
-          deleteLocalInvestment(id);
-          setInvestmentsList(prev => prev.filter(i => i.id !== id));
-          try {
-            await supabase.from('investments').delete().eq('id', id);
-          } catch (e) {}
+          await supabase.from('investments').delete().eq('id', id);
+          fetchData();
           setMessage({ type: 'success', text: "Investissement supprimé." });
-        } catch(err: any) {
-          setMessage({ type: 'error', text: "Erreur: " + err.message });
-        } finally {
-          setLoading(false);
-        }
-      }
-    });
-  };
-
-  const handleDeleteTransaction = async (id: string) => {
-    setConfirmModal({
-      isOpen: true,
-      message: "Voulez-vous vraiment supprimer cette transaction de l'historique ?",
-      onConfirm: async () => {
-        setLoading(true);
-        try {
-          deleteLocalTransaction(id);
-          setTransactions(prev => prev.filter(t => t.id !== id));
-          try {
-            await supabase.from('transactions').delete().eq('id', id);
-          } catch (e) {}
-          setMessage({ type: 'success', text: "Transaction supprimée avec succès." });
         } catch(err: any) {
           setMessage({ type: 'error', text: "Erreur: " + err.message });
         } finally {
@@ -547,19 +404,17 @@ export function Admin() {
   const handleSavePlans = async (updatedPlans: CropPlan[]) => {
     setLoading(true);
     try {
+      const { error } = await supabase
+        .from('settings')
+        .upsert({ key: 'investment_plans', value: JSON.stringify(updatedPlans) }, { onConflict: 'key' });
+      
+      if (error) throw error;
       setPlans(updatedPlans);
-      safeStorage.setItem('agritrans_investment_plans', JSON.stringify(updatedPlans));
-      safeStorage.setItem('translogis_investment_plans', JSON.stringify(updatedPlans));
-      window.dispatchEvent(new Event('agritrans_plans_updated'));
-      window.dispatchEvent(new Event('translogis_plans_updated'));
-
       try {
-        await supabase
-          .from('settings')
-          .upsert({ key: 'investment_plans', value: JSON.stringify(updatedPlans) }, { onConflict: 'key' });
-      } catch (remoteErr) {}
-
-      setMessage({ type: 'success', text: "Plans de transport et flotte enregistrés et synchronisés avec l'application !" });
+        localStorage.setItem('cargill_investment_plans', JSON.stringify(updatedPlans));
+        window.dispatchEvent(new Event('cargill_plans_updated'));
+      } catch (e) {}
+      setMessage({ type: 'success', text: "Plans de culture enregistrés et synchronisés avec l'application !" });
     } catch(err: any) {
       setMessage({ type: 'error', text: "Erreur d'enregistrement : " + err.message });
     } finally {
@@ -664,7 +519,7 @@ export function Admin() {
   const handleResetDefaultPlans = () => {
     setConfirmModal({
       isOpen: true,
-      message: "Voulez-vous réinitialiser aux véhicules et plans de transport officiels de AgriTrans CI ?",
+      message: "Voulez-vous réinitialiser aux 9 cultures officielles (Coton, Hévéa, Palmier, Anacarde, Café, Manioc, Igname, Riz, Cacao) ?",
       onConfirm: async () => {
         await handleSavePlans(DEFAULT_CROP_PLANS);
       }
@@ -674,40 +529,36 @@ export function Admin() {
   // --- Settings Handlers ---
   const handleUpdateSettings = async () => {
     setLoading(true);
-    const settingsMap: Record<string, string> = {
-      payment_link: paymentLink,
-      app_logo: appLogo,
-      group_link: groupLink,
-      support_link: supportLink,
-      ussd_ci: ussdCI,
-      ussd_mtn_ci: ussdMtnCI,
-      wave_number: waveNumber,
-      ...extraSettings
-    };
-
-    // 1. Sauvegarde locale immédiate
-    saveLocalSettings(settingsMap);
-    useAppStore.getState().setSettingsCache(null as any);
-
-    // 2. Synchronisation Supabase
-    try {
-      const toUpsert = Object.entries(settingsMap).map(([key, value]) => ({ key, value }));
-      await supabase.from('settings').upsert(toUpsert, { onConflict: 'key' });
-    } catch (e) {
-      console.warn('Erreur synchronisation Supabase settings:', e);
+    const toUpsert = [
+      { key: 'payment_link', value: paymentLink },
+      { key: 'app_logo', value: appLogo },
+      { key: 'group_link', value: groupLink },
+      { key: 'support_link', value: supportLink },
+      { key: 'ussd_ci', value: ussdCI },
+      { key: 'ussd_mtn_ci', value: ussdMtnCI },
+      { key: 'wave_number', value: waveNumber }
+    ];
+    for (const k of Object.keys(extraSettings)) {
+      toUpsert.push({ key: k, value: extraSettings[k] });
     }
-    
+    const { error } = await supabase.from('settings').upsert(toUpsert, { onConflict: 'key' });
     setLoading(false);
-    setMessage({ type: 'success', text: 'Paramètres et Logo enregistrés avec succès !' });
+    
+    if (error) {
+      setMessage({ type: 'error', text: 'Erreur lors de l\'enregistrement : ' + error.message });
+    } else {
+      useAppStore.getState().setSettingsCache(null as any);
+      setMessage({ type: 'success', text: 'Paramètres et Logo enregistrés avec succès !' });
+    }
   };
 
   const tabs = [
     { id: 'overview', label: "Vue d'ensemble", icon: BarChart3 },
     { id: 'users', label: 'Utilisateurs', icon: Users },
-    { id: 'investments', label: 'Investissements Flotte', icon: Activity },
+    { id: 'investments', label: 'Investissements', icon: Activity },
     { id: 'deposits', label: 'Dépôts', icon: ArrowDownRight },
     { id: 'withdrawals', label: 'Retraits', icon: ArrowUpRight },
-    { id: 'plans', label: 'Formules de Transport', icon: LayoutList },
+    { id: 'plans', label: 'Plans de Culture', icon: LayoutList },
     { id: 'settings', label: 'Paramètres', icon: LayoutList },
   ];
 
@@ -723,12 +574,12 @@ export function Admin() {
   return (
     <div className="p-6 space-y-6 pb-24 pt-20 max-w-2xl mx-auto font-sans">
       <header className="flex items-center gap-4">
-        <button onClick={() => navigate('/profile')} title="Retour à l'application" className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-900 shadow-sm hover:bg-gray-50 transition-colors shrink-0 cursor-pointer">
+        <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-900 shadow-sm hover:bg-gray-50 transition-colors shrink-0 cursor-pointer">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Administration</h1>
-          <p className="text-xs text-blue-600 font-bold">AgriTrans CI • Gestion de la flotte & des utilisateurs</p>
+          <p className="text-xs text-emerald-600 font-bold">CargillCi • Gestion globale & cultures</p>
         </div>
       </header>
 
@@ -878,17 +729,7 @@ export function Admin() {
       {/* CONTENT: USERS */}
       {activeTab === 'users' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
-            <h2 className="text-lg font-black text-gray-900">Gestion des Utilisateurs ({usersList.length})</h2>
-            <button
-              onClick={handlePurgeAllDataExceptAdmin}
-              disabled={loading}
-              className="py-2.5 px-4 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shrink-0 shadow-sm"
-            >
-              <Trash2 className="w-4 h-4 text-red-600" />
-              Purger tous les comptes (Conserver uniquement l'Admin)
-            </button>
-          </div>
+          <h2 className="text-lg font-black text-gray-900 mb-2">Gestion des Utilisateurs ({usersList.length})</h2>
           <div className="space-y-3">
             {usersList.filter(u => searchTerm ? `${u.first_name} ${u.last_name} ${u.phone}`.toLowerCase().includes(searchTerm.toLowerCase()) : true).map(u => (
               <div key={u.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative">
@@ -956,21 +797,12 @@ export function Admin() {
                     <p className="text-xs text-gray-600 mt-1 font-mono">Ref: {tx.reference}</p>
                     <p className="text-[10px] text-gray-400 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
-                      tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                      tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                      'bg-red-50 text-red-700 border border-red-200'
-                    }`}>
-                      {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
-                    </span>
-                    <button 
-                      onClick={() => handleDeleteTransaction(tx.id)}
-                      title="Supprimer la transaction"
-                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
+                    tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                    tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                    'bg-red-50 text-red-700 border border-red-200'
+                  }`}>
+                    {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
                   </div>
                 </div>
                 
@@ -1021,21 +853,12 @@ export function Admin() {
                     <p className="text-xs text-gray-600 mt-1 font-mono">Ref/Numéro: {tx.reference}</p>
                     <p className="text-[10px] text-gray-400 mt-0.5">{format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
-                      tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                      tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                      'bg-red-50 text-red-700 border border-red-200'
-                    }`}>
-                      {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
-                    </span>
-                    <button 
-                      onClick={() => handleDeleteTransaction(tx.id)}
-                      title="Supprimer la transaction"
-                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  <div className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
+                    tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                    tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                    'bg-red-50 text-red-700 border border-red-200'
+                  }`}>
+                    {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
                   </div>
                 </div>
                 
@@ -1210,7 +1033,7 @@ export function Admin() {
 
               {/* URL IMAGE OU UPLOAD */}
               <div className="space-y-2">
-                <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Image du véhicule / service</label>
+                <label className="text-[10px] text-gray-500 font-bold uppercase ml-1">Image de la culture</label>
                 <div className="flex gap-2">
                   <input
                     type="url"
@@ -1362,10 +1185,10 @@ export function Admin() {
                   />
                   <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center p-1 shrink-0">
                     <img 
-                      src={appLogo || '/logo.svg?v=agritrans'} 
+                      src={appLogo || '/logo.svg?v=cargill'} 
                       alt="Logo" 
                       className="max-h-full max-w-full object-contain" 
-                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg?v=agritrans'; }} 
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg?v=cargill'; }} 
                     />
                   </div>
                 </div>
@@ -1405,6 +1228,82 @@ export function Admin() {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-gray-600 ml-1 mb-1">Code USSD Côte d'Ivoire (Moov)</label>
+                <input
+                  type="text"
+                  value={ussdCI}
+                  onChange={(e) => setUssdCI(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 ml-1 mb-1">Code USSD Côte d'Ivoire (MTN)</label>
+                <input
+                  type="text"
+                  value={ussdMtnCI}
+                  onChange={(e) => setUssdMtnCI(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 ml-1 mb-1">Numéro Wave (Côte d'Ivoire)</label>
+                <input
+                  type="text"
+                  value={waveNumber}
+                  onChange={(e) => setWaveNumber(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm font-mono tracking-widest"
+                />
+              </div>
+
+              <div className="pt-4 mt-4 border-t border-gray-200">
+                <h3 className="text-md font-bold text-gray-900 mb-4">Moyens de paiement par pays</h3>
+                
+                <p className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 p-2 rounded-lg mb-2">Bénin</p>
+                <div className="space-y-3 mb-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Numéro Moov" value={extraSettings['bj_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                    <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['bj_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Numéro MTN" value={extraSettings['bj_mtn_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_mtn_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                    <input type="text" placeholder="Code USSD MTN (*...#)" value={extraSettings['bj_mtn_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bj_mtn_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                </div>
+
+                <p className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 p-2 rounded-lg mb-2">Burkina Faso</p>
+                <div className="space-y-3 mb-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Numéro Moov" value={extraSettings['bf_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bf_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                    <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['bf_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bf_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                  <input type="text" placeholder="Numéro Wave" value={extraSettings['bf_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, bf_wave_number: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                </div>
+
+                <p className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 p-2 rounded-lg mb-2">Togo</p>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <input type="text" placeholder="Numéro Moov" value={extraSettings['tg_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, tg_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['tg_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, tg_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                </div>
+
+                <p className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 p-2 rounded-lg mb-2">Sénégal & Niger</p>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <input type="text" placeholder="Sénégal - Numéro Wave" value={extraSettings['sn_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, sn_wave_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  <input type="text" placeholder="Niger - Numéro Wave" value={extraSettings['ne_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ne_wave_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                </div>
+
+                <p className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-100 p-2 rounded-lg mb-2">Mali</p>
+                <div className="space-y-3 mb-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" placeholder="Numéro Moov" value={extraSettings['ml_moov_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ml_moov_number: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                    <input type="text" placeholder="Code USSD Moov (*...#)" value={extraSettings['ml_moov_syntax'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ml_moov_syntax: e.target.value})} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                  </div>
+                  <input type="text" placeholder="Numéro Wave" value={extraSettings['ml_wave_number'] || ''} onChange={(e) => setExtraSettings({...extraSettings, ml_wave_number: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm" />
+                </div>
+              </div>
+
               <button 
                 onClick={handleUpdateSettings}
                 disabled={loading}
@@ -1413,26 +1312,6 @@ export function Admin() {
                 Sauvegarder les paramètres
               </button>
             </div>
-          </div>
-
-          {/* ZONE CRITIQUE : RÉINITIALISATION TOTALE */}
-          <div className="bg-red-50 border border-red-200 rounded-3xl p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-2 text-red-900">
-              <ShieldAlert className="w-5 h-5 text-red-600 shrink-0" />
-              <h3 className="text-base font-black">Zone Critique : Réinitialisation Totale de la Plateforme</h3>
-            </div>
-            <p className="text-xs text-red-700 leading-relaxed mb-4">
-              Supprime définitivement tous les comptes utilisateurs créés, tous les historiques de transactions (dépôts, retraits, bonus) et tous les investissements. 
-              <strong> Seul le compte Administrateur (+2250704752133) est conservé</strong> avec son solde remis à zéro.
-            </p>
-            <button
-              onClick={handlePurgeAllDataExceptAdmin}
-              disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-xl font-bold transition-colors shadow-sm cursor-pointer text-sm flex items-center justify-center gap-2"
-            >
-              <Trash2 className="w-4 h-4" />
-              Purger tous les comptes & historiques (Conserver uniquement l'Admin)
-            </button>
           </div>
         </div>
       )}
