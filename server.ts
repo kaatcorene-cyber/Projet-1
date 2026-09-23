@@ -148,8 +148,8 @@ Nous sommes ravis de vous compter parmi nos membres. 🙌
   }
 });
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://jnuizhkesxwzpgpycfch.supabase.co';
-const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpudWl6aGtlc3h3enBncHljZmNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDYwMDAwMDAsImV4cCI6MjAyMDYwMDAwMH0.placeholder';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://gwkqmutjpxwjifaoutnt.supabase.co';
+const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3a3FtdXRqcHh3amlmYW91dG50Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5ODcwMCwiZXhwIjoyMDkzNzc0NzAwfQ.wRmfB0wyAd1dKhvsTTd1gFfTxiDCzIyzGH3HpE7CNVk';
 const supabase = createClient(SUPABASE_URL.replace('.supabase.com', '.supabase.co'), SUPABASE_KEY);
 
 let isSupabaseResolvable = false;
@@ -265,8 +265,8 @@ async function startServer() {
           is_resolvable: isResolvable,
           dns_error: dnsError,
           status: isResolvable ? 'connected' : 'paused_or_deleted',
-          project_ref: 'jnuizhkesxwzpgpycfch',
-          dashboard_url: 'https://supabase.com/dashboard/project/jnuizhkesxwzpgpycfch'
+          project_ref: 'gwkqmutjpxwjifaoutnt',
+          dashboard_url: 'https://supabase.com/dashboard/project/gwkqmutjpxwjifaoutnt'
         },
         local_db: {
           status: 'healthy',

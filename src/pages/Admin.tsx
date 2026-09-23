@@ -86,34 +86,6 @@ export function Admin() {
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
   const [dbStatus, setDbStatus] = useState<any>(null);
   const [checkingDb, setCheckingDb] = useState(false);
-  const [supabaseKeyInput, setSupabaseKeyInput] = useState(() => {
-    return (typeof window !== 'undefined' ? localStorage.getItem('agritrans_supabase_key') : '') || '';
-  });
-  const [savingSbKey, setSavingSbKey] = useState(false);
-
-  const handleSaveSupabaseKey = async () => {
-    setSavingSbKey(true);
-    try {
-      if (supabaseKeyInput.trim()) {
-        localStorage.setItem('agritrans_supabase_key', supabaseKeyInput.trim());
-        localStorage.setItem('agritrans_supabase_url', 'https://jnuizhkesxwzpgpycfch.supabase.co');
-        await fetch('/api/settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            supabase_key: supabaseKeyInput.trim(),
-            supabase_url: 'https://jnuizhkesxwzpgpycfch.supabase.co'
-          })
-        });
-        setMessage({ type: 'success', text: 'Clé Supabase mise à jour et enregistrée avec succès !' });
-        fetchDbStatus();
-      }
-    } catch (e: any) {
-      setMessage({ type: 'error', text: e?.message || 'Erreur lors de la sauvegarde.' });
-    } finally {
-      setSavingSbKey(false);
-    }
-  };
 
   const fetchDbStatus = async () => {
     setCheckingDb(true);
@@ -1467,41 +1439,6 @@ export function Admin() {
                       </>
                     )}
                   </div>
-                </div>
-
-                {/* Clé API Supabase */}
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700">Clé API Supabase (anon public / service_role)</label>
-                    <a 
-                      href={dbStatus.supabase?.dashboard_url ? `${dbStatus.supabase.dashboard_url}/settings/api` : "https://supabase.com/dashboard"} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-bold text-emerald-700 hover:underline"
-                    >
-                      Trouver ma clé sur Supabase ↗
-                    </a>
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={supabaseKeyInput}
-                      onChange={(e) => setSupabaseKeyInput(e.target.value)}
-                      placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                      className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSaveSupabaseKey}
-                      disabled={savingSbKey || !supabaseKeyInput.trim()}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0"
-                    >
-                      {savingSbKey ? 'Enregistrement...' : 'Enregistrer'}
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    Projet actif : <code className="font-bold text-slate-800 font-mono">https://jnuizhkesxwzpgpycfch.supabase.co</code>
-                  </p>
                 </div>
 
                 <div className="p-3.5 bg-emerald-50/50 border border-emerald-200/80 rounded-2xl flex items-center justify-between text-xs text-emerald-900">
