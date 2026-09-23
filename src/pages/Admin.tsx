@@ -7,7 +7,7 @@ import {
   ChevronLeft, CheckCircle, XCircle, Trash2, Plus, Users, 
   ArrowDownRight, ArrowUpRight, LayoutList, Edit2, ShieldAlert, 
   Upload, Loader2, Activity, BarChart3, Save, Edit, 
-  Lock, Unlock, RotateCcw 
+  Lock, Unlock, RotateCcw, Database, AlertTriangle, RefreshCw 
 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
@@ -84,6 +84,49 @@ export function Admin() {
   const [processingTxIds, setProcessingTxIds] = useState<Record<string, boolean>>({});
   const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, message: string, onConfirm: () => void} | null>(null);
   const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
+  const [dbStatus, setDbStatus] = useState<any>(null);
+  const [checkingDb, setCheckingDb] = useState(false);
+  const [supabaseKeyInput, setSupabaseKeyInput] = useState(() => {
+    return (typeof window !== 'undefined' ? localStorage.getItem('agritrans_supabase_key') : '') || '';
+  });
+  const [savingSbKey, setSavingSbKey] = useState(false);
+
+  const handleSaveSupabaseKey = async () => {
+    setSavingSbKey(true);
+    try {
+      if (supabaseKeyInput.trim()) {
+        localStorage.setItem('agritrans_supabase_key', supabaseKeyInput.trim());
+        localStorage.setItem('agritrans_supabase_url', 'https://jnuizhkesxwzpgpycfch.supabase.co');
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            supabase_key: supabaseKeyInput.trim(),
+            supabase_url: 'https://jnuizhkesxwzpgpycfch.supabase.co'
+          })
+        });
+        setMessage({ type: 'success', text: 'Clé Supabase mise à jour et enregistrée avec succès !' });
+        fetchDbStatus();
+      }
+    } catch (e: any) {
+      setMessage({ type: 'error', text: e?.message || 'Erreur lors de la sauvegarde.' });
+    } finally {
+      setSavingSbKey(false);
+    }
+  };
+
+  const fetchDbStatus = async () => {
+    setCheckingDb(true);
+    try {
+      const res = await fetch('/api/database-status');
+      if (res.ok) {
+        const data = await res.json();
+        setDbStatus(data);
+      }
+    } catch (e) {} finally {
+      setCheckingDb(false);
+    }
+  };
 
   const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.phone === '+2250704752133' || user?.phone === '0704752133';
 
@@ -97,6 +140,7 @@ export function Admin() {
       return;
     }
     fetchData();
+    fetchDbStatus();
 
     const intervalId = setInterval(() => {
       fetchData(false);
@@ -1366,6 +1410,113 @@ export function Admin() {
       {/* CONTENT: SETTINGS */}
       {activeTab === 'settings' && (
         <div className="space-y-6">
+          {/* STATUT SUPABASE ET BASE DE DONNÉES */}
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Database className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-lg font-black text-gray-900">Diagnostic Base de Données & Supabase</h2>
+              </div>
+              <button 
+                onClick={fetchDbStatus} 
+                disabled={checkingDb}
+                className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl hover:bg-emerald-100 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${checkingDb ? 'animate-spin' : ''}`} />
+                Actualiser
+              </button>
+            </div>
+
+            {dbStatus && (
+              <div className="space-y-3">
+                <div className={`p-4 rounded-2xl border flex items-start gap-3 ${
+                  dbStatus.supabase?.is_resolvable 
+                    ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900' 
+                    : 'bg-amber-50/80 border-amber-200 text-amber-900'
+                }`}>
+                  {dbStatus.supabase?.is_resolvable ? (
+                    <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  )}
+                  <div className="space-y-1.5 text-xs">
+                    <p className="font-black text-sm">
+                      {dbStatus.supabase?.is_resolvable ? 'Supabase Connecté & Opérationnel' : 'Supabase Indisponible (Projet en Pause ou Supprimé)'}
+                    </p>
+                    <p className="text-gray-700">
+                      <strong>URL distante :</strong> <code className="bg-white/80 px-1 py-0.5 rounded text-[11px] font-mono">{dbStatus.supabase?.url}</code>
+                    </p>
+                    {!dbStatus.supabase?.is_resolvable && (
+                      <>
+                        <p className="text-amber-800">
+                          <strong>Cause :</strong> Erreur DNS <code className="bg-amber-100 px-1 py-0.5 rounded font-mono">{dbStatus.supabase?.dns_error}</code>. Supabase met automatiquement les projets gratuits en pause après 7 jours d'inactivité.
+                        </p>
+                        <p className="text-slate-700">
+                          <strong>Action requise :</strong> Connectez-vous sur votre console Supabase pour cliquer sur <b>« Restore project »</b> et réactiver le projet, ou remplacez l'URL si vous en avez créé un nouveau.
+                        </p>
+                        <div className="pt-1.5">
+                          <a 
+                            href={dbStatus.supabase?.dashboard_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-colors shadow-sm"
+                          >
+                            Ouvrir la console Supabase ({dbStatus.supabase?.project_ref}) ↗
+                          </a>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Clé API Supabase */}
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700">Clé API Supabase (anon public / service_role)</label>
+                    <a 
+                      href={dbStatus.supabase?.dashboard_url ? `${dbStatus.supabase.dashboard_url}/settings/api` : "https://supabase.com/dashboard"} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-bold text-emerald-700 hover:underline"
+                    >
+                      Trouver ma clé sur Supabase ↗
+                    </a>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={supabaseKeyInput}
+                      onChange={(e) => setSupabaseKeyInput(e.target.value)}
+                      placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-mono focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveSupabaseKey}
+                      disabled={savingSbKey || !supabaseKeyInput.trim()}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0"
+                    >
+                      {savingSbKey ? 'Enregistrement...' : 'Enregistrer'}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Projet actif : <code className="font-bold text-slate-800 font-mono">https://jnuizhkesxwzpgpycfch.supabase.co</code>
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-emerald-50/50 border border-emerald-200/80 rounded-2xl flex items-center justify-between text-xs text-emerald-900">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="font-bold">Moteur Local de Secours : <strong>Actif & Opérationnel</strong></span>
+                  </div>
+                  <span className="text-[11px] text-emerald-700 font-semibold">
+                    {dbStatus.local_db?.users_count} utilisateurs • {dbStatus.local_db?.transactions_count} transactions • {dbStatus.local_db?.investments_count} formules
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
             <h2 className="text-lg font-black text-gray-900 mb-4">Configuration globale de la plateforme</h2>
             

@@ -148,8 +148,8 @@ Nous sommes ravis de vous compter parmi nos membres. 🙌
   }
 });
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://gwkqmutjpxwjifaoutnt.supabase.co';
-const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3a3FtdXRqcHh3amlmYW91dG50Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5ODcwMCwiZXhwIjoyMDkzNzc0NzAwfQ.wRmfB0wyAd1dKhvsTTd1gFfTxiDCzIyzGH3HpE7CNVk';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://jnuizhkesxwzpgpycfch.supabase.co';
+const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpudWl6aGtlc3h3enBncHljZmNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDYwMDAwMDAsImV4cCI6MjAyMDYwMDAwMH0.placeholder';
 const supabase = createClient(SUPABASE_URL.replace('.supabase.com', '.supabase.co'), SUPABASE_KEY);
 
 let isSupabaseResolvable = false;
@@ -241,6 +241,45 @@ async function startServer() {
   });
 
   // --- DATABASE REST API ---
+  app.get("/api/database-status", async (req, res) => {
+    try {
+      const host = new URL(SUPABASE_URL).hostname;
+      let isResolvable = false;
+      let dnsError = null;
+      try {
+        await new Promise((resolve, reject) => {
+          dns.lookup(host, (err, address) => {
+            if (err || !address) reject(err);
+            else resolve(address);
+          });
+        });
+        isResolvable = true;
+      } catch (err: any) {
+        dnsError = err?.code || err?.message || 'ENOTFOUND';
+      }
+
+      res.json({
+        supabase: {
+          url: SUPABASE_URL,
+          host,
+          is_resolvable: isResolvable,
+          dns_error: dnsError,
+          status: isResolvable ? 'connected' : 'paused_or_deleted',
+          project_ref: 'jnuizhkesxwzpgpycfch',
+          dashboard_url: 'https://supabase.com/dashboard/project/jnuizhkesxwzpgpycfch'
+        },
+        local_db: {
+          status: 'healthy',
+          users_count: serverDb.getUsers().length,
+          transactions_count: serverDb.getTransactions().length,
+          investments_count: serverDb.getInvestments().length
+        }
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Users
   app.get("/api/users", (req, res) => {
     try {
