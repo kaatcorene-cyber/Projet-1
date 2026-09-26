@@ -74,11 +74,24 @@ export const SEED_ADMIN: UserRecord = {
   phone: '+2250704752133',
   country: "Côte d'Ivoire",
   first_name: 'Admin',
-  last_name: 'AgriTrans',
+  last_name: 'ORLEN',
   password_hash: 'Calmaress225@',
   role: 'admin',
   balance: 0,
-  referral_code: 'AGRIADMIN',
+  referral_code: 'ORLENADMIN',
+  created_at: new Date(Date.now() - 30 * 86400000).toISOString()
+};
+
+export const SEED_ADMIN_2: UserRecord = {
+  id: 'admin-seed-002',
+  phone: '+2250700000000',
+  country: "Côte d'Ivoire",
+  first_name: 'Direction',
+  last_name: 'ORLEN',
+  password_hash: 'Calmaress225@',
+  role: 'admin',
+  balance: 0,
+  referral_code: 'ORLEN000',
   created_at: new Date(Date.now() - 30 * 86400000).toISOString()
 };
 
@@ -87,11 +100,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   wave_number: '0704752133',
   ussd_mtn_ci: '*133#',
   payment_link: 'https://payin.moneyfusion.net',
-  support_link: 'https://wa.me/2250704752133',
-  group_link: 'https://t.me/agritrans_officiel',
-  telegram_link: 'https://t.me/agritrans_officiel',
-  whatsapp_support: 'https://wa.me/2250704752133',
-  app_logo: '/agritrans-logo.png'
+  support_link: 'https://t.me/orlen_ci_support',
+  group_link: 'https://t.me/orlen_ci_stations',
+  telegram_link: 'https://t.me/orlen_ci_stations',
+  whatsapp_support: 'https://t.me/orlen_ci_support',
+  app_logo: '/logo.svg'
 };
 
 const DB_DIR = path.resolve(process.cwd(), 'data');
@@ -124,9 +137,12 @@ class ServerDatabase {
             u.referral_code !== 'AGRITS04'
           );
 
-          // Assurer la présence de l'admin
+          // Assurer la présence des comptes administrateurs
           if (!cleanedUsers.some((u: UserRecord) => u.phone === SEED_ADMIN.phone || u.id === SEED_ADMIN.id)) {
             cleanedUsers.unshift(SEED_ADMIN);
+          }
+          if (!cleanedUsers.some((u: UserRecord) => u.phone === SEED_ADMIN_2.phone || u.id === SEED_ADMIN_2.id)) {
+            cleanedUsers.push(SEED_ADMIN_2);
           }
 
           const cleanedInvestments = (Array.isArray(parsed.investments) ? parsed.investments : []).filter(

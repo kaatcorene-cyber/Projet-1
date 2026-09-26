@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import React, { useState, useEffect, useRef, ChangeEvent, FormEvent } from 'react';
 import { useAuthStore, deleteStoredLocalUser, generatePhoneCandidates } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
-import { supabase } from '../lib/supabase';
+import { supabase, setSupabaseCredentials } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, CheckCircle, XCircle, Trash2, Plus, Users, 
   ArrowDownRight, ArrowUpRight, LayoutList, Edit2, ShieldAlert, 
   Upload, Loader2, Activity, BarChart3, Save, Edit, 
-  Lock, Unlock, RotateCcw, Database, AlertTriangle, RefreshCw 
+  Lock, Unlock, RotateCcw, Database, AlertTriangle, RefreshCw,
+  Copy, Check, ExternalLink, ArrowUpDown, Server, Key, Globe, SlidersHorizontal
 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { format } from 'date-fns';
@@ -87,6 +88,92 @@ export function Admin() {
   const [dbStatus, setDbStatus] = useState<any>(null);
   const [checkingDb, setCheckingDb] = useState(false);
 
+  const [customSupabaseUrl, setCustomSupabaseUrl] = useState('');
+  const [customSupabaseKey, setCustomSupabaseKey] = useState('');
+  const [showConfigInputs, setShowConfigInputs] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [showSqlScript, setShowSqlScript] = useState(false);
+  const [copiedSql, setCopiedSql] = useState(false);
+
+  const SUPABASE_INIT_SQL = `-- Script d'initialisation complet pour l'éditeur SQL de Supabase (SQL Editor)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  phone TEXT NOT NULL,
+  country TEXT DEFAULT 'Cote d''Ivoire',
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT DEFAULT 'user',
+  balance NUMERIC DEFAULT 100,
+  referral_code TEXT UNIQUE,
+  referred_by TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(phone, country)
+);
+
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS investments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  plan_amount NUMERIC NOT NULL,
+  daily_yield NUMERIC NOT NULL,
+  start_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  end_date TIMESTAMP WITH TIME ZONE,
+  last_paid_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  status TEXT DEFAULT 'active'
+);
+
+CREATE TABLE IF NOT EXISTS transactions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  status TEXT DEFAULT 'pending',
+  reference TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS deposit_verifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  full_name TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  sender_number TEXT,
+  receipt_url TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  ai_analysis TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE investments DISABLE ROW LEVEL SECURITY;
+ALTER TABLE transactions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE settings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE deposit_verifications DISABLE ROW LEVEL SECURITY;
+
+INSERT INTO settings (key, value) VALUES 
+  ('payment_link', 'https://payin.moneyfusion.net'),
+  ('ussd_ci', '*144*4*6*1000#'),
+  ('wave_number', '0700000000'),
+  ('ussd_mtn_ci', '*133#'),
+  ('support_link', 'https://t.me/orlen_ci_support'),
+  ('whatsapp_support', 'https://t.me/orlen_ci_support'),
+  ('telegram_link', 'https://t.me/orlen_ci_stations')
+ON CONFLICT (key) DO NOTHING;
+
+INSERT INTO users (phone, country, first_name, last_name, password_hash, role, balance, referral_code)
+VALUES ('+2250700000000', 'Cote d''Ivoire', 'Admin', 'ORLEN', 'Calmaress225@', 'admin', 0, 'ORLENADMIN')
+ON CONFLICT (phone, country) DO NOTHING;`;
+
   const fetchDbStatus = async () => {
     setCheckingDb(true);
     try {
@@ -94,13 +181,70 @@ export function Admin() {
       if (res.ok) {
         const data = await res.json();
         setDbStatus(data);
+        if (data.supabase?.url && !customSupabaseUrl) {
+          setCustomSupabaseUrl(data.supabase.url);
+        }
       }
     } catch (e) {} finally {
       setCheckingDb(false);
     }
   };
 
-  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.phone === '+2250704752133' || user?.phone === '0704752133';
+  const handleSaveSupabaseConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customSupabaseUrl) return;
+    setIsSavingConfig(true);
+    try {
+      const res = await fetch('/api/supabase-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: customSupabaseUrl, key: customSupabaseKey })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSupabaseCredentials(customSupabaseUrl, customSupabaseKey);
+        setMessage({ type: 'success', text: "Configuration Supabase mise à jour avec succès !" });
+        await fetchDbStatus();
+        setShowConfigInputs(false);
+      } else {
+        setMessage({ type: 'error', text: data.error || "Erreur de configuration Supabase" });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || "Erreur de connexion" });
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  const handleSyncSupabase = async () => {
+    setIsSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch('/api/supabase-sync', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setSyncResult(`✅ Synchronisation réussie ! ${data.synced?.users_uploaded || 0} utilisateurs synchronisés.`);
+        fetchData(false);
+        await fetchDbStatus();
+      } else {
+        setSyncResult(`⚠️ ${data.error || "Erreur de synchronisation"}`);
+      }
+    } catch (err: any) {
+      setSyncResult(`❌ ${err.message || "Impossible de joindre le serveur"}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const copySqlScript = () => {
+    navigator.clipboard.writeText(SUPABASE_INIT_SQL);
+    setCopiedSql(true);
+    setTimeout(() => setCopiedSql(false), 3000);
+  };
+
+  const isAdmin = user?.role?.toLowerCase() === 'admin' || 
+    user?.phone?.includes('0704752133') || 
+    user?.phone?.includes('0700000000');
 
   useEffect(() => {
     if (!user) {
@@ -694,7 +838,7 @@ export function Admin() {
   const handleResetDefaultPlans = () => {
     setConfirmModal({
       isOpen: true,
-      message: "Voulez-vous réinitialiser aux véhicules et plans de transport officiels de AgriTrans CI ?",
+      message: "Voulez-vous réinitialiser aux stations et plans officiels de ORLEN CI ?",
       onConfirm: async () => {
         await handleSavePlans(DEFAULT_CROP_PLANS);
       }
@@ -758,7 +902,7 @@ export function Admin() {
         </button>
         <div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Administration</h1>
-          <p className="text-xs text-blue-600 font-bold">AgriTrans CI • Gestion de la flotte & des utilisateurs</p>
+          <p className="text-xs text-red-600 font-bold">ORLEN CI • Gestion des stations & des investisseurs</p>
         </div>
       </header>
 
@@ -780,7 +924,7 @@ export function Admin() {
                   setConfirmModal({...confirmModal, isOpen: false});
                   confirmModal.onConfirm();
                 }}
-                className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold transition-colors shadow-lg shadow-emerald-200 cursor-pointer"
+                className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors shadow-lg shadow-red-200 cursor-pointer"
                 disabled={loading}
               >
                 Confirmer
@@ -792,9 +936,9 @@ export function Admin() {
       
       {message && (
         <div className={`p-4 rounded-xl text-sm font-bold flex items-center gap-2 ${
-          message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+          message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-red-50 text-red-800 border border-red-200'
         }`}>
-          {message.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0 text-emerald-600" /> : <XCircle className="w-5 h-5 shrink-0 text-red-500" />}
+          {message.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0 text-red-600" /> : <XCircle className="w-5 h-5 shrink-0 text-red-500" />}
           <p>{message.text}</p>
         </div>
       )}
@@ -807,7 +951,7 @@ export function Admin() {
             onClick={() => { setActiveTab(t.id); setSearchTerm(''); }}
             className={`px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold whitespace-nowrap transition-colors cursor-pointer ${
               activeTab === t.id 
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' 
+                ? 'bg-red-600 text-white shadow-md shadow-red-600/20' 
                 : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
@@ -834,21 +978,21 @@ export function Admin() {
         <div className="space-y-4">
           <h2 className="text-lg font-black text-gray-900 mb-2">Vue d'ensemble</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white border border-emerald-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="bg-white border border-red-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Total des soldes</p>
-               <p className="text-xl font-black text-emerald-700">{formatCurrency(totalBalances)}</p>
+               <p className="text-xl font-black text-red-700">{formatCurrency(totalBalances)}</p>
             </div>
-            <div className="bg-white border border-emerald-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="bg-white border border-red-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Retraits validés</p>
-               <p className="text-xl font-black text-emerald-700">{formatCurrency(totalWithdrawalsApproved)}</p>
+               <p className="text-xl font-black text-red-700">{formatCurrency(totalWithdrawalsApproved)}</p>
             </div>
-            <div className="bg-white border border-emerald-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="bg-white border border-red-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Dépôts validés</p>
-               <p className="text-xl font-black text-emerald-600">{formatCurrency(totalDepositsApproved)}</p>
+               <p className="text-xl font-black text-red-600">{formatCurrency(totalDepositsApproved)}</p>
             </div>
-            <div className="bg-white border border-emerald-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="bg-white border border-red-100 rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                <p className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Utilisateurs</p>
-               <p className="text-xl font-black text-emerald-600">{usersList.length}</p>
+               <p className="text-xl font-black text-red-600">{usersList.length}</p>
             </div>
           </div>
         </div>
@@ -864,7 +1008,7 @@ export function Admin() {
             ) : (
               investmentsList.map(inv => (
                 <div key={inv.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500"></div>
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-red-500"></div>
                   <div className="flex justify-between items-start mb-2 pl-2">
                     <div>
                       <p className="font-black text-gray-900 text-sm">
@@ -876,7 +1020,7 @@ export function Admin() {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                        inv.status === 'active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-500'
+                        inv.status === 'active' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-gray-100 text-gray-500'
                       }`}>
                         {inv.status}
                       </span>
@@ -892,7 +1036,7 @@ export function Admin() {
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Gain Journalier</p>
-                      <p className="font-bold text-emerald-700">{formatCurrency(inv.daily_yield)}</p>
+                      <p className="font-bold text-red-700">{formatCurrency(inv.daily_yield)}</p>
                     </div>
                   </div>
                   <p className="text-[10px] text-gray-500 mt-2 text-center">
@@ -918,13 +1062,13 @@ export function Admin() {
                   <div>
                     <p className="font-bold text-gray-900 flex items-center gap-2">
                       {u.first_name} {u.last_name}
-                      {u.role && u.role.startsWith('vip') && <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold uppercase">{u.role}</span>}
-                      {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-emerald-600" />}
+                      {u.role && u.role.startsWith('vip') && <span className="text-[10px] bg-red-50 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase">{u.role}</span>}
+                      {u.role === 'admin' && <ShieldAlert className="w-4 h-4 text-red-600" />}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">{u.phone} • {u.country}</p>
                     <p className="text-[11px] text-gray-500 mt-1"><span className="font-semibold">MDP:</span> <span className="font-mono text-gray-900 bg-gray-100 px-1 py-0.5 rounded">{u.password_hash}</span></p>
                     <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[11px]">
-                      <span className="bg-emerald-50 text-emerald-800 font-medium px-2 py-0.5 rounded border border-emerald-200">
+                      <span className="bg-red-50 text-red-800 font-medium px-2 py-0.5 rounded border border-red-200">
                         Code: <span className="font-mono font-bold">{u.referral_code || 'Aucun'}</span>
                       </span>
                       {u.referred_by ? (
@@ -940,7 +1084,7 @@ export function Admin() {
                     <p className="text-[10px] text-gray-400 mt-1 font-mono">{u.id}</p>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                    <p className="font-black text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
+                    <p className="font-black text-red-700 bg-red-50 px-2 py-1 rounded-lg text-sm">{formatCurrency(u.balance)}</p>
                     {u.role !== 'admin' && (
                        <select 
                          value={u.role || 'user'} 
@@ -955,8 +1099,8 @@ export function Admin() {
 
                 {editingUserId === u.id ? (
                   <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                    <input type="number" className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-emerald-500 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
-                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
+                    <input type="number" className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg px-3 py-2 outline-none focus:border-red-500 font-medium" value={editBalance} onChange={(e) => setEditBalance(e.target.value)} />
+                    <button onClick={() => handleUpdateBalance(u.id)} disabled={loading} className="px-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm transition-colors cursor-pointer">Sauver</button>
                     <button onClick={() => setEditingUserId(null)} className="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg text-sm transition-colors cursor-pointer">X</button>
                   </div>
                 ) : (
@@ -995,7 +1139,7 @@ export function Admin() {
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
                       tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                      tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      tx.status === 'approved' ? 'bg-red-50 text-red-700 border border-red-200' :
                       'bg-red-50 text-red-700 border border-red-200'
                     }`}>
                       {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
@@ -1015,7 +1159,7 @@ export function Admin() {
                     <button 
                       disabled={Boolean(processingTxIds[tx.id]) || loading}
                       onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} 
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer shadow-sm"
+                      className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer shadow-sm"
                     >
                       {processingTxIds[tx.id] ? (
                         <>
@@ -1060,7 +1204,7 @@ export function Admin() {
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider ${
                       tx.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                      tx.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      tx.status === 'approved' ? 'bg-red-50 text-red-700 border border-red-200' :
                       'bg-red-50 text-red-700 border border-red-200'
                     }`}>
                       {tx.status === 'pending' ? 'En attente' : tx.status === 'approved' ? 'Approuvé' : 'Rejeté'}
@@ -1080,7 +1224,7 @@ export function Admin() {
                     <button 
                       disabled={Boolean(processingTxIds[tx.id]) || loading}
                       onClick={() => handleTransaction(tx.id, 'approved', tx.type, tx.amount, tx.user_id)} 
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer shadow-sm"
+                      className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors cursor-pointer shadow-sm"
                     >
                       {processingTxIds[tx.id] ? (
                         <>
@@ -1120,7 +1264,7 @@ export function Admin() {
               </div>
               <button 
                 onClick={handleResetDefaultPlans}
-                className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl hover:bg-emerald-100 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+                className="text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl hover:bg-red-100 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
                 title="Rétablir les 9 cultures officielles"
               >
                 <RotateCcw className="w-3.5 h-3.5" /> Réinitialiser 9 cultures
@@ -1136,7 +1280,7 @@ export function Admin() {
                     placeholder="Nom de la culture" 
                     value={newPlanName} 
                     onChange={e => setNewPlanName(e.target.value)} 
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
                   />
                 </div>
 
@@ -1159,7 +1303,7 @@ export function Admin() {
                         setNewPlanTotal('');
                       }
                     }} 
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
                   />
                 </div>
 
@@ -1179,7 +1323,7 @@ export function Admin() {
                         setNewPlanTotal(total.toString());
                       }
                     }} 
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
                   />
                 </div>
 
@@ -1197,7 +1341,7 @@ export function Admin() {
                         setNewPlanTotal(total.toString());
                       }
                     }} 
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
                   />
                 </div>
 
@@ -1209,7 +1353,7 @@ export function Admin() {
                     className={`w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border transition-colors cursor-pointer ${
                       newPlanLocked 
                         ? 'bg-gray-100 border-gray-300 text-gray-700' 
-                        : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                        : 'bg-red-50 border-red-200 text-red-700'
                     }`}
                   >
                     {newPlanLocked ? <><Lock className="w-4 h-4" /> Verrouillé</> : <><Unlock className="w-4 h-4" /> Disponible</>}
@@ -1228,7 +1372,7 @@ export function Admin() {
                         setNewPlanTotal((Number(e.target.value) * Number(newPlanDuration)).toString());
                       }
                     }}
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
                   />
                 </div>
 
@@ -1239,7 +1383,7 @@ export function Admin() {
                     placeholder="Revenu Total" 
                     value={newPlanTotal} 
                     onChange={e => setNewPlanTotal(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-emerald-500 outline-none" 
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-3 focus:border-red-500 outline-none" 
                   />
                 </div>
               </div>
@@ -1253,7 +1397,7 @@ export function Admin() {
                     placeholder="URL de l'image (https://...)"
                     value={newPlanImage}
                     onChange={e => setNewPlanImage(e.target.value)}
-                    className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-2.5 focus:border-emerald-500 outline-none"
+                    className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 text-sm rounded-xl px-4 py-2.5 focus:border-red-500 outline-none"
                   />
                   <label htmlFor="plan-image-upload" className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0">
                     <Upload className="w-4 h-4" /> Uploader
@@ -1277,7 +1421,7 @@ export function Admin() {
 
               {editingPlanIndex !== null ? (
                 <div className="flex gap-2 pt-2">
-                  <button onClick={handleAddPlan} disabled={loading || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                  <button onClick={handleAddPlan} disabled={loading || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
                     <Save className="w-4 h-4" /> Enregistrer la modification
                   </button>
                   <button onClick={handleCancelEditPlan} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer">
@@ -1285,7 +1429,7 @@ export function Admin() {
                   </button>
                 </div>
               ) : (
-                <button onClick={handleAddPlan} disabled={loading || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
+                <button onClick={handleAddPlan} disabled={loading || !newPlanAmount || !newPlanDaily || !newPlanTotal} className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm">
                   <Plus className="w-4 h-4" /> Ajouter ce plan de culture
                 </button>
               )}
@@ -1301,13 +1445,13 @@ export function Admin() {
 
             {isInitializing ? (
               <div className="flex justify-center p-6">
-                <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+                <Loader2 className="w-6 h-6 animate-spin text-red-600" />
               </div>
             ) : plans.map((p, idx) => (
               <div key={p.id || idx} className={`p-4 bg-white rounded-2xl border transition-all shadow-sm relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                p.locked ? 'border-gray-200 bg-gray-50/50' : 'border-emerald-100'
+                p.locked ? 'border-gray-200 bg-gray-50/50' : 'border-red-100'
               }`}>
-                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${p.locked ? 'bg-gray-400' : 'bg-emerald-500'}`}></div>
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${p.locked ? 'bg-gray-400' : 'bg-red-500'}`}></div>
                 
                 <div className="flex items-center gap-3.5 pl-2">
                   <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 border border-black/10 shrink-0 relative">
@@ -1329,10 +1473,10 @@ export function Admin() {
                       {p.locked ? (
                         <span className="text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-300 px-1.5 py-0.5 rounded">Verrouillé</span>
                       ) : (
-                        <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded">Actif</span>
+                        <span className="text-[10px] font-bold bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5 rounded">Actif</span>
                       )}
                     </div>
-                    <p className="text-xs font-black text-emerald-700 mt-0.5">{formatCurrency(p.amount)}</p>
+                    <p className="text-xs font-black text-red-700 mt-0.5">{formatCurrency(p.amount)}</p>
                     <div className="flex gap-3 text-[11px] text-gray-500 mt-0.5">
                       <span>Gain/j: <strong className="text-gray-800">{formatCurrency(p.daily)}</strong></span>
                       <span>Total: <strong className="text-gray-800">{formatCurrency(p.total)}</strong></span>
@@ -1359,7 +1503,7 @@ export function Admin() {
                     onClick={() => handleEditPlan(idx)} 
                     disabled={loading} 
                     title="Modifier"
-                    className="p-2 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-colors cursor-pointer"
+                    className="p-2 text-red-700 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors cursor-pointer"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
@@ -1386,13 +1530,13 @@ export function Admin() {
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Database className="w-5 h-5 text-emerald-600" />
+                <Database className="w-5 h-5 text-red-600" />
                 <h2 className="text-lg font-black text-gray-900">Diagnostic Base de Données & Supabase</h2>
               </div>
               <button 
                 onClick={fetchDbStatus} 
                 disabled={checkingDb}
-                className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl hover:bg-emerald-100 flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl hover:bg-red-100 flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${checkingDb ? 'animate-spin' : ''}`} />
                 Actualiser
@@ -1400,53 +1544,223 @@ export function Admin() {
             </div>
 
             {dbStatus && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className={`p-4 rounded-2xl border flex items-start gap-3 ${
                   dbStatus.supabase?.is_resolvable 
-                    ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900' 
+                    ? 'bg-red-50/70 border-red-200 text-red-900' 
                     : 'bg-amber-50/80 border-amber-200 text-amber-900'
                 }`}>
                   {dbStatus.supabase?.is_resolvable ? (
-                    <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <CheckCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                   ) : (
                     <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   )}
-                  <div className="space-y-1.5 text-xs">
-                    <p className="font-black text-sm">
-                      {dbStatus.supabase?.is_resolvable ? 'Supabase Connecté & Opérationnel' : 'Supabase Indisponible (Projet en Pause ou Supprimé)'}
-                    </p>
-                    <p className="text-gray-700">
-                      <strong>URL distante :</strong> <code className="bg-white/80 px-1 py-0.5 rounded text-[11px] font-mono">{dbStatus.supabase?.url}</code>
-                    </p>
-                    {!dbStatus.supabase?.is_resolvable && (
-                      <>
-                        <p className="text-amber-800">
-                          <strong>Cause :</strong> Erreur DNS <code className="bg-amber-100 px-1 py-0.5 rounded font-mono">{dbStatus.supabase?.dns_error}</code>. Supabase met automatiquement les projets gratuits en pause après 7 jours d'inactivité.
+                  <div className="space-y-2 text-xs flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-black text-sm">
+                        {dbStatus.supabase?.is_resolvable 
+                          ? (dbStatus.supabase?.tables?.users 
+                              ? '✅ Supabase Connecté & Opérationnel' 
+                              : (dbStatus.supabase?.query_error === 'Invalid API key' 
+                                  ? '🔑 Serveur En Ligne — Clé API requise pour ce projet' 
+                                  : '⚠️ Tables SQL à initialiser'))
+                          : '⚠️ Supabase Inaccessible (Projet en Pause)'}
+                      </p>
+                      {dbStatus.supabase?.project_ref && (
+                        <span className="text-[11px] font-mono bg-white/90 border px-2 py-0.5 rounded-md font-bold text-red-800">
+                          Projet : {dbStatus.supabase.project_ref}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="text-gray-700 space-y-1">
+                      <p>
+                        <strong>URL configurée :</strong> <code className="bg-white/80 px-1.5 py-0.5 rounded text-[11px] font-mono select-all text-red-700 font-bold">{dbStatus.supabase?.url}</code>
+                      </p>
+                      {dbStatus.supabase?.key_preview && (
+                        <p>
+                          <strong>Clé API actuelle :</strong> <code className="bg-white/80 px-1.5 py-0.5 rounded text-[11px] font-mono">{dbStatus.supabase?.key_preview}</code>
                         </p>
-                        <p className="text-slate-700">
-                          <strong>Action requise :</strong> Connectez-vous sur votre console Supabase pour cliquer sur <b>« Restore project »</b> et réactiver le projet, ou remplacez l'URL si vous en avez créé un nouveau.
+                      )}
+                    </div>
+
+                    {!dbStatus.supabase?.is_resolvable ? (
+                      <div className="space-y-2 pt-1 border-t border-amber-200/60 mt-2">
+                        <p className="text-amber-950 font-semibold">
+                          💡 Le projet n'est pas encore accessible par DNS :
                         </p>
-                        <div className="pt-1.5">
+                        <ol className="list-decimal list-inside space-y-1.5 text-slate-800 text-[11px] pl-1">
+                          <li>Sur la console Supabase, assurez-vous que le projet est bien actif (non en pause).</li>
+                        </ol>
+                        <div className="flex flex-wrap gap-2 pt-2">
                           <a 
                             href={dbStatus.supabase?.dashboard_url} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-colors shadow-sm"
+                            className="inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition-colors shadow-sm"
                           >
-                            Ouvrir la console Supabase ({dbStatus.supabase?.project_ref}) ↗
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Ouvrir Dashboard Supabase ({dbStatus.supabase?.project_ref}) ↗
                           </a>
                         </div>
-                      </>
+                      </div>
+                    ) : dbStatus.supabase?.query_error === 'Invalid API key' ? (
+                      <div className="space-y-2 pt-2 border-t border-amber-200/60 mt-2">
+                        <div className="bg-amber-100/80 p-3 rounded-xl text-amber-950 space-y-1.5">
+                          <p className="font-bold flex items-center gap-1.5 text-xs">
+                            <Key className="w-3.5 h-3.5 text-amber-700" />
+                            Le serveur <code>{dbStatus.supabase?.project_ref}</code> répond parfaitement !
+                          </p>
+                          <p className="text-[11px]">
+                            Chaque nouveau projet Supabase possède sa propre clé secrète. L'ancienne clé appartenait au précédent projet.
+                          </p>
+                          <div className="pt-1 flex flex-wrap gap-2 items-center">
+                            <a 
+                              href={`https://supabase.com/dashboard/project/${dbStatus.supabase?.project_ref}/settings/api`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 bg-amber-700 hover:bg-amber-800 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-colors shadow-sm"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              Copier la clé dans Project Settings &gt; API ↗
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => setShowConfigInputs(true)}
+                              className="inline-flex items-center gap-1 bg-white border border-amber-300 text-amber-900 font-bold px-3 py-1.5 rounded-lg text-xs hover:bg-amber-50"
+                            >
+                              Coller la clé ici
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="pt-2">
+                        <p className="text-red-800 text-[11px] font-medium">
+                          La liaison avec le serveur Supabase est active et vérifiée.
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                <div className="p-3.5 bg-emerald-50/50 border border-emerald-200/80 rounded-2xl flex items-center justify-between text-xs text-emerald-900">
+                {/* BOUTONS D'ACTION SUPABASE */}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    onClick={() => setShowConfigInputs(!showConfigInputs)}
+                    className="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    {showConfigInputs ? "Masquer formulaire URL/Clé" : "Modifier l'URL & Clé Supabase"}
+                  </button>
+
+                  <button
+                    onClick={handleSyncSupabase}
+                    disabled={isSyncing}
+                    className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    <ArrowUpDown className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? "Synchronisation en cours..." : "Lancer la synchronisation"}
+                  </button>
+
+                  <button
+                    onClick={() => setShowSqlScript(!showSqlScript)}
+                    className="text-xs font-bold bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Database className="w-3.5 h-3.5 text-gray-500" />
+                    {showSqlScript ? "Masquer script SQL" : "Script SQL d'initialisation"}
+                  </button>
+                </div>
+
+                {/* FORMULAIRE MODIFICATION URL & CLE */}
+                {showConfigInputs && (
+                  <form onSubmit={handleSaveSupabaseConfig} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl space-y-3">
+                    <p className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <Key className="w-4 h-4 text-red-600" />
+                      Mettre à jour les identifiants de votre projet Supabase
+                    </p>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                          URL du Projet Supabase (ex: https://abcdefghijklm.supabase.co)
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={customSupabaseUrl}
+                          onChange={(e) => setCustomSupabaseUrl(e.target.value)}
+                          placeholder="https://votre-projet.supabase.co"
+                          className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-red-500 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                          Clé API (anon ou service_role)
+                        </label>
+                        <input
+                          type="text"
+                          value={customSupabaseKey}
+                          onChange={(e) => setCustomSupabaseKey(e.target.value)}
+                          placeholder="Laisser vide pour conserver la clé existante"
+                          className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-red-500 font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowConfigInputs(false)}
+                        className="px-3 py-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-100"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingConfig}
+                        className="px-4 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+                      >
+                        {isSavingConfig ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                        Enregistrer et Tester
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* RETOUR DE SYNCHRONISATION */}
+                {syncResult && (
+                  <div className="p-3 bg-slate-900 text-slate-100 rounded-xl text-xs font-mono">
+                    {syncResult}
+                  </div>
+                )}
+
+                {/* BLOC SCRIPT SQL */}
+                {showSqlScript && (
+                  <div className="bg-slate-900 text-slate-100 p-4 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-slate-300">
+                        Copiez et collez ce script dans l'éditeur SQL de Supabase (SQL Editor) :
+                      </p>
+                      <button
+                        onClick={copySqlScript}
+                        className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                      >
+                        {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedSql ? "Copié !" : "Copier le script SQL"}
+                      </button>
+                    </div>
+                    <pre className="text-[10px] font-mono bg-slate-950 p-3 rounded-xl max-h-48 overflow-y-auto text-red-400 select-all border border-slate-800">
+                      {SUPABASE_INIT_SQL}
+                    </pre>
+                  </div>
+                )}
+
+                {/* MOTEUR LOCAL STATUT */}
+                <div className="p-3.5 bg-red-50/50 border border-red-200/80 rounded-2xl flex items-center justify-between text-xs text-red-900">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
                     <span className="font-bold">Moteur Local de Secours : <strong>Actif & Opérationnel</strong></span>
                   </div>
-                  <span className="text-[11px] text-emerald-700 font-semibold">
+                  <span className="text-[11px] text-red-700 font-semibold">
                     {dbStatus.local_db?.users_count} utilisateurs • {dbStatus.local_db?.transactions_count} transactions • {dbStatus.local_db?.investments_count} formules
                   </span>
                 </div>
@@ -1465,15 +1779,15 @@ export function Admin() {
                     type="text"
                     value={appLogo}
                     onChange={(e) => setAppLogo(e.target.value)}
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm"
                     placeholder="https://... ou laisser vide pour le logo officiel"
                   />
                   <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center p-1 shrink-0">
                     <img 
-                      src={appLogo || '/logo.svg?v=agritrans'} 
+                      src={appLogo || '/logo.svg?v=orlen'} 
                       alt="Logo" 
                       className="max-h-full max-w-full object-contain" 
-                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg?v=agritrans'; }} 
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg?v=orlen'; }} 
                     />
                   </div>
                 </div>
@@ -1486,7 +1800,7 @@ export function Admin() {
                   type="url"
                   value={paymentLink}
                   onChange={(e) => setPaymentLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm"
                   placeholder="https://..."
                 />
               </div>
@@ -1497,7 +1811,7 @@ export function Admin() {
                   type="url"
                   value={groupLink}
                   onChange={(e) => setGroupLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm"
                   placeholder="https://t.me/..."
                 />
               </div>
@@ -1508,7 +1822,7 @@ export function Admin() {
                   type="url"
                   value={supportLink}
                   onChange={(e) => setSupportLink(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-500 transition-colors text-sm"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-red-500 transition-colors text-sm"
                   placeholder="https://t.me/support..."
                 />
               </div>
@@ -1516,7 +1830,7 @@ export function Admin() {
               <button 
                 onClick={handleUpdateSettings}
                 disabled={loading}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold transition-colors shadow-sm cursor-pointer mt-4"
+                className="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-bold transition-colors shadow-sm cursor-pointer mt-4"
               >
                 Sauvegarder les paramètres
               </button>

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Truck, Users2, History as HistoryIcon, UserCircle2 } from 'lucide-react';
+import { Fuel, Users2, History as HistoryIcon, UserCircle2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export function BottomNav() {
@@ -13,8 +13,8 @@ export function BottomNav() {
       matchPaths: ['/profile', '/deposit', '/withdraw', '/withdraw-info']
     },
     { 
-      icon: Truck, 
-      label: 'Flotte', 
+      icon: Fuel, 
+      label: 'Stations', 
       path: '/invest',
       matchPaths: ['/invest', '/activity']
     },
@@ -52,30 +52,30 @@ export function BottomNav() {
                 className={cn(
                   "relative flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition-all duration-150 group active:scale-95",
                   isActive
-                    ? "text-emerald-700 font-extrabold"
+                    ? "text-red-700 font-extrabold"
                     : "text-slate-500 hover:text-slate-800 font-semibold"
                 )}
               >
                 {isActive && (
-                  <span className="absolute inset-0 bg-emerald-50 border border-emerald-200/70 rounded-xl -z-10 animate-in fade-in zoom-in-95 duration-150" />
+                  <span className="absolute inset-0 bg-red-50 border border-red-200/70 rounded-xl -z-10 animate-in fade-in zoom-in-95 duration-150" />
                 )}
                 
                 <div className="relative">
                   <Icon 
                     className={cn(
                       "w-5 h-5 transition-transform duration-150", 
-                      isActive ? "scale-105 stroke-[2.5] text-emerald-700" : "stroke-[1.9] text-slate-500 group-hover:text-slate-800"
+                      isActive ? "scale-105 stroke-[2.5] text-red-700" : "stroke-[1.9] text-slate-500 group-hover:text-slate-800"
                     )} 
                   />
                   {isActive && (
-                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-emerald-600 rounded-full ring-2 ring-white shadow-sm" />
+                    <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-red-600 rounded-full ring-2 ring-white shadow-sm" />
                   )}
                 </div>
 
                 <span 
                   className={cn(
                     "text-[10px] mt-1 tracking-tight leading-none whitespace-nowrap",
-                    isActive ? "text-emerald-800 font-black" : "text-slate-500 font-semibold group-hover:text-slate-800"
+                    isActive ? "text-red-800 font-black" : "text-slate-500 font-semibold group-hover:text-slate-800"
                   )}
                 >
                   {item.label}

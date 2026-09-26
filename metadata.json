@@ -1,6 +1,6 @@
 {
-  "name": "AgriTrans",
-  "description": "Plateforme d'investissement et de logistique agro-pastorale et de transport AgriTrans en Afrique de l'Ouest (Côte d'Ivoire, Togo, Burkina Faso, Bénin, Niger).",
+  "name": "ORLEN",
+  "description": "Plateforme officielle de stations-service et distribution d'énergie ORLEN en Côte d'Ivoire.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

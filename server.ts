@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import fs from "fs";
 import * as url from 'url';
 import dns from 'dns';
 import TelegramBot from 'node-telegram-bot-api';
@@ -148,23 +149,56 @@ Nous sommes ravis de vous compter parmi nos membres. 🙌
   }
 });
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://gwkqmutjpxwjifaoutnt.supabase.co';
-const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3a3FtdXRqcHh3amlmYW91dG50Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5ODcwMCwiZXhwIjoyMDkzNzc0NzAwfQ.wRmfB0wyAd1dKhvsTTd1gFfTxiDCzIyzGH3HpE7CNVk';
-const supabase = createClient(SUPABASE_URL.replace('.supabase.com', '.supabase.co'), SUPABASE_KEY);
+const CONFIG_FILE = path.join(__dirname, 'data', 'supabase_config.json');
+
+function loadSupabaseConfig() {
+  let url = process.env.VITE_SUPABASE_URL || 'https://vbwmgiauoxuxouwowyml.supabase.co';
+  let key = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3a3FtdXRqcHh3amlmYW91dG50Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5ODcwMCwiZXhwIjoyMDkzNzc0NzAwfQ.wRmfB0wyAd1dKhvsTTd1gFfTxiDCzIyzGH3HpE7CNVk';
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      const data = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
+      if (data.url && typeof data.url === 'string') url = data.url.trim();
+      if (data.key && typeof data.key === 'string') key = data.key.trim();
+    }
+  } catch (e) {
+    console.error("Erreur lecture supabase_config.json:", e);
+  }
+  return { url: url.replace('.supabase.com', '.supabase.co'), key };
+}
+
+let { url: SUPABASE_URL, key: SUPABASE_KEY } = loadSupabaseConfig();
+let supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let isSupabaseResolvable = false;
 let lastDnsCheckTime = 0;
 let lastSupabaseWarningLogged = 0;
 
-async function checkSupabaseAvailable(): Promise<boolean> {
-  const now = Date.now();
-  // Ne pas ré-interroger le DNS plus d'une fois toutes les 2 minutes si non résolvable
-  if (!isSupabaseResolvable && now - lastDnsCheckTime < 120000) {
-    return false;
+function updateSupabaseConfig(newUrl: string, newKey?: string) {
+  SUPABASE_URL = newUrl.trim().replace('.supabase.com', '.supabase.co');
+  if (newKey && newKey.trim()) {
+    SUPABASE_KEY = newKey.trim();
   }
-  // Si résolvable, ré-évaluer toutes les 5 minutes
-  if (isSupabaseResolvable && now - lastDnsCheckTime < 300000) {
-    return true;
+  supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  isSupabaseResolvable = false;
+  lastDnsCheckTime = 0;
+  try {
+    const dir = path.join(__dirname, 'data');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify({ url: SUPABASE_URL, key: SUPABASE_KEY }, null, 2));
+  } catch (e) {
+    console.error("Erreur écriture supabase_config.json:", e);
+  }
+}
+
+async function checkSupabaseAvailable(force = false): Promise<boolean> {
+  const now = Date.now();
+  if (!force) {
+    if (!isSupabaseResolvable && now - lastDnsCheckTime < 60000) {
+      return false;
+    }
+    if (isSupabaseResolvable && now - lastDnsCheckTime < 180000) {
+      return true;
+    }
   }
 
   lastDnsCheckTime = now;
@@ -177,15 +211,15 @@ async function checkSupabaseAvailable(): Promise<boolean> {
       });
     });
     if (!isSupabaseResolvable) {
-      console.log(`✅ [Supabase] Connexion active avec ${SUPABASE_URL}`);
+      console.log(`✅ [Supabase] Connexion rétablie avec succès avec ${SUPABASE_URL}`);
     }
     isSupabaseResolvable = true;
     return true;
   } catch (e: any) {
     isSupabaseResolvable = false;
-    if (now - lastSupabaseWarningLogged > 900000) { // Log au plus une fois toutes les 15 minutes
+    if (now - lastSupabaseWarningLogged > 900000) {
       lastSupabaseWarningLogged = now;
-      console.warn(`⚠️ [Supabase DB] Le serveur Supabase (${SUPABASE_URL}) est momentanément indisponible (ENOTFOUND). Les crons automatiques reprendront dès que l'instance sera accessible.`);
+      console.warn(`⚠️ [Supabase DB] Le serveur Supabase (${SUPABASE_URL}) est momentanément inaccessible (ENOTFOUND).`);
     }
     return false;
   }
@@ -243,36 +277,169 @@ async function startServer() {
   // --- DATABASE REST API ---
   app.get("/api/database-status", async (req, res) => {
     try {
-      const host = new URL(SUPABASE_URL).hostname;
-      let isResolvable = false;
-      let dnsError = null;
+      const isResolvable = await checkSupabaseAvailable(true);
+      let host = 'invalide';
+      let projectRef = '';
       try {
-        await new Promise((resolve, reject) => {
-          dns.lookup(host, (err, address) => {
-            if (err || !address) reject(err);
-            else resolve(address);
-          });
-        });
-        isResolvable = true;
-      } catch (err: any) {
-        dnsError = err?.code || err?.message || 'ENOTFOUND';
+        const u = new URL(SUPABASE_URL);
+        host = u.hostname;
+        projectRef = host.split('.')[0] || '';
+      } catch (e) {}
+
+      let tablesStatus: Record<string, boolean> = {};
+      let queryError = null;
+
+      if (isResolvable) {
+        try {
+          const { error: uErr } = await supabase.from('users').select('id').limit(1);
+          tablesStatus.users = !uErr;
+          if (uErr) queryError = uErr.message;
+        } catch (e: any) {
+          queryError = e.message;
+        }
       }
 
       res.json({
         supabase: {
           url: SUPABASE_URL,
+          key_preview: SUPABASE_KEY ? `${SUPABASE_KEY.slice(0, 8)}...${SUPABASE_KEY.slice(-8)}` : '',
           host,
           is_resolvable: isResolvable,
-          dns_error: dnsError,
-          status: isResolvable ? 'connected' : 'paused_or_deleted',
-          project_ref: 'gwkqmutjpxwjifaoutnt',
-          dashboard_url: 'https://supabase.com/dashboard/project/gwkqmutjpxwjifaoutnt'
+          dns_error: isResolvable ? null : 'ENOTFOUND',
+          status: isResolvable ? (tablesStatus.users ? 'connected' : 'tables_missing') : 'paused_or_deleted',
+          project_ref: projectRef,
+          dashboard_url: `https://supabase.com/dashboard/project/${projectRef}`,
+          tables: tablesStatus,
+          query_error: queryError
         },
         local_db: {
           status: 'healthy',
           users_count: serverDb.getUsers().length,
           transactions_count: serverDb.getTransactions().length,
           investments_count: serverDb.getInvestments().length
+        }
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/supabase-config", async (req, res) => {
+    try {
+      const { url, key } = req.body;
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: "L'URL Supabase est requise." });
+      }
+      const cleanUrl = url.trim().replace('.supabase.com', '.supabase.co');
+      if (!cleanUrl.startsWith('https://')) {
+        return res.status(400).json({ error: "L'URL doit commencer par https://" });
+      }
+
+      updateSupabaseConfig(cleanUrl, key);
+
+      const isResolvable = await checkSupabaseAvailable(true);
+      let projectRef = '';
+      try {
+        projectRef = new URL(cleanUrl).hostname.split('.')[0] || '';
+      } catch (e) {}
+
+      let tablesStatus: Record<string, boolean> = {};
+      let queryError = null;
+      if (isResolvable) {
+        try {
+          const { error: uErr } = await supabase.from('users').select('id').limit(1);
+          tablesStatus.users = !uErr;
+          if (uErr) queryError = uErr.message;
+        } catch (e: any) {
+          queryError = e.message;
+        }
+      }
+
+      res.json({
+        success: true,
+        supabase: {
+          url: cleanUrl,
+          key_preview: SUPABASE_KEY ? `${SUPABASE_KEY.slice(0, 8)}...${SUPABASE_KEY.slice(-8)}` : '',
+          is_resolvable: isResolvable,
+          status: isResolvable ? (tablesStatus.users ? 'connected' : 'tables_missing') : 'paused_or_deleted',
+          project_ref: projectRef,
+          dashboard_url: `https://supabase.com/dashboard/project/${projectRef}`,
+          tables: tablesStatus,
+          query_error: queryError
+        }
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/supabase-sync", async (req, res) => {
+    try {
+      const isAvailable = await checkSupabaseAvailable(true);
+      if (!isAvailable) {
+        return res.status(400).json({
+          error: "Supabase est inaccessible (le projet semble encore en pause sur Supabase ou le domaine n'est pas encore propagé). Veuillez cliquer sur 'Restore project' dans votre console Supabase."
+        });
+      }
+
+      const localUsers = serverDb.getUsers();
+      const localSettings = serverDb.getSettings();
+
+      let uploadedUsers = 0;
+      let uploadedSettings = 0;
+
+      if (localSettings && Object.keys(localSettings).length > 0) {
+        const rows = Object.entries(localSettings).map(([key, value]) => ({ key, value: String(value) }));
+        const { error } = await supabase.from('settings').upsert(rows, { onConflict: 'key' });
+        if (!error) uploadedSettings = rows.length;
+      }
+
+      for (const u of localUsers) {
+        const { error } = await supabase.from('users').upsert({
+          id: u.id && u.id.startsWith('admin-') ? undefined : u.id,
+          phone: u.phone,
+          country: u.country || "Cote d'Ivoire",
+          first_name: u.first_name,
+          last_name: u.last_name,
+          password_hash: u.password_hash,
+          role: u.role || 'user',
+          balance: Number(u.balance || 0),
+          referral_code: u.referral_code,
+          referred_by: u.referred_by || null,
+          created_at: u.created_at || new Date().toISOString()
+        }, { onConflict: 'phone,country' });
+        if (!error) uploadedUsers++;
+      }
+
+      const { data: remoteUsers } = await supabase.from('users').select('*');
+      if (remoteUsers && Array.isArray(remoteUsers)) {
+        for (const ru of remoteUsers) {
+          const exists = serverDb.getUserByPhone(ru.phone);
+          if (!exists) {
+            serverDb.upsertUser({
+              id: ru.id,
+              phone: ru.phone,
+              country: ru.country,
+              first_name: ru.first_name,
+              last_name: ru.last_name,
+              password_hash: ru.password_hash,
+              role: ru.role,
+              balance: Number(ru.balance || 0),
+              referral_code: ru.referral_code,
+              referred_by: ru.referred_by,
+              created_at: ru.created_at
+            });
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: "Synchronisation réussie avec Supabase !",
+        synced: {
+          users_uploaded: uploadedUsers,
+          settings_uploaded: uploadedSettings,
+          remote_users_total: remoteUsers ? remoteUsers.length : 0
         }
       });
     } catch (e: any) {

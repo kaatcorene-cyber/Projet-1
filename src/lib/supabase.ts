@@ -12,13 +12,25 @@ const getEnvOrStored = (key: string, storedKey: string, fallback: string) => {
   return metaEnv || procEnv || fallback;
 };
 
-const rawSupabaseUrl = getEnvOrStored('VITE_SUPABASE_URL', 'agritrans_supabase_url', 'https://gwkqmutjpxwjifaoutnt.supabase.co');
+const rawSupabaseUrl = getEnvOrStored('VITE_SUPABASE_URL', 'agritrans_supabase_url', 'https://vbwmgiauoxuxouwowyml.supabase.co');
 const supabaseKey = getEnvOrStored('VITE_SUPABASE_ANON_KEY', 'agritrans_supabase_key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3a3FtdXRqcHh3amlmYW91dG50Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5ODcwMCwiZXhwIjoyMDkzNzc0NzAwfQ.wRmfB0wyAd1dKhvsTTd1gFfTxiDCzIyzGH3HpE7CNVk');
 
 // Format url if incorrectly ending with .com instead of .co
 const formattedUrl = rawSupabaseUrl.replace('.supabase.com', '.supabase.co');
 
-export const supabase = createClient(formattedUrl, supabaseKey);
+export let supabase = createClient(formattedUrl, supabaseKey);
+
+export const setSupabaseCredentials = (url: string, key?: string) => {
+  if (typeof window !== 'undefined') {
+    const cleanUrl = url.trim().replace('.supabase.com', '.supabase.co');
+    localStorage.setItem('agritrans_supabase_url', cleanUrl);
+    const newKey = (key && key.trim()) ? key.trim() : supabaseKey;
+    if (key && key.trim()) {
+      localStorage.setItem('agritrans_supabase_key', newKey);
+    }
+    supabase = createClient(cleanUrl, newKey);
+  }
+};
 
 export const checkDbSetup = async () => {
   try {

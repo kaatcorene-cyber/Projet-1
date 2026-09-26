@@ -6,6 +6,7 @@ import { formatCurrency } from '../lib/utils';
 import { 
   Clock, 
   Truck, 
+  Fuel,
   TrendingUp, 
   ChevronLeft, 
   Sparkles, 
@@ -51,34 +52,22 @@ function TransportCard({
   return (
     <div className={`bg-white border rounded-2xl p-4 sm:p-5 transition-all shadow-sm ${
       isReady 
-        ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20' 
+        ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/20' 
         : 'border-slate-200 hover:border-slate-300'
     }`}>
-      {/* Header: Vehicle thumbnail, Name, Days, and Status Badge */}
+      {/* Header: Station thumbnail, Name, Days, and Status Badge */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 relative">
-            {crop.image ? (
-              <img 
-                src={crop.image} 
-                alt={crop.name} 
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-emerald-600">
-                <Truck className="w-5 h-5" />
-              </div>
-            )}
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-600 to-red-700 text-white shrink-0 flex flex-col items-center justify-center shadow-sm border border-red-400/30">
+            <Fuel className="w-6 h-6 text-white stroke-[2.2]" />
+            <span className="text-[7.5px] font-black uppercase tracking-wider text-red-100 leading-none mt-0.5">ORLEN</span>
           </div>
           <div className="min-w-0 space-y-0.5">
             <h3 className="text-sm font-black text-slate-900 tracking-tight truncate">
               {crop.name}
             </h3>
             <p className="text-xs font-semibold text-slate-600">
-              Jour <span className="font-black text-slate-900">{daysElapsed}</span>/{totalDays} • Formule <span className="text-emerald-700 font-black">{formatCurrency(investment.plan_amount)}</span>
+              Jour <span className="font-black text-slate-900">{daysElapsed}</span>/{totalDays} • Formule <span className="text-red-700 font-black">{formatCurrency(investment.plan_amount)}</span>
             </p>
           </div>
         </div>
@@ -86,13 +75,13 @@ function TransportCard({
         {/* Status Badge */}
         <div className="shrink-0">
           {isReady ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full animate-pulse shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Prêt
+            <span className="inline-flex items-center gap-1 text-[11px] font-black text-red-800 bg-red-100 border border-red-300 px-2.5 py-1 rounded-full animate-pulse shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-red-600" /> Prêt
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              En route
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+              En exploitation
             </span>
           )}
         </div>
@@ -105,7 +94,7 @@ function TransportCard({
             {isReady ? 'Revenu disponible' : 'Prochaine distribution'}
           </p>
           {isReady ? (
-            <p className="text-base sm:text-lg font-black text-emerald-700">
+            <p className="text-base sm:text-lg font-black text-red-700">
               +{formatCurrency(claimableAmount)}
             </p>
           ) : (
@@ -118,7 +107,7 @@ function TransportCard({
                 {String(minutes).padStart(2, '0')}m
               </span>
               <span className="text-slate-400 font-bold">:</span>
-              <span className="font-mono text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              <span className="font-mono text-xs font-black text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
                 {String(seconds).padStart(2, '0')}s
               </span>
             </div>
@@ -131,7 +120,7 @@ function TransportCard({
             <button
               onClick={() => onClaim(investment)}
               disabled={isClaiming}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-black shadow-sm transition-all cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-95 text-white text-xs font-black shadow-sm transition-all cursor-pointer disabled:opacity-50"
             >
               {isClaiming ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
@@ -156,8 +145,8 @@ function TransportCard({
         <div 
           className={`h-full rounded-full transition-all duration-300 ${
             isReady 
-              ? 'bg-emerald-500' 
-              : 'bg-emerald-600'
+              ? 'bg-red-500' 
+              : 'bg-red-600'
           }`}
           style={{ width: `${progressPercent}%` }}
         />
@@ -165,7 +154,7 @@ function TransportCard({
 
       {!isReady && (
         <div className="mt-2 flex justify-between text-[11px] text-slate-500 font-medium">
-          <span>Revenu journalier : <strong className="text-emerald-700">{formatCurrency(investment.daily_yield || crop.daily)}</strong></span>
+          <span>Revenu journalier : <strong className="text-red-700">{formatCurrency(investment.daily_yield || crop.daily)}</strong></span>
           <span>Versement à {formattedNextPayout}</span>
         </div>
       )}
@@ -333,9 +322,9 @@ export function Activity() {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-base font-black text-slate-900 tracking-tight">Mes Flottes actifs</h1>
+            <h1 className="text-base font-black text-slate-900 tracking-tight">Mes Stations-Service Actives</h1>
             <p className="text-[11px] font-medium text-slate-500">
-              {activeInvestments.length} Véhicule(s) en service
+              {activeInvestments.length} Station(s) en exploitation
             </p>
           </div>
         </div>
@@ -347,11 +336,11 @@ export function Activity() {
         {feedback && (
           <div className={`p-3.5 rounded-xl flex items-center gap-2.5 text-xs font-bold animate-in fade-in duration-200 shadow-sm ${
             feedback.type === 'success' 
-              ? 'bg-emerald-100 border border-emerald-300 text-emerald-950' 
+              ? 'bg-red-100 border border-red-300 text-red-950' 
               : 'bg-red-50 border border-red-300 text-red-900'
           }`}>
             {feedback.type === 'success' ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-red-700 shrink-0" />
             ) : (
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
             )}
@@ -373,7 +362,7 @@ export function Activity() {
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
               Rendement Journalier Cumulé
             </p>
-            <p className="text-xl sm:text-2xl font-black text-emerald-700 mt-0.5">
+            <p className="text-xl sm:text-2xl font-black text-red-700 mt-0.5">
               +{formatCurrency(activeInvestments.reduce((sum, inv) => sum + Number(inv.daily_yield || 0), 0))}
             </p>
           </div>
@@ -381,11 +370,11 @@ export function Activity() {
 
         {/* Claim All Banner */}
         {claimableCount > 0 && (
-          <div className="bg-emerald-700 rounded-2xl p-4 sm:p-5 text-white shadow-md flex items-center justify-between gap-3 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-red-700 rounded-2xl p-4 sm:p-5 text-white shadow-md flex items-center justify-between gap-3 animate-in fade-in zoom-in-95 duration-200">
             <div>
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-amber-300" />
-                <p className="text-[11px] font-black uppercase tracking-wider text-emerald-200">
+                <p className="text-[11px] font-black uppercase tracking-wider text-red-200">
                   {claimableCount} distribution(s) disponible(s)
                 </p>
               </div>
@@ -397,10 +386,10 @@ export function Activity() {
             <button
               onClick={handleClaimAll}
               disabled={claimingAll || !!claimingId}
-              className="px-4 py-2.5 rounded-xl bg-white hover:bg-emerald-50 active:scale-95 text-emerald-900 text-xs font-black shadow-sm transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2.5 rounded-xl bg-white hover:bg-red-50 active:scale-95 text-red-900 text-xs font-black shadow-sm transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
             >
               {claimingAll ? (
-                <RefreshCw className="w-4 h-4 animate-spin text-emerald-800" />
+                <RefreshCw className="w-4 h-4 animate-spin text-red-800" />
               ) : (
                 <>
                   <span>Tout percevoir</span>
@@ -415,12 +404,12 @@ export function Activity() {
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse"></span>
               Flotte en cours ({activeInvestments.length})
             </h2>
             <button
               onClick={() => fetchInvestments(true)}
-              className="text-[11px] font-bold text-emerald-700 flex items-center gap-1 hover:underline cursor-pointer"
+              className="text-[11px] font-bold text-red-700 flex items-center gap-1 hover:underline cursor-pointer"
             >
               <RefreshCw className="w-3 h-3" />
               Actualiser
@@ -429,11 +418,11 @@ export function Activity() {
 
           {activeInvestments.length === 0 ? (
             <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-2 shadow-sm">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 mx-auto flex items-center justify-center">
-                <Truck className="w-7 h-7" />
+              <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-200 text-red-700 mx-auto flex items-center justify-center">
+                <Fuel className="w-7 h-7" />
               </div>
               <h3 className="text-base font-black text-slate-900">
-                Aucun véhicule en cours d'exploitation
+                Aucune station en cours d'exploitation
               </h3>
             </div>
           ) : (
@@ -459,13 +448,13 @@ export function Activity() {
               {completedInvestments.map(inv => (
                 <div key={inv.id} className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between text-xs text-slate-700 shadow-sm">
                   <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <CheckCircle2 className="w-4 h-4 text-red-600" />
                     <span className="font-bold text-slate-900">
-                      Transport ({formatCurrency(inv.plan_amount)})
+                      Station ({formatCurrency(inv.plan_amount)})
                     </span>
                   </div>
                   <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg border border-slate-200">
-                    Cycle 60 jours achevé
+                    Cycle {inv.duration_days || 80} jours achevé
                   </span>
                 </div>
               ))}

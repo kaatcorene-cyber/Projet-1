@@ -352,7 +352,7 @@ export function Withdraw() {
           </button>
           <div>
             <h1 className="text-base font-black text-slate-900 tracking-tight">Retrait</h1>
-            <p className="text-emerald-700 text-[10px] uppercase font-black tracking-wider">Paiement Mobile Money</p>
+            <p className="text-red-700 text-[10px] uppercase font-black tracking-wider">Paiement Mobile Money</p>
           </div>
         </div>
         <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />
@@ -368,7 +368,7 @@ export function Withdraw() {
 
         {checkingAccount ? (
           <div className="bg-white border border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center shadow-sm">
-            <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
+            <Loader2 className="w-6 h-6 text-red-600 animate-spin" />
             <p className="text-xs text-slate-600 font-bold">Vérification de vos informations de retrait...</p>
           </div>
         ) : !isConfigured ? (
@@ -385,7 +385,7 @@ export function Withdraw() {
             </p>
             <Link
               to="/withdraw-info"
-              className="inline-flex items-center justify-center gap-2 w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-600/25 cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 w-full py-3.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-red-600/25 cursor-pointer"
             >
               <span>Renseigner mes informations de retrait</span>
               <ArrowRight className="w-4 h-4" />
@@ -396,10 +396,10 @@ export function Withdraw() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {message && (
               <div className={`p-3.5 rounded-xl text-xs font-bold flex items-center gap-2.5 animate-in fade-in shadow-sm ${
-                message.type === 'success' ? 'bg-emerald-100 border border-emerald-300 text-emerald-950' : 'bg-red-50 border border-red-300 text-red-900'
+                message.type === 'success' ? 'bg-red-100 border border-red-300 text-red-950' : 'bg-red-50 border border-red-300 text-red-900'
               }`}>
                 {message.type === 'success' ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-red-700 shrink-0" />
                 ) : (
                   <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
                 )}
@@ -408,22 +408,22 @@ export function Withdraw() {
             )}
 
             {/* Encadré Récapitulatif Coordonnées de Réception */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-2.5 shadow-sm">
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 space-y-2.5 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                <span className="text-xs font-black uppercase tracking-wider text-red-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-red-700" />
                   Destination du virement
                 </span>
                 <Link
                   to="/withdraw-info"
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-white border border-emerald-300 px-2.5 py-1 rounded-lg shadow-2xs cursor-pointer"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-red-700 hover:text-red-800 bg-white border border-red-300 px-2.5 py-1 rounded-lg shadow-2xs cursor-pointer"
                 >
                   <Edit2 className="w-3 h-3" />
                   <span>Modifier</span>
                 </Link>
               </div>
 
-              <div className="bg-white rounded-xl p-3 border border-emerald-100 space-y-1.5 text-xs">
+              <div className="bg-white rounded-xl p-3 border border-red-100 space-y-1.5 text-xs">
                 {savedCountry && (
                   <div className="flex justify-between items-center">
                     <span className="text-slate-500 font-medium">Pays :</span>
@@ -439,7 +439,7 @@ export function Withdraw() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500 font-medium">Numéro :</span>
-                  <span className="font-mono font-black text-emerald-800">
+                  <span className="font-mono font-black text-red-800">
                     {savedDialCode ? `${savedDialCode} ` : ''}{savedPhone}
                   </span>
                 </div>
@@ -464,7 +464,7 @@ export function Withdraw() {
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3.5 text-2xl font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 transition-all"
+                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3.5 text-2xl font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-600 transition-all"
                     placeholder="Ex: 5000"
                     required
                     min="2000"
@@ -489,9 +489,9 @@ export function Withdraw() {
                       <span>Frais de retrait (15%) :</span>
                       <span className="font-bold">- {formatCurrency(Math.round(Number(amount) * 0.15))}</span>
                     </div>
-                    <div className="pt-1.5 border-t border-slate-200 flex justify-between items-center text-emerald-800">
+                    <div className="pt-1.5 border-t border-slate-200 flex justify-between items-center text-red-800">
                       <span className="font-black">Montant net viré sur votre compte :</span>
-                      <span className="text-sm font-black text-emerald-700">
+                      <span className="text-sm font-black text-red-700">
                         {formatCurrency(Number(amount) - Math.round(Number(amount) * 0.15))}
                       </span>
                     </div>
@@ -509,7 +509,7 @@ export function Withdraw() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 transition-all"
+                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-600 transition-all"
                     placeholder="Saisissez votre mot de passe"
                     required
                   />
@@ -524,7 +524,7 @@ export function Withdraw() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 rounded-xl text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/25 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                className="w-full py-4 rounded-xl text-xs font-black uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/25 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
                 {loading ? (
                   <>

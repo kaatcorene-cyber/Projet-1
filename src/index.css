@@ -6,7 +6,7 @@
   }
 
   body {
-    @apply text-slate-900 antialiased selection:bg-emerald-600 selection:text-white bg-slate-50;
+    @apply text-slate-900 antialiased selection:bg-red-600 selection:text-white bg-slate-50;
     min-height: 100vh;
   }
 }
@@ -28,17 +28,17 @@
     @apply bg-white border border-slate-200/90 rounded-2xl shadow-sm transition-all text-slate-900;
   }
   .tl-card-interactive {
-    @apply bg-white border border-slate-200/90 rounded-2xl shadow-sm transition-all hover:border-emerald-500/50 hover:bg-slate-50/50 active:scale-[0.99] text-slate-900;
+    @apply bg-white border border-slate-200/90 rounded-2xl shadow-sm transition-all hover:border-red-500/50 hover:bg-slate-50/50 active:scale-[0.99] text-slate-900;
   }
   .glass-card {
     @apply bg-white/95 backdrop-blur-md border border-slate-200 shadow-sm rounded-2xl text-slate-900;
   }
 
   .agri-gradient {
-    @apply bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white;
+    @apply bg-gradient-to-r from-red-600 via-red-700 to-rose-800 text-white;
   }
   .agri-text-gradient {
-    @apply bg-gradient-to-r from-emerald-600 to-teal-700 bg-clip-text text-transparent font-black;
+    @apply bg-gradient-to-r from-red-600 to-rose-700 bg-clip-text text-transparent font-black;
   }
 }
 

@@ -80,34 +80,14 @@ export function Deposit() {
       return;
     }
 
-    // Détection dynamique du numéro et du code pays (support CI, Togo, Bénin, Burkina Faso, Cameroun, Niger)
+    // Détection dynamique du numéro (Côte d'Ivoire +225)
     const userPhoneStr = (user.phone || '').trim().replace(/\s+/g, '');
-    let countryDial = '+225';
-    let nationalNumber = userPhoneStr.replace(/[^0-9]/g, '');
-
-    if (userPhoneStr.startsWith('+228') || userPhoneStr.startsWith('228') || user?.country === 'Togo') {
-      countryDial = '+228';
-      nationalNumber = userPhoneStr.replace(/^\+?228/, '');
-    } else if (userPhoneStr.startsWith('+229') || userPhoneStr.startsWith('229') || user?.country === 'Bénin') {
-      countryDial = '+229';
-      nationalNumber = userPhoneStr.replace(/^\+?229/, '');
-    } else if (userPhoneStr.startsWith('+226') || userPhoneStr.startsWith('226') || user?.country === 'Burkina Faso') {
-      countryDial = '+226';
-      nationalNumber = userPhoneStr.replace(/^\+?226/, '');
-    } else if (userPhoneStr.startsWith('+237') || userPhoneStr.startsWith('237') || user?.country === 'Cameroun') {
-      countryDial = '+237';
-      nationalNumber = userPhoneStr.replace(/^\+?237/, '');
-    } else if (userPhoneStr.startsWith('+227') || userPhoneStr.startsWith('227') || user?.country === 'Niger') {
-      countryDial = '+227';
-      nationalNumber = userPhoneStr.replace(/^\+?227/, '');
-    } else if (userPhoneStr.startsWith('+225') || userPhoneStr.startsWith('225') || user?.country === "Côte d'Ivoire") {
-      countryDial = '+225';
-      nationalNumber = userPhoneStr.replace(/^\+?225/, '');
-    }
+    const countryDial = '+225';
+    let nationalNumber = userPhoneStr.replace(/^\+?225/, '').replace(/[^0-9]/g, '');
 
     const cleanNational = nationalNumber || '0700000000';
     const fullPhone = `${countryDial}${cleanNational}`;
-    const userEmail = `${cleanNational}@agritrans-ci.com`;
+    const userEmail = `${cleanNational}@orlen-ci.com`;
 
     setLoading(true);
     setRedirecting(true);
@@ -120,7 +100,7 @@ export function Deposit() {
         user_id: user.id,
         type: 'deposit',
         amount: numAmount,
-        reference: 'MoneyFusion - En attente',
+        reference: 'Mobile Money - En attente',
         status: 'pending',
         created_at: new Date().toISOString()
       });
@@ -131,7 +111,7 @@ export function Deposit() {
           user_id: user.id,
           type: 'deposit',
           amount: numAmount,
-          reference: `MoneyFusion - En attente`,
+          reference: `Mobile Money - En attente`,
           status: 'pending'
         }]).select().single();
         if (newTx?.id) {
@@ -141,7 +121,7 @@ export function Deposit() {
         console.warn('Could not record pending transaction remotely:', txErr);
       }
 
-      setAutomationStep('2/3 Initialisation sécurisée de la passerelle MoneyFusion...');
+      setAutomationStep('2/3 Initialisation sécurisée de la transaction...');
 
       const payload = {
         montant: numAmount,
@@ -261,7 +241,7 @@ export function Deposit() {
         if (createdTxId) {
           try {
             await supabase.from('transactions').update({
-              reference: `MoneyFusion - ${directToken}`
+              reference: `Mobile Money - ${directToken}`
             }).eq('id', createdTxId);
           } catch (dbErr) {
             console.warn('Could not update pending tx reference:', dbErr);
@@ -302,7 +282,7 @@ export function Deposit() {
           </button>
           <div>
             <h1 className="text-base font-black text-slate-900 tracking-tight">Financement</h1>
-            <p className="text-emerald-700 text-[10px] uppercase font-black tracking-wider">Rechargement Mobile Money</p>
+            <p className="text-red-700 text-[10px] uppercase font-black tracking-wider">Rechargement Mobile Money</p>
           </div>
         </div>
         <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />
@@ -316,15 +296,15 @@ export function Deposit() {
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Solde Disponible Actuel</p>
             <p className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">{formatCurrency(user?.balance || 0)}</p>
           </div>
-          <div className="w-12 h-12 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-center shrink-0 text-emerald-700">
+          <div className="w-12 h-12 bg-red-50 border border-red-200 rounded-xl flex items-center justify-center shrink-0 text-red-700">
             <Wallet className="w-6 h-6" />
           </div>
         </div>
 
         {/* Success Alert */}
         {successMessage && (
-          <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-2 animate-in fade-in shadow-sm">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+          <div className="p-3.5 bg-red-50 border border-red-300 rounded-xl text-red-900 text-xs font-bold flex items-center gap-2 animate-in fade-in shadow-sm">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-red-600" />
             <span>{successMessage}</span>
           </div>
         )}
@@ -346,7 +326,7 @@ export function Deposit() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <Sparkles className="w-3.5 h-3.5 text-red-600" />
                   Sélection rapide de montant
                 </label>
                 <span className="text-xs text-slate-500 font-bold">FCFA</span>
@@ -363,7 +343,7 @@ export function Deposit() {
                       onClick={() => handleSelectAmount(val)}
                       className={`py-2.5 px-2 rounded-xl text-xs font-black transition-all cursor-pointer text-center border ${
                         isSelected
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                          ? 'bg-red-600 text-white border-red-600 shadow-sm'
                           : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200 active:scale-95'
                       }`}
                     >
@@ -388,7 +368,7 @@ export function Deposit() {
                     setAmount(e.target.value);
                     setError('');
                   }}
-                  className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3.5 text-2xl font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 transition-all"
+                  className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3.5 text-2xl font-black text-slate-900 placeholder-slate-400 focus:outline-none focus:border-red-600 transition-all"
                   placeholder="5000"
                   required
                   min="5000"
@@ -410,9 +390,9 @@ export function Deposit() {
           {redirecting && automationStep && (
             <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-lg flex flex-col gap-3">
               <div className="flex items-center gap-3">
-                <Loader2 className="w-5 h-5 text-emerald-400 animate-spin shrink-0" />
+                <Loader2 className="w-5 h-5 text-red-400 animate-spin shrink-0" />
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-emerald-400">Automatisation MoneyFusion</p>
+                  <p className="text-xs font-black uppercase tracking-wider text-red-400">Paiement Sécurisé Mobile Money</p>
                   <p className="text-xs font-bold text-slate-200 mt-0.5">{automationStep}</p>
                 </div>
               </div>
@@ -422,7 +402,7 @@ export function Deposit() {
                   <a
                     href={readyPaymentUrl}
                     target="_self"
-                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs flex items-center justify-center gap-2 shadow transition-all cursor-pointer"
+                    className="w-full py-2.5 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs flex items-center justify-center gap-2 shadow transition-all cursor-pointer"
                   >
                     <span>Cliquer ici pour accéder directement au paiement</span>
                     <ArrowRight className="w-4 h-4" />
@@ -436,7 +416,7 @@ export function Deposit() {
           <button
             type="submit"
             disabled={loading || redirecting}
-            className="w-full py-4 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full py-4 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-sm shadow-md shadow-red-600/25 flex items-center justify-center gap-2 active:scale-98 transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading || redirecting ? (
               <>
@@ -451,11 +431,6 @@ export function Deposit() {
               </>
             )}
           </button>
-
-          <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 font-medium">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Paiement crypté & garanti par la passerelle MoneyFusion</span>
-          </div>
 
         </form>
 

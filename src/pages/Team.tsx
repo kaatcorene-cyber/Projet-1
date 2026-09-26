@@ -298,13 +298,13 @@ export function Team() {
   const [copyCodeOnlyStatus, setCopyCodeOnlyStatus] = useState<'idle' | 'success'>('idle');
   const [shareStatus, setShareStatus] = useState<'idle' | 'success'>('idle');
 
-  const shareText = `Rejoignez AgriTrans CI, le réseau leader de transport et logistique agricole ! Utilisez mon code d'invitation : ${user?.referral_code || user?.phone || ''}\nLien d'inscription : ${referralLink}`;
+  const shareText = `Rejoignez ORLEN Côte d'Ivoire, le réseau leader de stations-service et distribution d'énergie ! Utilisez mon code d'invitation : ${user?.referral_code || user?.phone || ''}\nLien d'inscription : ${referralLink}`;
 
   const handleNativeShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'AgriTrans CI - Invitation',
+          title: 'ORLEN CI - Invitation',
           text: shareText,
           url: referralLink,
         });
@@ -389,7 +389,7 @@ export function Team() {
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between transition-all">
         <div>
           <h1 className="text-base font-black text-slate-900 tracking-tight">Réseau d'Affiliation</h1>
-          <p className="text-emerald-700 text-[10px] uppercase font-black tracking-wider">Programme Partenaires 3 Niveaux</p>
+          <p className="text-red-700 text-[10px] uppercase font-black tracking-wider">Programme Partenaires 3 Niveaux</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -398,7 +398,7 @@ export function Team() {
             title="Actualiser"
             className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer active:scale-95"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-emerald-600' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-red-600' : ''}`} />
           </button>
           <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />
         </div>
@@ -410,7 +410,7 @@ export function Team() {
         <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 shadow-sm flex items-center justify-between divide-x divide-slate-200">
           <div className="pr-3 flex-1">
             <span className="text-slate-500 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-emerald-600" />
+              <Sparkles className="w-3 h-3 text-red-600" />
               Gains Parrainage
             </span>
             <p className="text-base sm:text-lg font-black text-slate-900 tracking-tight mt-0.5">
@@ -420,10 +420,10 @@ export function Team() {
 
           <div className="pl-3 flex-1 text-right">
             <span className="text-slate-500 text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1">
-              <Users className="w-3 h-3 text-emerald-600" />
+              <Users className="w-3 h-3 text-red-600" />
               Membres Référés
             </span>
-            <p className="text-base sm:text-lg font-black text-emerald-700 tracking-tight mt-0.5">
+            <p className="text-base sm:text-lg font-black text-red-700 tracking-tight mt-0.5">
               {totalMembers}
             </p>
           </div>
@@ -438,13 +438,13 @@ export function Team() {
             <button 
               onClick={copyOnlyCode}
               title="Copier uniquement le code"
-              className="text-[11px] font-mono font-black text-emerald-800 bg-emerald-50 hover:bg-emerald-100 active:scale-95 px-2.5 py-1 rounded-lg border border-emerald-200 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="text-[11px] font-mono font-black text-red-800 bg-red-50 hover:bg-red-100 active:scale-95 px-2.5 py-1 rounded-lg border border-red-200 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <span>Code : {user?.referral_code || user?.phone || '---'}</span>
               {copyCodeOnlyStatus === 'success' ? (
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                <CheckCircle2 className="w-3 h-3 text-red-600" />
               ) : (
-                <Copy className="w-3 h-3 text-emerald-600" />
+                <Copy className="w-3 h-3 text-red-600" />
               )}
             </button>
           </div>
@@ -455,15 +455,15 @@ export function Team() {
               type="text"
               value={referralLink}
               onClick={(e) => (e.target as HTMLInputElement).select()}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono font-bold focus:outline-none select-all focus:border-emerald-600 transition-colors"
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono font-bold focus:outline-none select-all focus:border-red-600 transition-colors"
             />
             <button 
               onClick={copyCode}
-              className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-sm cursor-pointer"
+              className="bg-red-600 hover:bg-red-700 active:scale-95 text-white px-3.5 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 shrink-0 transition-all shadow-sm cursor-pointer"
             >
               {copyStatus === 'success' ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-red-200" />
                   <span>Copié !</span>
                 </>
               ) : (
@@ -481,14 +481,14 @@ export function Team() {
               onClick={handleNativeShare}
               className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 text-xs font-black transition-all cursor-pointer"
             >
-              <Share2 className="w-3.5 h-3.5 text-emerald-600" />
+              <Share2 className="w-3.5 h-3.5 text-red-600" />
               <span>{shareStatus === 'success' ? 'Partagé !' : 'Partager le lien'}</span>
             </button>
             <button
               onClick={handleWhatsAppShare}
-              className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 active:scale-95 text-emerald-800 text-xs font-black transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 active:scale-95 text-red-800 text-xs font-black transition-all cursor-pointer"
             >
-              <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+              <MessageCircle className="w-3.5 h-3.5 text-red-600" />
               <span>Sur WhatsApp</span>
             </button>
           </div>
@@ -517,13 +517,13 @@ export function Team() {
               onClick={() => setSelectedCircle(1)}
               className={`py-2 px-2 rounded-xl flex items-center justify-between transition-all border cursor-pointer ${
                 selectedCircle === 1 
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+                  ? 'bg-red-600 text-white border-red-600 shadow-sm' 
                   : 'bg-white text-slate-800 border-slate-200 hover:border-slate-300'
               }`}
             >
               <div className="text-left">
                 <p className="text-[11px] font-black leading-tight">N1 (20%)</p>
-                <p className={`text-[10px] font-semibold ${selectedCircle === 1 ? 'text-emerald-100' : 'text-slate-500'}`}>
+                <p className={`text-[10px] font-semibold ${selectedCircle === 1 ? 'text-red-100' : 'text-slate-500'}`}>
                   {teamStats.level1.length} membre{teamStats.level1.length > 1 ? 's' : ''}
                 </p>
               </div>
@@ -534,13 +534,13 @@ export function Team() {
               onClick={() => setSelectedCircle(2)}
               className={`py-2 px-2 rounded-xl flex items-center justify-between transition-all border cursor-pointer ${
                 selectedCircle === 2 
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+                  ? 'bg-red-600 text-white border-red-600 shadow-sm' 
                   : 'bg-white text-slate-800 border-slate-200 hover:border-slate-300'
               }`}
             >
               <div className="text-left">
                 <p className="text-[11px] font-black leading-tight">N2 (2%)</p>
-                <p className={`text-[10px] font-semibold ${selectedCircle === 2 ? 'text-emerald-100' : 'text-slate-500'}`}>
+                <p className={`text-[10px] font-semibold ${selectedCircle === 2 ? 'text-red-100' : 'text-slate-500'}`}>
                   {teamStats.level2.length} membre{teamStats.level2.length > 1 ? 's' : ''}
                 </p>
               </div>
@@ -551,13 +551,13 @@ export function Team() {
               onClick={() => setSelectedCircle(3)}
               className={`py-2 px-2 rounded-xl flex items-center justify-between transition-all border cursor-pointer ${
                 selectedCircle === 3 
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+                  ? 'bg-red-600 text-white border-red-600 shadow-sm' 
                   : 'bg-white text-slate-800 border-slate-200 hover:border-slate-300'
               }`}
             >
               <div className="text-left">
                 <p className="text-[11px] font-black leading-tight">N3 (1%)</p>
-                <p className={`text-[10px] font-semibold ${selectedCircle === 3 ? 'text-emerald-100' : 'text-slate-500'}`}>
+                <p className={`text-[10px] font-semibold ${selectedCircle === 3 ? 'text-red-100' : 'text-slate-500'}`}>
                   {teamStats.level3.length} membre{teamStats.level3.length > 1 ? 's' : ''}
                 </p>
               </div>
@@ -570,14 +570,14 @@ export function Team() {
               <span className="text-xs font-bold text-slate-700">
                 Partenaires Niveau {selectedCircle} ({currentMembers.length})
               </span>
-              <span className="text-[11px] font-black text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              <span className="text-[11px] font-black text-red-800 bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200">
                 Taux : {selectedCircle === 1 ? '20%' : selectedCircle === 2 ? '2%' : '1%'}
               </span>
             </div>
 
             {isSyncing && currentMembers.length === 0 ? (
               <div className="text-center py-10 bg-white border border-slate-200 rounded-2xl p-6 space-y-3 shadow-sm">
-                <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto animate-spin">
+                <div className="w-9 h-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto animate-spin">
                   <RefreshCw className="w-4 h-4" />
                 </div>
                 <p className="text-xs text-slate-600 font-bold">
@@ -603,7 +603,7 @@ export function Team() {
                   return (
                     <div key={member.id} className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between shadow-sm">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                        <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-center justify-center font-bold text-xs">
                           <UserCheck className="w-4 h-4" />
                         </div>
                         <div>
@@ -616,7 +616,7 @@ export function Team() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs font-black text-emerald-700">
+                        <p className="text-xs font-black text-red-700">
                           {totalInvested > 0 ? formatCurrency(totalInvested) : '0 FCFA'}
                         </p>
                         <p className="text-[10px] font-bold text-slate-500 uppercase">

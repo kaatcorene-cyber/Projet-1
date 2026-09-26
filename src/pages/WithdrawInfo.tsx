@@ -157,23 +157,23 @@ export default function WithdrawInfo() {
           <ArrowLeft className="w-4 h-4" />
           <span>Retour au compte</span>
         </button>
-        <span className="text-xs font-black uppercase tracking-wider text-emerald-700">Coordonnées de Retrait</span>
+        <span className="text-xs font-black uppercase tracking-wider text-red-700">Coordonnées de Retrait</span>
       </header>
 
       <main className="max-w-lg mx-auto pt-4 px-3 sm:px-0 space-y-4">
         {/* Success Alert */}
         {success && (
-          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-2 animate-in fade-in">
+          <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-900 space-y-2 animate-in fade-in">
             <div className="flex items-center gap-2 font-black text-xs">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-red-600 shrink-0" />
               <span>Coordonnées enregistrées avec succès !</span>
             </div>
-            <p className="text-xs text-emerald-800 font-medium">
+            <p className="text-xs text-red-800 font-medium">
               Vos informations ({currentCountry.name} - {method}) ont été sauvegardées. Vous pouvez effectuer vos retraits en toute sécurité.
             </p>
             <Link
               to="/withdraw"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 text-white font-black text-xs hover:bg-emerald-700 transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-600 text-white font-black text-xs hover:bg-red-700 transition-all shadow-sm"
             >
               <span>Accéder à la page de retrait</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -194,7 +194,7 @@ export default function WithdrawInfo() {
           {/* 1. Sélection du Pays */}
           <div className="space-y-2">
             <label className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Globe2 className="w-4 h-4 text-emerald-600" />
+              <Globe2 className="w-4 h-4 text-red-600" />
               <span>Sélectionnez votre Pays</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -205,7 +205,7 @@ export default function WithdrawInfo() {
                   onClick={() => handleCountryChange(c.code)}
                   className={`p-2.5 rounded-xl border text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
                     selectedCountryCode === c.code
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-500/20 shadow-xs'
+                      ? 'border-red-600 bg-red-50 text-red-950 ring-2 ring-red-500/20 shadow-xs'
                       : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300'
                   }`}
                 >
@@ -225,7 +225,7 @@ export default function WithdrawInfo() {
               <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
                 Moyen de retrait ({currentCountry.name})
               </label>
-              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <span className="text-[11px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
                 {currentCountry.flag} {currentCountry.methods.length} opérateur{currentCountry.methods.length > 1 ? 's' : ''}
               </span>
             </div>
@@ -238,12 +238,12 @@ export default function WithdrawInfo() {
                   onClick={() => setMethod(m)}
                   className={`p-3 rounded-xl border text-xs font-black transition-all flex items-center justify-between cursor-pointer ${
                     method === m
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20'
+                      ? 'border-red-600 bg-red-50 text-red-900 ring-2 ring-red-500/20'
                       : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300'
                   }`}
                 >
                   <span className="truncate">{m}</span>
-                  {method === m && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 ml-1" />}
+                  {method === m && <CheckCircle2 className="w-4 h-4 text-red-600 shrink-0 ml-1" />}
                 </button>
               ))}
             </div>
@@ -254,7 +254,7 @@ export default function WithdrawInfo() {
             <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
               Numéro de réception ({method})
             </label>
-            <div className="flex bg-slate-50 border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-emerald-600 focus-within:bg-white transition-all min-h-[48px]">
+            <div className="flex bg-slate-50 border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-red-600 focus-within:bg-white transition-all min-h-[48px]">
               <span className="flex items-center px-3.5 bg-slate-100 text-slate-800 font-mono font-black text-xs sm:text-sm border-r border-slate-200 select-none">
                 {currentCountry.flag} {currentCountry.dialCode}
               </span>
@@ -262,7 +262,7 @@ export default function WithdrawInfo() {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="Ex: 90123456"
+                placeholder="Ex: 0701020304"
                 className="w-full px-3.5 py-3 bg-transparent text-slate-900 text-sm font-bold placeholder-slate-400 focus:outline-none tracking-wide"
                 required
               />
@@ -286,7 +286,7 @@ export default function WithdrawInfo() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Ex: KOUASSI KOFFI JEAN"
-                className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-sm font-bold uppercase placeholder-slate-400 focus:bg-white focus:outline-none focus:border-emerald-600 transition-all"
+                className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-sm font-bold uppercase placeholder-slate-400 focus:bg-white focus:outline-none focus:border-red-600 transition-all"
                 required
               />
             </div>
@@ -299,7 +299,7 @@ export default function WithdrawInfo() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs tracking-wider uppercase flex items-center justify-center gap-2 shadow-md shadow-emerald-600/25 active:scale-98 transition-all cursor-pointer disabled:opacity-60"
+            className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs tracking-wider uppercase flex items-center justify-center gap-2 shadow-md shadow-red-600/25 active:scale-98 transition-all cursor-pointer disabled:opacity-60"
           >
             {saving ? (
               <span>Enregistrement en cours...</span>

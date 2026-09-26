@@ -12,7 +12,7 @@ export function AppLogo({
   imgClassName = 'h-9 w-auto object-contain',
   showText = false 
 }: AppLogoProps) {
-  const [logoSrc, setLogoSrc] = useState<string>('/logo.svg?v=agritrans');
+  const [logoSrc, setLogoSrc] = useState<string>('/logo.svg?v=orlen');
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
@@ -37,19 +37,19 @@ export function AppLogo({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <img
-        src={hasError ? '/logo.svg?v=agritrans' : logoSrc}
-        alt="AgriTrans Logo"
+        src={hasError ? '/logo.svg?v=orlen' : logoSrc}
+        alt="ORLEN Logo"
         className={imgClassName}
         onError={() => {
           if (!hasError) {
             setHasError(true);
-            setLogoSrc('/logo.svg?v=agritrans');
+            setLogoSrc('/logo.svg?v=orlen');
           }
         }}
       />
       {showText && (
         <span className="font-black text-slate-900 tracking-tight text-lg">
-          Agri<span className="text-emerald-600 font-black">Trans</span>
+          ORLEN<span className="text-red-600 font-black">.</span>
         </span>
       )}
     </div>

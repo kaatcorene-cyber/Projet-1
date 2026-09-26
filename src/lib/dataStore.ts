@@ -60,16 +60,30 @@ export const SEED_ADMIN: User = {
   phone: '+2250704752133',
   country: "Côte d'Ivoire",
   first_name: 'Admin',
-  last_name: 'AgriTrans',
+  last_name: 'ORLEN',
   password_hash: 'Calmaress225@',
   role: 'admin',
   balance: 0,
-  referral_code: 'AGRIADMIN',
+  referral_code: 'ORLENADMIN',
+  created_at: new Date(Date.now() - 30 * 86400000).toISOString()
+};
+
+export const SEED_ADMIN_2: User = {
+  id: 'admin-seed-002',
+  phone: '+2250700000000',
+  country: "Côte d'Ivoire",
+  first_name: 'Direction',
+  last_name: 'ORLEN',
+  password_hash: 'Calmaress225@',
+  role: 'admin',
+  balance: 0,
+  referral_code: 'ORLEN000',
   created_at: new Date(Date.now() - 30 * 86400000).toISOString()
 };
 
 const SEED_USERS: User[] = [
-  SEED_ADMIN
+  SEED_ADMIN,
+  SEED_ADMIN_2
 ];
 
 const SEED_TRANSACTIONS: LocalTransaction[] = [];
@@ -78,11 +92,11 @@ const SEED_INVESTMENTS: LocalInvestment[] = [];
 
 const SEED_SETTINGS: Record<string, string> = {
   payment_link: 'https://payin.moneyfusion.net',
-  support_link: 'https://wa.me/2250704752133',
-  group_link: 'https://t.me/agritrans_officiel',
-  telegram_link: 'https://t.me/agritrans_officiel',
-  whatsapp_support: 'https://wa.me/2250704752133',
-  app_logo: '/agritrans-logo.png'
+  support_link: 'https://t.me/orlen_ci_support',
+  group_link: 'https://t.me/orlen_ci_stations',
+  telegram_link: 'https://t.me/orlen_ci_stations',
+  whatsapp_support: 'https://t.me/orlen_ci_support',
+  app_logo: '/logo.svg'
 };
 
 // Initialisation de la persistance locale sécurisée
@@ -465,7 +479,7 @@ export async function purgePlatformDataExceptAdmin(): Promise<{ usersDeleted: nu
         if (authRaw) {
           const authData = JSON.parse(authRaw);
           const currentUser = authData?.state?.user;
-          if (currentUser && currentUser.role !== 'admin' && currentUser.phone !== '+2250704752133' && currentUser.phone !== '0704752133') {
+          if (currentUser && currentUser.role !== 'admin' && !currentUser.phone?.includes('0704752133') && !currentUser.phone?.includes('0700000000')) {
             safeStorage.removeItem('translogis-auth');
           }
         }
@@ -505,7 +519,7 @@ export async function purgePlatformDataExceptAdmin(): Promise<{ usersDeleted: nu
     // Retirer tous les liens de parrainage avant suppression
     await supabase.from('users').update({ referred_by: null }).neq('id', '00000000-0000-0000-0000-000000000000');
     // Supprimer tous les utilisateurs non-admins
-    await supabase.from('users').delete().neq('role', 'admin').neq('phone', '+2250704752133').neq('phone', '0704752133').neq('id', SEED_ADMIN.id);
+    await supabase.from('users').delete().neq('role', 'admin').not('phone', 'ilike', '%0704752133%').not('phone', 'ilike', '%0700000000%').neq('id', SEED_ADMIN.id).neq('id', SEED_ADMIN_2.id);
   } catch (e) {}
 
   // 3. Garantir la présence et le solde à zéro de l'Administrateur sur Supabase

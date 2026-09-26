@@ -1,48 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 56" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 60" fill="none">
   <defs>
-    <linearGradient id="agriGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10b981"/>
-      <stop offset="100%" stop-color="#047857"/>
+    <linearGradient id="orlenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f87171"/>
+      <stop offset="30%" stop-color="#ef4444"/>
+      <stop offset="70%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
     </linearGradient>
-    <linearGradient id="harvestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24"/>
-      <stop offset="100%" stop-color="#d97706"/>
-    </linearGradient>
+    <filter id="orlenGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#dc2626" flood-opacity="0.35"/>
+    </filter>
   </defs>
 
-  <!-- Emblem: Leaf + Dynamic Transport Highway Arrow -->
-  <g transform="translate(6, 6)">
-    <!-- Base Rounded Shield -->
-    <rect x="0" y="0" width="44" height="44" rx="12" fill="url(#agriGrad)" />
+  <!-- Red & White ORLEN Emblem -->
+  <g transform="translate(6, 6)" filter="url(#orlenGlow)">
+    <!-- Red Rounded Shield Container -->
+    <rect x="0" y="0" width="48" height="48" rx="14" fill="url(#orlenGrad)" />
     
-    <!-- Sun / Harvest Arc -->
-    <circle cx="30" cy="14" r="5" fill="url(#harvestGrad)" />
+    <!-- White Accent Outline -->
+    <rect x="1.5" y="1.5" width="45" height="45" rx="12.5" stroke="#ffffff" stroke-width="1.2" stroke-opacity="0.35" />
 
-    <!-- Stylized Leaf & Transport Road Arrow -->
-    <path d="M12 28 C12 18, 20 12, 32 12 C32 24, 26 30, 16 31 Z" fill="#ffffff" opacity="0.95" />
-    <path d="M14 29 C20 22, 28 20, 34 20" stroke="#047857" stroke-width="2.5" stroke-linecap="round" />
-    <path d="M10 35 L26 35 L34 27" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Pure White ORLEN Eagle Head / Dynamic Energy Beak Symbol -->
+    <!-- Stylized Eagle Crown & Beak -->
+    <path 
+      d="M14 34 C14 22, 23 13, 34 13 C32 17, 30 20, 27 21 C33 21, 37 25, 38 29 C38 31, 36 32, 33 30 C30 28, 26 27, 21 29 C24 32, 28 33, 33 34 C28 36, 21 37, 14 34 Z" 
+      fill="#ffffff" 
+    />
+    <!-- Station Energy Star / Flame Accent -->
+    <circle cx="21" cy="21" r="2.2" fill="#ffffff" />
+    <path d="M12 37.5 L36 37.5" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.9" />
   </g>
 
-  <!-- Typography: AgriTrans -->
+  <!-- Typography: ORLEN Wordmark -->
   <text 
-    x="58" 
-    y="33" 
+    x="65" 
+    y="35" 
     font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Segoe UI', Roboto, sans-serif" 
-    font-size="25" 
+    font-size="28" 
     font-weight="900" 
     fill="#0f172a" 
-    letter-spacing="-0.5"
-  >Agri<tspan fill="#059669">Trans</tspan></text>
+    letter-spacing="0.5"
+  >ORLEN<tspan fill="#dc2626">.</tspan></text>
 
-  <!-- Tagline: Agro-Logistique -->
+  <!-- Subtitle Tagline: STATIONS-SERVICE • ÉNERGIE CI -->
+  <rect x="65" y="41" width="180" height="13" rx="3.5" fill="#fef2f2" stroke="#fee2e2" stroke-width="0.8" />
   <text 
-    x="59" 
-    y="46" 
+    x="70" 
+    y="50.5" 
     font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Segoe UI', Roboto, sans-serif" 
-    font-size="9" 
+    font-size="7.5" 
     font-weight="800" 
-    fill="#64748b" 
-    letter-spacing="1.2"
-  >AGRO-LOGISTIQUE &amp; TRANSPORT</text>
+    fill="#dc2626" 
+    letter-spacing="0.8"
+  >STATIONS-SERVICE • ÉNERGIE CI</text>
 </svg>

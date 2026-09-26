@@ -1,25 +1,48 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
   <defs>
-    <linearGradient id="iconAgriGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10b981"/>
-      <stop offset="100%" stop-color="#047857"/>
-    </linearGradient>
-    <linearGradient id="iconHarvestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24"/>
-      <stop offset="100%" stop-color="#d97706"/>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f87171"/>
+      <stop offset="25%" stop-color="#ef4444"/>
+      <stop offset="70%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#991b1b"/>
     </linearGradient>
   </defs>
 
-  <!-- App Icon Base -->
-  <rect width="64" height="64" rx="16" fill="url(#iconAgriGrad)" />
+  <!-- Red Rounded Background -->
+  <rect width="192" height="192" rx="46" fill="url(#iconGrad)" />
 
-  <g transform="translate(10, 10)">
-    <!-- Sun / Harvest Arc -->
-    <circle cx="34" cy="10" r="5" fill="url(#iconHarvestGrad)" />
+  <!-- Inner Glass Ring -->
+  <rect x="7" y="7" width="178" height="178" rx="40" stroke="#ffffff" stroke-width="3" stroke-opacity="0.25" />
 
-    <!-- Stylized Leaf & Road Arrow -->
-    <path d="M10 28 C10 16, 20 8, 36 8 C36 22, 28 30, 16 32 Z" fill="#ffffff" opacity="0.95" />
-    <path d="M12 30 C20 22, 30 18, 38 18" stroke="#047857" stroke-width="2.5" stroke-linecap="round" />
-    <path d="M6 36 L26 36 L36 26" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- ORLEN Eagle Head Emblem in White -->
+  <g transform="translate(32, 28) scale(1.35)">
+    <path 
+      d="M14 42 C14 26, 26 14, 42 14 C39 20, 36 24, 32 25 C40 25, 46 30, 48 35 C47 38, 44 39, 40 37 C36 34, 31 33, 25 35 C29 39, 34 40, 40 42 C34 45, 24 46, 14 42 Z" 
+      fill="#ffffff" 
+    />
+    <circle cx="26" cy="25" r="3" fill="#ffffff" />
+    <path d="M12 47 L50 47" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-opacity="0.95" />
   </g>
+
+  <!-- Typography ORLEN -->
+  <text 
+    x="96" 
+    y="148" 
+    text-anchor="middle" 
+    font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Segoe UI', Roboto, sans-serif" 
+    font-size="28" 
+    font-weight="900" 
+    fill="#ffffff" 
+    letter-spacing="2"
+  >ORLEN</text>
+  <text 
+    x="96" 
+    y="166" 
+    text-anchor="middle" 
+    font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Segoe UI', Roboto, sans-serif" 
+    font-size="9" 
+    font-weight="800" 
+    fill="#fee2e2" 
+    letter-spacing="2.5"
+  >STATIONS CI</text>
 </svg>

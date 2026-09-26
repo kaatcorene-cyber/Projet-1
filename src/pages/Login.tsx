@@ -88,7 +88,7 @@ export function Login() {
           Connexion à votre compte
         </h1>
         <p className="text-slate-600 font-medium text-xs sm:text-sm mt-1.5">
-          Réseau Agro-Logistique & Transport AgriTrans
+          Réseau Officiel Stations-Service & Énergie ORLEN
         </p>
       </div>
 
@@ -96,21 +96,31 @@ export function Login() {
       <div className="w-full bg-white border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm">
         <form onSubmit={handleLogin} className="space-y-4">
           {error && (
-            <div className="p-3.5 bg-red-50 border border-red-300 rounded-xl text-red-900 text-xs font-bold text-center animate-in fade-in">
-              {error}
+            <div className="p-3.5 bg-red-50 border border-red-300 rounded-xl text-red-900 text-xs font-bold text-center animate-in fade-in space-y-2">
+              <p>{error}</p>
+              {error.includes('introuvable') && (
+                <div className="pt-1">
+                  <Link
+                    to={`/register?phone=${encodeURIComponent(phone)}`}
+                    className="inline-flex items-center gap-1.5 text-xs text-white bg-red-600 hover:bg-red-700 px-3.5 py-1.5 rounded-lg font-black transition-all shadow-sm"
+                  >
+                    <span>Créer un compte avec ce numéro</span>
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                <Phone className="w-3.5 h-3.5 text-red-600" />
                 Numéro Mobile Money
               </label>
             </div>
 
             <div className={`flex bg-white border-2 rounded-xl overflow-hidden transition-all min-h-[50px] ${
-              isPhoneValid ? 'border-emerald-500' : 'border-slate-200 focus-within:border-emerald-600'
+              isPhoneValid ? 'border-red-500' : 'border-slate-200 focus-within:border-red-600'
             }`}>
               <select
                 value={selectedCountryCode}
@@ -120,7 +130,7 @@ export function Login() {
               >
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
-                    {c.dialCode}
+                    {c.flag} {c.dialCode}
                   </option>
                 ))}
               </select>
@@ -135,7 +145,7 @@ export function Login() {
                 required
               />
               {isPhoneValid && (
-                <div className="flex items-center pr-3 text-emerald-600">
+                <div className="flex items-center pr-3 text-red-600">
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
               )}
@@ -143,7 +153,7 @@ export function Login() {
 
             <div className="flex items-center justify-between px-1 text-[11px] font-medium text-slate-500">
               <span>Format attendu : <strong className="text-slate-700 font-bold">{getPhoneRequirementLabel(currentCountry)}</strong></span>
-              <span className={`font-mono font-bold ${isPhoneValid ? 'text-emerald-600' : 'text-slate-500'}`}>
+              <span className={`font-mono font-bold ${isPhoneValid ? 'text-red-600' : 'text-slate-500'}`}>
                 {phone.length}/{currentCountry.phoneLength} chiffres
               </span>
             </div>
@@ -151,10 +161,10 @@ export function Login() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-emerald-600" />
+              <Lock className="w-3.5 h-3.5 text-red-600" />
               Mot de passe
             </label>
-            <div className="flex items-center bg-white border-2 border-slate-200 rounded-xl px-4 py-3 focus-within:border-emerald-600 transition-all min-h-[50px]">
+            <div className="flex items-center bg-white border-2 border-slate-200 rounded-xl px-4 py-3 focus-within:border-red-600 transition-all min-h-[50px]">
               <input
                 type="password"
                 value={password}
@@ -169,7 +179,7 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-md shadow-emerald-600/25 active:scale-98 disabled:opacity-50 text-sm cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl mt-4 transition-all shadow-md shadow-red-600/25 active:scale-98 disabled:opacity-50 text-sm cursor-pointer flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -188,13 +198,13 @@ export function Login() {
         <div className="mt-6 pt-5 border-t border-slate-100 text-center space-y-3">
           <p className="text-slate-600 text-xs sm:text-sm font-medium">
             Pas encore de compte ?{' '}
-            <Link to="/register" className="text-emerald-700 hover:text-emerald-800 font-black tracking-wide underline underline-offset-2">
+            <Link to="/register" className="text-red-700 hover:text-red-800 font-black tracking-wide underline underline-offset-2">
               Créer un compte
             </Link>
           </p>
 
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-semibold">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <ShieldCheck className="w-4 h-4 text-red-600" />
             <span>Connexion cryptée et sécurisée</span>
           </div>
         </div>

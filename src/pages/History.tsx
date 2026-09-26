@@ -117,7 +117,7 @@ export function History() {
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex justify-between items-center transition-all">
         <div>
           <h1 className="text-base font-black text-slate-900 tracking-tight">Historiques</h1>
-          <p className="text-emerald-700 text-[10px] font-black uppercase tracking-wider">Journal des Opérations</p>
+          <p className="text-red-700 text-[10px] font-black uppercase tracking-wider">Journal des Opérations</p>
         </div>
         <AppLogo imgClassName="h-8 w-auto object-contain max-h-9" />
       </header>
@@ -148,7 +148,7 @@ export function History() {
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
                       positive 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                        ? 'bg-red-50 text-red-700 border-red-200' 
                         : 'bg-slate-100 text-slate-700 border-slate-200'
                     }`}>
                       <Icon className="w-5 h-5" />
@@ -167,13 +167,13 @@ export function History() {
 
                   <div className="text-right shrink-0">
                     <p className={`text-sm sm:text-base font-black tracking-tight ${
-                      positive ? 'text-emerald-700' : 'text-slate-900'
+                      positive ? 'text-red-700' : 'text-slate-900'
                     }`}>
                       {positive ? '+' : '-'}{formatCurrency(tx.amount)}
                     </p>
                     <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md mt-0.5 border ${
                       tx.status === 'completed' || tx.status === 'approved' 
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                        ? 'bg-red-50 text-red-800 border-red-200' 
                         : tx.status === 'rejected'
                         ? 'bg-red-50 text-red-800 border-red-200'
                         : 'bg-amber-50 text-amber-900 border-amber-200'

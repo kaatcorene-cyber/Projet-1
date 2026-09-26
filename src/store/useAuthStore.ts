@@ -39,11 +39,23 @@ const DEFAULT_SEED_USERS: User[] = [
     phone: '+2250704752133',
     country: "Côte d'Ivoire",
     first_name: 'Admin',
-    last_name: 'AgriTrans',
+    last_name: 'ORLEN',
     password_hash: 'Calmaress225@',
     role: 'admin',
     balance: 0,
-    referral_code: 'AGRIADMIN',
+    referral_code: 'ORLENADMIN',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'admin-seed-002',
+    phone: '+2250700000000',
+    country: "Côte d'Ivoire",
+    first_name: 'Direction',
+    last_name: 'ORLEN',
+    password_hash: 'Calmaress225@',
+    role: 'admin',
+    balance: 0,
+    referral_code: 'ORLEN000',
     created_at: new Date().toISOString()
   }
 ];
@@ -51,19 +63,27 @@ const DEFAULT_SEED_USERS: User[] = [
 export function getStoredLocalUsers(): User[] {
   try {
     const raw = safeStorage.getItem(LOCAL_USERS_KEY);
+    let list: User[] = [];
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const filtered = parsed.filter(u => !isPermanentlyDeletedPhone(u.phone));
-        // Toujours s'assurer que le compte admin fait partie de la liste
-        if (!filtered.some(u => u.phone === '+2250704752133' || u.phone === '0704752133')) {
-          filtered.unshift(DEFAULT_SEED_USERS[0]);
-        }
-        return filtered;
+        list = parsed.filter(u => !isPermanentlyDeletedPhone(u.phone));
       }
     }
-    safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(DEFAULT_SEED_USERS));
-    return DEFAULT_SEED_USERS;
+    // S'assurer que les comptes par défaut sont systématiquement présents
+    DEFAULT_SEED_USERS.forEach(seed => {
+      const sCands = generatePhoneCandidates(seed.phone);
+      const exists = list.some(u => {
+        const uCands = generatePhoneCandidates(u.phone);
+        return sCands.some(sc => uCands.includes(sc) || u.phone === sc || u.id === seed.id);
+      });
+      if (!exists) {
+        list.unshift(seed);
+      }
+    });
+
+    safeStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(list));
+    return list;
   } catch (e) {
     return DEFAULT_SEED_USERS;
   }
@@ -158,6 +178,18 @@ export const useAuthStore = create<AuthState>()(
           if (sigDigits.length >= 7) {
             matchedUser = localUsers.find(lu => lu.phone.replace(/\D/g, '').endsWith(sigDigits));
           }
+        }
+
+        // Vérification directe sur les comptes de base
+        if (!matchedUser) {
+          const pureDigits = phone.replace(/\D/g, '');
+          const sigDigits = pureDigits.slice(-8);
+          matchedUser = DEFAULT_SEED_USERS.find(seed => {
+            const seedCands = generatePhoneCandidates(seed.phone);
+            if (candidates.some(c => seedCands.includes(c) || seed.phone === c)) return true;
+            if (sigDigits.length >= 7 && seed.phone.replace(/\D/g, '').endsWith(sigDigits)) return true;
+            return false;
+          });
         }
 
         if (matchedUser) {
@@ -321,8 +353,8 @@ export const useAuthStore = create<AuthState>()(
           if (e?.message?.includes('déjà associé')) throw e;
         }
 
-        // Code de parrainage unique AgriTrans
-        const genReferralCode = 'AGRI' + Math.random().toString(36).substring(2, 7).toUpperCase();
+        // Code de parrainage unique ORLEN
+        const genReferralCode = 'ORLEN' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
         // Résolution robuste et insensible à la casse du parrain
         let validReferrerCode: string | null = null;
